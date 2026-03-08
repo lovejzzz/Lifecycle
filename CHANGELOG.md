@@ -1,5 +1,19 @@
 # Changelog
 
+### 2026-03-08 — Round 95: Lint 3→1 (CommandPalette Extraction + Derived State) — Audit Refresh
+
+**Lint cleanup: 3 → 1 warning (2 fixed, 1 suppressed with eslint-disable):**
+
+1. **CommandPalette extracted** (`Canvas.tsx`): The 120-line command palette IIFE that accessed `searchInputRef` during render is now a proper standalone `CommandPalette` component with its own state (`query`, `index`, `inputRef`). Eliminates the `refs-during-render` warning and removes 3 unused state variables (`paletteQuery`, `paletteIndex`, `paletteInputRef`) from CanvasInner.
+
+2. **Editing state derived from nodeId** (`NodeDetailPanel.tsx`): Replaced `useEffect(() => { setEditingLabel(false); setEditingDesc(false); }, [selectedNodeId])` with derived state pattern — `editingLabelFor`/`editingDescFor` track which nodeId the editing belongs to, auto-resetting when `selectedNodeId` changes. Eliminates the `set-state-in-effect` warning.
+
+3. **Hydration guard suppressed** (`Canvas.tsx:199`): `useEffect(() => setMounted(true), [])` is the standard SSR hydration pattern — suppressed with eslint-disable comment explaining the intentional use.
+
+**Remaining 1 warning:** `exhaustive-deps` in keyboard handler — intentional omission to prevent infinite loops.
+
+**Audit updated:** Architecture A- → A (CommandPalette proper component boundary). Code Quality stays A with only 1 warning remaining from the session-start 23.
+
 ### 2026-03-08 — Round 94: Tenth Consecutive 100% (DeepSeek Chat) — Pool Expansion (68 tests)
 
 **Eval results: 100% (6/6 passed, 415/415 points) — DeepSeek Chat, tenth consecutive perfect score**

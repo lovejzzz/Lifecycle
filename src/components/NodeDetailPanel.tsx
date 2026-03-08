@@ -343,8 +343,13 @@ export default function NodeDetailPanel() {
   const { nodes, edges, selectedNodeId, selectNode, lockNode, approveNode, updateNodeStatus, updateNodeData, deleteNode, deleteEdge, addEvent, askCIDAboutNode, executeNode } = useLifecycleStore();
   const node = nodes.find((n) => n.id === selectedNodeId);
 
-  const [editingLabel, setEditingLabel] = useState(false);
-  const [editingDesc, setEditingDesc] = useState(false);
+  // Track which node the editing state belongs to — auto-resets when selectedNodeId changes (no useEffect needed)
+  const [editingLabelFor, setEditingLabelFor] = useState<string | null>(null);
+  const [editingDescFor, setEditingDescFor] = useState<string | null>(null);
+  const editingLabel = editingLabelFor === selectedNodeId;
+  const editingDesc = editingDescFor === selectedNodeId;
+  const setEditingLabel = (v: boolean) => setEditingLabelFor(v ? selectedNodeId ?? null : null);
+  const setEditingDesc = (v: boolean) => setEditingDescFor(v ? selectedNodeId ?? null : null);
   const [labelDraft, setLabelDraft] = useState('');
   const [descDraft, setDescDraft] = useState('');
 
@@ -352,12 +357,6 @@ export default function NodeDetailPanel() {
   const builtInSet = new Set(BUILT_IN_CATEGORIES);
   const customCategories = Array.from(new Set(nodes.map(n => n.data.category).filter(c => !builtInSet.has(c))));
   const allCategories = [...BUILT_IN_CATEGORIES, ...customCategories];
-
-  // Reset editing state when node changes
-  useEffect(() => {
-    setEditingLabel(false);
-    setEditingDesc(false);
-  }, [selectedNodeId]);
 
   // Compute depth from roots (longest path to this node) — must be before early return
   const nodeDepth = React.useMemo(() => {

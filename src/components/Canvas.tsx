@@ -43,6 +43,136 @@ const DEFAULT_EDGE_OPTIONS = {
   labelBgBorderRadius: 4,
 } as const;
 
+// ─── Command Palette (extracted to avoid refs-during-render warning) ─────────
+
+function CommandPalette({ onClose, showCIDPanel, toggleCIDPanel, setShowSearch, focusSearchInput, undo, redo, setShowShortcuts, setShowLegend, nodes, selectNode }: {
+  onClose: () => void;
+  showCIDPanel: boolean;
+  toggleCIDPanel: () => void;
+  setShowSearch: (v: boolean) => void;
+  focusSearchInput: () => void;
+  undo: () => void;
+  redo: () => void;
+  setShowShortcuts: (v: boolean) => void;
+  setShowLegend: (v: boolean | ((prev: boolean) => boolean)) => void;
+  nodes: any[];
+  selectNode: (id: string) => void;
+}) {
+  const [query, setQuery] = useState('');
+  const [index, setIndex] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const commands = useMemo(() => [
+    { id: 'cid', label: 'Open CID Chat', icon: '💬', action: () => { if (!showCIDPanel) toggleCIDPanel(); setTimeout(() => document.querySelector<HTMLInputElement>('[data-cid-input]')?.focus(), 100); } },
+    { id: 'search', label: 'Search Nodes', icon: '🔍', action: () => { setShowSearch(true); focusSearchInput(); } },
+    { id: 'export', label: 'Export Workflow', icon: '📤', action: () => { const s = useLifecycleStore.getState(); const json = s.exportWorkflow(); const blob = new Blob([json], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `lifecycle-workflow-${new Date().toISOString().slice(0, 10)}.json`; a.click(); URL.revokeObjectURL(url); s.addToast('Workflow exported', 'success'); } },
+    { id: 'shortcuts', label: 'Keyboard Shortcuts', icon: '⌨️', action: () => setShowShortcuts(true) },
+    { id: 'legend', label: 'Edge Color Legend', icon: '🎨', action: () => setShowLegend(prev => !prev) },
+    { id: 'undo', label: 'Undo', icon: '↩️', action: () => undo() },
+    { id: 'redo', label: 'Redo', icon: '↪️', action: () => redo() },
+    { id: 'plan', label: 'Execution Plan', icon: '📋', action: () => { if (!showCIDPanel) toggleCIDPanel(); setTimeout(() => { const cidInput = document.querySelector<HTMLInputElement>('[data-cid-input]'); if (cidInput) { const s = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set; s?.call(cidInput, 'plan'); cidInput.dispatchEvent(new Event('input', { bubbles: true })); cidInput.form?.requestSubmit(); } }, 150); } },
+    { id: 'compress', label: 'Compress Workflow', icon: '🗜️', action: () => { if (!showCIDPanel) toggleCIDPanel(); setTimeout(() => { const cidInput = document.querySelector<HTMLInputElement>('[data-cid-input]'); if (cidInput) { const s = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set; s?.call(cidInput, 'compress'); cidInput.dispatchEvent(new Event('input', { bubbles: true })); cidInput.form?.requestSubmit(); } }, 150); } },
+    { id: 'bottlenecks', label: 'Find Bottlenecks', icon: '🔬', action: () => { if (!showCIDPanel) toggleCIDPanel(); setTimeout(() => { const cidInput = document.querySelector<HTMLInputElement>('[data-cid-input]'); if (cidInput) { const s = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set; s?.call(cidInput, 'bottlenecks'); cidInput.dispatchEvent(new Event('input', { bubbles: true })); cidInput.form?.requestSubmit(); } }, 150); } },
+  ], [showCIDPanel, toggleCIDPanel, setShowSearch, focusSearchInput, undo, redo, setShowShortcuts, setShowLegend]);
+
+  const nodeItems = useMemo(() => nodes.map(n => ({
+    id: `node-${n.id}`,
+    label: n.data.label,
+    icon: '',
+    category: n.data.category,
+    action: () => selectNode(n.id),
+  })), [nodes, selectNode]);
+
+  const q = query.toLowerCase();
+  const filteredCommands = q ? commands.filter(c => c.label.toLowerCase().includes(q)) : commands;
+  const filteredNodes = q ? nodeItems.filter(n => n.label.toLowerCase().includes(q)) : [];
+  const allItems = [...filteredCommands, ...filteredNodes];
+  const safeIndex = Math.min(index, allItems.length - 1);
+
+  return (
+    <motion.div
+      key="palette"
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.12 }}
+      className="absolute inset-0 z-50 flex items-start justify-center pt-[15vh] bg-black/40 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="w-[380px] rounded-xl border border-white/[0.12] bg-[#0e0e18]/95 backdrop-blur-xl shadow-2xl overflow-hidden"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06]">
+          <Search size={14} className="text-white/30 flex-shrink-0" />
+          <input
+            ref={inputRef}
+            autoFocus
+            type="text"
+            value={query}
+            onChange={e => { setQuery(e.target.value); setIndex(0); }}
+            onKeyDown={e => {
+              if (e.key === 'ArrowDown') { e.preventDefault(); setIndex(i => Math.min(i + 1, allItems.length - 1)); }
+              if (e.key === 'ArrowUp') { e.preventDefault(); setIndex(i => Math.max(i - 1, 0)); }
+              if (e.key === 'Enter' && allItems.length > 0) {
+                allItems[safeIndex]?.action();
+                onClose();
+              }
+            }}
+            placeholder="Type a command or node name..."
+            className="flex-1 bg-transparent text-[13px] text-white/80 placeholder-white/25 outline-none"
+          />
+          <kbd className="px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-[9px] font-mono text-white/25">ESC</kbd>
+        </div>
+        <div className="max-h-[300px] overflow-y-auto py-1">
+          {filteredCommands.length > 0 && (
+            <>
+              <div className="px-4 py-1 text-[9px] text-white/25 uppercase tracking-wider">Commands</div>
+              {filteredCommands.map((cmd, idx) => (
+                <button
+                  key={cmd.id}
+                  onClick={() => { cmd.action(); onClose(); }}
+                  className={`w-full flex items-center gap-3 px-4 py-2 text-[12px] transition-colors ${
+                    idx === safeIndex ? 'bg-white/[0.08] text-white/90' : 'text-white/60 hover:bg-white/[0.05] hover:text-white/80'
+                  }`}
+                >
+                  <span className="text-[14px] w-5 text-center">{cmd.icon}</span>
+                  <span>{cmd.label}</span>
+                </button>
+              ))}
+            </>
+          )}
+          {filteredNodes.length > 0 && (
+            <>
+              <div className="px-4 py-1 mt-1 text-[9px] text-white/25 uppercase tracking-wider">Nodes</div>
+              {filteredNodes.slice(0, 10).map((item, idx) => {
+                const globalIdx = filteredCommands.length + idx;
+                const colors = getNodeColors(item.category as any);
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => { item.action(); onClose(); }}
+                    className={`w-full flex items-center gap-3 px-4 py-2 text-[12px] transition-colors ${
+                      globalIdx === safeIndex ? 'bg-white/[0.08] text-white/90' : 'text-white/60 hover:bg-white/[0.05] hover:text-white/80'
+                    }`}
+                  >
+                    <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: colors.primary }} />
+                    <span className="truncate">{item.label}</span>
+                    <span className="text-[9px] text-white/20 ml-auto">{item.category}</span>
+                  </button>
+                );
+              })}
+            </>
+          )}
+          {allItems.length === 0 && (
+            <div className="px-4 py-6 text-center text-[11px] text-white/25">No results found</div>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 export default function Canvas() {
   return (
     <ReactFlowProvider>
@@ -66,6 +196,7 @@ function CanvasInner() {
   const executionProgress = useLifecycleStore((s) => s.executionProgress);
 
   const [mounted, setMounted] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration guard: must setMounted after SSR to avoid mismatch
   useEffect(() => { setMounted(true); }, []);
   const isEmpty = !mounted || nodes.length === 0;
   const agent = getAgent(cidMode);
@@ -125,9 +256,6 @@ function CanvasInner() {
 
   // Command palette state
   const [showPalette, setShowPalette] = useState(false);
-  const [paletteQuery, setPaletteQuery] = useState('');
-  const [paletteIndex, setPaletteIndex] = useState(0);
-  const paletteInputRef = useRef<HTMLInputElement>(null);
 
   const onNodesChange = useCallback(
     (changes: any) => {
@@ -323,7 +451,7 @@ function CanvasInner() {
 
       // Escape: close overlays in priority order
       if (e.key === 'Escape') {
-        if (showPalette) { setShowPalette(false); setPaletteQuery(''); return; }
+        if (showPalette) { setShowPalette(false); return; }
         if (showShortcuts) { setShowShortcuts(false); return; }
         if (showSearch) { setShowSearch(false); setSearchQuery(''); setSearchSelectedIndex(0); return; }
         if (edgePicker) { setEdgePicker(null); return; }
@@ -360,8 +488,6 @@ function CanvasInner() {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setShowPalette(prev => !prev);
-        setPaletteQuery('');
-        setPaletteIndex(0);
         return;
       }
 
@@ -1121,116 +1247,21 @@ function CanvasInner() {
 
         {/* Command Palette */}
         <AnimatePresence>
-          {showPalette && (() => {
-            const commands = [
-              { id: 'cid', label: 'Open CID Chat', icon: '💬', action: () => { if (!showCIDPanel) toggleCIDPanel(); setTimeout(() => document.querySelector<HTMLInputElement>('[data-cid-input]')?.focus(), 100); } },
-              { id: 'search', label: 'Search Nodes', icon: '🔍', action: () => { setShowSearch(true); setTimeout(() => searchInputRef.current?.focus(), 50); } },
-              { id: 'export', label: 'Export Workflow', icon: '📤', action: () => { const s = useLifecycleStore.getState(); const json = s.exportWorkflow(); const blob = new Blob([json], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `lifecycle-workflow-${new Date().toISOString().slice(0, 10)}.json`; a.click(); URL.revokeObjectURL(url); s.addToast('Workflow exported', 'success'); } },
-              { id: 'shortcuts', label: 'Keyboard Shortcuts', icon: '⌨️', action: () => setShowShortcuts(true) },
-              { id: 'legend', label: 'Edge Color Legend', icon: '🎨', action: () => setShowLegend(prev => !prev) },
-              { id: 'undo', label: 'Undo', icon: '↩️', action: () => undo() },
-              { id: 'redo', label: 'Redo', icon: '↪️', action: () => redo() },
-              { id: 'plan', label: 'Execution Plan', icon: '📋', action: () => { if (!showCIDPanel) toggleCIDPanel(); setTimeout(() => { const cidInput = document.querySelector<HTMLInputElement>('[data-cid-input]'); if (cidInput) { const s = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set; s?.call(cidInput, 'plan'); cidInput.dispatchEvent(new Event('input', { bubbles: true })); cidInput.form?.requestSubmit(); } }, 150); } },
-              { id: 'compress', label: 'Compress Workflow', icon: '🗜️', action: () => { if (!showCIDPanel) toggleCIDPanel(); setTimeout(() => { const cidInput = document.querySelector<HTMLInputElement>('[data-cid-input]'); if (cidInput) { const s = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set; s?.call(cidInput, 'compress'); cidInput.dispatchEvent(new Event('input', { bubbles: true })); cidInput.form?.requestSubmit(); } }, 150); } },
-              { id: 'bottlenecks', label: 'Find Bottlenecks', icon: '🔬', action: () => { if (!showCIDPanel) toggleCIDPanel(); setTimeout(() => { const cidInput = document.querySelector<HTMLInputElement>('[data-cid-input]'); if (cidInput) { const s = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set; s?.call(cidInput, 'bottlenecks'); cidInput.dispatchEvent(new Event('input', { bubbles: true })); cidInput.form?.requestSubmit(); } }, 150); } },
-            ];
-            const nodeItems = nodes.map(n => ({
-              id: `node-${n.id}`,
-              label: n.data.label,
-              icon: '',
-              category: n.data.category,
-              action: () => selectNode(n.id),
-            }));
-            const q = paletteQuery.toLowerCase();
-            const filteredCommands = q ? commands.filter(c => c.label.toLowerCase().includes(q)) : commands;
-            const filteredNodes = q ? nodeItems.filter(n => n.label.toLowerCase().includes(q)) : [];
-            const allItems = [...filteredCommands, ...filteredNodes];
-            const safeIndex = Math.min(paletteIndex, allItems.length - 1);
-
-            return (
-              <motion.div
-                key="palette"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.12 }}
-                className="absolute inset-0 z-50 flex items-start justify-center pt-[15vh] bg-black/40 backdrop-blur-sm"
-                onClick={() => { setShowPalette(false); setPaletteQuery(''); }}
-              >
-                <div
-                  className="w-[380px] rounded-xl border border-white/[0.12] bg-[#0e0e18]/95 backdrop-blur-xl shadow-2xl overflow-hidden"
-                  onClick={e => e.stopPropagation()}
-                >
-                  <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06]">
-                    <Search size={14} className="text-white/30 flex-shrink-0" />
-                    <input
-                      ref={paletteInputRef}
-                      autoFocus
-                      type="text"
-                      value={paletteQuery}
-                      onChange={e => { setPaletteQuery(e.target.value); setPaletteIndex(0); }}
-                      onKeyDown={e => {
-                        if (e.key === 'ArrowDown') { e.preventDefault(); setPaletteIndex(i => Math.min(i + 1, allItems.length - 1)); }
-                        if (e.key === 'ArrowUp') { e.preventDefault(); setPaletteIndex(i => Math.max(i - 1, 0)); }
-                        if (e.key === 'Enter' && allItems.length > 0) {
-                          allItems[safeIndex]?.action();
-                          setShowPalette(false);
-                          setPaletteQuery('');
-                        }
-                      }}
-                      placeholder="Type a command or node name..."
-                      className="flex-1 bg-transparent text-[13px] text-white/80 placeholder-white/25 outline-none"
-                    />
-                    <kbd className="px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-[9px] font-mono text-white/25">ESC</kbd>
-                  </div>
-                  <div className="max-h-[300px] overflow-y-auto py-1">
-                    {filteredCommands.length > 0 && (
-                      <>
-                        <div className="px-4 py-1 text-[9px] text-white/25 uppercase tracking-wider">Commands</div>
-                        {filteredCommands.map((cmd, idx) => (
-                          <button
-                            key={cmd.id}
-                            onClick={() => { cmd.action(); setShowPalette(false); setPaletteQuery(''); }}
-                            className={`w-full flex items-center gap-3 px-4 py-2 text-[12px] transition-colors ${
-                              idx === safeIndex ? 'bg-white/[0.08] text-white/90' : 'text-white/60 hover:bg-white/[0.05] hover:text-white/80'
-                            }`}
-                          >
-                            <span className="text-[14px] w-5 text-center">{cmd.icon}</span>
-                            <span>{cmd.label}</span>
-                          </button>
-                        ))}
-                      </>
-                    )}
-                    {filteredNodes.length > 0 && (
-                      <>
-                        <div className="px-4 py-1 mt-1 text-[9px] text-white/25 uppercase tracking-wider">Nodes</div>
-                        {filteredNodes.slice(0, 10).map((item, idx) => {
-                          const globalIdx = filteredCommands.length + idx;
-                          const colors = getNodeColors(item.category as any);
-                          return (
-                            <button
-                              key={item.id}
-                              onClick={() => { item.action(); setShowPalette(false); setPaletteQuery(''); }}
-                              className={`w-full flex items-center gap-3 px-4 py-2 text-[12px] transition-colors ${
-                                globalIdx === safeIndex ? 'bg-white/[0.08] text-white/90' : 'text-white/60 hover:bg-white/[0.05] hover:text-white/80'
-                              }`}
-                            >
-                              <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: colors.primary }} />
-                              <span className="truncate">{item.label}</span>
-                              <span className="text-[9px] text-white/20 ml-auto">{item.category}</span>
-                            </button>
-                          );
-                        })}
-                      </>
-                    )}
-                    {allItems.length === 0 && (
-                      <div className="px-4 py-6 text-center text-[11px] text-white/25">No results found</div>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })()}
+          {showPalette && (
+            <CommandPalette
+              onClose={() => { setShowPalette(false); }}
+              showCIDPanel={showCIDPanel}
+              toggleCIDPanel={toggleCIDPanel}
+              setShowSearch={setShowSearch}
+              focusSearchInput={() => setTimeout(() => searchInputRef.current?.focus(), 50)}
+              undo={undo}
+              redo={redo}
+              setShowShortcuts={setShowShortcuts}
+              setShowLegend={setShowLegend}
+              nodes={nodes}
+              selectNode={selectNode}
+            />
+          )}
         </AnimatePresence>
 
         {/* Edge Color Legend — shows only labels actively used in the graph */}
