@@ -439,6 +439,12 @@ export function getCategoryIcon(category: string): React.ElementType {
   return CATEGORY_ICONS[category] || Puzzle;
 }
 
+/** Stable component for rendering a category icon — avoids "component created during render" warnings */
+export function CategoryIcon({ category, size, style, className }: { category: string; size?: number; style?: React.CSSProperties; className?: string }) {
+  const Icon = CATEGORY_ICONS[category] || Puzzle;
+  return React.createElement(Icon, { size, style, className });
+}
+
 /** Shared relative time formatter — "just now", "5m ago", "2h ago", "3d ago" */
 export function relativeTime(ts: number): string {
   const diff = Date.now() - ts;

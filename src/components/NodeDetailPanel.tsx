@@ -8,7 +8,7 @@ import {
   Plus, Trash, ChevronDown, Copy, Bot,
 } from 'lucide-react';
 import { useLifecycleStore } from '@/store/useStore';
-import { getNodeColors, getCategoryIcon, BUILT_IN_CATEGORIES, EDGE_LABEL_COLORS, relativeTime } from '@/lib/types';
+import { getNodeColors, CategoryIcon, BUILT_IN_CATEGORIES, EDGE_LABEL_COLORS, relativeTime } from '@/lib/types';
 import type { NodeData, NodeCategory } from '@/lib/types';
 
 const ALL_STATUSES: NodeData['status'][] = ['active', 'stale', 'pending', 'locked', 'generating', 'reviewing'];
@@ -197,15 +197,14 @@ function CategoryPicker({ category, nodeId, updateNodeData, addEvent, label, all
         onClick={() => setOpen(!open)}
         className="flex items-center gap-1.5 px-2 py-0.5 rounded-md hover:bg-white/[0.05] transition-colors group"
       >
-        {(() => { const Icon = getCategoryIcon(category); const colors = getNodeColors(category); return <Icon size={10} style={{ color: colors.primary }} />; })()}
+        <CategoryIcon category={category} size={10} style={{ color: getNodeColors(category).primary }} />
         <span className="text-[11px] text-white/60 capitalize">{category}</span>
         <ChevronDown size={9} className="text-white/20 group-hover:text-white/40 transition-colors" />
       </button>
       {open && (
         <div className="absolute right-0 top-full mt-1 z-50 min-w-[150px] max-h-[220px] overflow-y-auto rounded-lg border border-white/[0.08] bg-[#0e0e18]/95 backdrop-blur-xl shadow-2xl">
           {allCategories.map(cat => {
-            const colors = getNodeColors(cat);
-            const Icon = getCategoryIcon(cat);
+            const catColors = getNodeColors(cat);
             return (
               <button
                 key={cat}
@@ -220,7 +219,7 @@ function CategoryPicker({ category, nodeId, updateNodeData, addEvent, label, all
                   cat === category ? 'text-white/90' : 'text-white/50'
                 }`}
               >
-                <Icon size={11} style={{ color: colors.primary }} />
+                <CategoryIcon category={cat} size={11} style={{ color: catColors.primary }} />
                 <span className="capitalize">{cat}</span>
                 {cat === category && <Check size={10} className="ml-auto text-emerald-400" />}
               </button>
@@ -392,7 +391,6 @@ export default function NodeDetailPanel() {
 
   const { data } = node;
   const colors = getNodeColors(data.category);
-  const Icon = getCategoryIcon(data.category);
 
   // Connection info
   const incomingEdges = edges.filter(e => e.target === node.id);
@@ -487,7 +485,7 @@ export default function NodeDetailPanel() {
         <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06] flex-shrink-0">
           <div className="flex items-center gap-2.5 flex-1 min-w-0">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `${colors.primary}15` }}>
-              <Icon size={15} style={{ color: colors.primary }} />
+              <CategoryIcon category={data.category} size={15} style={{ color: colors.primary }} />
             </div>
             <div className="flex-1 min-w-0">
               {editingLabel ? (

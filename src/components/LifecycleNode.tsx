@@ -7,7 +7,7 @@ import {
   Lock, AlertTriangle, Loader2, Eye, Link, Upload,
 } from 'lucide-react';
 import type { NodeData } from '@/lib/types';
-import { getNodeColors, getCategoryIcon } from '@/lib/types';
+import { getNodeColors, CategoryIcon } from '@/lib/types';
 import { useLifecycleStore } from '@/store/useStore';
 
 const STATUS_INDICATOR: Record<string, { icon: React.ElementType | null; color: string; pulse: boolean }> = {
@@ -23,7 +23,6 @@ function LifecycleNode({ data, id }: NodeProps) {
   const nodeData = data as NodeData;
   const { category, label, status, description, version, locked, sections, acceptedFileTypes, inputType, serviceName, serviceIcon, placeholder } = nodeData;
   const colors = getNodeColors(category);
-  const Icon = getCategoryIcon(category);
   const statusInfo = STATUS_INDICATOR[status] || STATUS_INDICATOR.active;
   const StatusIcon = statusInfo.icon;
   const selectNode = useLifecycleStore((s) => s.selectNode);
@@ -105,7 +104,7 @@ function LifecycleNode({ data, id }: NodeProps) {
                 border: `1px solid ${colors.primary}20`,
               }}
             >
-              <Icon size={13} style={{ color: colors.primary }} />
+              <CategoryIcon category={category} size={13} style={{ color: colors.primary }} />
             </div>
             <div className="flex-1 min-w-0">
               {editingLabel ? (

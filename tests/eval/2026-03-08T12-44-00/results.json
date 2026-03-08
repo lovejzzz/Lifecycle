@@ -1,0 +1,400 @@
+{
+  "timestamp": "2026-03-08T12-44-00",
+  "overall": 100,
+  "testsRun": [
+    "support-advice",
+    "execute-sow",
+    "personality-poirot-empty",
+    "execute-api-design",
+    "event-conference-planning",
+    "government-procurement"
+  ],
+  "poolSize": 60,
+  "results": [
+    {
+      "id": "support-advice",
+      "status": "ok",
+      "elapsed": 4519,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Our CSAT score dropped to 3.2 out of 5. Average first response time is 8 hours. What should we fix first?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Focus on slashing first response time immediately—anything over 1 hour is a customer trust killer. Deploy a triage system with severity-based routing, automate initial acknowledgments, and set up real-time dashboards for SLA breaches. CSAT will follow once you stop leaving customers in the dark.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (296 chars)",
+          "✓ Message length: 296 ≥ 250"
+        ]
+      }
+    },
+    {
+      "id": "execute-sow",
+      "status": "ok",
+      "elapsed": 60592,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Write a statement of work for a 3-month web application redesign project. Client is a mid-size e-commerce company. Budget is $85,000. Include scope, deliverables, timeline, and payment terms.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Statement of Work: E-Commerce Web Application Redesign\n\n**Project Title:** E-Commerce Platform Redesign & Modernization\n**Client:** [Client Name], a mid-size e-commerce company\n**Vendor:** [Your Agency/Consultancy Name]\n**Effective Date:** [Date]\n**Project Duration:** 3 Months (12 Weeks)\n**Total Project Budget:** $85,000\n\n## 1. Project Overview & Objectives\n\nThis Statement of Work (SOW) defines the terms, deliverables, and conditions for a comprehensive redesign of the Client's existing e-commerce web application. The primary objectives are to modernize the user interface (UI) and user experience (UX), improve site performance and conversion rates, enhance mobile responsiveness, and implement a more maintainable and scalable technical architecture. The project will focus on creating a visually cohesive, brand-aligned, and user-centric digital storefront that drives customer engagement and sales.\n\n## 2. Scope of Work\n\nThe Vendor will provide strategy, design, development, and implementation services as outlined below. This is a fixed-scope project based on the defined deliverables.\n\n### 2.1 Discovery & Strategy (Weeks 1-2)\n*   **Stakeholder Workshops:** Conduct collaborative sessions to understand business goals, brand guidelines, and key user personas.\n*   **Competitive & Heuristic Analysis:** Review 3-5 competitor sites and perform an audit of the current application to identify UX/UI strengths, weaknesses, and opportunities.\n*   **Technical Assessment:** Review current tech stack, hosting environment, and third-party integrations (payment gateways, CRM, ERP) to inform the redesign architecture.\n*   **Project Plan & Sitemap Finalization:** Develop a detailed project timeline and an updated, logical sitemap for the application.\n\n### 2.2 User Experience (UX) Design (Weeks 3-5)\n*   **User Flow Diagrams:** Create detailed flowcharts for key customer journeys (e.g., product discovery, checkout, account management).\n*   **Low-Fidelity Wireframes:** Develop wireframes for all core page templates and unique functional modules, focusing on structure and interaction.\n*   **Interactive Prototype:** Build a clickable, mid-fidelity prototype of primary user flows for stakeholder review and usability testing.\n\n### 2.3 User Interface (UI) Design (Weeks 5-7)\n*   **Visual Design System:**\n    *   Define color palette, typography, iconography, and button styles.\n    *   Create a UI component library (e.g., cards, forms, navigation elements).\n*   **High-Fidelity Mockups:** Produce pixel-perfect, branded visual designs for all page templates and states (desktop, tablet, mobile), including:\n    *   Homepage\n    *   Category/Product Listing Pages (PLP)\n    *   Product Detail Pages (PDP)\n    *   Shopping Cart & Checkout Flow\n    *   User Account Dashboard\n    *   Content Pages (About, Contact, FAQ)\n\n### 2.4 Front-End Development (Weeks 8-11)\n*   **Component-Based Development:** Convert approved high-fidelity designs into clean, semantic, and responsive HTML/CSS/JavaScript components.\n*   **Framework Integration:** Develop front-end components to integrate seamlessly with the Client's chosen back-end e-commerce platform (e.g., Shopify Plus, BigCommerce, custom API).\n*   **Performance Optimization:** Ensure all front-end code adheres to best practices for page load speed (targeting Core Web Vitals goals), accessibility (WCAG 2.1 AA standards), and cross-browser compatibility.\n*   **Content Management System (CMS) Styling:** Style authoring interfaces for any CMS-driven content areas.\n\n### 2.5 Testing, Deployment & Transition (Weeks 11-12)\n*   **Quality Assurance (QA):** Perform functional testing, cross-browser/device testing, user acceptance testing (UAT) support, and performance testing.\n*   **Staging Deployment:** Deploy the fully functional application to a staging environment for final Client review and approval.\n*   **Production Deployment:** Launch the redesigned application to the live production environment.\n*   **Knowledge Transfer & Documentation:** Provide basic documentation for site updates and a 2-hour training session for the Client's marketing/operations team.\n\n## 3. Deliverables\n\nAll deliverables will be provided in digital format via a shared project management platform (e.g., Asana, Trello) and cloud storage.\n\n1.  **Strategy Documentation:** Findings report from discovery, including sitemap and technical recommendations.\n2.  **UX Artifacts:** User flow diagrams, complete set of wireframes, and interactive prototype.\n3.  **UI Design Files:** Full visual design system documentation and high-fidelity mockups for all templates (delivered in Figma/Sketch/XD source files).\n4.  **Developed Application:** Fully functional, responsive, and optimized front-end codebase, integrated with the Client's back-end systems and deployed to production.\n5.  **Project Documentation:** Post-launch summary report and basic maintenance guide.\n\n## 4. Project Timeline & Milestones\n\nThe project will commence on **[Start Date]** and target a live launch by **[Launch Date, 12 weeks later]**.\n\n*   **Kick-off & Discovery Completion:** End of Week 2\n*   **UX Wireframes & Prototype Approval:** End of Week 5\n*   **UI Visual Design Approval:** End of Week 7\n*   **Front-End Development Completion & Staging Review:** End of Week 11\n*   **Final UAT Sign-off & Production Launch:** End of Week 12\n\n## 5. Client Responsibilities\n\nTo ensure project success, the Client agrees to:\n*   Appoint a single primary decision-maker with authority to provide timely feedback and approvals.\n*   Provide all necessary brand assets, style guides, and login credentials for required systems.\n*   Provide timely, consolidated feedback at each defined review milestone (within 3 business days).\n*   Manage all back-end e-commerce platform configuration, data migration, and third-party API integrations unless explicitly stated otherwise in this SOW.\n*   Provide final, approved marketing content (text, images) by the start of Development (Week 8).\n\n## 6. Assumptions & Exclusions\n\n**Assumptions:**\n*   Client back-end e-commerce platform and APIs are stable, documented, and accessible.\n*   Client will provide timely feedback and content as outlined in Section 5.\n*   Scope, timeline, and budget are based on the requirements known at the signing of this SOW.\n\n**Exclusions (Out of Scope):**\n*   Back-end platform development, migration, or re-platforming.\n*   Development of new e-commerce functionality beyond the visual redesign of existing flows (e.g., building a new loyalty program).\n*   Ongoing hosting, maintenance, or support after the 30-day post-launch warranty period.\n*   Creation of new marketing content (copywriting, photography, video production).\n*   Search Engine Optimization (SEO) strategy beyond technical implementation of best practices.\n*   Paid advertising campaigns or post-launch marketing.\n\n## 7. Payment Terms\n\nThe total fixed project fee is **$85,000**. Invoices are due net 15 upon receipt.\n\nPayment will be structured across four milestones:\n\n1.  **Project Kick-off:** 25% ($21,250) due upon signing this SOW.\n2.  **Design Approval:** 25% ($21,250) due upon Client sign-off of all UI visual designs (End of Week 7).\n3.  **Staging Approval:** 25% ($21,250) due upon Client approval of the application in the staging environment (End of Week 11).\n4.  **Final Launch:** 25% ($21,250) due upon successful production launch and project closure (End of Week 12).\n\n## 8. Acceptance\n\nThis Statement of Work, including all attachments, represents the entire agreement between the Client and the Vendor. Signatures below indicate mutual understanding and acceptance of all terms, scope, deliverables, timeline, and costs.\n\n**Approved for [Client Name]:**\n___________________________\nPrint Name & Title\nDate\n\n**Approved for [Vendor Name]:**\n___________________________\nPrint Name & Title\nDate",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (7858 chars)",
+          "✓ Content length: 7858 ≥ 300"
+        ]
+      }
+    },
+    {
+      "id": "personality-poirot-empty",
+      "status": "ok",
+      "elapsed": 4535,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, mon ami, the canvas is pristine—a blank slate awaiting the first clue. No nodes, no edges, no case to unravel yet. But do not fret; the little grey cells are ready to weave a tapestry of logic and flow. Present your challenge, and we shall build the evidence together, step by meticulous step.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (297 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "execute-api-design",
+      "status": "ok",
+      "elapsed": 93987,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Design a REST API for a multi-tenant task management system. Include endpoints for workspaces, projects, tasks, and comments. Show URL patterns, HTTP methods, request/response bodies, auth scheme, pagination, and error codes. Support role-based access (admin, member, viewer).",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# REST API Design Document: Multi-Tenant Task Management System\n\n## 1. Overview\nA RESTful API for a multi-tenant task management system supporting workspaces, projects, tasks, and comments with role-based access control.\n\n## 2. Base URL\n```\nhttps://api.taskmanager.com/v1\n```\n\n## 3. Authentication & Authorization\n**Scheme:** Bearer Token (JWT)\n- All requests require `Authorization: Bearer <jwt_token>` header\n- JWT contains: `tenant_id`, `user_id`, `roles` (array), `workspace_access` (object)\n- Token obtained via separate authentication service\n\n**Multi-Tenancy Implementation:**\n- `X-Tenant-ID` header required for all requests (except workspace creation)\n- Data isolation at database level using tenant_id foreign key\n\n## 4. Role-Based Access Control\n\n| Role | Workspace | Project | Task | Comment |\n|------|-----------|---------|------|---------|\n| Admin | CRUD all | CRUD all | CRUD all | CRUD all |\n| Member | Read only | CRUD own | CRUD own | CRUD own |\n| Viewer | Read only | Read only | Read only | Read only |\n\n## 5. Rate Limiting\n- 1000 requests/hour per tenant\n- 100 requests/minute per user\n- Headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`\n\n## 6. Pagination\nAll list endpoints support pagination:\n- Query params: `?page=1&limit=50`\n- Default: `page=1`, `limit=50`\n- Max limit: 100\n- Response includes pagination metadata\n\n## 7. Error Handling\n\n### HTTP Status Codes\n- `200` OK - Successful GET/PUT/PATCH\n- `201` Created - Successful POST\n- `204` No Content - Successful DELETE\n- `400` Bad Request - Invalid input\n- `401` Unauthorized - Missing/invalid token\n- `403` Forbidden - Insufficient permissions\n- `404` Not Found - Resource doesn't exist\n- `409` Conflict - Resource conflict\n- `422` Unprocessable Entity - Validation error\n- `429` Too Many Requests - Rate limit exceeded\n- `500` Internal Server Error\n\n### Error Response Format\n```json\n{\n  \"error\": {\n    \"code\": \"RESOURCE_NOT_FOUND\",\n    \"message\": \"Project with ID 123 not found\",\n    \"details\": {\n      \"resource\": \"project\",\n      \"id\": \"123\"\n    },\n    \"timestamp\": \"2024-01-15T10:30:00Z\",\n    \"request_id\": \"req_abc123\"\n  }\n}\n```\n\n## 8. Endpoints\n\n### 8.1 Workspaces\n\n#### Create Workspace\n```\nPOST /workspaces\n```\n**Request:**\n```json\n{\n  \"name\": \"Acme Corporation\",\n  \"description\": \"Main workspace for Acme Corp\",\n  \"settings\": {\n    \"timezone\": \"America/New_York\",\n    \"default_language\": \"en\"\n  }\n}\n```\n**Response (201):**\n```json\n{\n  \"id\": \"ws_123\",\n  \"name\": \"Acme Corporation\",\n  \"description\": \"Main workspace for Acme Corp\",\n  \"slug\": \"acme-corporation\",\n  \"settings\": {\n    \"timezone\": \"America/New_York\",\n    \"default_language\": \"en\"\n  },\n  \"created_at\": \"2024-01-15T10:30:00Z\",\n  \"updated_at\": \"2024-01-15T10:30:00Z\",\n  \"owner_id\": \"user_456\"\n}\n```\n\n#### List Workspaces (for user)\n```\nGET /workspaces\n```\n**Response (200):**\n```json\n{\n  \"data\": [\n    {\n      \"id\": \"ws_123\",\n      \"name\": \"Acme Corporation\",\n      \"slug\": \"acme-corporation\",\n      \"role\": \"admin\",\n      \"member_count\": 15\n    }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"limit\": 50,\n    \"total\": 1,\n    \"pages\": 1\n  }\n}\n```\n\n#### Get Workspace\n```\nGET /workspaces/{workspace_id}\n```\n**Headers:** `X-Tenant-ID: ws_123`\n**Permissions:** Admin, Member, Viewer\n\n#### Update Workspace\n```\nPATCH /workspaces/{workspace_id}\n```\n**Headers:** `X-Tenant-ID: ws_123`\n**Permissions:** Admin only\n\n#### Delete Workspace\n```\nDELETE /workspaces/{workspace_id}\n```\n**Headers:** `X-Tenant-ID: ws_123`\n**Permissions:** Admin only\n\n### 8.2 Projects\n\n#### Create Project\n```\nPOST /projects\n```\n**Headers:** `X-Tenant-ID: ws_123`\n**Request:**\n```json\n{\n  \"name\": \"Website Redesign\",\n  \"description\": \"Complete overhaul of company website\",\n  \"status\": \"active\",\n  \"start_date\": \"2024-02-01\",\n  \"due_date\": \"2024-06-30\",\n  \"tags\": [\"frontend\", \"design\", \"seo\"],\n  \"settings\": {\n    \"task_auto_assign\": false,\n    \"comment_notifications\": true\n  }\n}\n```\n**Permissions:** Admin, Member\n\n#### List Projects\n```\nGET /projects\n```\n**Query params:** `?status=active&tags=frontend&sort=-created_at`\n**Headers:** `X-Tenant-ID: ws_123`\n**Permissions:** Admin, Member, Viewer\n\n#### Get Project\n```\nGET /projects/{project_id}\n```\n**Headers:** `X-Tenant-ID: ws_123`\n**Permissions:** Admin, Member, Viewer\n\n#### Update Project\n```\nPATCH /projects/{project_id}\n```\n**Headers:** `X-Tenant-ID: ws_123`\n**Permissions:** Admin, Member (own projects)\n\n#### Delete Project\n```\nDELETE /projects/{project_id}\n```\n**Headers:** `X-Tenant-ID: ws_123`\n**Permissions:** Admin only\n\n### 8.3 Tasks\n\n#### Create Task\n```\nPOST /projects/{project_id}/tasks\n```\n**Headers:** `X-Tenant-ID: ws_123`\n**Request:**\n```json\n{\n  \"title\": \"Design homepage mockup\",\n  \"description\": \"Create initial design concepts for homepage\",\n  \"assignee_id\": \"user_789\",\n  \"status\": \"todo\",\n  \"priority\": \"high\",\n  \"due_date\": \"2024-02-15\",\n  \"estimated_hours\": 8,\n  \"labels\": [\"design\", \"ui/ux\"],\n  \"custom_fields\": {\n    \"client_priority\": \"urgent\",\n    \"design_system\": \"v2\"\n  }\n}\n```\n**Permissions:** Admin, Member\n\n#### List Tasks\n```\nGET /projects/{project_id}/tasks\n```\n**Query params:** `?status=todo,progress&assignee_id=user_789&priority=high&sort=due_date`\n**Headers:** `X-Tenant-ID: ws_123`\n**Permissions:** Admin, Member, Viewer\n\n#### Get Task\n```\nGET /tasks/{task_id}\n```\n**Headers:** `X-Tenant-ID: ws_123`\n**Permissions:** Admin, Member, Viewer\n\n#### Update Task\n```\nPUT /tasks/{task_id}\n```\n**Headers:** `X-Tenant-ID: ws_123`\n**Permissions:** Admin, Member (own/assigned tasks)\n\n#### Bulk Update Tasks\n```\nPATCH /projects/{project_id}/tasks/bulk\n```\n**Headers:** `X-Tenant-ID: ws_123`\n**Request:**\n```json\n{\n  \"task_ids\": [\"task_1\", \"task_2\", \"task_3\"],\n  \"updates\": {\n    \"status\": \"completed\",\n    \"completed_at\": \"2024-01-15T10:30:00Z\"\n  }\n}\n```\n**Permissions:** Admin only\n\n#### Delete Task\n```\nDELETE /tasks/{task_id}\n```\n**Headers:** `X-Tenant-ID: ws_123`\n**Permissions:** Admin only\n\n### 8.4 Comments\n\n#### Create Comment\n```\nPOST /tasks/{task_id}/comments\n```\n**Headers:** `X-Tenant-ID: ws_123`\n**Request:**\n```json\n{\n  \"content\": \"Please review the attached design files\",\n  \"attachments\": [\n    {\n      \"type\": \"file\",\n      \"url\": \"https://cdn.taskmanager.com/files/design.pdf\",\n      \"name\": \"design_mockup.pdf\"\n    }\n  ],\n  \"mentions\": [\"user_789\", \"user_999\"]\n}\n```\n**Permissions:** Admin, Member\n\n#### List Comments\n```\nGET /tasks/{task_id}/comments\n```\n**Query params:** `?sort=created_at&include_deleted=false`\n**Headers:** `X-Tenant-ID: ws_123`\n**Permissions:** Admin, Member, Viewer\n\n#### Update Comment\n```\nPATCH /comments/{comment_id}\n```\n**Headers:** `X-Tenant-ID: ws_123`\n**Permissions:** Admin, Member (own comments)\n\n#### Delete Comment\n```\nDELETE /comments/{comment_id}\n```\n**Headers:** `X-Tenant-ID: ws_123`\n**Request:**\n```json\n{\n  \"reason\": \"Inappropriate content\",\n  \"permanent\": false\n}\n```\n**Permissions:** Admin, Member (own comments)\n\n### 8.5 User Management\n\n#### Add User to Workspace\n```\nPOST /workspaces/{workspace_id}/members\n```\n**Headers:** `X-Tenant-ID: ws_123`\n**Request:**\n```json\n{\n  \"user_id\": \"user_999\",\n  \"role\": \"member\",\n  \"projects\": [\"proj_1\", \"proj_2\"]\n}\n```\n**Permissions:** Admin only\n\n#### Update User Role\n```\nPATCH /workspaces/{workspace_id}/members/{user_id}\n```\n**Headers:** `X-Tenant-ID: ws_123`\n**Permissions:** Admin only\n\n#### Remove User from Workspace\n```\nDELETE /workspaces/{workspace_id}/members/{user_id}\n```\n**Headers:** `X-Tenant-ID: ws_123`\n**Permissions:** Admin only\n\n## 9. Webhooks\n\n### Available Events\n- `workspace.created`\n- `project.created`, `project.updated`, `project.deleted`\n- `task.created`, `task.updated`, `task.deleted`, `task.completed`\n- `comment.created`, `comment.updated`, `comment.deleted`\n\n### Register Webhook\n```\nPOST /webhooks\n```\n**Headers:** `X-Tenant-ID: ws_123`\n**Request:**\n```json\n{\n  \"url\": \"https://webhook.acme.com/task-events\",\n  \"events\": [\"task.created\", \"task.completed\"],\n  \"secret\": \"whsec_abc123\",\n  \"active\": true\n}\n```\n\n## 10. Search\n\n### Global Search\n```\nGET /search\n```\n**Query params:** `?q=design+mockup&types=task,project&limit=20`\n**Headers:** `X-Tenant-ID: ws_123`\n**Response:**\n```json\n{\n  \"results\": {\n    \"tasks\": [...],\n    \"projects\": [...],\n    \"comments\": [...]\n  },\n  \"total\": 45\n}\n```\n\n## 11. Data Models\n\n### Task Status Flow\n```\ntodo → in_progress → review → done\n           ↓           ↓\n        blocked     rejected\n```\n\n### Priority Levels\n- `critical` (P0)\n- `high` (P1)\n- `medium` (P2)\n- `low` (P3)\n\n## 12. Versioning\n- API version in URL path (`/v1/`)\n- Deprecation: `Deprecation: true` header with `Sunset: <date>` for deprecated endpoints\n- Breaking changes require new version\n\n## 13. Response Headers\n- `X-Request-ID` - Unique request identifier\n- `X-API-Version` - API version\n- `X-Tenant-ID` - Confirmed tenant ID\n- `Content-Type: application/json`\n\n## 14. Performance Considerations\n- Maximum response time: 500ms for 95th percentile\n- Implement caching with `Cache-Control` headers\n- Database indexing on: `tenant_id`, `created_at`, `status`, `assignee_id`\n- Support `If-Modified-Since` and `ETag` for conditional requests\n\n## 15. Monitoring & Analytics\n- Log all requests with: tenant_id, user_id, endpoint, duration, status\n- Track rate limit usage\n- Monitor error rates by endpoint and tenant\n- Alert on 5xx errors > 1% for 5 minutes",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (9317 chars)",
+          "✓ Content length: 9317 ≥ 1500"
+        ]
+      }
+    },
+    {
+      "id": "event-conference-planning",
+      "status": "ok",
+      "elapsed": 106169,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "We're organizing a 500-person tech conference in 4 months. Build a workflow covering venue booking, speaker management, sponsorship sales, marketing campaign, registration system, A/V setup, catering, and day-of logistics.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building comprehensive conference execution workflow with parallel tracks and feedback loops.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Conference Kickoff & Planning",
+              "category": "trigger",
+              "description": "Initial event definition, budget approval, and core team assembly",
+              "content": "**Event Foundation Setup:**\n1. **Executive Approval:** Secure board/stakeholder sign-off on $500K budget, dates (4-month timeline), and event vision (tech innovation theme). Document in Confluence with ROI projections (target: 500 attendees, 40% enterprise).\n2. **Core Team Assembly:** Assign roles: Event Director (owner), Operations Lead, Marketing Lead, Sponsorship Sales Lead, Speaker Curator, Tech/AV Lead. Establish daily 15-min standups via Slack/Teams.\n3. **Tool Stack Setup:** Configure Asana/Jira for task tracking, HubSpot for CRM (sponsors/attendees), Eventbrite for registration, Airtable for speaker database, and Google Workspace for docs.\n4. **Milestone Calendar:** Create Gantt chart with critical deadlines: Venue contract signed by Month 1, speaker lineup locked by Month 2, sponsorship 80% sold by Month 3, marketing campaign launch by Month 2.5.\n5. **Risk Register:** Identify top risks: venue cancellation (mitigation: backup venue option), speaker dropouts (backup list), sponsor default (25% deposit required)."
+            },
+            {
+              "label": "Venue & Logistics Procurement",
+              "category": "action",
+              "description": "Secure venue, catering, A/V equipment, and transportation",
+              "content": "**Physical Infrastructure Setup:**\n1. **Venue Selection:** RFP to 3-5 tech-friendly venues (capacity 600+, downtown location, high-speed internet). Evaluate based on cost ($50-80K), breakout rooms (8+), load-in access. Negotiate contract with cancellation clause, insurance requirements, and AV partnership discounts.\n2. **Catering Contract:** Menu planning for 500 (dietary restrictions: 15% vegan/gluten-free). Contract with venue or external caterer for breakfast, lunch, 2 coffee breaks. Tasting session scheduled 6 weeks pre-event. Final headcount due 72 hours prior.\n3. **A/V Production:** Hire external AV company (budget: $25K). Requirements: main stage with dual projectors, 4K streaming capability, 8 wireless mics, simultaneous translation equipment (if international), green room monitors. Technical rehearsal scheduled 2 days before event.\n4. **Transportation & Accommodation:** Block 100 hotel rooms at 3 nearby hotels (10% discount). Arrange shuttle service from hotels to venue during peak hours. Uber/Lyft promo code for attendees.\n5. **Permits & Insurance:** Secure event liability insurance ($2M coverage). Obtain city permits for signage, alcohol service (if applicable), and fire marshal occupancy certificate."
+            },
+            {
+              "label": "Speaker Curation & Content Development",
+              "category": "action",
+              "description": "Recruit speakers, develop session content, and manage speaker logistics",
+              "content": "**Content Pipeline Execution:**\n1. **Speaker Outreach:** Target 40 speakers (30% female/diverse). Use Airtable to track: prospects (100), contacted (80), confirmed (40). Outreach via LinkedIn, past attendee lists, partner referrals. Offer: complimentary ticket + travel stipend ($500) for non-sponsored speakers.\n2. **Content Development:** Speaker onboarding kit with deadlines: abstracts due 10 weeks out, slides due 2 weeks out. Schedule 3 content review calls with Speaker Curator. Track in Airtable with status: confirmed → abstract submitted → slides received → rehearsed.\n3. **Speaker Logistics:** Travel coordination (flights booked 6 weeks prior), hotel booking (speaker block), ground transportation. Green room setup with refreshments, private Wi-Fi, and presentation preview station.\n4. **Session Scheduling:** Build agenda with 4 parallel tracks (engineering, product, leadership, emerging tech). Balance big-name keynotes with breakout sessions. Avoid topic overlap. Publish agenda 4 weeks pre-event via mobile app.\n5. **Rehearsals:** Mandatory tech rehearsal for all speakers (virtual option available). Schedule: 15-min slots over 2 days pre-event. Provide feedback on timing, AV compatibility, and content clarity."
+            },
+            {
+              "label": "Sponsorship Sales & Partner Management",
+              "category": "action",
+              "description": "Sell sponsorship packages, manage partner deliverables, and coordinate branding",
+              "content": "**Revenue Generation Execution:**\n1. **Tiered Packages:** Create 4 tiers: Platinum ($25K - main stage branding, 10 tickets), Gold ($15K - booth, 6 tickets), Silver ($8K - logo placement, 4 tickets), Startup ($3K - digital only). Include deliverables: booth space, logo placement, speaking slots (Platinum only), attendee list access.\n2. **Sales Pipeline:** Target 30 sponsors (mix: 5 Platinum, 10 Gold, 10 Silver, 5 Startup). Use HubSpot to track leads (100), proposals sent (60), contracts signed (30). Sales cycle: outreach → discovery call → proposal → contract → payment (50% deposit).\n3. **Partner Onboarding:** Sponsor kit with deadlines: logo assets (8 weeks out), booth specifications (6 weeks), swag delivery (2 weeks). Dedicated account manager for Platinum/Gold sponsors.\n4. **Booth Management:** Floor plan design (20×20 booths for Platinum, 10×10 for others). Coordinate power, internet, furniture rentals. Booth setup schedule: day before event, 8am-6pm.\n5. **ROI Reporting:** Post-event sponsor report with metrics: booth traffic, lead scans, session attendance, social media mentions. Delivered 2 weeks post-event."
+            },
+            {
+              "label": "Marketing & Registration Campaign",
+              "category": "action",
+              "description": "Drive attendee acquisition through multi-channel marketing and registration management",
+              "content": "**Audience Acquisition Execution:**\n1. **Multi-Channel Campaign:** Timeline: Launch 10 weeks out. Channels: LinkedIn Ads (target: tech titles, $15K budget), email nurture (3 sequences via HubSpot), partner co-marketing (sponsor newsletters), organic social (Twitter/LinkedIn daily posts). Content: speaker announcements, agenda previews, venue highlights.\n2. **Registration System:** Eventbrite setup with 3 ticket tiers: Early Bird ($299, first 100), Regular ($499), Last Minute ($699). Collect: name, title, company, email, dietary restrictions, session preferences. Integrate with badge printing system.\n3. **Website & Mobile App:** Event website (Squarespace) with agenda, speaker bios, sponsor showcase. Mobile app (Cvent) launched 4 weeks pre-event with personalized schedules, networking features, and push notifications.\n4. **Promotional Activities:** Referral program (bring 3 colleagues = 20% discount). Press outreach to 20 tech publications. VIP invites for industry influencers (50 comp tickets).\n5. **Attendance Projections:** Weekly tracking: registrations vs. goal (500). Conversion rate from website visits (target: 5%). Adjust ad spend based on performance. Final push 2 weeks pre-event."
+            },
+            {
+              "label": "Pre-Event Quality Gates",
+              "category": "review",
+              "description": "Executive review of all tracks before final execution phase",
+              "content": "**Cross-Functional Readiness Review:**\n1. **Review Panel:** Event Director, Finance Controller, Legal Counsel, Marketing Lead. Scheduled 3 weeks pre-event for 4-hour deep dive.\n2. **Checklist Criteria:**\n   - **Venue:** Contract executed, deposit paid, floor plan approved, insurance certificates received.\n   - **Speakers:** 95% confirmed, 80% slides received, rehearsal schedule published.\n   - **Sponsors:** 100% contracts signed, 90% payments received, booth assignments finalized.\n   - **Marketing:** Registration at 80% capacity (400/500), marketing spend within 10% of budget.\n   - **Operations:** Catering headcount submitted, AV run-of-show document approved, staff schedule created.\n3. **Approval Process:** Green light = proceed to execution. Yellow = 1-2 items need resolution within 48 hours. Red = major gap requiring immediate escalation.\n4. **Escalation Path:** Unresolved items go to steering committee (VP level) within 24 hours. Budget override authority up to $10K.\n5. **Documentation:** Sign-off recorded in Asana with comments. Updated risk register distributed to all leads."
+            },
+            {
+              "label": "Day-of Execution & Logistics",
+              "category": "action",
+              "description": "On-site event management, attendee experience, and real-time problem solving",
+              "content": "**Live Event Operations:**\n1. **Staff Briefing:** 7am daily briefing for 50 staff/volunteers. Roles: registration (8), session monitors (12), sponsor liaison (6), AV support (4), floater/problem solvers (5). Communication via Motorola radios and Slack channel.\n2. **Attendee Flow:** Registration opens 7:30am (10 stations with badge printers). Session transitions managed by hallway monitors. Lunch served in 3 waves (12-1:30pm) to prevent crowding.\n3. **AV Execution:** Dedicated technician per track. Backup equipment on standby (2 extra projectors, 4 mics). Live streaming monitored in control room with 2-person team.\n4. **Real-Time Monitoring:** Dashboard with key metrics: registration check-ins (target: 90% by 9am), session attendance (capacity alerts), social media mentions (display in command center).\n5. **Problem Resolution Protocol:** Issue categorization: P1 (event-stopping - e.g., power outage) → Event Director immediate response. P2 (attendee experience - e.g., room overflow) → Operations Lead within 15 minutes. P3 (minor - e.g., signage) → resolved within 1 hour."
+            },
+            {
+              "label": "Post-Event Analysis & Reporting",
+              "category": "output",
+              "description": "Comprehensive event wrap-up, ROI calculation, and deliverables distribution",
+              "content": "**Post-Event Deliverables Package:**\n1. **Data Collection:** Post-event survey (SurveyMonkey) sent within 24 hours (target 40% response). Track: NPS (target: +50), session ratings (scale 1-5), overall satisfaction (target: 4.5/5). Registration data analysis: demographics, company size, geographic distribution.\n2. **Financial Reconciliation:** Final budget vs. actuals report. Revenue: ticket sales ($200K target), sponsorship ($400K target). Expenses: venue ($60K), catering ($40K), AV ($25K), marketing ($30K). Net profit calculation and variance analysis.\n3. **Stakeholder Reports:**\n   - **Executive Summary:** 2-page PDF with key metrics, ROI (target: 3:1), lessons learned.\n   - **Sponsor Reports:** Customized for each tier with their specific metrics (booth traffic, lead scans).\n   - **Speaker Packages:** Video recordings (edited, branded), presentation slides bundle, thank-you gifts.\n4. **Content Distribution:** Session videos uploaded to YouTube within 2 weeks. Slide deck repository shared with attendees. Highlight reel (3-min) for social media promotion.\n5. **Post-Mortem & Archive:** Lessons learned document with what worked (repeat), what didn't (fix), and innovations (scale). All assets archived in Google Drive for next year's planning. Final report delivered to stakeholders 3 weeks post-event."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "drives"
+            },
+            {
+              "from": 0,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 0,
+              "to": 3,
+              "label": "drives"
+            },
+            {
+              "from": 0,
+              "to": 4,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "triggers"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "outputs"
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 4,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 105,
+        "maxScore": 105,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 6)",
+          "✓ Node count: 8 ≤ 10",
+          "✓ All 12 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 1167c, no thin nodes",
+          "✓ Architecture covers: venue, speaker, sponsor, registr",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (12 edges, 8 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "government-procurement",
+      "status": "ok",
+      "elapsed": 68217,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Build a government procurement workflow for a city agency buying a new fleet management system. Steps: needs assessment, RFP drafting, vendor solicitation, proposal evaluation, compliance review, contract award, and implementation oversight. Must follow public procurement regulations.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, mon ami! A procurement case worthy of the little grey cells. Let us construct this workflow with the precision of a detective examining evidence—each node a clue in the proper acquisition of municipal fleet management.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Procurement Trigger & Needs Assessment",
+              "category": "trigger",
+              "description": "Official authorization to begin procurement process and comprehensive needs analysis",
+              "content": "**Step 1: Official Authorization** - Obtain signed procurement request form from department head with budget allocation approval. **Step 2: Stakeholder Workshops** - Conduct 3-5 facilitated sessions with fleet managers, finance department, IT staff, and end-users to document functional requirements. **Step 3: Gap Analysis** - Compare current fleet management capabilities against industry benchmarks using tools like Gartner Magic Quadrant for fleet software. **Step 4: Requirements Documentation** - Create weighted scoring matrix with 30-50 specific requirements categorized as mandatory (must-have), important (should-have), and desirable (nice-to-have). **Step 5: Regulatory Checklist** - Verify alignment with Federal Acquisition Regulation (FAR) Part 8, state procurement codes, and municipal purchasing ordinances. Document all findings in formal Needs Assessment Report (minimum 15 pages with appendices)."
+            },
+            {
+              "label": "RFP Development & Legal Review",
+              "category": "action",
+              "description": "Creation of Request for Proposal document with legal compliance verification",
+              "content": "**Step 1: RFP Template Selection** - Use municipal-approved RFP template (Form PROC-2024-A) with sections for technical specifications, evaluation criteria, submission requirements, and contract terms. **Step 2: Technical Specifications** - Detail required features: GPS tracking, maintenance scheduling, fuel management, compliance reporting (DOT/FMCSA), integration capabilities (APIs for existing systems). **Step 3: Evaluation Criteria Weighting** - Establish scoring: Technical Approach (40%), Vendor Experience (25%), Cost (20%), Implementation Plan (15%). **Step 4: Legal Compliance Review** - Submit draft to City Attorney's Office for review against: Competitive Bidding Laws, Americans with Disabilities Act (ADA) compliance, Data Privacy Regulations (state-specific), Insurance Requirements. **Step 5: Finalization** - Incorporate legal feedback, obtain Procurement Director signature, assign RFP tracking number, set submission deadline (minimum 45 days for responses)."
+            },
+            {
+              "label": "Vendor Outreach & Proposal Collection",
+              "category": "action",
+              "description": "Public solicitation and management of vendor responses",
+              "content": "**Step 1: Public Notice Publication** - Publish RFP in: Official City Newspaper (3 consecutive weeks), State Procurement Portal, Government Fleet Magazine, and City Website. **Step 2: Pre-Proposal Conference** - Host mandatory virtual conference for interested vendors (record session, publish Q&A). **Step 3: Vendor Qualification** - Require submission of: Business License, Financial Statements (past 3 years), References (3 government clients), Certifications (Minority/Women-owned Business if applicable). **Step 4: Proposal Management** - Use procurement software (like Bonfire or Periscope) to track submissions, ensure timely receipt, and maintain audit trail. **Step 5: Initial Screening** - Verify completeness: All required forms, bonds (bid bond 5% of estimated contract value), signed affidavits (non-collusion, conflict of interest). Create master tracking spreadsheet with submission timestamps."
+            },
+            {
+              "label": "Technical Evaluation Committee",
+              "category": "review",
+              "description": "Cross-departmental committee scoring technical proposals",
+              "content": "**Step 1: Committee Formation** - Appoint 5 members: Fleet Manager (chair), IT Director, Finance Representative, Operations Supervisor, External Consultant (if budget allows). **Step 2: Evaluation Training** - Conduct 4-hour training on: Scoring consistency, Bias avoidance, Confidentiality requirements, Conflict of interest declarations. **Step 3: Individual Scoring** - Each member scores proposals independently using evaluation matrix with 1-5 scale for each criterion. **Step 4: Consensus Meeting** - Facilitated discussion to resolve scoring discrepancies >1.5 points. **Step 5: Shortlisting** - Select top 3 vendors based on technical score (minimum 80/100 threshold). Document all scoring with rationale for each decision. Create Technical Evaluation Report with vendor rankings and strengths/weaknesses analysis."
+            },
+            {
+              "label": "Compliance & Financial Review",
+              "category": "policy",
+              "description": "Parallel verification of regulatory compliance and cost analysis",
+              "content": "**Step 1: Regulatory Compliance Audit** - Verify each shortlisted vendor against: Equal Employment Opportunity (EEO) compliance, Environmental Regulations (EPA standards), Cybersecurity Requirements (NIST SP 800-171), Accessibility Standards (Section 508). **Step 2: Cost Analysis** - Calculate Total Cost of Ownership: Software licensing (per vehicle/month), Implementation costs, Training expenses, Maintenance fees, Hardware requirements. **Step 3: Financial Viability Check** - Review vendor financials: Debt-to-equity ratio (<2:1), Current ratio (>1.5:1), Profitability trends. **Step 4: Reference Validation** - Contact all provided references with structured questionnaire (system uptime, support responsiveness, implementation success). **Step 5: Site Visits** - Visit 1-2 existing installations (similar municipality size) to observe system in operation. Document findings in Compliance Verification Report with pass/fail status for each requirement."
+            },
+            {
+              "label": "Contract Negotiation & Award",
+              "category": "action",
+              "description": "Final vendor selection and contract execution",
+              "content": "**Step 1: Best & Final Offer** - Request revised proposals from top 2 vendors addressing identified gaps. **Step 2: Negotiation Team** - Assemble negotiation team: Procurement Officer, City Attorney, Fleet Manager, IT Representative. **Step 3: Contract Terms** - Negotiate: Service Level Agreements (99.5% uptime), Response times (critical issues: 2 hours), Penalties for non-performance, Data ownership clauses, Exit strategy/transition plan. **Step 4: City Council Approval** - Prepare presentation for council meeting: Executive summary, Cost-benefit analysis, Committee recommendations. **Step 5: Contract Execution** - Obtain required signatures: Vendor CEO, City Mayor, Procurement Director, City Clerk. Issue Notice to Proceed with effective date. Publish award notice per transparency requirements."
+            },
+            {
+              "label": "Implementation Oversight & Acceptance",
+              "category": "output",
+              "description": "Project management of system deployment and final acceptance",
+              "content": "**Step 1: Project Kickoff** - Formal meeting with vendor project manager, establish communication protocol (weekly status reports, escalation matrix). **Step 2: Implementation Plan** - Detailed timeline: Data migration (4 weeks), Hardware installation (2 weeks), User training (3 weeks), Parallel testing (2 weeks). **Step 3: Quality Assurance** - Conduct User Acceptance Testing (UAT) with 10-15 test scenarios covering all critical functions. **Step 4: Performance Validation** - 30-day pilot with 20% of fleet, monitoring: System response time (<3 seconds), Data accuracy (>99%), User satisfaction (survey). **Step 5: Final Acceptance** - Sign-off checklist: All modules functional, Training completed, Documentation received, Support transitioned to maintenance phase. Issue final payment upon acceptance. Create Project Closure Report with lessons learned and ROI calculations for future reference."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "triggers"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "requires"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "validates"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "outputs"
+            },
+            {
+              "from": 3,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 3,
+              "label": "monitors"
+            },
+            {
+              "from": 6,
+              "to": 0,
+              "label": "informs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 115,
+        "maxScore": 115,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ Has \"policy\" category",
+          "✓ Has \"review\" category",
+          "✓ All 9 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 899c, no thin nodes",
+          "✓ Architecture covers: rfp, vendor, compliance, contract",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (9 edges, 7 nodes)"
+        ]
+      }
+    }
+  ]
+}

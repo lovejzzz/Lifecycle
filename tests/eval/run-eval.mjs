@@ -492,6 +492,80 @@ const POOL = [
     prompt: 'OK so here is the situation. We are a 50-person B2B SaaS company selling project management tools. Our current release process is a total disaster. Here is what happens: developers commit to main whenever they want, sometimes 20 times a day. There are no feature flags. QA is one person named Sarah who manually tests everything on her laptop. We have no staging environment — we test in production. Deployments are done by the CTO via SSH at 2am because that is when traffic is lowest. Last month we had three outages because untested code went live. The board is furious. The CTO wants to fix this but does not know where to start. Can you build us a proper release management workflow that covers feature development, code review, automated testing, staging, release approval, deployment, and rollback?',
     expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['test', 'review'], mustMentionInNodes: ['review|code review|pr', 'test|automat|ci', 'staging|stage', 'deploy|release|rollback'] },
   },
+
+  // ─── Round 91 additions ─────────────────────────────────────────────────────
+
+  // Cybersecurity — new domain, tests policy-heavy workflow with dependency nodes
+  {
+    id: 'cybersecurity-incident-response',
+    agent: 'rowan', taskType: 'generate',
+    prompt: 'Build an incident response plan workflow for our SOC team. Cover: alert triage, severity classification (P1-P4), containment procedures, evidence collection, root cause analysis, remediation, stakeholder communication, and post-incident review. We handle 200 alerts/day and need to respond to P1s within 15 minutes.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['policy'], mustMentionInNodes: ['triage|alert|classify', 'contain|isolat', 'evidence|forensic', 'remediat|fix|patch'] },
+  },
+
+  // Poirot advice on startup growth — tests strategic analysis with competing priorities
+  {
+    id: 'startup-advice-growth',
+    agent: 'poirot', taskType: 'analyze',
+    prompt: 'We are a pre-seed startup with $150k in the bank, 2 founders, and a working MVP with 50 beta users. Our MRR is $800. We have interest from an angel who wants to invest $500k at a $5M valuation but wants us to pivot from B2C to B2B. Our users love the product. Should we take the money and pivot, or try to grow organically?',
+    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 250 },
+  },
+
+  // ─── Round 92 additions ─────────────────────────────────────────────────────
+
+  // Agriculture / farming — new domain, tests workflow for seasonal + weather-dependent process
+  {
+    id: 'agriculture-crop-management',
+    agent: 'rowan', taskType: 'generate',
+    prompt: 'Build a crop management workflow for a 500-acre corn farm. Cover: soil testing, seed selection, planting schedule, irrigation management, pest monitoring, fertilizer application, harvest planning, and post-harvest storage. We need to optimize yield while staying within a $200k annual budget.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustMentionInNodes: ['soil|test', 'plant|seed', 'irrigat|water', 'harvest|storage'] },
+  },
+
+  // Execute task — Rowan generates a technical architecture decision record
+  {
+    id: 'execute-adr',
+    agent: 'rowan', taskType: 'execute',
+    systemPromptOverride: 'You are a content generator for a workflow node called "Architecture Decision Record" (category: artifact). Write detailed, professional technical content. Return ONLY the content as markdown text. Do not wrap in JSON or code blocks.',
+    prompt: 'Write an Architecture Decision Record (ADR) for choosing between a monolithic and microservices architecture for a fintech payment processing platform. The system needs to handle 10,000 transactions per second, maintain PCI-DSS compliance, and support 5 development teams working independently. Include context, decision drivers, options considered, decision outcome, and consequences.',
+    expect: { hasContent: true, minContentLen: 1500 },
+  },
+
+  // ─── Round 93 additions ─────────────────────────────────────────────────────
+
+  // Healthcare / clinical trials — new domain, tests compliance + review-heavy workflow with patient safety
+  {
+    id: 'healthcare-clinical-trial',
+    agent: 'poirot', taskType: 'generate',
+    prompt: 'Build a workflow for managing a Phase II clinical trial for a new diabetes drug. Steps: protocol design, IRB approval, patient recruitment and screening, drug administration, adverse event monitoring, data collection and analysis, interim review, and final report to the FDA. We need to enroll 200 patients across 4 sites over 12 months.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['policy', 'review'], mustMentionInNodes: ['protocol|irb|ethic', 'recruit|patient|screen', 'adverse|safety|monitor', 'fda|report|analys'] },
+  },
+
+  // Execute task — Rowan generates a technical post-mortem document
+  {
+    id: 'execute-postmortem',
+    agent: 'rowan', taskType: 'execute',
+    systemPromptOverride: 'You are a content generator for a workflow node called "Post-Mortem Report" (category: artifact). Write detailed, professional technical content in a blameless post-mortem style. Return ONLY the content as markdown text. Do not wrap in JSON or code blocks.',
+    prompt: 'Write a post-mortem for a 4-hour production outage where a database migration deleted the users table index, causing all login queries to full-scan a 50M row table. Response times went from 50ms to 45 seconds. The migration was tested locally with 1000 rows and passed. Oncall was paged at 2am, identified the issue at 3am, rebuilt the index at 3:30am, full recovery at 6am. 12,000 users were affected.',
+    expect: { hasContent: true, minContentLen: 1500 },
+  },
+
+  // ─── Round 94 additions ─────────────────────────────────────────────────────
+
+  // Legal / contract lifecycle — new domain, tests review-heavy workflow with compliance gates
+  {
+    id: 'legal-contract-review',
+    agent: 'poirot', taskType: 'generate',
+    prompt: 'Build a contract lifecycle management workflow for our legal team. We handle 50 contracts/month: NDAs, vendor agreements, and enterprise SaaS licenses. Steps: intake request, drafting, internal legal review, counterparty negotiation, approval, e-signature, and obligation tracking post-signing. We need SLA of 5 business days for standard NDAs.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['review', 'policy'], mustMentionInNodes: ['draft|template', 'review|legal', 'negotiat|counterpart', 'sign|execut'] },
+  },
+
+  // Edge case: ambiguous intent — prompt that sounds like it could be advice OR a workflow, tests intent detection
+  {
+    id: 'edge-ambiguous-intent',
+    agent: 'rowan', taskType: 'generate',
+    prompt: 'We need to figure out our disaster recovery strategy. Our main database is PostgreSQL on AWS RDS, we have 2TB of data, RPO needs to be under 1 hour, and RTO under 4 hours. We currently have no backups besides the default RDS snapshots. Set something up for us.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustMentionInNodes: ['backup|snapshot|replica', 'failover|recovery|restore', 'test|drill|validat'] },
+  },
 ];
 
 // ─── Agent System Prompts (synced with src/lib/prompts.ts) ─────────────────
