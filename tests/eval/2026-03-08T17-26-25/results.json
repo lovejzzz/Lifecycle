@@ -1,0 +1,409 @@
+{
+  "timestamp": "2026-03-08T17-26-25",
+  "overall": 99,
+  "testsRun": [
+    "execute-incident-postmortem",
+    "execute-job-description",
+    "personality-rowan-empty",
+    "eng-advice-architecture",
+    "logistics-warehouse-fulfillment",
+    "edge-ultra-short-prompt"
+  ],
+  "poolSize": 82,
+  "results": [
+    {
+      "id": "execute-incident-postmortem",
+      "status": "ok",
+      "elapsed": 75693,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Write a blameless post-mortem for a 2-hour production outage caused by a database migration that locked a critical table. 500 customers were affected. Include timeline, root cause, impact, and action items.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "**Post-Mortem Report: Production Outage Due to Database Table Lock**\n\n**Date of Incident:** October 26, 2023\n**Report Date:** October 27, 2023\n**Status:** RESOLVED\n\n---\n\n### **Executive Summary**\nOn October 26, 2023, from approximately 14:15 UTC to 16:22 UTC, the primary application experienced a full outage, rendering all customer-facing services unavailable. The outage was triggered by a scheduled database migration that placed a long-held exclusive lock on a critical, high-traffic table. This lock blocked all read and write operations to the core service, leading to a cascade of failures. Approximately 500 active customers were unable to access the service during this period. This report details the timeline, root cause, impact, and the corrective actions we are taking to prevent recurrence.\n\n**Key Principle:** This is a blameless post-mortem. The focus is on understanding the systemic and procedural factors that allowed this incident to occur, not on attributing fault to individuals.\n\n---\n\n### **Timeline (All times in UTC)**\n*   **13:00:** Database migration (`ALTER TABLE orders ADD COLUMN processed_by_v2 BOOLEAN DEFAULT FALSE;`) was initiated via the standard deployment pipeline during a perceived low-traffic window.\n*   **14:15:** First alerts fire indicating a sharp rise in database connection timeouts and application error rates (>95%). The migration is still running.\n*   **14:20:** On-call engineer is paged, begins investigation. Initial diagnosis points to database performance degradation.\n*   **14:35:** Engineer identifies the running migration job and observes a growing number of queries waiting on the `orders` table lock. The severity is escalated.\n*   **14:50:** Decision is made to abort the migration. The `KILL` command is issued for the migration session.\n*   **15:10:** After the abort, the database begins a rollback procedure for the incomplete migration. Table locks persist during rollback.\n*   **16:05:** Rollback completes. Locks are released on the `orders` table.\n*   **16:15:** Application services automatically begin recovering as database connections are restored.\n*   **16:22:** All systems confirmed operational. Monitoring shows error rates returned to baseline.\n\n---\n\n### **Root Cause Analysis**\nThe direct cause of the outage was a schema migration that required an exclusive lock on the `orders` table for its entire duration. Because this table is central to nearly all application transactions and was larger than anticipated, the migration took over an hour to complete, during which time all application threads attempting to access the table were blocked.\n\nThe underlying, systemic root causes were:\n\n1.  **Inadequate Pre-Migration Analysis:** The migration was performed using a standard `ALTER TABLE` statement without assessing the size of the table (over 50 million rows) or the locking implications. No dry-run or performance impact analysis was conducted in the staging environment, which does not mirror production data volume.\n2.  **Process Gap for High-Risk Migrations:** The change management process did not differentiate between low-risk and high-risk database operations. A migration on a critical table followed the same approval path as a minor index addition.\n3.  **Lack of Real-Time Lock Monitoring:** While database performance was monitored, there was no specific alert for long-held exclusive locks on critical tables, delaying the time to detection.\n4.  **Insufficient Rollback Planning:** The procedure for aborting a migration-in-progress was not documented or practiced. The rollback performed by the database engine upon abort was itself a lengthy, locking operation, which extended the total outage time.\n\n---\n\n### **Impact**\n*   **Service Degradation:** 100% loss of service availability for the primary application for **2 hours and 7 minutes**.\n*   **Customers Affected:** ~500 active customers during the incident window were unable to access the platform.\n*   **Business Impact:** An estimated 150 transaction attempts failed. Customer support received 85 related tickets.\n*   **Team Impact:** The incident required the full engagement of the on-call engineer and escalated to involve 3 additional engineers from the platform and database teams, consuming approximately 12 person-hours.\n\n---\n\n### **Action Items & Follow-up**\nThe following action items have been created to address the root causes and improve system resilience.\n\n| ID | Action Item | Owner | Target Date | Status |\n| :--- | :--- | :--- | :--- | :--- |\n| **PM-2023-001** | **Implement a Safe Migration Framework:** Define and enforce a new procedure for schema changes on critical tables. This will require using non-locking tools (e.g., `pt-online-schema-change`), mandatory staging environment dry-runs with production-like data volumes, and explicit approval for high-risk changes. | Platform Lead | Nov 30, 2023 | Not Started |\n| **PM-2023-002** | **Enhance Database Monitoring:** Create a dedicated dashboard and alert for long-running transactions and exclusive locks held on critical tables for >30 seconds. | SRE Team | Nov 15, 2023 | Not Started |\n| **PM-2023-003** | **Establish a Low-Traffic Maintenance Window:** Officially define, communicate, and enforce a standardized weekly maintenance window for high-impact operations, based on historical traffic data. | Head of Engineering | Nov 10, 2023 | Not Started |\n| **PM-2023-004** | **Develop and Document Rollback Playbooks:** Create and socialize step-by-step playbooks for aborting and rolling back failed migrations, including expected timeframes and impact. | Database Team | Nov 20, 2023 | Not Started |\n| **PM-2023-005** | **Conduct a Process Review:** Facilitate a retrospective with all engineering teams to review the updated change management process and ensure clarity on classifying high-risk changes. | Engineering Manager | Dec 01, 2023 | Not Started |\n\n---\n\n### **Lessons Learned**\n1.  **Not All Changes Are Equal:** Our processes must reflect the inherent risk of operations. A change to a core table is fundamentally different from a change to a low-usage feature flag table.\n2.  **Understanding the Tool is Critical:** The choice of migration tool and its mechanics (locking vs. non-locking) is a primary determinant of operational safety, not an implementation detail.\n3.  **Detection Time is Key:** Improved, specific monitoring for blocking operations would have reduced the time to diagnosis and potentially allowed for intervention before customer impact became severe.\n4.  **Blameless Culture Enables Learning:** The team's open and factual discussion of the events allowed for a clear analysis of process failures without fear of reprisal, leading to more effective corrective actions.\n\n**Signed,**\nThe Platform Engineering Team",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (6783 chars)",
+          "✓ Content length: 6783 ≥ 300"
+        ]
+      }
+    },
+    {
+      "id": "execute-job-description",
+      "status": "ok",
+      "elapsed": 54397,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Write a job description for a Senior Full-Stack Engineer at a Series B fintech startup. Tech stack is React, Node.js, PostgreSQL, AWS. Remote-first, competitive equity.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "**Job Title: Senior Full-Stack Engineer**\n**Location: Remote-First (Global)**\n**Reports To: Head of Engineering**\n\n### About Us\n\nWe are a Series B fintech startup on a mission to democratize financial services and build a more inclusive economic future. Backed by leading venture capital firms, we are scaling rapidly and solving complex, meaningful problems at the intersection of finance and technology. Our culture is built on autonomy, ownership, and collaboration. We believe in building elegant, secure, and scalable systems that directly impact our customers' lives.\n\nAs a remote-first company, we champion asynchronous communication and empower our team to do their best work from anywhere in the world.\n\n### The Opportunity\n\nWe are seeking a Senior Full-Stack Engineer to join our core product team. You will be a pivotal player in designing, building, and scaling the next generation of our financial platform. This is a high-impact role where you will own significant features from conception to deployment, working across the entire stack to deliver robust and user-centric solutions. You will collaborate closely with product managers, designers, and other engineers to translate complex business requirements into technical reality.\n\n### What You'll Do\n\n*   **Design & Development:** Architect, develop, test, and maintain scalable, secure, and performant features across our frontend (React) and backend (Node.js) systems.\n*   **End-to-End Ownership:** Take full ownership of product features, from technical design and implementation to deployment, monitoring, and iterative improvement.\n*   **System Architecture:** Contribute to the evolution of our system architecture, making key decisions on patterns, tools, and technologies to ensure long-term scalability and reliability.\n*   **Collaborate Cross-Functionally:** Work directly with Product and Design to refine requirements, provide technical feasibility insights, and build intuitive user experiences.\n*   **Mentorship:** Act as a force multiplier for the team by providing technical guidance, conducting code reviews, and sharing best practices to elevate the engineering organization.\n*   **Quality & Security:** Uphold the highest standards of code quality, testing (unit, integration, E2E), and security, especially critical in a fintech environment handling sensitive financial data.\n*   **Cloud Infrastructure:** Build and optimize services within our AWS ecosystem, ensuring efficient, cost-effective, and resilient cloud operations.\n\n### What You Bring\n\n*   **5+ years** of professional software engineering experience with a proven track record of building and shipping complex web applications.\n*   **Deep expertise** in our core stack: modern **React** (with TypeScript preferred), **Node.js** (Express/NestJS or similar), **PostgreSQL** (or similar relational databases), and **AWS** services (e.g., EC2, RDS, Lambda, S3, ECS).\n*   **Full-Stack Proficiency:** Strong competency in both frontend and backend development, with the ability to navigate and contribute effectively across the entire application lifecycle.\n*   **System Design:** Experience designing distributed systems, RESTful/graphQL APIs, and data models for performance, scale, and maintainability.\n*   **Fintech/Compliance Mindset:** Familiarity with or a strong desire to learn the unique challenges of fintech, including security best practices, data privacy (GDPR, CCPA), and financial regulations.\n*   **Autonomy & Communication:** Excellent written and verbal communication skills. You thrive in a remote, asynchronous environment and can drive projects forward independently.\n*   **Problem-Solving:** A product-oriented mindset with a passion for solving customer problems through clean, pragmatic, and resilient code.\n\n### Bonus Points\n\n*   Experience in the fintech, banking, or payments industry.\n*   Knowledge of event-driven architectures and message brokers (e.g., Kafka, RabbitMQ).\n*   Experience with infrastructure-as-code (e.g., Terraform, CDK).\n*   Strong understanding of containerization and orchestration (Docker, Kubernetes).\n\n### What We Offer\n\n*   **Competitive Salary & Meaningful Equity:** A competitive salary package and a generous equity grant, aligning your success with the company's long-term growth.\n*   **Fully Remote Work:** Work from anywhere with a supportive, async-first culture. We provide a stipend to set up your home office.\n*   **Health & Wellness:** Comprehensive health, dental, and vision insurance.\n*   **Unlimited PTO:** We trust you to manage your time off to recharge and stay creative.\n*   **Learning & Development:** An annual stipend for conferences, courses, and books.\n*   **Team Retreats:** Regular in-person gatherings to connect, collaborate, and celebrate wins.\n\n### How to Apply\n\nIf you are passionate about building the future of finance and thrive in a fast-paced, collaborative environment, we would love to hear from you. Please submit your resume and a brief note explaining what excites you about this opportunity and our mission.\n\n*We are an equal opportunity employer and value diversity at our company. We do not discriminate on the basis of race, religion, color, national origin, gender, sexual orientation, age, marital status, veteran status, or disability status.*",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (5291 chars)",
+          "✓ Content length: 5291 ≥ 200"
+        ]
+      }
+    },
+    {
+      "id": "personality-rowan-empty",
+      "status": "ok",
+      "elapsed": 11025,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Mission update: we have an empty canvas and operational readiness. Deploy your intent, I'll architect the workflow. To advise: start with trigger nodes (e.g., webhook, manual trigger, scheduled event) followed by action phases with parallel testing/review branches. Specify your objective.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (289 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "eng-advice-architecture",
+      "status": "ok",
+      "elapsed": 43111,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We have a Django monolith serving 50k users. Page loads are 4-6 seconds, database has 200+ tables, and deployments take 45 minutes. The team wants to add real-time features. Should we refactor, rewrite, or bolt on new services?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Bolt on new services for real-time features while incrementally refactoring the monolith—rewriting is too risky. Use Django Channels for WebSockets, profile database with pg_stat_statements to optimize slow queries, and implement CI/CD with Docker to slash deployment times. Set clear metrics: aim for page loads under 3 seconds and deployments under 15 minutes within six months.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (380 chars)",
+          "✓ Message length: 380 ≥ 250"
+        ]
+      }
+    },
+    {
+      "id": "logistics-warehouse-fulfillment",
+      "status": "ok",
+      "elapsed": 185962,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Build a warehouse order fulfillment workflow. Steps: order received, inventory check, pick and pack, quality inspection, shipping label generation, carrier handoff, and delivery tracking. We process 500 orders/day with a 99.5% accuracy target.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Constructing warehouse order fulfillment workflow with accuracy enforcement and feedback loops.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Order Received",
+              "category": "trigger",
+              "description": "Event triggering the fulfillment process upon new order placement",
+              "content": "This node represents the initiation of the workflow when an order is received from an e-commerce platform or sales channel. Configure webhooks to listen for order events (e.g., from Shopify, WooCommerce, or custom APIs) with payload details including order ID, customer information, items, quantities, and shipping address. Set up automatic validation to ensure data integrity, filtering out duplicates or errors. Use tools like Zapier or custom middleware to parse and route orders to the warehouse management system (WMS). Log all incoming orders with timestamps and assign unique identifiers for traceability. Establish alerts for high-priority or bulk orders to prioritize processing. Integration should support JSON/XML formats and handle retries on failure to maintain reliability at 500 orders/day volume."
+            },
+            {
+              "label": "Inventory Verification",
+              "category": "action",
+              "description": "Check real-time stock availability for ordered items against warehouse inventory",
+              "content": "Execute a systematic inventory check using the WMS (e.g., SAP, Oracle, or custom solution) to confirm stock levels for each SKU in the order. Steps: 1. Query inventory database with order items, checking for available quantity, reserved stock, and backorder status. 2. Use barcode scanners or RFID to validate physical counts in designated storage zones. 3. If stock is insufficient, trigger automatic alerts to procurement or restock teams via Slack/email, and update order status to 'on hold'. 4. For available items, reserve inventory in the system to prevent overallocation. 5. Log discrepancies and initiate cycle counts if variance exceeds 0.5% to meet accuracy target. Tools include WMS dashboards, integration APIs, and error-handling scripts to retry or escalate after 3 failures. Owner: Inventory manager with SLA of 5 minutes per order."
+            },
+            {
+              "label": "Pick and Pack Operations",
+              "category": "action",
+              "description": "Retrieve items from storage and pack them securely for shipping",
+              "content": "Perform picking and packing based on optimized pick lists generated from verified orders. Steps: 1. Use mobile devices or pick-to-light systems to guide warehouse staff through zones, minimizing travel time. 2. Scan each item during picking to confirm accuracy against the order; if mismatch, halt and alert supervisor. 3. At packing stations, select appropriate box sizes using dimensioning tools, add padding, and seal with tamper-evident tape. 4. Insert packing slips, invoices, and promotional materials as per order configuration. 5. Weight each package and log dimensions for shipping cost calculation. Tools: WMS for task assignment, barcode scanners, scales, and packing software. Error handling includes re-pick if scans fail, with quality checks embedded. Target: complete within 15 minutes per order to maintain throughput."
+            },
+            {
+              "label": "Quality Control Inspection",
+              "category": "review",
+              "description": "Human review of packed orders to ensure compliance with quality standards",
+              "content": "Conduct a manual inspection to verify order accuracy and packaging integrity before shipping. Approval criteria: 1. Match packed items to order list via barcode scan; zero tolerance for item or quantity errors. 2. Check packaging for damage, proper sealing, and address label legibility. 3. Validate weight and dimensions against system entries; deviations >5% require rework. 4. Use a sampling method: inspect 20% of orders randomly, with 100% inspection for high-value or international shipments. Reviewers are trained QC staff with escalation to team lead for disputes. Defects are logged in a tracking system (e.g., Jira or custom dashboard) with root cause analysis. SLA: 2 minutes per inspection; if failed, edge refines back to Pick and Pack for correction."
+            },
+            {
+              "label": "Shipping Label Generation",
+              "category": "action",
+              "description": "Create and print shipping labels with carrier integration",
+              "content": "Generate shipping labels after quality approval, integrating with carrier APIs (e.g., UPS, FedEx, DHL). Steps: 1. Pull shipping address and package details from the WMS. 2. Use address validation services (like SmartyStreets) to correct errors and ensure deliverability. 3. Select optimal carrier and service level based on cost, speed, and destination; apply business rules for 500 orders/day. 4. Call carrier API to create label, retrieve tracking number, and calculate shipping costs. 5. Print labels on thermal printers, with backup for network failures. Tools: Shipping software (e.g., ShipStation, EasyPost), custom scripts for batch processing. Error handling includes retry logic and fallback to manual entry if API fails. Owner: Shipping coordinator with real-time monitoring."
+            },
+            {
+              "label": "Carrier Handoff",
+              "category": "action",
+              "description": "Transfer packages to shipping carrier for transit",
+              "content": "Coordinate the physical handoff of packages to the selected carrier. Steps: 1. Schedule pickups based on carrier cut-off times, using automated notifications or carrier portals. 2. Prepare shipping manifest with package counts, weights, and tracking numbers; verify against system records. 3. Load packages onto pallets or carts, ensuring secure stacking and proper documentation attached. 4. Conduct a final scan of each package as it leaves the warehouse, updating status to 'in transit'. 5. Handle exceptions: missed pickups trigger alerts to logistics team for rescheduling or drop-off. Tools: WMS for manifest generation, handheld scanners, and communication tools like Microsoft Teams. Owner: Logistics manager with daily reconciliation to prevent losses."
+            },
+            {
+              "label": "Delivery Tracking System",
+              "category": "state",
+              "description": "Monitor shipment status from carrier handoff to customer delivery",
+              "content": "Track the state of shipments in real-time using carrier APIs and provide updates. States include: 'in transit', 'out for delivery', 'delivered', 'exception' (e.g., delay, damage). Transitions: 1. Poll carrier APIs every hour for status changes; use webhooks for instant updates. 2. Update order status in WMS and notify customers via email/SMS upon key events (e.g., delivery confirmation). 3. For exceptions, trigger automated workflows: contact carrier for resolution, notify customer service, and log incidents. Tools: Integration platforms like MuleSoft, tracking dashboards, and alerting systems (PagerDuty). Maintain a log of all tracking data for analytics and accuracy reporting against the 99.5% target."
+            },
+            {
+              "label": "Accuracy Compliance Policy",
+              "category": "policy",
+              "description": "Enforcement rules to achieve and maintain 99.5% order accuracy target",
+              "content": "Define and monitor policies to ensure accuracy across the fulfillment process. Numbered rules: 1. All inventory checks must have a verification step with barcode scanning; discrepancies >0.5% trigger immediate investigation. 2. Pick and pack operations require dual-scan confirmation for each item; errors result in mandatory retraining. 3. Quality inspections must sample at least 20% of orders, with zero defects tolerance for inspected batches. 4. Shipping labels must be validated against address databases; mismatches block generation until corrected. 5. Track accuracy metrics daily using WMS reports; if below 99.5%, initiate root cause analysis and corrective actions within 24 hours. Enforcement: automated alerts via monitoring tools (e.g., Datadog), with exceptions logged for audit. Exceptions allowed only with managerial approval and documented reasons."
+            },
+            {
+              "label": "Order Fulfillment Complete",
+              "category": "output",
+              "description": "Final deliverable confirming successful order delivery and closure",
+              "content": "Produce the output upon delivery confirmation, including reports and customer notifications. Deliverable format: 1. Generate a fulfillment report per order with details: order ID, items, shipping cost, delivery timestamp, and accuracy metrics. 2. Send post-delivery survey to customers via email to collect feedback on experience. 3. Archive order data in CRM or ERP systems for historical analysis. 4. Calculate success metrics: on-time delivery rate, accuracy percentage (target 99.5%), and customer satisfaction score. Distribution: automated emails to stakeholders, upload to cloud storage (e.g., AWS S3), and dashboard updates. Use tools like Google Data Studio or Tableau for visualization, with weekly reviews to identify improvement areas."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "validates"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "approves"
+            },
+            {
+              "from": 3,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "drives"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "triggers"
+            },
+            {
+              "from": 6,
+              "to": 8,
+              "label": "outputs"
+            },
+            {
+              "from": 7,
+              "to": 1,
+              "label": "monitors"
+            },
+            {
+              "from": 7,
+              "to": 2,
+              "label": "monitors"
+            },
+            {
+              "from": 7,
+              "to": 3,
+              "label": "monitors"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 105,
+        "maxScore": 110,
+        "pct": 95,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 9 (min: 5)",
+          "✓ Node count: 9 ≤ 10",
+          "✗ Missing \"test\" category (found: trigger, action, review, state, policy, output)",
+          "✓ All 11 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 792c, no thin nodes",
+          "✓ Architecture covers: inventory, pick, inspect, ship",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (11 edges, 9 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "edge-ultra-short-prompt",
+      "status": "ok",
+      "elapsed": 126598,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Onboarding.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! The case of onboarding is a classic one, mon ami. Let me piece together the clues for a seamless and thorough integration process, ensuring no detail escapes our little grey cells.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "New Hire Trigger",
+              "category": "trigger",
+              "description": "Event that initiates the onboarding process when a new employee is confirmed",
+              "content": "This trigger activates upon receiving a confirmed hire notification from the recruitment system or a manager request. Steps include: 1. Integrate with Applicant Tracking Systems (ATS) like Greenhouse or Lever via APIs to capture employee details such as name, role, start date, and contact information. 2. Validate the data completeness using predefined criteria (e.g., all mandatory fields filled, background check initiated if required for the role). 3. Automate notifications using tools like Zapier or custom webhooks to alert HR, IT, and the hiring manager. Ensure compliance with data privacy regulations (e.g., GDPR, CCPA) by encrypting sensitive information and logging access. Set up error handling for missing data with fallback alerts to administrators. This node serves as the catalyst, requiring real-time monitoring to prevent delays in the onboarding pipeline."
+            },
+            {
+              "label": "HR Documentation and Compliance",
+              "category": "action",
+              "description": "Handles all HR-related paperwork, benefits enrollment, and initial compliance steps",
+              "content": "Execute HR tasks with precision: 1. Use HR platforms like BambooHR or Workday to generate and distribute digital onboarding packets, including tax forms (W-4, I-9), non-disclosure agreements, and employee handbooks. 2. Guide the new hire through benefits enrollment using tools like Gusto or Justworks, with step-by-step tutorials and deadline reminders. 3. Schedule mandatory orientations and diversity training sessions via Calendly or Microsoft Teams, ensuring attendance tracking. 4. Collect and verify identification documents for legal compliance, using OCR technology for scanning and storage in secure cloud repositories like Box or Google Drive. Implement a checklist system with status updates to monitor progress and flag incomplete items for follow-up within 48 hours."
+            },
+            {
+              "label": "IT Infrastructure Setup",
+              "category": "action",
+              "description": "Sets up necessary technology accounts, equipment, and access permissions",
+              "content": "Orchestrate IT provisioning with automated workflows: 1. Integrate with identity management systems like Okta or Azure AD to create user accounts, assign email addresses, and set up single sign-on (SSO) for all company tools (e.g., Slack, Jira, CRM). 2. Coordinate hardware provisioning using inventory management tools like Snipe-IT to ship laptops, phones, and peripherals, with tracking numbers and setup guides sent to the employee. 3. Configure software licenses and access controls based on role-specific policies, using scripts or IT service management platforms like ServiceNow. 4. Conduct initial security training and password setup, enforcing multi-factor authentication (MFA). Establish a ticketing system for support requests, with a target resolution time of under 4 hours for critical issues."
+            },
+            {
+              "label": "Role-Specific Training and Integration",
+              "category": "action",
+              "description": "Provides job-specific training, team introductions, and cultural assimilation",
+              "content": "Facilitate smooth integration into the team and role: 1. Develop personalized training plans using learning management systems (LMS) like Cornerstone or LinkedIn Learning, with modules on company processes, tools, and key performance indicators (KPIs). 2. Schedule one-on-one meetings with the manager, mentor, and cross-functional teams via calendar integrations, using templates for agenda setting and feedback collection. 3. Organize virtual or in-person welcome sessions and shadowing opportunities to build networks and understand team dynamics. 4. Assign initial projects or tasks in project management tools like Asana or Trello to foster hands-on learning. Monitor engagement through surveys and adjust training pace based on feedback, aiming for competency assessment within the first month."
+            },
+            {
+              "label": "HR Review and Approval",
+              "category": "review",
+              "description": "Human review gate for verifying all HR documentation and compliance steps",
+              "content": "Conduct a thorough review by HR personnel: 1. Examine all submitted documents for accuracy and completeness against legal checklists (e.g., I-9 verification, tax form signatures). 2. Use audit tools like Smartsheet or custom dashboards to track completion rates and identify discrepancies. 3. Schedule a review meeting with the new hire to clarify any ambiguities and ensure understanding of company policies. 4. Approve or reject the onboarding package; if rejected, provide detailed feedback via email or a ticketing system with a 24-hour turnaround for corrections. Criteria for approval include 100% document completion, benefits enrollment confirmation, and attendance records from orientation sessions. This node acts as a quality control checkpoint to mitigate legal risks."
+            },
+            {
+              "label": "Compliance and Policy Verification Test",
+              "category": "test",
+              "description": "Automated and manual tests to ensure adherence to company policies and regulations",
+              "content": "Execute rigorous testing protocols: 1. Deploy automated scripts using tools like Selenium or Postman to verify IT access levels and security settings (e.g., firewall rules, data encryption). 2. Conduct quizzes on compliance training via platforms like Moodle or Kahoot, with a passing score threshold of 90% on topics like anti-harassment, data privacy, and safety protocols. 3. Perform manual checks by IT or compliance officers to validate hardware setup and software licenses against procurement records. 4. Use monitoring tools like Datadog or Splunk to log test results and generate reports for auditors. If tests fail, trigger remediation workflows, such as re-training or access revocation, with escalation paths to managers. Aim for full compliance within the first week of employment."
+            },
+            {
+              "label": "Onboarding Completion and Handoff",
+              "category": "output",
+              "description": "Final node confirming onboarding success and transitioning the employee to regular operations",
+              "content": "Produce the final deliverable: 1. Compile a completion report summarizing all onboarding activities, using templates in Google Docs or Confluence, and share it with the employee, HR, and manager. 2. Update the employee's status in the HRIS to 'active' and trigger payroll integration for timely salary processing. 3. Schedule a 30-day check-in meeting to gather feedback via surveys (e.g., using SurveyMonkey or Typeform) and measure onboarding effectiveness against KPIs like time-to-productivity and employee satisfaction scores. 4. Archive all documentation in secure storage with retention policies aligned to legal requirements. This node outputs a formal confirmation email and dashboard update, marking the end of the onboarding workflow and the beginning of continuous performance management."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 0,
+              "to": 2,
+              "label": "triggers"
+            },
+            {
+              "from": 0,
+              "to": 3,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 6,
+              "label": "approves"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "validates"
+            },
+            {
+              "from": 4,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 95,
+        "maxScore": 95,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 4)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ All 11 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 805c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (11 edges, 7 nodes)"
+        ]
+      }
+    }
+  ]
+}

@@ -14,6 +14,11 @@ All six tests passed at 100%. Deep quality evaluation confirms genuinely product
 
 **Pool: 80 → 82 tests:** `real-estate-transaction` (state-heavy multi-party handoffs), `edge-ultra-short-prompt` (single-word "Onboarding." — tests minimal intent detection).
 
+**Reasoner eval: 99% (6/6 passed, 330/335 points) — DeepSeek Reasoner**
+- `execute-incident-postmortem` (100%): 6,783c production-ready blameless postmortem with minute-by-minute timeline, systemic root causes, 5 action items with owners/dates. Cites `pt-online-schema-change`.
+- `edge-ultra-short-prompt` "Onboarding." (100%): From single word → 7-node employee onboarding workflow (805c avg, 11 edges, feedback loops). Strong minimal-input inference.
+- `logistics-warehouse-fulfillment` (95%): Missing `test` category — used `review` for quality inspection. Recurring category variance pattern.
+
 **Build:** Clean — 0 lint warnings, typecheck passes, production build succeeds.
 
 ### 2026-03-08 — Round 101: Post-Build Auto-Fix + Dual-Model Eval + Pool 80 Tests
