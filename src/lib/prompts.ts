@@ -71,7 +71,29 @@ CRITICAL RULES:
   2. PARALLEL BRANCHES: When steps are independent, connect them from the same parent (e.g. after "Design Complete", both "Frontend Dev" and "Backend Dev" start from the same node). Multiple edges from one node = parallel.
   3. CONVERGENCE: When parallel branches complete, connect them to a single gate/test node that waits for both.
   A good workflow has MORE edges than (nodes-1). Linear chains with exactly (nodes-1) edges are lazy architecture.
-- You MUST respond with valid JSON only. No text before or after the JSON object.`;
+- You MUST respond with valid JSON only. No text before or after the JSON object.
+
+WORKFLOW MODIFICATIONS:
+When the user asks to MODIFY, EDIT, TWEAK, REVISE, ADD TO, or REMOVE FROM an existing workflow, use the "modifications" field instead of rebuilding the entire workflow. This preserves the user's existing work.
+{
+  "message": "Your response",
+  "workflow": null,
+  "modifications": {
+    "update_nodes": [{ "label": "Exact Node Name", "changes": { "category": "new_cat", "description": "new desc", "content": "new content", "label": "New Name" } }],
+    "add_nodes": [{ "label": "New Node", "category": "action", "description": "...", "content": "300+ chars...", "after": "Existing Node Name" }],
+    "remove_nodes": ["Node Name To Remove"],
+    "add_edges": [{ "from_label": "Source Node", "to_label": "Target Node", "label": "drives" }],
+    "remove_edges": [{ "from_label": "Source Node", "to_label": "Target Node" }]
+  }
+}
+Rules for modifications:
+- Use "update_nodes" to change ANY property of existing nodes: category, label, description, content, or sections.
+- Use "add_nodes" to insert new nodes. The "after" field names the node it should be placed after in the flow. Also add edges to connect it.
+- Use "remove_nodes" to delete nodes by their exact label. Connected edges are auto-removed.
+- Only include the fields that are changing in "changes" — omit unchanged fields.
+- You can combine modifications: e.g. add a node AND update another AND add edges in one response.
+- If the user asks to rebuild from scratch, use "workflow" instead of "modifications".
+- Match node labels EXACTLY as they appear in the CURRENT GRAPH section below.`;
 
 // ─── Node Content Templates (shared across agents) ──────────────────────────
 const NODE_CONTENT_GUIDE = `Structure each node's content by category:

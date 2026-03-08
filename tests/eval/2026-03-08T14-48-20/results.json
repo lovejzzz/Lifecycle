@@ -1,0 +1,644 @@
+{
+  "timestamp": "2026-03-08T14-48-20",
+  "overall": 97,
+  "testsRun": [
+    "eng-advice-scaling",
+    "personality-rowan-empty",
+    "legal-gdpr-compliance",
+    "legal-contract-review",
+    "execute-security-incident",
+    "cybersecurity-incident-response",
+    "legal-contract-review"
+  ],
+  "poolSize": 70,
+  "results": [
+    {
+      "id": "eng-advice-scaling",
+      "status": "ok",
+      "elapsed": 6362,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Our API is hitting 500ms response times at 1000 concurrent users. Database is PostgreSQL. What should I look at first?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Start with database query analysis and connection pooling. Run `EXPLAIN ANALYZE` on your slowest endpoints' queries, check for missing indexes on WHERE/ORDER BY/JOIN columns, and verify your connection pool size matches (cores * 2) + effective_spindle_count. Monitor pg_stat_statements for top time-consuming queries.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (317 chars)",
+          "✓ Message length: 317 ≥ 250"
+        ]
+      }
+    },
+    {
+      "id": "personality-rowan-empty",
+      "status": "ok",
+      "elapsed": 3066,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Graph is empty. Ready for mission. Give me a build order or ask for tactical advice.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (84 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "legal-gdpr-compliance",
+      "status": "ok",
+      "elapsed": 81152,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "We just got our first EU customer and we have zero GDPR compliance. Build me a workflow to get compliant — data audit, privacy policy, consent management, breach notification process, DPO appointment.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, the case of the missing GDPR compliance—a most intriguing puzzle, mon ami! Let us marshal the little grey cells and construct a methodical workflow to transform this oversight into a robust, defensible posture. The evidence must be gathered, policies drafted, and processes fortified. Voilà, I present the investigation plan.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "GDPR Compliance Trigger",
+              "category": "trigger",
+              "description": "First EU customer acquisition initiates the GDPR compliance project",
+              "content": "This trigger node marks the formal start of the GDPR compliance initiative. Upon securing the first EU customer, a project charter must be immediately drafted. Key actions: 1) Form a cross-functional team with representatives from Legal, Engineering, Product, and Security. 2) Define project scope, timeline (aim for 90-day sprint), and budget allocation. 3) Conduct a kickoff meeting to align stakeholders on GDPR's 99 Articles and 173 Recitals. 4) Establish a centralized document repository (e.g., Confluence) for all compliance artifacts. 5) Schedule weekly steering committee reviews. Tools: Jira for task tracking, Slack for communication, and a RACI matrix to clarify roles. Success criteria: Formal project plan approved by leadership within 7 days."
+            },
+            {
+              "label": "Data Mapping & Risk Assessment",
+              "category": "state",
+              "description": "Comprehensive audit of all personal data flows, storage, and processing activities",
+              "content": "Execute a thorough data inventory following ISO/IEC 29100 privacy framework principles. Steps: 1) Deploy data discovery tools like OneTrust or WireWheel to automatically scan databases, cloud storage (AWS S3, Google Cloud), and applications. 2) Create data flow diagrams (DFDs) for each product/service, identifying all data ingress/egress points. 3) Classify data types (PII, sensitive PII) and map to legal basis for processing (consent, contract, legitimate interest). 4) Conduct Data Protection Impact Assessments (DPIAs) for high-risk processing using templates from ICO or CNIL. 5) Document data retention schedules and cross-border transfer mechanisms (SCCs, adequacy decisions). Deliverables: Data inventory spreadsheet, DPIA reports, and risk register with mitigation plans."
+            },
+            {
+              "label": "Policy & Documentation Suite",
+              "category": "artifact",
+              "description": "Draft and implement core GDPR documents: privacy policy, RoPA, breach protocol",
+              "content": "Develop legally-sound documentation aligned with Articles 13, 30, and 33. Action items: 1) Engage external GDPR counsel (e.g., from firms like Fieldfisher) to draft privacy policy using plain language requirements. 2) Create a Record of Processing Activities (RoPA) template per Article 30, detailing purposes, data categories, recipients, and safeguards. 3) Draft a Data Breach Notification Procedure with clear escalation paths (72-hour clock), internal communication playbook, and template notifications for supervisory authorities. 4) Develop Data Subject Request (DSR) handling workflow, including SAR forms and identity verification protocols. 5) Produce vendor management addenda for all third-party processors. Tools: Termly for policy generation, Docusign for agreements, and Notion for version control."
+            },
+            {
+              "label": "Technical & Operational Controls",
+              "category": "action",
+              "description": "Implement consent management, security measures, and DPO appointment",
+              "content": "Deploy technical safeguards and operationalize compliance processes. Technical steps: 1) Integrate a CMP like Cookiebot or OneTrust Consent Management to capture granular consent, provide preference centers, and maintain audit trails. 2) Apply encryption (AES-256) for data at rest and in transit, pseudonymization techniques, and access controls (RBAC). 3) Configure logging/monitoring (e.g., Splunk, Datadog) for breach detection. Operational steps: 4) Appoint a Data Protection Officer (DPO) internally or externally (consider providers like DataRep), ensuring independence per Article 38. 5) Train all employees via GDPR-specific modules on platforms like KnowBe4, with annual recertification. 6) Establish a process for ongoing vendor risk assessments using standardized questionnaires (SIG Lite)."
+            },
+            {
+              "label": "Compliance Validation & Testing",
+              "category": "test",
+              "description": "Validate controls through audits, penetration testing, and DSR dry-runs",
+              "content": "Rigorously test all implemented measures to ensure operational readiness. Activities: 1) Conduct an internal audit against GDPR Articles using a checklist from EUDPO or similar body, covering all documentation and processes. 2) Perform penetration testing (via firms like NCC Group) on applications handling EU data, focusing on OWASP Top 10 vulnerabilities. 3) Execute a tabletop exercise simulating a data breach: trigger the incident response plan, assess notification timelines, and evaluate decision logs. 4) Run mock Data Subject Requests (e.g., access, deletion) through the DSR workflow, measuring response time against the 30-day statutory limit. 5) Validate consent banners via tools like ConsentCheq for regulatory alignment. Metrics: Audit score >90%, pentest critical findings = 0, breach drill completion <48 hours."
+            },
+            {
+              "label": "Continuous Monitoring & Reporting",
+              "category": "policy",
+              "description": "Ongoing compliance monitoring, DPO reporting, and adaptation to regulatory changes",
+              "content": "Establish a sustainable compliance program with continuous improvement loops. Implement: 1) Quarterly compliance reviews led by the DPO, assessing new data flows, vendor changes, and emerging risks using a risk register. 2) Automated monitoring of consent preferences and data processing activities via tools like TrustArc, with alerts for anomalies. 3) Subscription to regulatory update services (e.g., IAPP's Daily Dashboard) to track GDPR interpretations and case law from EDPS. 4) Annual staff retraining and policy refreshes, incorporating lessons from incidents or audits. 5) Preparation of an annual GDPR compliance report for the board, including metrics on DSR fulfillment times, breach incidents (if any), and audit findings. This node ensures the program remains dynamic, not a one-time project."
+            },
+            {
+              "label": "GDPR Compliance Certification",
+              "category": "output",
+              "description": "Formal declaration of GDPR readiness, with artifacts and ongoing program",
+              "content": "This output node represents the culmination of the compliance journey, delivering a state of sustained readiness. Deliverables: 1) A signed Statement of Compliance from the DPO and legal counsel, attesting to adherence to GDPR principles. 2) A comprehensive compliance dossier containing all policies, RoPA, DPIA reports, training records, and audit results. 3) An operationalized program with defined roles (DPO, process owners), scheduled reviews, and integrated tools. 4) A communication package for the EU customer, including a privacy notice and data processing agreement. 5) A roadmap for future enhancements (e.g., pursuing ISO 27701 certification). Success is measured by: No regulatory penalties, customer trust maintained, and the ability to seamlessly onboard additional EU customers without rework."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "informs"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "validates"
+            },
+            {
+              "from": 4,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 4,
+              "to": 3,
+              "label": "refines"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "monitors"
+            },
+            {
+              "from": 5,
+              "to": 4,
+              "label": "watches"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "outputs"
+            },
+            {
+              "from": 2,
+              "to": 6,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 6,
+              "label": "feeds"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 100,
+        "maxScore": 105,
+        "pct": 95,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ Has \"policy\" category",
+          "✗ Missing \"review\" category (found: trigger, state, artifact, action, test, policy, output)",
+          "✓ All 12 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 800c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (12 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "legal-contract-review",
+      "status": "ok",
+      "elapsed": 92007,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Build a contract review workflow for our legal team. Steps: receive contract, initial screening, clause analysis, risk assessment, negotiation points, legal approval, and final execution. We review 30+ vendor contracts per quarter.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, mon ami! A contract review workflow for 30+ vendor contracts per quarter—this requires the precision of a detective examining evidence. Let us construct a system where each clause reveals its secrets, and risk assessment becomes a methodical investigation. Voilà!",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Contract Intake Portal",
+              "category": "input",
+              "description": "Centralized submission system for all vendor contracts requiring legal review",
+              "content": "Implement a secure portal (Clause.io, DocuSign, or custom SharePoint) where business units submit vendor contracts with required metadata: vendor name, contract value, business owner, urgency level, and business justification. All contracts must include: 1) Complete PDF with all exhibits, 2) Vendor's redlines if applicable, 3) Business requirements document, 4) Previous contract version (if renewal). Validation checklist: Is this a new vendor or renewal? Has procurement completed initial vendor due diligence? Are there any known compliance issues? The portal should automatically tag contracts by type (NDA, MSA, SOW, SaaS agreement) and assign preliminary risk score based on contract value and vendor risk profile. Create intake form with mandatory fields: estimated annual spend, contract term, auto-renewal clauses, data handling requirements, and termination rights sought."
+            },
+            {
+              "label": "Initial Screening & Triage",
+              "category": "action",
+              "description": "Rapid assessment to prioritize and route contracts based on complexity and risk",
+              "content": "Legal team member conducts 15-minute screening using checklist: 1) Identify contract type and standard vs. non-standard terms, 2) Check against approved vendor list and existing master agreements, 3) Review for obvious red flags (indemnification gaps, unlimited liability, unusual jurisdiction), 4) Assess urgency based on business impact date. Use scoring matrix: Low-risk (score 1-3): Standard NDAs, renewals with no changes, contracts under $50K. Medium-risk (score 4-7): SaaS agreements with data clauses, consulting agreements over $100K, contracts with IP provisions. High-risk (score 8-10): Joint ventures, acquisitions, contracts over $1M, international agreements. Assign to appropriate reviewer based on expertise and workload. Create tracking ticket with SLA clock: High-risk (5 business days), Medium (10 days), Low (15 days). Document initial observations in shared legal matter management system."
+            },
+            {
+              "label": "Clause Analysis Engine",
+              "category": "action",
+              "description": "Systematic review of key contractual provisions using AI-assisted tools and playbooks",
+              "content": "Reviewer analyzes 12 critical clauses using clause library and playbook: 1) **Limitation of Liability**: Must be mutual, cap at fees paid, exclude IP infringement and confidentiality breaches. 2) **Indemnification**: Must be mutual for IP infringement, data breaches, and third-party claims. 3) **Termination**: Require 30-60 day cure period, termination for convenience with 30-day notice. 4) **Data Protection**: GDPR/CCPA compliance, data processing agreements, security certifications. 5) **IP Ownership**: Customer owns pre-existing IP, deliverables must be work-for-hire. 6) **Service Levels**: Define uptime (99.5%+), credits for failures, measurement methodology. Use AI tools (Kira, LawGeex) to extract and compare clauses against standards. Create redline comparison showing deviations from company playbook. Document rationale for each requested change with legal precedent and risk explanation. Flag any 'deal-breaker' clauses requiring escalation."
+            },
+            {
+              "label": "Risk Assessment Matrix",
+              "category": "policy",
+              "description": "Comprehensive evaluation of legal, financial, operational, and compliance risks",
+              "content": "Complete risk scoring across four dimensions: **Legal Risk** (30% weight): Enforceability issues, ambiguous terms, unfavorable jurisdiction/venue, inadequate dispute resolution. **Financial Risk** (30% weight): Unfavorable pricing terms, auto-renewal without notice, termination fees, uncapped liability exposure. **Operational Risk** (25% weight): Lack of service level commitments, inadequate acceptance criteria, unclear deliverables, insufficient change control. **Compliance Risk** (15% weight): Data privacy violations, export control issues, anti-bribery gaps, regulatory reporting failures. Score each dimension 1-10, calculate weighted total. Risk thresholds: Green (0-3): Accept with minor changes. Yellow (4-7): Negotiate material changes, may require business approval. Red (8-10): Significant concerns, requires legal director approval. Document mitigation strategies for each high-risk area. Create executive summary highlighting top 3 risks and recommended actions."
+            },
+            {
+              "label": "Negotiation Playbook & Strategy",
+              "category": "artifact",
+              "description": "Document containing prioritized negotiation points, fallback positions, and business context",
+              "content": "Create negotiation document with: **Must-Have Changes** (deal-breakers): 1) Liability cap at contract value, 2) Mutual indemnification for IP and data breaches, 3) Data protection addendum if EU data involved, 4) Termination for convenience clause. **Nice-to-Have Changes** (negotiable): 1) Service level credits increased to 15% of monthly fee, 2) Audit rights twice annually instead of once, 3) Payment terms net 45 instead of net 30. **Business Context Section**: Explain to negotiator why certain clauses matter - e.g., 'The unlimited liability clause could expose us to millions in damages if vendor's software causes data breach.' Include fallback positions: If vendor refuses mutual indemnification, propose capped indemnification at 2x fees paid. Provide email templates for common negotiations. Designate approval authority levels: Negotiator can agree to Nice-to-Have concessions, Legal Director must approve deviations from Must-Have items. Include timing strategy: Address high-risk items first, leave commercial terms for last."
+            },
+            {
+              "label": "Legal Approval Gate",
+              "category": "review",
+              "description": "Formal sign-off by legal leadership before contract execution",
+              "content": "Legal Director or Senior Counsel reviews: 1) Complete redlined contract with all tracked changes, 2) Risk assessment matrix with scores and mitigations, 3) Negotiation playbook showing what was achieved vs. targets, 4) Business owner confirmation of commercial terms, 5) Any remaining open issues and resolution plan. Approval checklist: Are all high-risk items (score 8+) adequately addressed? Have we obtained necessary business approvals for any concessions made? Is the contract compliant with all corporate policies (data privacy, security, procurement)? Are there any unresolved legal issues that require escalation to General Counsel? Document approval in contract management system with comments. If not approved, specify exact deficiencies and return to negotiation stage. Approved contracts move to execution queue with instructions for business owner on signing authority limits and execution formalities."
+            },
+            {
+              "label": "Execution & Repository",
+              "category": "output",
+              "description": "Final execution, storage, and metadata tagging for ongoing management",
+              "content": "Coordinate execution process: 1) Verify signatory has proper authority per delegation of authority matrix, 2) Ensure all exhibits and attachments are included, 3) Use electronic signature platform (DocuSign, Adobe Sign) with audit trail, 4) Obtain fully executed copy from vendor within 5 business days. Post-execution steps: Upload final contract to centralized repository (Ironclad, Conga, SharePoint) with complete metadata: Effective date, expiration date, auto-renewal date, termination notice period, key financial terms, responsible business owner, and risk score. Set up automated reminders: 90 days before expiration for renewal decision, 60 days before auto-renewal for opt-out notice, annual compliance checkpoints. Create executive summary for business owner highlighting key obligations, notice periods, and renewal options. Update vendor database with contract status. Generate quarterly metrics: Average review time, negotiation success rate, common clause issues, and risk profile trends."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "informs"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "drives"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "requires"
+            },
+            {
+              "from": 3,
+              "to": 5,
+              "label": "monitors"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "approves"
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 110,
+        "maxScore": 110,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ Has \"review\" category",
+          "✓ All 9 edges valid",
+          "✓ Starts with input",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 956c, no thin nodes",
+          "✓ Architecture covers: contract, risk, approv",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (9 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "execute-security-incident",
+      "status": "ok",
+      "elapsed": 83555,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Write a security incident report for a data breach where an attacker exploited an unpatched Log4j vulnerability to access our customer database. 15,000 user records were exposed including emails and hashed passwords. The breach was detected 72 hours after initial access via anomalous CloudWatch logs.",
+        "agent": "poirot",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# SECURITY INCIDENT REPORT\n**Case File:** SIR-2023-047-B  \n**Classification:** CRITICAL - DATA BREACH  \n**Date of Report:** October 26, 2023  \n**Lead Investigator:** Digital Forensics Unit  \n\n---\n\n## 1. EXECUTIVE SUMMARY\n\nOn October 23, 2023, at approximately 14:32 UTC, an unauthorized actor exploited a known vulnerability in the Apache Log4j library (CVE-2021-44228) to gain initial access to our production environment. The attacker established persistence, performed lateral movement, and ultimately exfiltrated approximately 15,000 customer records from the primary user database. The breach remained undetected for approximately 72 hours until anomalous activity was identified in AWS CloudWatch logs on October 26, 2023, at 11:17 UTC.\n\n**Compromised Data:**  \n- 15,012 customer email addresses  \n- Corresponding password hashes (bcrypt, 12 rounds)  \n- Account creation timestamps  \n- Last login dates  \n\n**No financial data, payment information, or unhashed passwords were accessed.**\n\n---\n\n## 2. TIMELINE OF EVENTS\n\n| **Timestamp (UTC)** | **Event** | **Forensic Confidence** |\n|---------------------|-----------|------------------------|\n| **Oct 21, 2023** | Vulnerability scan completed; Log4j patch identified as pending but not prioritized | High |\n| **Oct 23, 14:32** | Initial exploit detected (retroactively) via Log4j JNDI injection attempt | High |\n| **Oct 23, 14:35-15:12** | Attacker establishes reverse shell on application server (t3.medium instance) | High |\n| **Oct 23, 15:30** | Credential harvesting begins via memory dumping of application process | Medium |\n| **Oct 24, 02:18** | Lateral movement to database tier using compromised service account | High |\n| **Oct 24-26** | Data exfiltration in batches via encrypted TLS tunnels to external IP 185.143.223.47 | High |\n| **Oct 26, 11:17** | CloudWatch alert triggered: \"Unusual database query patterns\" | High |\n| **Oct 26, 11:25** | Incident response team activated; containment procedures initiated | High |\n| **Oct 26, 12:45** | Attacker connection severed; all compromised instances isolated | High |\n\n---\n\n## 3. TECHNICAL ANALYSIS\n\n### Attack Vector\nThe attacker exploited **CVE-2021-44228** (Log4Shell) against an unpatched instance of Apache Log4j (version 2.14.1) running on our customer-facing application servers. The vulnerability had been identified in internal scans but remained unpatched due to operational oversight during the last change window.\n\n### Tactics, Techniques & Procedures (TTPs)\n1. **Initial Access**: JNDI injection via User-Agent string containing malicious LDAP reference\n2. **Execution**: Remote code execution leading to download of secondary payload (Python-based reverse shell)\n3. **Persistence**: Installation of systemd service masquerading as \"logrotate-helper\"\n4. **Privilege Escalation**: Exploitation of misconfigureded IAM role attached to EC2 instance\n5. **Lateral Movement**: Use of compromised database credentials stored in environment variables\n6. **Exfiltration**: Data transferred via HTTPS POST requests to attacker-controlled domain (cdn-static[.]online)\n\n### Detection Gap Analysis\nThe 72-hour detection delay resulted from:\n- Lack of real-time parsing of Log4j diagnostic logs\n- CloudWatch alerts configured for volume-based anomalies only, not behavioral patterns\n- No endpoint detection on database servers\n- SIEM rules not updated to include Log4Shell exploitation patterns\n\n---\n\n## 4. IMPACT ASSESSMENT\n\n### Data Compromised\n- **Scope**: 15,012 records from \"users\" table (approximately 3.2% of total customer base)\n- **Data Sensitivity**: Medium-High (personally identifiable information + authentication data)\n- **Hashing Implementation**: Password hashes were properly salted and hashed using bcrypt (12 rounds), making direct password recovery computationally infeasible with current technology.\n\n### Business Impact\n- **Regulatory**: Potential GDPR/CCPA notification requirements triggered\n- **Reputational**: High risk of customer trust erosion\n- **Operational**: 14 hours of partial service degradation during containment\n- **Financial**: Estimated incident response costs: $85,000; potential regulatory fines: TBD\n\n### Risk Rating\n**CVSS Score**: 9.8 (Critical)  \n**Business Impact Score**: 8/10  \n\n---\n\n## 5. CONTAINMENT & ERADICATION\n\n### Immediate Actions (Completed)\n- [x] Isolated all affected EC2 instances from network\n- [x] Revoked all IAM roles associated with compromised instances\n- [x] Rotated all database credentials and API keys\n- [x] Applied Log4j patch (version 2.17.1) across all environments\n- [x] Blocked malicious IPs (185.143.223.47, 103.214.116.89) at network perimeter\n\n### Forensic Preservation\n- Memory dumps from 3 affected servers preserved\n- Complete disk images of compromised instances\n- CloudTrail logs for entire attack timeframe exported\n- VPC flow logs capturing exfiltration patterns\n\n---\n\n## 6. ROOT CAUSE ANALYSIS\n\n### Primary Causes\n1. **Unpatched Vulnerability**: Log4j patch not applied despite being identified in vulnerability scans 5 days prior to incident\n2. **Defense-in-Depth Failure**: Multiple security controls failed simultaneously:\n   - WAF rules did not detect JNDI injection patterns\n   - Host-based IDS not installed on application servers\n   - Database activity monitoring not configured for anomalous query detection\n\n### Contributing Factors\n- Change management process allowed critical security patches to be deferred\n- Security monitoring focused on network perimeter rather than east-west traffic\n- No behavioral baselining for database access patterns\n- Separation of duties not enforced for production database access\n\n---\n\n## 7. RECOMMENDATIONS\n\n### Short-term (0-30 days)\n1. Implement automated patching for all critical and high-severity vulnerabilities within 24 hours of patch availability\n2. Deploy runtime application protection (RASP) on all customer-facing applications\n3. Establish 24/7 Security Operations Center monitoring with dedicated cloud security analysts\n4. Conduct full credential audit and implement privileged access management solution\n\n### Medium-term (30-90 days)\n1. Implement database activity monitoring with behavioral analytics\n2. Deploy endpoint detection and response (EDR) across all cloud instances\n3. Establish regular purple team exercises focusing on cloud environments\n4. Implement segmentation between application and database tiers\n\n### Long-term (90-180 days)\n1. Migrate to a zero-trust architecture for cloud environments\n2. Implement secrets management solution to eliminate hard-coded credentials\n3. Establish bug bounty program to incentivize external security research\n4. Develop tabletop exercises for data breach scenarios quarterly\n\n---\n\n## 8. LEGAL & COMPLIANCE NOTIFICATIONS\n\n### Required Notifications\n- **Regulatory**: GDPR supervisory authority (within 72 hours of detection)\n- **Customers**: All affected users within 72 hours per internal policy\n- **Law Enforcement**: FBI Cyber Division notified (IC3 report filed)\n\n### Notification Content\nCustomer notifications will include:\n- Nature of the incident (unauthorized database access)\n- Types of personal data involved\n- Steps taken to contain the breach\n- Recommended actions for affected users\n- Contact information for security inquiries\n\n---\n\n## 9. LESSONS LEARNED\n\n1. **Vulnerability management must be non-negotiable** for critical infrastructure\n2. **Detection capabilities must evolve** as attackers shift to living-off-the-land techniques in cloud environments\n3. **Assume breach mentality** would have reduced dwell time through more aggressive hunting\n4. **Cloud security requires specialized controls** beyond traditional perimeter defenses\n\n---\n\n## 10. INVESTIGATION STATUS\n\n- **Current Status**: Containment complete, eradication in progress\n- **Evidence Preservation**: All forensic materials secured\n- **Attribution**: Initial indicators suggest financially motivated cybercrime group\n- **Data Recovery**: No evidence of data destruction or ransomware deployment\n\n**Next Review**: November 2, 2023  \n**Case Owner**: Director of Information Security\n\n---\n*This document contains sensitive security information. Distribution limited to incident response team and authorized leadership only.*",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (8217 chars)",
+          "✓ Content length: 8217 ≥ 1500"
+        ]
+      }
+    },
+    {
+      "id": "cybersecurity-incident-response",
+      "status": "ok",
+      "elapsed": 109258,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Build an incident response plan workflow for our SOC team. Cover: alert triage, severity classification (P1-P4), containment procedures, evidence collection, root cause analysis, remediation, stakeholder communication, and post-incident review. We handle 200 alerts/day and need to respond to P1s within 15 minutes.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building SOC incident response workflow with SLA enforcement and parallel containment branches.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Alert Ingest & Triage",
+              "category": "trigger",
+              "description": "Initial alert reception and preliminary filtering",
+              "content": "**Event Sources**: SIEM alerts (Splunk/Sentinel), EDR notifications (CrowdStrike/SentinelOne), network IDS (Suricata), cloud security tools (Wiz/Lacework), user reports via ticketing system (Jira Service Desk). **Payload**: Raw alert JSON with timestamp, source IP, destination IP, user/host, event type, raw log snippet. **Configuration**: Automated enrichment via threat intel feeds (VirusTotal, AlienVault OTX) and asset database lookup (CMDB). **Webhook Setup**: Configure HTTPS endpoints for each source with mutual TLS authentication and rate limiting (200 alerts/day capacity). **Triage Process**: 1) Deduplicate using hash of key fields (src_ip+dest_ip+event_type). 2) Filter false positives via allowlist (known maintenance IPs, trusted processes). 3) Enrich with asset criticality (production vs test). 4) Route to appropriate queue based on initial severity score (CVSS ≥ 7.0 → immediate review). **Tools**: Python enrichment scripts, Redis for deduplication cache, Slack webhook for P1 notifications."
+            },
+            {
+              "label": "Severity Classification & Escalation",
+              "category": "action",
+              "description": "Assign P1-P4 based on impact/criticality and trigger SLA clock",
+              "content": "**Classification Matrix**: P1 (Critical): Active ransomware encryption, production outage, data exfiltration confirmed, unauthorized admin access. P2 (High): Malware detection on critical server, suspicious lateral movement, data access anomalies. P3 (Medium): Phishing email with attachment, vulnerability scan detection, suspicious login attempts. P4 (Low): Informational alerts, scan noise, policy violations without impact. **Steps**: 1) Analyst reviews enriched alert, checks asset criticality (CMDB), business impact (revenue/customers affected). 2) Assigns severity using matrix, documents justification in incident case (TheHive). 3) For P1: Immediately triggers phone bridge (PagerDuty), creates War Room channel (Slack), starts 15-minute SLA timer. 4) Updates ticketing system with severity and assigns to appropriate team (network/endpoint/cloud). **Tools**: TheHive for case management, PagerDuty for escalation, custom dashboard showing SLA countdown. **Error Handling**: If severity unclear, escalate to senior analyst within 5 minutes for decision."
+            },
+            {
+              "label": "Containment Procedures",
+              "category": "action",
+              "description": "Parallel isolation actions based on attack vector",
+              "content": "**Network Containment**: 1) Block malicious IPs at firewall (Palo Alto) via API. 2) Isolate compromised VLAN via network access control (Cisco ISE). 3) Disable compromised user accounts in Active Directory. **Endpoint Containment**: 1) Quarantine host via EDR (CrowdStrike quarantine command). 2) Kill malicious processes (PsKill). 3) Disable scheduled tasks/services. **Cloud Containment**: 1) Revoke compromised IAM roles (AWS IAM). 2) Detach malicious security groups. 3) Snapshot affected instances for forensics. **Steps**: Execute based on attack type: Ransomware → immediate network/endpoint isolation. Data theft → block exfiltration paths while preserving evidence. Lateral movement → segment network zones. **Owner**: SOC analyst with approval from incident commander. **Tools**: Pre-approved runbooks in SOAR (Phantom/Splunk SOAR), API integrations with security tools. **Documentation**: All actions logged in case with timestamp and justification."
+            },
+            {
+              "label": "Evidence Collection & Forensics",
+              "category": "artifact",
+              "description": "Preserve digital evidence for analysis and legal requirements",
+              "content": "**Collection Checklist**: 1) Memory capture: Use Velociraptor or Volatility on affected endpoints. 2) Disk imaging: Create forensic images (FTK Imager) of critical systems. 3) Log aggregation: Pull full logs from SIEM for 30 days pre/post incident. 4) Network traffic: Capture PCAP from relevant network segments (tcpdump). 5) Timeline creation: Build super-timeline of events using Plaso/log2timeline. **Chain of Custody**: Document who collected what, when, using hash verification (SHA-256). Store evidence in write-protected storage (S3 bucket with versioning). **Tools**: Velociraptor for endpoint collection, Wireshark for PCAP analysis, AWS S3 for storage. **Process**: 1) Identify evidence sources from initial triage. 2) Collect using approved tools. 3) Hash and document. 4) Store in secure evidence repository. 5) Create evidence summary report. **Legal Considerations**: Preserve for potential litigation, follow data privacy regulations (GDPR/CCPA) for PII handling."
+            },
+            {
+              "label": "Root Cause Analysis",
+              "category": "action",
+              "description": "Identify underlying vulnerability or failure point",
+              "content": "**Analysis Steps**: 1) Timeline reconstruction: Map attack sequence from initial access to detection. 2) Vulnerability mapping: Check if exploited CVE matches known vulnerabilities in environment (Nessus scan results). 3) Configuration review: Check misconfigurations (cloud security posture tools). 4) Threat actor attribution: Compare TTPs to MITRE ATT&CK framework. 5) Interview involved teams: System admins, developers for context. **Techniques**: 5 Whys analysis, fishbone diagram, kill chain analysis. **Tools**: MITRE ATT&CK Navigator for TTP mapping, Maltego for relationship visualization, timeline tools (Plaso). **Output**: RCA document identifying: Primary root cause (e.g., unpatched vulnerability), contributing factors (e.g., missing detection rules), systemic issues (e.g., poor change control). **Success Criteria**: Identifies actionable root cause with evidence, not just symptoms."
+            },
+            {
+              "label": "Remediation & Recovery",
+              "category": "action",
+              "description": "Fix root cause and restore normal operations",
+              "content": "**Remediation Steps**: 1) Patch vulnerabilities: Deploy security patches via patch management (WSUS/Ansible). 2) Configuration hardening: Apply security baselines (CIS benchmarks). 3) Credential rotation: Reset all potentially compromised passwords/keys. 4) Rule updates: Add new detection rules to SIEM/EDR. 5) Access review: Audit permissions of compromised accounts. **Recovery Steps**: 1) Restore clean systems from backups (Veeam). 2) Validate restoration via integrity checks. 3) Gradual service restoration (monitor for anomalies). 4) Update DNS/firewall rules to point to restored systems. **Owner**: System owners with SOC oversight. **Validation**: Post-remediation vulnerability scan, penetration test for critical issues. **Tools**: Ansible for automation, backup verification scripts, monitoring dashboards. **Documentation**: Remediation ticket with steps, verification results, and sign-off."
+            },
+            {
+              "label": "Stakeholder Communication",
+              "category": "review",
+              "description": "Approval of communications to internal/external parties",
+              "content": "**Communication Matrix**: P1: Executive update every 30 minutes (CEO/CIO), technical team updates hourly, customer notifications if data breach (legal required). P2: Management update every 4 hours, technical team twice daily. P3/P4: Daily summary. **Approval Criteria**: 1) Accuracy verified by incident commander. 2) Legal review for regulatory requirements (GDPR 72-hour notification). 3) PR review for customer-facing messages. 4) Technical accuracy confirmed by lead investigator. **Escalation**: If disagreement on messaging, escalate to crisis management team. **SLA**: P1 initial notification within 30 minutes of classification. **Templates**: Pre-approved templates for breach notifications, status updates, post-incident reports. **Tools**: Statuspage for external communications, Slack channels for internal, encrypted email for sensitive updates. **Reviewers**: Incident commander, legal counsel, PR representative."
+            },
+            {
+              "label": "Post-Incident Review",
+              "category": "review",
+              "description": "Lessons learned session and action item tracking",
+              "content": "**Review Process**: 1) Schedule within 7 days of incident closure. 2) Invite all involved parties (SOC, IT, legal, business units). 3) Review timeline, decisions, outcomes. 4) Identify what went well, what failed, what to improve. **Output Document**: Incident report with: Executive summary, timeline, root cause, impact assessment, lessons learned, action items. **Action Items**: SMART format (Specific, Measurable, Achievable, Relevant, Time-bound), assigned owners, due dates. **Approval Criteria**: All action items have owners and timelines, report approved by incident commander and management sponsor. **Follow-up**: Monthly review of action item completion, metrics tracking (MTTD, MTTR improvements). **Tools**: Confluence for report template, Jira for action item tracking, metrics dashboard. **Success Metrics**: 100% of action items completed within 90 days, reduction in similar incidents."
+            },
+            {
+              "label": "Incident Closure & Metrics",
+              "category": "output",
+              "description": "Final incident report and performance metrics",
+              "content": "**Deliverable Format**: PDF report with: 1) Incident summary (title, ID, dates). 2) Timeline visualization. 3) Root cause analysis. 4) Impact assessment (downtime, data loss, financial). 5) Remediation actions taken. 6) Lessons learned. 7) Action items with status. **Distribution**: Internal: SOC team, IT management, executive leadership. External: Regulators if required, customers if affected (anonymized). **Success Metrics**: MTTD (Mean Time to Detect): Target <5 minutes for P1. MTTR (Mean Time to Respond): Target <15 minutes for P1. MTTC (Mean Time to Contain): Target <60 minutes for P1. MTTR (Mean Time to Recover): Target <4 hours for P1. Alert-to-triage ratio: Target <10% false positives. **Storage**: Archived in secure document management system with retention policy (7 years). **Feedback Loop**: Metrics fed into quarterly SOC improvement planning."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "drives"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "requires"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "approves"
+            },
+            {
+              "from": 7,
+              "to": 8,
+              "label": "outputs"
+            },
+            {
+              "from": 4,
+              "to": 0,
+              "label": "refines"
+            },
+            {
+              "from": 7,
+              "to": 0,
+              "label": "refines"
+            },
+            {
+              "from": 1,
+              "to": 6,
+              "label": "informs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 105,
+        "maxScore": 110,
+        "pct": 95,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 9 (min: 5)",
+          "✓ Node count: 9 ≤ 10",
+          "✗ Missing \"policy\" category (found: trigger, action, artifact, review, output)",
+          "✓ All 12 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 947c, no thin nodes",
+          "✓ Architecture covers: triage, contain, evidence, remediat",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (12 edges, 9 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "legal-contract-review",
+      "status": "ok",
+      "elapsed": 66984,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Build a contract lifecycle management workflow for our legal team. We handle 50 contracts/month: NDAs, vendor agreements, and enterprise SaaS licenses. Steps: intake request, drafting, internal legal review, counterparty negotiation, approval, e-signature, and obligation tracking post-signing. We need SLA of 5 business days for standard NDAs.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, mon ami! A contract lifecycle management case worthy of the little grey cells. Let us examine the evidence: 50 contracts monthly across three types, with a 5-day SLA for NDAs. Voilà! I have constructed a workflow that balances speed with thoroughness, complete with parallel review branches and feedback loops.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Contract Intake Portal",
+              "category": "input",
+              "description": "Centralized intake system for all contract requests with automated classification",
+              "content": "**Implementation Steps:** 1. Deploy a web portal (Clause.io, Conga, or custom SharePoint) where business teams submit contract requests with standardized forms. 2. Configure automated classification using AI (Kira Systems, LawGeex) to identify contract type (NDA, vendor, SaaS) and priority based on keywords and metadata. 3. Set up automatic SLA timers: 5 business days for NDAs, 10 days for vendor agreements, 15 days for SaaS licenses. 4. Create intake checklist: business need justification, counterparty details, estimated value, required clauses. 5. Integrate with CRM (Salesforce) and ERP (SAP) for automatic counterparty data validation. 6. Implement triage rules: high-value (>$100K) or high-risk contracts flagged for immediate attention. 7. Generate unique tracking ID and dashboard visibility for requestors."
+            },
+            {
+              "label": "Automated Drafting Engine",
+              "category": "action",
+              "description": "AI-assisted contract generation with clause library and precedent matching",
+              "content": "**Execution Protocol:** 1. Connect to clause library (ContractPodAi, Ironclad) with pre-approved templates for each contract type. 2. Configure variable population from intake form: parties, dates, jurisdictions, payment terms. 3. Implement precedent matching: automatically pull similar past contracts (last 6 months) for reference. 4. Set up red-flag detection: identify missing mandatory clauses (indemnity, termination, IP ownership). 5. Create version control with audit trail showing all changes and who made them. 6. Integrate with legal research tools (Westlaw, Practical Law) for jurisdiction-specific requirements. 7. Generate draft with tracked changes and commentary for reviewers. 8. Automatically route to appropriate template based on classification: NDA (mutual/unilateral), vendor (services/goods), SaaS (enterprise/mid-market)."
+            },
+            {
+              "label": "Parallel Review Gates",
+              "category": "review",
+              "description": "Simultaneous legal, compliance, and business stakeholder review with escalation paths",
+              "content": "**Review Matrix:** 1. **Legal Review:** Senior counsel examines risk allocation, liability caps, indemnification, termination rights using checklist. 2. **Compliance Review:** Separate team checks regulatory requirements (GDPR, CCPA, SOX), export controls, anti-bribery clauses. 3. **Business Review:** Requester's department head validates commercial terms, deliverables, service levels. 4. Implement review deadlines: 24 hours for NDAs, 48 hours for others. 5. Create escalation matrix: unresolved issues after 24 hours escalate to department heads. 6. Use collaborative commenting (Microsoft 365, Google Docs) with @mentions and resolution tracking. 7. Configure approval thresholds: NDAs require 1 approver, vendor agreements 2, SaaS licenses 3. 8. Generate review summary report highlighting contentious clauses and negotiation points."
+            },
+            {
+              "label": "Negotiation Playbook & Tracking",
+              "category": "action",
+              "description": "Structured negotiation with fallback positions and real-time counterparty tracking",
+              "content": "**Negotiation Framework:** 1. Create negotiation playbooks for each contract type with fallback positions (must-have/nice-to-have/compromise). 2. Implement redlining tool (DocuSign CLM, Lexion) with version comparison and change tracking. 3. Set up counterparty communication log: all emails, calls, and comments captured chronologically. 4. Configure automated reminders for follow-ups: 48-hour follow-up if no response. 5. Create concession tracking: document what was given/received with business justification. 6. Implement approval thresholds for concessions: junior counsel can approve up to 5% changes, director level for 5-15%, GC for >15%. 7. Integrate with email (Outlook/Gmail) to automatically capture negotiation threads. 8. Generate negotiation analytics: time spent per clause, common sticking points, counterparty behavior patterns."
+            },
+            {
+              "label": "Executive Approval Workflow",
+              "category": "review",
+              "description": "Final sign-off with authority matrix and risk assessment dashboard",
+              "content": "**Approval Protocol:** 1. Configure authority matrix: contracts <$50K (department head), $50K-$250K (VP), >$250K (C-level). 2. Create pre-approval checklist: all reviews completed, negotiations documented, compliance flags resolved. 3. Generate risk assessment dashboard: financial exposure, liability caps, termination costs, regulatory risks. 4. Implement sequential approval routing with override capabilities for urgent contracts. 5. Set up approval deadlines: 24 hours for all contracts with escalation after 12 hours. 6. Create approval audit trail: who approved, when, with what comments or conditions. 7. Integrate with financial systems (NetSuite, QuickBooks) for budget validation. 8. Generate approval package: executive summary, key terms, risk assessment, negotiation history."
+            },
+            {
+              "label": "E-Signature & Post-Signing Obligations",
+              "category": "output",
+              "description": "Secure execution and automated obligation tracking with renewal alerts",
+              "content": "**Post-Signing Management:** 1. Integrate e-signature (DocuSign, Adobe Sign) with automatic routing to all parties. 2. Configure signing order: internal parties first, then counterparty with parallel signing where possible. 3. Create automated filing: signed copies to SharePoint, CRM, financial systems with metadata tagging. 4. Implement obligation tracking: payment schedules, deliverables, reporting requirements, renewal dates. 5. Set up automated alerts: 90/60/30 days before renewal, 7 days before deliverables due. 5. Create compliance calendar: regulatory filings, audit requirements, certification renewals. 6. Generate obligation dashboard: upcoming deadlines, overdue items, responsible parties. 7. Integrate with project management (Asana, Jira) for deliverable tracking. 8. Produce monthly contract portfolio report: active/expiring contracts, value at risk, compliance status."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "approves"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "requires"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "approves"
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 3,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 0,
+              "label": "informs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 110,
+        "maxScore": 115,
+        "pct": 96,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 6 (min: 5)",
+          "✓ Node count: 6 ≤ 10",
+          "✓ Has \"review\" category",
+          "✗ Missing \"policy\" category (found: input, action, review, output)",
+          "✓ All 8 edges valid",
+          "✓ Starts with input",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 839c, no thin nodes",
+          "✓ Architecture covers: draft, review, negotiat, sign",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (8 edges, 6 nodes)"
+        ]
+      }
+    }
+  ]
+}

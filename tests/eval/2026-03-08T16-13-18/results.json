@@ -1,0 +1,285 @@
+{
+  "timestamp": "2026-03-08T16-13-18",
+  "overall": 98,
+  "testsRun": [
+    "education-syllabus-multi-output",
+    "media-content-multiformat"
+  ],
+  "poolSize": 78,
+  "results": [
+    {
+      "id": "education-syllabus-multi-output",
+      "status": "ok",
+      "elapsed": 60550,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "I have a 16-week Intro to Computer Science syllabus document. Build a workflow that transforms it into three separate deliverables: weekly lesson plans (with learning objectives, activities, and homework), grading rubrics for each assignment, and slide decks for each module. Each deliverable needs its own quality review before final delivery.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building a syllabus transformation pipeline with parallel quality gates.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Syllabus Input",
+              "category": "input",
+              "description": "Original 16-week Intro to CS syllabus document",
+              "content": "This node ingests the master syllabus document, which outlines the course structure, weekly topics, learning outcomes, assignments, and schedule. The input should be a structured document (e.g., PDF, Word, or Markdown) containing: course title and description, weekly breakdown with topics and readings, assignment descriptions and due dates, and any institutional policies. Configuration includes parsing the document to extract key sections using tools like Python's `pdfplumber` for PDFs or `python-docx` for Word files, or manual extraction if unstructured. The payload is the raw syllabus text and metadata. Setup involves storing the document in a version-controlled repository (e.g., GitHub) and tagging it with a version number. Error handling includes validating that all 16 weeks are present and that assignment details are complete."
+            },
+            {
+              "label": "Lesson Plan Generator",
+              "category": "action",
+              "description": "Create weekly lesson plans with objectives, activities, homework",
+              "content": "This action transforms syllabus topics into detailed weekly lesson plans. Steps: 1. For each week (1-16), extract the topic and learning outcomes from the syllabus. 2. Define specific, measurable learning objectives using Bloom's taxonomy (e.g., 'Students will be able to explain recursion with examples'). 3. Design in-class activities: include lectures (30-40 mins), hands-on coding exercises (e.g., using Python or pseudocode), group discussions, and quizzes. Tools: Google Docs or Notion for drafting, with templates for consistency. 4. Assign homework: problem sets, reading summaries, or small projects, aligned with objectives. 5. Compile into a structured document per week, with sections: Objectives, Materials, Activities (timed), Homework, and Notes. Owner: instructor or curriculum designer. Error handling: ensure activities fit within class time (e.g., 2-3 hours per week) and homework is feasible (2-4 hours)."
+            },
+            {
+              "label": "Rubric Designer",
+              "category": "action",
+              "description": "Develop grading rubrics for each assignment",
+              "content": "This action creates detailed grading rubrics for all assignments in the syllabus. Steps: 1. List all assignments (e.g., programming projects, exams, quizzes) from the syllabus. 2. For each assignment, define criteria: correctness, code quality, documentation, creativity, and timeliness. Use a scale (e.g., 0-4 points per criterion). 3. Specify performance levels for each criterion: exemplary, proficient, developing, beginning. Example: for a coding assignment, criteria might include 'Functionality (40%): program runs without errors and meets specs'. 4. Tools: Google Sheets or RubricStar for template creation, ensuring rubrics are clear and fair. 5. Align rubrics with learning objectives from the lesson plans. 6. Output as separate PDF or spreadsheet files per assignment. Owner: instructor or TA. Error handling: validate that rubrics cover all assignment components and weightings sum to 100%."
+            },
+            {
+              "label": "Slide Deck Builder",
+              "category": "action",
+              "description": "Produce slide decks for each module",
+              "content": "This action generates slide decks for each weekly module based on the syllabus topics. Steps: 1. Map each week's topic to a slide deck structure: title slide, learning objectives, content slides (key concepts with visuals), examples (code snippets or diagrams), summary, and references. 2. Use tools like PowerPoint, Google Slides, or Reveal.js for HTML slides, with a consistent template (e.g., university branding). 3. Incorporate multimedia: add images, GIFs for demonstrations, and links to external resources (e.g., Python tutorials). 4. Ensure slides are concise (10-15 slides per week) and avoid text-heavy slides; use bullet points and visuals. 5. Include speaker notes for instructors with teaching tips and timing. 6. Output as separate files per week (e.g., Week1.pptx). Owner: instructor or instructional designer. Error handling: check for accessibility (alt text for images) and compatibility with presentation software."
+            },
+            {
+              "label": "Quality Review Gates",
+              "category": "review",
+              "description": "Parallel review of lesson plans, rubrics, and slide decks",
+              "content": "This node represents human review gates for each deliverable before final delivery. Approval criteria: For lesson plans, reviewers (e.g., senior instructors or curriculum committee) check that objectives are aligned with course outcomes, activities are engaging and feasible, and homework is appropriately challenging. For rubrics, ensure they are fair, consistent across assignments, and clearly communicated to students. For slide decks, verify accuracy of content, visual appeal, and adherence to accessibility standards. Review process: use a checklist for each deliverable, with a 48-hour SLA for feedback. Tools: Google Docs comments or GitHub pull requests. Escalation: if issues are found, reviewers provide specific feedback, and the respective action node (Lesson Plan Generator, Rubric Designer, or Slide Deck Builder) must refine the deliverable. Success metrics: 100% approval rate before moving to output."
+            },
+            {
+              "label": "Final Deliverables Output",
+              "category": "output",
+              "description": "Compiled and approved lesson plans, rubrics, and slide decks",
+              "content": "This node produces the final deliverables after quality review. Steps: 1. Compile all approved weekly lesson plans into a single PDF or web page, organized by week, with a table of contents. 2. Bundle grading rubrics into a master rubric document (PDF or spreadsheet) indexed by assignment. 3. Package slide decks into a zip file or upload to a learning management system (e.g., Canvas or Moodle). Format: ensure all files are in accessible formats (PDF for documents, PPTX for slides). Distribution: deliver to course instructors, TAs, and students via the course website or email. Success metrics: all 16 weeks covered, zero errors reported post-delivery, and positive feedback from initial user testing. Tools: use scripts for automation (e.g., Python to merge PDFs) and version tagging (e.g., v1.0)."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "feeds"
+            },
+            {
+              "from": 0,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 0,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 4,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 4,
+              "to": 3,
+              "label": "refines"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "approves"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 110,
+        "maxScore": 115,
+        "pct": 96,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 6 (min: 5)",
+          "✓ Node count: 6 ≤ 10",
+          "✓ Has \"review\" category",
+          "✗ Missing \"artifact\" category (found: input, action, review, output)",
+          "✓ All 10 edges valid",
+          "✓ Starts with input",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 888c, no thin nodes",
+          "✓ Architecture covers: lesson, rubric, slide",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (10 edges, 6 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "media-content-multiformat",
+      "status": "ok",
+      "elapsed": 70147,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "We record a weekly 1-hour podcast episode (MP3). Build a workflow that repurposes each episode into: a full written transcript (DOCX), a 2000-word blog post (Markdown), 5 short video clips for social media (MP4 with captions), an email newsletter summary (HTML), and a YouTube video with chapter markers. Each format has different requirements and review gates.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, mon ami! A podcast repurposing case worthy of my little grey cells. I shall construct a workflow that transforms your single audio clue into a complete multimedia evidence trail. The architecture must be elegant, with parallel processing and quality gates at every turn.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Podcast Recording",
+              "category": "input",
+              "description": "Original 1-hour MP3 episode ready for processing",
+              "content": "This is the primary evidence—your raw 1-hour MP3 podcast recording. Before processing begins, ensure audio quality meets standards: clear voice separation (if multiple hosts), minimal background noise, and consistent volume levels. Use tools like Audacity or Adobe Audition for preliminary quality check. Create a backup of the original file in cloud storage (Google Drive, Dropbox) with timestamped filename format: YYYY-MM-DD_EpisodeTitle.mp3. Document episode metadata: title, guests, main topics, recording date. This node triggers the entire repurposing pipeline—think of it as the crime scene where all subsequent evidence originates."
+            },
+            {
+              "label": "Transcription & Timestamping",
+              "category": "action",
+              "description": "Generate accurate transcript with speaker identification and timestamps",
+              "content": "Using AI transcription services (Descript, Otter.ai, or Rev.com), convert MP3 to text with 95%+ accuracy. Configure speaker identification for multiple hosts/guests. Generate timestamps at 30-second intervals for chapter markers. Export in multiple formats: DOCX for editing, SRT for captions, and plain text for blog processing. Quality checklist: verify proper names/spelling, remove filler words (um, ah), mark sections for potential video clips. Estimated processing time: 15-30 minutes depending on service. Store outputs in organized folder structure: /transcripts/YYYY-MM-DD/. This becomes the foundational document for all derivative content."
+            },
+            {
+              "label": "Content Strategy Session",
+              "category": "review",
+              "description": "Human review to identify key segments and repurposing opportunities",
+              "content": "Editor/producer reviews transcript to identify: 1) 5 strongest 30-60 second video clip candidates (visually interesting topics, quotable moments), 2) Main themes for 2000-word blog post (3-4 key arguments/stories), 3) Newsletter-worthy insights (actionable takeaways), 4) YouTube chapter markers (6-8 logical breaks). Use collaborative tools like Notion or Google Docs with comment threads. Create content map spreadsheet linking timestamps to formats. This 30-minute review is critical—it's where creative direction meets practical execution. Approval here unlocks parallel content creation branches."
+            },
+            {
+              "label": "Parallel Content Creation",
+              "category": "action",
+              "description": "Simultaneous production of all derivative formats",
+              "content": "Three parallel tracks execute simultaneously after strategy approval: 1) BLOG: Expand transcript into 2000-word SEO-optimized article using Hemingway Editor for readability. Include relevant links, statistics, and call-to-action. Format in Markdown with proper headings. 2) VIDEO CLIPS: Use Descript or Premiere Pro to extract 5 MP4 clips (30-60s each) with captions burned in. Follow social media specs: 9:16 for TikTok/Reels, 1:1 for Instagram, 16:9 for Twitter. 3) NEWSLETTER: Create HTML email with 3 main takeaways, episode link, and visual elements. Use Mailchimp or ConvertKit templates. Each track has dedicated team member/tool with shared access to transcript and strategy document."
+            },
+            {
+              "label": "Quality Assurance Gates",
+              "category": "test",
+              "description": "Parallel validation of each format against requirements",
+              "content": "Three independent quality checks run simultaneously: 1) BLOG TEST: Grammarly check, SEO score (Yoast/SurferSEO), readability score (Flesch-Kincaid >60), link verification. 2) VIDEO TEST: Caption accuracy (99%+), aspect ratio compliance, audio levels (-14 to -16 LUFS), file size optimization (<100MB/clip). 3) NEWSLETTER TEST: Spam score (Mail-Tester.com), mobile responsiveness, link tracking setup, preview across 5 email clients. Each test produces pass/fail report with specific issues. Failure triggers return to creation node with detailed feedback. Success triggers final assembly."
+            },
+            {
+              "label": "YouTube Assembly",
+              "category": "action",
+              "description": "Create full YouTube video with chapters, description, and optimization",
+              "content": "Using Final Cut Pro or DaVinci Resolve: 1) Add intro/outro bumpers to original MP3 with waveform visualization, 2) Insert chapter markers at timestamps identified in strategy session, 3) Create custom thumbnail (Canva/Template), 4) Write YouTube description (250+ words with timestamps, links, keywords), 5) Add end screen cards and subtitles (SRT file). Follow YouTube best practices: title <60 chars, tags (10-15 relevant), category selection. Export in 1080p H.264 MP4 (bitrate 8-12 Mbps). File naming: YYYY-MM-DD_EpisodeTitle_YouTube.mp4. This becomes the flagship video asset."
+            },
+            {
+              "label": "Final Editorial Review",
+              "category": "review",
+              "description": "Holistic approval of all assets before distribution",
+              "content": "Editor-in-chief reviews complete package: 1) Blog post in preview mode, 2) All 5 video clips with captions, 3) Newsletter HTML preview, 4) YouTube video with chapters. Checklist: brand consistency across formats, factual accuracy, tone alignment, CTA uniformity, scheduling coordination. Use collaborative review tool (Frame.io for video, Google Docs for text). This is the final gate—any revisions must be minor (<15 min fixes). Approval triggers automated distribution setup. Create master checklist document with all assets, links, and scheduled publish times."
+            },
+            {
+              "label": "Distribution Package",
+              "category": "output",
+              "description": "Complete repurposing package ready for scheduled publishing",
+              "content": "The final evidence dossier contains: 1) Full transcript (DOCX), 2) 2000-word blog post (Markdown), 3) 5 social video clips (MP4 with SRT), 4) Email newsletter (HTML), 5) YouTube video with chapters (MP4). All files organized in cloud folder with standardized naming. Distribution schedule document outlines: blog publish time, social media clip calendar (1/day for 5 days), newsletter send time, YouTube premiere. Integration with scheduling tools: Buffer/Hootsuite for social, WordPress scheduler for blog, email service provider for newsletter, YouTube Studio for scheduled upload. Metrics tracking setup: UTM parameters, YouTube cards, newsletter open rates. This complete package represents 10x content leverage from single podcast episode."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "approves"
+            },
+            {
+              "from": 2,
+              "to": 5,
+              "label": "informs"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 3,
+              "label": "refines"
+            },
+            {
+              "from": 4,
+              "to": 6,
+              "label": "validates"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "feeds"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "approves"
+            },
+            {
+              "from": 1,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 110,
+        "maxScore": 110,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 5)",
+          "✓ Node count: 8 ≤ 10",
+          "✓ Has \"review\" category",
+          "✓ All 11 edges valid",
+          "✓ Starts with input",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 632c, no thin nodes",
+          "✓ Architecture covers: transcript, blog, video, email",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (11 edges, 8 nodes)"
+        ]
+      }
+    }
+  ]
+}

@@ -174,9 +174,9 @@ export async function POST(req: NextRequest) {
     try {
       const parsed = JSON.parse(cleaned);
 
-      // If parsed JSON doesn't look like a CID response (no message, no workflow),
+      // If parsed JSON doesn't look like a CID response (no message, no workflow, no modifications),
       // treat the raw text as the message — the model generated content, not CID format
-      if (!parsed.message && !parsed.workflow) {
+      if (!parsed.message && !parsed.workflow && !parsed.modifications) {
         return NextResponse.json({ result: { message: text, workflow: null }, provider, model });
       }
 
@@ -333,6 +333,35 @@ export async function POST(req: NextRequest) {
             label: e.label,
           }));
         }
+      }
+
+      // Normalize modifications field — validate structure and normalize categories/labels
+      if (parsed.modifications) {
+        const mods = parsed.modifications;
+        if (mods.update_nodes && Array.isArray(mods.update_nodes)) {
+          mods.update_nodes = mods.update_nodes.filter((u: Record<string, unknown>) => u.label && u.changes);
+          for (const u of mods.update_nodes) {
+            if (u.changes?.category) {
+              const rawCat = (u.changes.category as string).toLowerCase().trim();
+              u.changes.category = KNOWN_CATEGORIES.has(rawCat) ? rawCat : (CATEGORY_MAP[rawCat] || rawCat);
+            }
+          }
+        }
+        if (mods.add_nodes && Array.isArray(mods.add_nodes)) {
+          mods.add_nodes = mods.add_nodes.map((n: Record<string, unknown>) => {
+            const rawCat = ((n.category as string) || 'action').toLowerCase().trim();
+            return { ...n, category: KNOWN_CATEGORIES.has(rawCat) ? rawCat : (CATEGORY_MAP[rawCat] || 'action') };
+          });
+        }
+        if (mods.add_edges && Array.isArray(mods.add_edges)) {
+          mods.add_edges = mods.add_edges.map((e: Record<string, unknown>) => {
+            const rawLabel = ((e.label as string) || 'drives').toLowerCase().trim();
+            const label = KNOWN_LABELS.has(rawLabel) ? rawLabel : (LABEL_MAP[rawLabel] || 'drives');
+            return { ...e, label };
+          });
+        }
+        if (mods.remove_nodes && !Array.isArray(mods.remove_nodes)) mods.remove_nodes = [];
+        if (mods.remove_edges && !Array.isArray(mods.remove_edges)) mods.remove_edges = [];
       }
 
       return NextResponse.json({ result: parsed, provider, model });

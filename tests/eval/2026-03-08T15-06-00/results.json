@@ -1,0 +1,394 @@
+{
+  "timestamp": "2026-03-08T15-06-00",
+  "overall": 100,
+  "testsRun": [
+    "execute-job-description",
+    "personality-poirot-empty",
+    "legal-gdpr-compliance",
+    "edge-ultra-terse",
+    "event-conference-planning",
+    "startup-advice-growth"
+  ],
+  "poolSize": 72,
+  "results": [
+    {
+      "id": "execute-job-description",
+      "status": "ok",
+      "elapsed": 41468,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Write a job description for a Senior Full-Stack Engineer at a Series B fintech startup. Tech stack is React, Node.js, PostgreSQL, AWS. Remote-first, competitive equity.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Senior Full-Stack Engineer\n\n## About Us\nWe are a Series B fintech startup on a mission to democratize access to sophisticated financial tools. Backed by leading venture capital firms, we are scaling rapidly to serve millions of users. Our remote-first culture values autonomy, collaboration, and continuous learning. We believe that building a diverse and inclusive team is fundamental to creating products that serve a global audience.\n\n## The Role\nAs a Senior Full-Stack Engineer, you will be a cornerstone of our product development team. You will architect, build, and scale critical features across our entire platform, directly impacting our core business metrics and user experience. This is a high-impact role where you will own significant portions of our product, mentor other engineers, and help shape our technical direction as we grow.\n\n## Key Responsibilities\n*   **End-to-End Feature Development:** Design, develop, test, and deploy robust, scalable, and secure features using React on the frontend and Node.js on the backend.\n*   **System Architecture & Design:** Contribute to technical decisions and system design. Help evolve our architecture to support rapid growth and new product initiatives.\n*   **Data Modeling & API Design:** Design and implement efficient database schemas in PostgreSQL and create clean, well-documented RESTful or GraphQL APIs.\n*   **Cloud Infrastructure:** Build, maintain, and optimize services within our AWS ecosystem (e.g., EC2, Lambda, RDS, S3, CloudFront).\n*   **Code Quality & Mentorship:** Write clean, maintainable, and well-tested code. Conduct thoughtful code reviews and actively mentor mid-level and junior engineers.\n*   **Collaboration:** Work closely with Product Managers, Designers, and other engineers to translate product requirements into elegant technical solutions.\n*   **Performance & Reliability:** Proactively identify and resolve performance bottlenecks, ensuring high availability and a seamless user experience.\n\n## Tech Stack\n*   **Frontend:** React, TypeScript, modern state management (e.g., Redux, Context), Jest, React Testing Library\n*   **Backend:** Node.js, Express/NestJS, TypeScript, Jest\n*   **Database:** PostgreSQL, Redis (caching)\n*   **Infrastructure & DevOps:** AWS (EC2, RDS, Lambda, S3, CloudFront, etc.), Docker, Terraform, CI/CD (GitHub Actions/CircleCI)\n*   **Other:** Git, RESTful/GraphQL APIs, microservices architecture\n\n## What We're Looking For\n*   5+ years of professional software development experience with a proven track record of building and shipping complex web applications.\n*   Deep, hands-on expertise with our core stack: **React, Node.js, PostgreSQL, and AWS**.\n*   Strong understanding of software engineering fundamentals: data structures, algorithms, system design, and security best practices.\n*   Experience with modern development practices: CI/CD, automated testing, containerization, and infrastructure as code.\n*   Excellent problem-solving skills and the ability to debug complex issues across the entire stack.\n*   Strong communication skills and the ability to articulate technical concepts to both technical and non-technical stakeholders.\n*   A product-minded engineer who cares about the \"why\" and is passionate about creating exceptional user experiences.\n*   Experience in fintech, banking, or another regulated industry is a significant plus.\n\n## What We Offer\n*   **Competitive Compensation:** A competitive salary and a meaningful equity package (stock options) in a high-growth company.\n*   **Remote-First Culture:** Work from anywhere. We provide a home office stipend and prioritize asynchronous communication.\n*   **Health & Wellness:** Comprehensive medical, dental, and vision insurance.\n*   **Unlimited PTO:** We trust you to take the time you need to recharge.\n*   **Learning & Development:** Annual stipend for conferences, courses, and books.\n*   **Team Events:** Regular virtual and in-person offsites to foster connection and collaboration.\n*   **The Opportunity:** Play a pivotal role in shaping the future of a fast-growing fintech company with a clear mission.\n\n## How to Apply\nPlease submit your resume and a brief note about what excites you about this role and our mission. Include links to your GitHub profile, portfolio, or any relevant projects.\n\n*We are an equal opportunity employer and value diversity at our company. We do not discriminate on the basis of race, religion, color, national origin, gender, sexual orientation, age, marital status, veteran status, or disability status.*",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (4543 chars)",
+          "✓ Content length: 4543 ≥ 200"
+        ]
+      }
+    },
+    {
+      "id": "personality-poirot-empty",
+      "status": "ok",
+      "elapsed": 3865,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Mon ami, the canvas is empty—a pristine case file awaiting our first clue. Let us begin our investigation by building a workflow that reveals the truth.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (152 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "legal-gdpr-compliance",
+      "status": "ok",
+      "elapsed": 72398,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "We just got our first EU customer and we have zero GDPR compliance. Build me a workflow to get compliant — data audit, privacy policy, consent management, breach notification process, DPO appointment.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, the case of the missing GDPR compliance! A formidable puzzle, but one we shall solve with precision. Let us gather the clues—data audit, policies, consent—and construct a workflow that will satisfy even the most meticulous EU inspector. Voilà, the blueprint for your compliance journey.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "GDPR Compliance Trigger",
+              "category": "trigger",
+              "description": "First EU customer acquisition initiates the GDPR compliance process",
+              "content": "This trigger node marks the critical moment when your business must begin GDPR compliance efforts due to onboarding an EU customer. Key actions: 1) Immediately document the customer's EU residency and data processing requirements. 2) Establish a compliance timeline with clear milestones—typically 30-90 days depending on data complexity. 3) Assign initial responsibility to a senior team member (interim DPO). 4) Conduct a preliminary risk assessment using frameworks like ISO 27001 or NIST. 5) Notify relevant departments (engineering, marketing, legal) about upcoming compliance requirements. Tools: Jira/Asana for project tracking, Slack/Teams for communication, risk assessment templates. Success criteria: Formal project charter created within 48 hours with stakeholder sign-off."
+            },
+            {
+              "label": "Comprehensive Data Audit",
+              "category": "artifact",
+              "description": "Systematic mapping of all personal data processing activities",
+              "content": "Execute a thorough data inventory across all systems: 1) Identify all data collection points (websites, apps, forms, APIs). 2) Document data categories (names, emails, payment info, browsing history). 3) Map data flows between systems (CRMs, databases, third-party services). 4) Identify data processors vs. controllers. 5) Document retention periods and deletion procedures. Use tools: Data mapping software like OneTrust or manual spreadsheets with columns for: data element, source, purpose, legal basis, retention period, security measures. Involve: Engineering teams for technical data flows, legal for compliance interpretation, product for user journey mapping. Deliverable: Data Processing Register (Article 30 requirement) with visual flow diagrams."
+            },
+            {
+              "label": "Privacy Framework Implementation",
+              "category": "action",
+              "description": "Create and deploy privacy policies, consent mechanisms, and procedures",
+              "content": "Develop the operational privacy infrastructure: 1) Draft GDPR-compliant privacy policy using templates from legal counsel or tools like Termly/iubenda—include data subject rights, lawful basis, international transfers. 2) Implement cookie consent banner with granular controls (tools: Cookiebot, OneTrust). 3) Create data subject request procedures (access, rectification, erasure). 4) Establish Data Processing Agreements (DPAs) with all vendors. 5) Design privacy-by-default settings in products. Technical steps: Update website privacy pages, integrate consent management platform API, create internal request intake forms. Testing: Conduct user acceptance testing on consent flows, legal review of all documents. Timeline: 2-3 weeks for full deployment."
+            },
+            {
+              "label": "Security & Breach Protocols",
+              "category": "policy",
+              "description": "Establish security measures and breach notification procedures",
+              "content": "Implement Article 32 security requirements and Article 33 breach protocols: 1) Conduct security gap assessment against GDPR requirements. 2) Implement technical measures: encryption (at rest & transit), access controls, pseudonymization where possible. 3) Create incident response plan with 72-hour notification timeline. 4) Design breach assessment criteria (risk to rights/freedoms). 5) Establish internal reporting channels and external notification templates. Tools: Security frameworks (OWASP, CIS Controls), monitoring (SIEM systems), encryption tools. Procedures: Regular vulnerability scanning, employee security training, third-party security assessments. Documentation: Security policy document, incident response playbook, breach notification templates for supervisory authorities and affected individuals."
+            },
+            {
+              "label": "DPO Appointment & Training",
+              "category": "review",
+              "description": "Formal Data Protection Officer appointment and organizational training",
+              "content": "Formalize the DPO role and educate the organization: 1) Assess if mandatory DPO required (core activities involve large-scale processing/special categories). 2) Appoint internal or external DPO with independence and expertise. 3) Register DPO with supervisory authority. 4) Develop comprehensive training program covering: GDPR principles, data subject rights, breach reporting, record keeping. 5) Create ongoing awareness materials (newsletters, workshops). Training delivery: Mandatory sessions for all employees, role-specific training for engineering/marketing teams. Metrics: Training completion rates, quiz scores, incident response drill performance. Documentation: DPO appointment letter, training materials, attendance records, continuous improvement plan based on regular knowledge assessments."
+            },
+            {
+              "label": "Compliance Verification & Maintenance",
+              "category": "test",
+              "description": "Regular testing, auditing, and continuous compliance monitoring",
+              "content": "Establish ongoing compliance verification: 1) Conduct quarterly internal audits using GDPR checklist (72+ requirements). 2) Perform annual penetration testing and vulnerability assessments. 3) Test data subject request response times (target: 30 days). 4) Monitor consent rates and preference changes. 5) Review and update documentation annually or after significant changes. Tools: Audit management software, automated compliance monitoring, regular legal counsel reviews. Metrics: Audit findings closure rate, breach detection time, subject request fulfillment rate. Continuous improvement: Regular risk assessments, staying updated on regulatory changes (EDPB guidelines, court rulings), participating in privacy communities. Deliverable: Annual compliance report to management with improvement roadmap."
+            },
+            {
+              "label": "GDPR Compliance Certification",
+              "category": "output",
+              "description": "Formal compliance achievement and documentation package",
+              "content": "Final deliverable confirming GDPR compliance: 1) Compile complete documentation package: Data Processing Register, Privacy Policy, DPAs, Security Policies, Training Records, Audit Reports. 2) Create compliance statement for customers and partners. 3) Implement ongoing monitoring dashboard showing key metrics: data subject requests processed, breaches (if any), consent rates, audit findings. 4) Establish review cycle for all documents (annual minimum). 5) Prepare for potential supervisory authority inquiries with response playbook. Tools: Documentation management system, compliance dashboard (Power BI/Tableau), version control for policies. Success indicators: All documentation complete and accessible, employees trained, processes operationalized, no critical audit findings. This represents not just a project completion but an ongoing operational state of GDPR compliance."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "informs"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "requires"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "requires"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "approves"
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "validates"
+            },
+            {
+              "from": 2,
+              "to": 6,
+              "label": "outputs"
+            },
+            {
+              "from": 3,
+              "to": 6,
+              "label": "outputs"
+            },
+            {
+              "from": 4,
+              "to": 6,
+              "label": "outputs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 105,
+        "maxScore": 105,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ Has \"policy\" category",
+          "✓ Has \"review\" category",
+          "✓ All 12 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 801c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (12 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "edge-ultra-terse",
+      "status": "ok",
+      "elapsed": 82704,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Bug triage workflow.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, mon ami! The case of the elusive bug — a most intriguing investigation! Let us construct a proper triage workflow that treats each bug report as evidence to be examined, categorized, and routed with precision. The little grey cells demand systematic analysis!",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Bug Report Submission",
+              "category": "input",
+              "description": "Initial bug report entry point from users, monitoring systems, or internal teams",
+              "content": "This node represents the intake channel for all bug reports. Establish clear submission forms with required fields: reproduction steps, environment details (OS, browser, app version), expected vs actual behavior, screenshots/videos, and severity self-assessment. Implement automated duplicate detection using tools like Sentry, Jira's duplicate finder, or custom similarity algorithms. Create validation rules to reject incomplete reports (missing reproduction steps) and auto-tag reports by source (user, automated test, support team). Set up webhook integrations from monitoring tools (Datadog, New Relic) and user feedback platforms (Intercom, Zendesk). Maintain a public bug submission portal with clear guidelines and a confirmation email workflow. Track submission volume trends to identify systemic issues early."
+            },
+            {
+              "label": "Initial Triage & Classification",
+              "category": "action",
+              "description": "First responder analysis to validate, categorize, and prioritize incoming bugs",
+              "content": "Assign rotating triage officers (developers or QA) to review new bugs within 4 business hours. Follow a structured classification protocol: 1) Validate reproducibility using provided steps in a staging environment. 2) Apply severity matrix: P0 (system down/data loss), P1 (critical functionality broken), P2 (major impairment), P3 (minor/annoyance), P4 (cosmetic). 3) Assign impact scope: number of users affected, revenue impact, compliance risk. 4) Tag by component/team using code ownership maps. 5) Check for security implications (OWASP categories). Use tools like Jira Service Management with custom workflows, or GitHub Issues with labels and projects. Document classification rationale in comments. Escalate security bugs immediately to security team via dedicated channel."
+            },
+            {
+              "label": "Technical Investigation",
+              "category": "action",
+              "description": "Deep-dive analysis by engineering to identify root cause and estimate fix complexity",
+              "content": "Assigned engineer performs root cause analysis using: 1) Code inspection around affected areas with git blame to identify recent changes. 2) Log analysis (ELK stack, Splunk) searching for error patterns and timestamps. 3) Database query examination for data corruption. 4) Performance profiling (CPU, memory, network) if related to slowness. 5) Browser/device-specific testing for frontend issues. Document findings in a standardized template: root cause hypothesis, affected code/files, data impact assessment, and reproduction certainty. Estimate fix effort using story points or hours, considering: code complexity, testing requirements, deployment dependencies, and regression risk. Flag if bug requires architectural changes or has dependencies on other teams. Update bug ticket with technical details and proposed solution approach."
+            },
+            {
+              "label": "Priority Review Meeting",
+              "category": "review",
+              "description": "Weekly cross-functional meeting to finalize prioritization and resource allocation",
+              "content": "Conduct weekly 60-minute meeting with engineering lead, product manager, and support representative. Review all bugs classified P1-P2 from past week. Use weighted scoring system combining: user impact (scale 1-10), business impact (revenue/retention risk 1-10), fix complexity (1-10 inverse), and strategic alignment (roadmap relevance 1-5). Calculate priority score = (user×2 + business×2 + strategic) / complexity. Compare against active sprint capacity and product roadmap commitments. Make go/no-go decisions: schedule for next sprint, backlog for future, or reject as won't fix (documenting rationale). Update Jira/GitHub with final priority, target milestone, and assigned developer. Communicate decisions to stakeholders via changelog or status page updates."
+            },
+            {
+              "label": "Fix Development & Testing",
+              "category": "action",
+              "description": "Implementation of bug fix with comprehensive testing and validation",
+              "content": "Developer creates fix following: 1) Write failing test that reproduces the bug (unit/integration). 2) Implement minimal code change to resolve root cause. 3) Add regression tests for edge cases. 4) Update documentation if APIs or behaviors change. 5) Perform local testing in multiple environments (dev, staging). Submit pull request with detailed description linking to bug ticket. QA engineer validates fix: execute original reproduction steps, test related functionality for regressions, verify in supported browsers/devices, and confirm performance benchmarks. Use automated testing tools: Selenium for UI, Postman for APIs, Jest for unit tests. If fix passes, merge to main branch. If fails, provide specific feedback and return to developer. Update bug status and attach test evidence (screenshots, logs)."
+            },
+            {
+              "label": "Deployment & Verification",
+              "category": "action",
+              "description": "Controlled release of fix with monitoring for resolution confirmation",
+              "content": "Deploy fix using canary or phased rollout: 1) Deploy to 10% of users initially. 2) Monitor error rates (Datadog, New Relic), user sessions (FullStory), and support tickets for 24 hours. 3) Check specific metrics related to the bug (e.g., checkout completion rate for payment bug). 4) If no issues, roll out to 50%, then 100% over 48 hours. For critical P0 bugs, use emergency hotfix procedures with abbreviated testing but additional monitoring. After full deployment: verify original reporter's issue is resolved (send personalized update), update public status page, and close related support tickets automatically via Zendesk/Jira integration. Document deployment details: version number, deployment time, rollback plan. Schedule follow-up check at 7 days post-deployment to ensure no recurrence."
+            },
+            {
+              "label": "Triage Analytics & Improvement",
+              "category": "output",
+              "description": "Final report on bug triage performance and process optimization recommendations",
+              "content": "Generate monthly triage analytics report covering: 1) Metrics: time-to-triage (target <4h), time-to-resolution by priority, backlog aging, recurrence rate, duplicate rate. 2) Root cause analysis: top 3 bug categories (UI, API, data), frequent components, common patterns. 3) Team performance: triage accuracy, classification consistency. 4) User impact: number of users affected monthly, top reported issues. Use tools like Jira dashboards, custom SQL queries on bug database, or Amplitude for user impact analysis. Identify process bottlenecks: longest wait times, most re-opened bugs, misclassified priorities. Recommend improvements: adjust severity matrix, add automated checks, improve submission forms, or reassign team responsibilities. Present findings to engineering leadership with actionable recommendations and track implementation in next quarter's goals."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "informs"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "approves"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "outputs"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "label": "monitors"
+            },
+            {
+              "from": 6,
+              "to": 1,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 95,
+        "maxScore": 95,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 4)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ All 10 edges valid",
+          "✓ Starts with input",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 812c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (10 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "event-conference-planning",
+      "status": "error",
+      "elapsed": 120010,
+      "error": "api_error: The operation was aborted due to timeout",
+      "request": {
+        "prompt": "We're organizing a 500-person tech conference in 4 months. Build a workflow covering venue booking, speaker management, sponsorship sales, marketing campaign, registration system, A/V setup, catering, and day-of logistics.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "error": "api_error",
+        "message": "The operation was aborted due to timeout"
+      },
+      "scoring": {
+        "score": 0,
+        "maxScore": 1,
+        "pct": 0,
+        "checks": [
+          "✗ API error: api_error"
+        ]
+      }
+    },
+    {
+      "id": "startup-advice-growth",
+      "status": "ok",
+      "elapsed": 5975,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "We are a pre-seed startup with $150k in the bank, 2 founders, and a working MVP with 50 beta users. Our MRR is $800. We have interest from an angel who wants to invest $500k at a $5M valuation but wants us to pivot from B2C to B2B. Our users love the product. Should we take the money and pivot, or try to grow organically?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, a classic case of the crossroads, mon ami! The evidence before us: a beloved B2C product with genuine traction, versus a lucrative B2B pivot offer that could accelerate growth but risks alienating your early champions. My little grey cells suggest we must investigate the strategic fit, financial runway, and founder conviction before deciding. Let us examine the clues.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (374 chars)",
+          "✓ Message length: 374 ≥ 250"
+        ]
+      }
+    }
+  ]
+}

@@ -13,6 +13,9 @@ const BASE = 'http://localhost:3000/api/cid';
 // Override model via CLI arg or env: MODEL=deepseek-chat node tests/eval/run-eval.mjs
 const MODEL_OVERRIDE = process.argv[2] || process.env.MODEL || null;
 
+// Force specific test IDs: FORCE_IDS=test1,test2 node tests/eval/run-eval.mjs
+const FORCE_IDS = process.env.FORCE_IDS ? process.env.FORCE_IDS.split(',').map(s => s.trim()) : null;
+
 // How many tests to run per cycle (keeps each run under ~5 min)
 const TESTS_PER_RUN = 6;
 
@@ -584,6 +587,81 @@ const POOL = [
     prompt: 'Our codebase is 8 years old with 2 million lines of PHP. We have zero tests, no CI/CD, and deploy by FTPing files to production. Three of our five developers want to rewrite everything in Go. The other two say we should incrementally modernize. Our revenue is $4M/year and we have 200 enterprise customers who depend on uptime. What should we do?',
     expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 250 },
   },
+
+  // ─── Round 97 additions ─────────────────────────────────────────────────────
+
+  // Logistics / supply chain — new domain, tests dependency + state nodes for multi-party coordination
+  {
+    id: 'logistics-international-shipping',
+    agent: 'poirot', taskType: 'generate',
+    prompt: 'Build a workflow for managing international container shipping from Shanghai to Los Angeles. Steps: booking with carrier, container loading, customs declaration (both origin and destination), bill of lading, ocean transit tracking, port arrival, customs clearance, last-mile delivery. We ship 20 containers per month and need to handle delays and customs holds.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['policy'], mustMentionInNodes: ['customs|clearance|declaration', 'container|cargo|load', 'transit|track|shipping', 'delivery|last.mile'] },
+  },
+
+  // Edge case: very short prompt — tests whether agent still produces rich output from minimal input
+  {
+    id: 'edge-minimal-prompt',
+    agent: 'rowan', taskType: 'generate',
+    prompt: 'Build me a CI/CD pipeline.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['test'], mustMentionInNodes: ['build|compile', 'test|lint', 'deploy|release'] },
+  },
+
+  // ─── Round 98 additions ─────────────────────────────────────────────────────
+
+  // Education / online course — new domain, tests content creation + review workflow
+  {
+    id: 'education-online-course-creation',
+    agent: 'rowan', taskType: 'generate',
+    prompt: 'Build a workflow for creating and launching a 12-week online coding bootcamp. Steps: curriculum design, instructor recruitment, platform setup (LMS), content recording, beta testing with 20 students, marketing and enrollment, live cohort delivery, and student outcomes tracking. Budget is $50k and we need 100 students for the first cohort.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['review'], mustMentionInNodes: ['curriculum|course|content', 'instructor|teach', 'platform|lms', 'enroll|student|cohort'] },
+  },
+
+  // Execute task — Poirot generates a competitive analysis document
+  {
+    id: 'execute-competitive-analysis',
+    agent: 'poirot', taskType: 'execute',
+    systemPromptOverride: 'You are a content generator for a workflow node called "Competitive Analysis Report" (category: artifact). Write detailed, professional analytical content with a detective-style investigative tone. Return ONLY the content as markdown text. Do not wrap in JSON or code blocks.',
+    prompt: 'Write a competitive analysis for a B2B project management SaaS entering a market dominated by Jira, Asana, Monday.com, and Linear. Our differentiator is AI-powered sprint planning and automatic risk detection. We are pre-revenue with 200 beta users. Include market positioning, SWOT analysis, competitive matrix, and go-to-market recommendations.',
+    expect: { hasContent: true, minContentLen: 1500 },
+  },
+
+  // ─── Round 99 additions ─────────────────────────────────────────────────────
+
+  // Multi-output workflow — single input document produces multiple distinct deliverables
+  // Tests whether agent fans out into parallel artifact branches from one input
+  {
+    id: 'education-syllabus-multi-output',
+    agent: 'rowan', taskType: 'generate',
+    prompt: 'I have a 16-week Intro to Computer Science syllabus document. Build a workflow that transforms it into three separate deliverables: weekly lesson plans (with learning objectives, activities, and homework), grading rubrics for each assignment, and slide decks for each module. Each deliverable needs its own quality review before final delivery.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['review', 'artifact'], mustMentionInNodes: ['lesson|plan', 'rubric|grading|assess', 'slide|deck|present'] },
+  },
+
+  // Multi-format input/output — tests handling of diverse file types and format transformations
+  // Single audio input → multiple output formats (text, video, social, email)
+  {
+    id: 'media-content-multiformat',
+    agent: 'poirot', taskType: 'generate',
+    prompt: 'We record a weekly 1-hour podcast episode (MP3). Build a workflow that repurposes each episode into: a full written transcript (DOCX), a 2000-word blog post (Markdown), 5 short video clips for social media (MP4 with captions), an email newsletter summary (HTML), and a YouTube video with chapter markers. Each format has different requirements and review gates.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['review'], mustMentionInNodes: ['transcript|transcri', 'blog|post|article', 'video|clip|social', 'email|newsletter'] },
+  },
+
+  // ─── Round 100 additions ────────────────────────────────────────────────────
+
+  // DevOps dependency upgrade — tests dependency + patch categories (both rarely exercised)
+  {
+    id: 'devops-dependency-upgrade',
+    agent: 'rowan', taskType: 'generate',
+    prompt: 'Our Node.js app depends on 340 npm packages, 47 have known CVEs, and we\'re still on Node 18 (EOL). Build a workflow for a systematic dependency upgrade: vulnerability triage, breaking change analysis, upgrade execution, regression testing, and rollback plan. We deploy to Kubernetes and can\'t afford more than 10 minutes of downtime.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['test'], mustMentionInNodes: ['vulnerab|cve|security', 'upgrade|update|migrat', 'test|regression', 'rollback|revert|deploy'] },
+  },
+
+  // Corporate finance / budget planning — new domain, tests state-heavy workflow with approval gates
+  {
+    id: 'finance-annual-budget',
+    agent: 'poirot', taskType: 'generate',
+    prompt: 'Build a workflow for our company\'s annual budget planning cycle. We\'re a 200-person SaaS company with 8 departments. Steps: historical spend analysis, department budget requests, executive review and negotiation, board approval, quarterly reforecasting, and variance reporting. Total budget is $25M and the CFO wants 15% more accountability this year.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['review'], mustMentionInNodes: ['budget|spend|allocat', 'department|team', 'approv|board|executive', 'forecast|variance|report'] },
+  },
 ];
 
 // ─── Agent System Prompts (synced with src/lib/prompts.ts) ─────────────────
@@ -938,7 +1016,9 @@ function pickTests() {
 }
 
 async function main() {
-  const tests = pickTests();
+  const tests = FORCE_IDS
+    ? POOL.filter(t => FORCE_IDS.includes(t.id))
+    : pickTests();
   console.log(`\n🔬 Lifecycle Agent Eval — ${new Date().toISOString()}`);
   console.log(`Selected ${tests.length}/${POOL.length} tests from pool${MODEL_OVERRIDE ? ` | Model: ${MODEL_OVERRIDE}` : ''}\n`);
 

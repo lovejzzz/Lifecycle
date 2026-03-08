@@ -1,0 +1,471 @@
+{
+  "timestamp": "2026-03-08T15-53-06",
+  "overall": 99,
+  "testsRun": [
+    "eng-advice-scaling",
+    "hr-hiring",
+    "execute-incident-postmortem",
+    "personality-poirot-empty",
+    "government-procurement",
+    "healthcare-clinical-trial"
+  ],
+  "poolSize": 74,
+  "results": [
+    {
+      "id": "eng-advice-scaling",
+      "status": "ok",
+      "elapsed": 5069,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Our API is hitting 500ms response times at 1000 concurrent users. Database is PostgreSQL. What should I look at first?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Start with database query analysis and connection pooling. Run `EXPLAIN ANALYZE` on your slowest endpoints' queries, check for missing indexes on WHERE/ORDER BY/JOIN columns, and verify your connection pool isn't exhausted at 1000 concurrent users. Set up pg_stat_statements to identify the top 5 time-consuming queries.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (320 chars)",
+          "✓ Message length: 320 ≥ 250"
+        ]
+      }
+    },
+    {
+      "id": "hr-hiring",
+      "status": "ok",
+      "elapsed": 56426,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "We need to hire 5 engineers in the next 2 months. Our current process is just posting on LinkedIn and hoping. Build me a proper hiring pipeline.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building a structured hiring pipeline to scale from reactive to proactive talent acquisition.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Hiring Trigger",
+              "category": "trigger",
+              "description": "Business need for 5 engineers within 2 months",
+              "content": "**Event:** Quarterly planning identifies need for 5 backend/full-stack engineers within 60 days. **Payload:** Headcount approval document with role specifications (Senior: 3, Mid: 2), tech stack requirements (Python/Go, React, AWS), budget allocation ($180k-250k base + equity). **Configuration:** Hiring manager assignments, ATS (Greenhouse/Lever) setup with pipeline stages, calendar blocks for interviews. **Webhook Setup:** Connect to HRIS (BambooHR/Workday) for offer acceptance triggers, Slack channel #eng-hiring-alerts for real-time notifications when candidates enter pipeline. **Metrics to Track:** Time-to-fill baseline (45 days target), source quality score, diversity funnel metrics."
+            },
+            {
+              "label": "Sourcing Strategy",
+              "category": "action",
+              "description": "Multi-channel proactive talent acquisition plan",
+              "content": "**1. LinkedIn Optimization:** Upgrade to Recruiter Lite, build boolean search strings (\"Python AWS Lambda\" + \"5 years\" -\"manager\"), schedule daily InMail campaigns (30/week), use LinkedIn Events for virtual tech talks. **2. Technical Sourcing:** Use GitHub search (top contributors to relevant OSS projects), Stack Overflow Talent, AngelList for startup engineers. **3. Referral Program:** Launch 30-day turbo referral with $5k bonus (paid at 90 days), host \"Referral Friday\" demos. **4. Agency Partnership:** Engage 2 specialized tech agencies with 20% fee cap for hard-to-fill roles. **5. University Pipeline:** Contact top 5 CS programs for graduating master's students. **Tools:** HireEZ for sourcing automation, Gem for sequence tracking, Calendly for scheduling. **Owner:** Lead Recruiter + Engineering Manager."
+            },
+            {
+              "label": "Technical Screening",
+              "category": "test",
+              "description": "Structured technical evaluation before onsite",
+              "content": "**What to Test:** Algorithmic problem-solving (LeetCode Medium), system design fundamentals, language-specific patterns. **Pass/Fail Criteria:** Code must compile, optimal time complexity for algorithms, clear communication during solution walkthrough. **Tools:** CoderPad for live coding (45 min), System Design primer document sent 24h before, HackerRank for async assessment if needed. **Coverage:** All candidates get identical problem set (rotated weekly), evaluated against rubric (0-4 scale on: correctness, efficiency, clarity). **Process:** Recruiter schedules → Engineer conducts screen → Feedback in Greenhouse within 24h using scorecard. **Red Flags:** No questions about our stack, cannot explain time complexity, poor collaboration during pair programming portion."
+            },
+            {
+              "label": "Onsite Interview Loop",
+              "category": "action",
+              "description": "4-hour structured interview with multiple evaluators",
+              "content": "**1. Coding Deep Dive (60 min):** Real-world refactoring exercise using our codebase (sanitized), focus on testing, readability, tradeoffs. **2. System Design (60 min):** Design a scalable notification service, evaluate partitioning strategies, failure modes, monitoring. **3. Behavioral & Values (45 min):** STAR format questions about technical leadership, conflict resolution, mentoring using values alignment rubric. **4. Team Collaboration (45 min):** Pair programming on actual bug fix with future teammates. **Tools:** Zoom with breakout rooms, Miro for whiteboarding, shared editor for coding. **Calibration:** Interviewers attend weekly debriefs to align scoring, use consistent feedback template in Greenhouse. **Owner:** Engineering Manager coordinates panel, ensures no interviewer fatigue (max 2 sessions/day)."
+            },
+            {
+              "label": "Hiring Committee Review",
+              "category": "review",
+              "description": "Cross-functional approval before offer",
+              "content": "**Approval Criteria:** Unanimous \"hire\" recommendation from interviewers, compensation band alignment, diversity consideration (panel mix), team fit assessment. **Who Reviews:** Engineering Director (chair), Hiring Manager, 2 senior engineers from other teams, HR Business Partner. **Escalation:** Split decisions go to VP Engineering with detailed rationale document. **SLA:** Committee meets twice weekly, decisions within 48h of completed packet. **Packet Requirements:** Complete interview feedback scores, reference check summary (3 references minimum), portfolio review (GitHub/prior work), compensation expectations. **Red Flags:** Single strong veto with documented justification, significant discrepancies between technical and behavioral scores, unrealistic timeline expectations."
+            },
+            {
+              "label": "Offer & Onboarding Launch",
+              "category": "output",
+              "description": "Final offer delivery and pre-boarding setup",
+              "content": "**Deliverable Format:** Formal offer letter (DocuSign), benefits summary deck, 30-60-90 day onboarding plan, equipment request form. **Distribution:** Phone call from Hiring Manager + written email, followed by 24h for questions, then deadline. **Success Metrics:** Offer acceptance rate (target 85%), time from approval to acceptance (target 72h), onboarding satisfaction score (first week survey). **Process:** 1. Verbal offer with comp details 2. Written offer within 4h 3. Answer questions within 2h 4. Background check initiated upon acceptance 5. Pre-start engagement: Slack invite, intro to buddy, first week calendar. **Tools:** Greenhouse offers module, Checkr for background checks, Enboarder for pre-boarding. **Handoff:** Recruiter → HR Ops → Hiring Manager transition documented in Asana."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "drives"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "requires"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "approves"
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 4,
+              "to": 3,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 100,
+        "maxScore": 100,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 6 (min: 5)",
+          "✓ Node count: 6 ≤ 10",
+          "✓ Has \"review\" category",
+          "✓ All 7 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 784c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (7 edges, 6 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "execute-incident-postmortem",
+      "status": "ok",
+      "elapsed": 59405,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Write a blameless post-mortem for a 2-hour production outage caused by a database migration that locked a critical table. 500 customers were affected. Include timeline, root cause, impact, and action items.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Blameless Post-Mortem Report: Production Outage Due to Database Table Lock\n\n**Date of Incident:** October 26, 2023  \n**Start Time:** 09:14 UTC  \n**End Time:** 11:23 UTC  \n**Duration:** 2 hours, 9 minutes  \n**Service Affected:** User Transaction API & Dashboard  \n**Impact:** ~500 customers unable to access transaction history or process new transactions\n\n## Executive Summary\nOn October 26, 2023, a scheduled database migration to add new indexing to the `user_transactions` table resulted in a full table lock that blocked all read and write operations for approximately two hours. The migration was intended to improve query performance but instead caused a production outage affecting customer-facing services. This report documents the timeline, root cause analysis, impact assessment, and corrective actions to prevent recurrence.\n\n## Timeline (All Times UTC)\n\n**Pre-Incident**\n- 08:30: Database migration script reviewed and approved for deployment\n- 08:45: Migration scheduled for execution during \"low-traffic\" window\n- 09:00: On-call engineer begins migration execution\n\n**Incident**\n- 09:14: Migration initiates `ALTER TABLE` command with `LOCK=EXCLUSIVE` (default)\n- 09:15: First alerts trigger for elevated API error rates (5xx responses)\n- 09:18: Monitoring shows database connection pool exhaustion\n- 09:22: On-call engineer acknowledges incident, begins investigation\n- 09:35: Team identifies table lock as root cause\n- 09:45: Decision made to kill migration process\n- 09:52: Migration process terminated, but lock persists\n- 10:15: Database restart initiated to clear persistent locks\n- 10:42: Database services fully restored\n- 10:50: Application services validated as operational\n- 11:23: All systems confirmed healthy, incident resolved\n\n## Impact Assessment\n\n**Technical Impact:**\n- Primary database read/write operations blocked for 2 hours\n- API error rate peaked at 94% for transaction-related endpoints\n- 12,843 failed customer requests during outage window\n- Database connection pool exhausted, causing cascading failures\n\n**Customer Impact:**\n- Approximately 500 active customers affected\n- Customers unable to:\n  - View transaction history\n  - Process new transactions\n  - Access billing information\n  - Download account statements\n- 47 customer support tickets created during incident\n- Social media mentions indicated frustration with service disruption\n\n**Business Impact:**\n- Estimated $8,500 in lost transaction revenue\n- Customer trust impact (to be measured via upcoming NPS survey)\n- Engineering team diverted from planned work for 15 person-hours\n\n## Root Cause Analysis\n\n**Primary Cause:**\nThe database migration script used the default `LOCK=EXCLUSIVE` parameter when altering the `user_transactions` table. This exclusive lock blocked all concurrent read and write operations to the table for the duration of the migration. The table size (approximately 85GB) meant the migration took significantly longer than anticipated in the testing environment.\n\n**Contributing Factors:**\n\n1. **Testing Environment Disparity:** The staging database contained only 5GB of test data, causing the migration to complete in under 2 minutes during testing. This created a false expectation of minimal impact.\n\n2. **Missing Lock Configuration:** The migration script did not explicitly specify `LOCK=NONE` or `LOCK=SHARED` to allow concurrent operations during the index creation.\n\n3. **Monitoring Gap:** While database health was monitored, there was no specific alert for long-running table locks exceeding 5 minutes.\n\n4. **Procedural Gap:** The change management process did not require verification of lock behavior for production migrations affecting critical tables.\n\n5. **Fallback Plan Inadequacy:** The rollback procedure assumed the migration could be quickly killed and rolled back, but the exclusive lock persisted even after process termination, requiring a full database restart.\n\n## Action Items\n\n### Immediate (Completed)\n- [x] Restore full database and application functionality (Completed: 11:23 UTC)\n- [x] Communicate resolution to affected customers via email (Completed: 12:00 UTC)\n- [x] Update status page with incident summary (Completed: 11:45 UTC)\n- [x] Review and respond to all customer support tickets (Completed: 15:00 UTC)\n\n### Short-term (Next 30 Days)\n1. **Database Migration Safeguards**\n   - Implement mandatory lock parameter review for all production migrations\n   - Create pre-flight checklist requiring verification of lock behavior\n   - Add automated testing with production-sized data samples for migrations\n\n2. **Monitoring Enhancements**\n   - Implement alerting for table locks exceeding 5 minutes\n   - Create dashboard for real-time visibility into active database locks\n   - Add synthetic transactions to detect service degradation faster\n\n3. **Procedural Improvements**\n   - Update change management policy to require explicit lock strategy documentation\n   - Establish formal \"break-glass\" procedures for terminating problematic migrations\n   - Create migration rollback playbook with database restart as documented option\n\n### Medium-term (Next 90 Days)\n1. **Technical Improvements**\n   - Implement online schema change tools (pt-online-schema-change or gh-ost)\n   - Develop database migration canary deployment capability\n   - Create automated migration impact prediction based on table size and type\n\n2. **Organizational Improvements**\n   - Conduct database operations training for engineering team\n   - Establish database reliability engineering (DBRE) role or team\n   - Implement \"failure Friday\" exercises for migration-related scenarios\n\n3. **Communication Improvements**\n   - Develop customer communication templates for various outage scenarios\n   - Create internal post-mortem review process with cross-team participation\n   - Establish clearer escalation paths for production incidents\n\n## Key Learnings\n\n1. **Production Realities Differ:** Testing with production-sized data is essential for understanding true migration impact.\n\n2. **Default Behaviors Are Dangerous:** Database defaults (like exclusive locks) must be explicitly overridden when inappropriate for production use.\n\n3. **Rollback Complexity:** Some database operations require more sophisticated recovery procedures than simple process termination.\n\n4. **Progressive Disclosure:** Customers appreciate timely, transparent communication even when full resolution details aren't yet available.\n\n5. **Blameless Culture Works:** The team collaborated effectively to resolve the incident without finger-pointing, focusing instead on systemic improvements.\n\n## Conclusion\nThis incident highlighted gaps in our database change management process, particularly around lock management and production testing. While the immediate impact was significant, the blameless analysis has identified clear improvement opportunities that will strengthen our systems and processes. The action items outlined above will help prevent similar incidents while improving our overall reliability and customer trust.\n\n**Report Prepared By:** Incident Response Team  \n**Date:** October 27, 2023  \n**Next Review:** Action item progress review scheduled for November 10, 2023",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (7191 chars)",
+          "✓ Content length: 7191 ≥ 300"
+        ]
+      }
+    },
+    {
+      "id": "personality-poirot-empty",
+      "status": "ok",
+      "elapsed": 4081,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Mon ami, the case is fresh—the board is empty, awaiting our first clue. We must begin with the evidence at hand, and I shall apply the little grey cells to construct a meticulous workflow.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (188 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "government-procurement",
+      "status": "ok",
+      "elapsed": 62302,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Build a government procurement workflow for a city agency buying a new fleet management system. Steps: needs assessment, RFP drafting, vendor solicitation, proposal evaluation, compliance review, contract award, and implementation oversight. Must follow public procurement regulations.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, mon ami! A procurement case worthy of the little grey cells. I have constructed a workflow that captures both the procedural rigor and investigative oversight required for public acquisitions. The evidence must be meticulously documented at each stage!",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Procurement Trigger",
+              "category": "trigger",
+              "description": "City council approval or budget allocation initiates fleet management system acquisition",
+              "content": "This begins when the city council passes a resolution authorizing funds for fleet management modernization OR when the annual budget allocates specific capital funds. Documentation required: council resolution number, budget line item, preliminary needs statement from transportation department. Must include: 1) Signed authorization from city manager, 2) Initial budget cap determination, 3) Cross-departmental stakeholder identification (transportation, finance, IT, sustainability office), 4) Preliminary timeline with regulatory checkpoints. Tools: Municipal procurement software (like Periscope, Bonfire), budget tracking systems, stakeholder mapping templates. Critical first step: register intent with city clerk's office for public transparency portal."
+            },
+            {
+              "label": "Needs Assessment & Requirements",
+              "category": "state",
+              "description": "Comprehensive analysis of current fleet operations and future system requirements",
+              "content": "Conduct 3-phase assessment: 1) Current state analysis: inventory all vehicles (200+ units), maintenance logs, fuel consumption patterns, driver assignment systems, compliance tracking (emissions, inspections). 2) Gap analysis: interview 15+ stakeholders across departments using structured questionnaires. 3) Requirements specification: functional (real-time GPS tracking, predictive maintenance alerts, fuel optimization algorithms), technical (cloud-based, API integrations with existing systems), compliance (ADA accessibility, data privacy for driver information). Deliverables: Needs Assessment Report (40+ pages), weighted requirements matrix, ROI calculations. Tools: Process mapping software (Lucidchart), stakeholder interview templates, benchmarking against peer cities (Austin, Denver implementations)."
+            },
+            {
+              "label": "RFP Development & Legal Review",
+              "category": "artifact",
+              "description": "Creation of Request for Proposal with integrated compliance safeguards",
+              "content": "Draft comprehensive RFP document including: 1) Technical specifications (minimum 85% of requirements from assessment), 2) Evaluation criteria (40% technical merit, 30% cost, 15% vendor experience, 15% local economic impact), 3) Compliance requirements (Davis-Bacon prevailing wage, Buy American provisions, accessibility standards), 4) Submission guidelines (electronic portal only, notarized affidavits). Legal review by city attorney's office focuses on: indemnification clauses, data ownership terms, termination provisions, audit rights. Tools: RFP template library (NIGP standards), legal checklist for municipal contracts, cost estimation models. Must include mandatory pre-bid conference and Q&A period (minimum 14 days)."
+            },
+            {
+              "label": "Vendor Evaluation & Scoring",
+              "category": "review",
+              "description": "Multi-committee evaluation of proposals against established criteria",
+              "content": "Form three evaluation committees: 1) Technical Committee (IT director, fleet manager, operations staff) scores functional requirements using 100-point rubric. 2) Financial Committee (procurement officer, budget analyst) evaluates cost proposals, payment terms, total cost of ownership over 5-year period. 3) Compliance Committee (legal, diversity office) verifies vendor certifications (minority/women-owned business status, insurance coverage, conflict disclosures). Process: Blind scoring for first round (proposals anonymized), then committee deliberation with weighted scoring. Documentation: Individual score sheets, consensus meeting minutes, vendor clarification requests. Tools: Evaluation software (eSourcing), scoring calibration sessions, reference check protocols (contact 3+ previous municipal clients)."
+            },
+            {
+              "label": "Contract Negotiation & Award",
+              "category": "action",
+              "description": "Final negotiations and official contract execution with transparency measures",
+              "content": "Negotiation phase includes: 1) Best and Final Offer (BAFO) process with top 2-3 vendors, 2) Service Level Agreement refinement (uptime guarantees, response times, penalty structures), 3) Implementation timeline validation with milestones. Award process: Prepare recommendation memo to city council with justification narrative, cost-benefit analysis, minority participation percentages. Public notice requirements: publish intent to award in official newspaper, 10-day protest period. Final steps: City manager signature authority verification, bond/insurance certificate collection, vendor onboarding initiation. Tools: Contract management system (DocuSign for government), transparency portal updates, award notification templates. Critical: Document all deviations from original RFP terms with justification memos."
+            },
+            {
+              "label": "Implementation Oversight & Acceptance",
+              "category": "output",
+              "description": "Phased implementation with testing, training, and final system acceptance",
+              "content": "Execute 4-phase implementation: 1) System configuration (60 days): hardware installation, software customization, data migration from legacy systems. 2) Pilot testing (30 days): 20-vehicle pilot group, parallel running with old system, bug tracking. 3) Training rollout: tiered training for administrators, supervisors, drivers (minimum 16 hours each). 4) Full deployment & acceptance: performance testing against contract SLAs, user acceptance sign-off from all departments. Oversight mechanisms: Weekly implementation committee meetings, milestone payment approvals tied to deliverables, change order management protocol. Final deliverable: System Acceptance Certificate signed by city manager, complete documentation archive, knowledge transfer completion. Tools: Project management (MS Project), testing protocols, training evaluation surveys."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "validates"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "approves"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "requires"
+            },
+            {
+              "from": 3,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "label": "informs"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "monitors"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 110,
+        "maxScore": 115,
+        "pct": 96,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 6 (min: 5)",
+          "✓ Node count: 6 ≤ 10",
+          "✗ Missing \"policy\" category (found: trigger, state, artifact, review, action, output)",
+          "✓ Has \"review\" category",
+          "✓ All 8 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 797c, no thin nodes",
+          "✓ Architecture covers: rfp, vendor, compliance, contract",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (8 edges, 6 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "healthcare-clinical-trial",
+      "status": "ok",
+      "elapsed": 86137,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Build a workflow for managing a Phase II clinical trial for a new diabetes drug. Steps: protocol design, IRB approval, patient recruitment and screening, drug administration, adverse event monitoring, data collection and analysis, interim review, and final report to the FDA. We need to enroll 200 patients across 4 sites over 12 months.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, mon ami! A clinical trial is the most fascinating of investigations—we must gather evidence with precision and follow every clue. Let us build a workflow worthy of this pharmaceutical case. The little grey cells are already working!",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Protocol Design & IRB Submission",
+              "category": "input",
+              "description": "Initial study design and ethics approval preparation",
+              "content": "**Phase II Diabetes Drug Protocol Development:** Begin with comprehensive protocol design including study objectives, endpoints (primary: HbA1c reduction; secondary: fasting glucose, safety), statistical analysis plan (sample size calculation for 200 patients with 80% power, alpha=0.05), and detailed methodology. Develop inclusion/exclusion criteria specific to Type 2 diabetes patients (HbA1c 7-10%, age 30-70, stable medication regimen). Create IRB submission package including protocol, informed consent forms (ICF), investigator brochure, and site qualification questionnaires. Use tools: Medidata Rave for protocol authoring, IRBNet for submission management. Establish Data Safety Monitoring Board (DSMB) charter. Timeline: 4-6 weeks for protocol finalization, 8-12 weeks for IRB review across 4 sites (coordinated central IRB recommended). Budget allocation: $150K for design phase."
+            },
+            {
+              "label": "Site Activation & Patient Recruitment",
+              "category": "action",
+              "description": "Site preparation and patient enrollment across 4 clinical sites",
+              "content": "**Site Initiation and Recruitment Strategy:** Activate 4 clinical sites through site qualification visits (SQVs) and investigator meetings. Train site staff on protocol, GCP, and electronic data capture (EDC) system (Medidata Rave). Implement multi-channel recruitment: physician referrals, diabetes clinic databases, targeted advertising (social media, local radio), and patient registries. Screening process: telephone pre-screening → in-person visit for full eligibility assessment (medical history, lab tests, physical exam). Use centralized randomization system (IWRS) for patient allocation (1:1 drug:placebo). Enrollment targets: 50 patients per site, 15-20 patients/month overall. Tools: Greenphire ClinCard for patient stipends, StudyKIK for recruitment tracking. Monitor screening failure rates (<30% target)."
+            },
+            {
+              "label": "Drug Administration & Monitoring",
+              "category": "action",
+              "description": "Treatment phase with safety monitoring and data collection",
+              "content": "**Treatment Execution and Safety Surveillance:** Administer investigational drug/placebo according to randomization schedule. Dosing: once daily oral medication with titration schedule (weeks 1-4). Conduct regular site visits (weeks 2, 4, 8, 12, 16, 20, 24) for efficacy assessments (HbA1c, fasting glucose, weight) and safety checks (vitals, labs including liver/kidney function). Implement real-time adverse event (AE) reporting through EDC with automated alerts for SAEs (serious adverse events). Use MedDRA coding for AE classification. Site monitoring: 100% source data verification for first 3 patients per site, then risk-based monitoring. Drug accountability logs maintained electronically. Patient compliance monitored via pill counts and diary cards. Temperature-controlled drug storage with continuous monitoring (Vaisala monitoring system)."
+            },
+            {
+              "label": "Data Management & Statistical Analysis",
+              "category": "artifact",
+              "description": "Data cleaning, validation, and statistical evaluation",
+              "content": "**Data Processing and Statistical Evaluation:** Clean and validate data through automated edit checks in EDC (Medidata Rave). Resolve queries within 5 business days. Database lock after 100% query resolution and final monitoring visits. Statistical analysis using SAS 9.4: primary efficacy analysis (ANCOVA of HbA1c change from baseline at week 24, adjusting for baseline HbA1c and site), secondary analyses (mixed models for repeated measures), safety analysis (descriptive statistics for AEs, laboratory abnormalities). Interim analysis planned at 50% enrollment (100 patients) for futility/safety assessment by DSMB. Create tables, listings, and figures (TLFs) following CDISC standards (SDTM/ADaM). Sensitivity analyses: per-protocol, completers, multiple imputation for missing data. Statistical significance: p<0.05 two-sided for primary endpoint."
+            },
+            {
+              "label": "Interim DSMB Review",
+              "category": "review",
+              "description": "Independent safety and efficacy assessment at 50% enrollment",
+              "content": "**Data Safety Monitoring Board Evaluation:** Convene DSMB meeting after 100 patients complete week 12 assessments. Prepare unblinded interim report including: efficacy data (HbA1c trends), safety data (SAEs, discontinuations), and futility analysis (conditional power calculation). DSMB composition: 3 independent experts (endocrinologist, statistician, ethicist) plus non-voting sponsor representative. Review criteria: safety stopping rules (≥5% SAEs related to drug), efficacy futility boundary (conditional power <20% for success). DSMB recommendations: continue as planned, modify protocol (dose adjustment), or terminate for safety/futility. Documentation: formal DSMB charter, meeting minutes, recommendation letter to sponsor. Timeline: 2 weeks for report preparation, 1 week for DSMB review. Tools: secure portal for blinded/unblinded data access."
+            },
+            {
+              "label": "Regulatory Compliance & Documentation",
+              "category": "policy",
+              "description": "Ongoing regulatory adherence and audit readiness",
+              "content": "**Continuous Regulatory Oversight:** Maintain compliance with FDA 21 CFR Part 312, ICH GCP E6(R2), and HIPAA requirements. Conduct quarterly quality assurance audits of all sites (checking: informed consent process, source documentation, AE reporting). Prepare for FDA inspection with complete Trial Master File (TMF) including: protocol amendments, IRB approvals, CVs of investigators, monitoring reports, drug accountability records. Use Veeva Vault eTMF for document management with automatic completeness checks. Report SAEs to FDA within 15 calendar days (7 days for fatal/life-threatening). Annual IND safety reports submitted. Site training on ALCOA+ principles for data integrity. Audit readiness: mock FDA inspection at 75% enrollment. Budget: $75K for compliance activities."
+            },
+            {
+              "label": "Final Analysis & FDA Submission",
+              "category": "output",
+              "description": "Complete study analysis and regulatory submission package",
+              "content": "**End-of-Study Deliverables and FDA Submission:** Final database lock after last patient last visit (LPLV) + 30 days. Complete statistical analysis plan (SAP) finalization. Generate final clinical study report (CSR) following ICH E3 structure: title page, synopsis, introduction, study objectives, investigational plan, study patients, efficacy evaluation, safety evaluation, discussion, conclusions, references, appendices. Prepare integrated summary of efficacy (ISE) and safety (ISS). Submit to FDA as part of Phase II meeting package for End-of-Phase II (EOP2) meeting request. Package includes: CSR, TLFs, datasets (SDTM/ADaM), proposed Phase III design. Timeline: 3 months from LPLV to final CSR, 1 month for internal review, simultaneous preparation of FDA submission. Tools: SAS for analysis, Documentum for submission assembly, ESG for electronic submission to FDA."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "drives"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 2,
+              "label": "monitors"
+            },
+            {
+              "from": 4,
+              "to": 3,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "label": "monitors"
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "label": "requires"
+            },
+            {
+              "from": 3,
+              "to": 6,
+              "label": "outputs"
+            },
+            {
+              "from": 4,
+              "to": 6,
+              "label": "informs"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "requires"
+            },
+            {
+              "from": 2,
+              "to": 5,
+              "label": "feeds"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 115,
+        "maxScore": 115,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ Has \"policy\" category",
+          "✓ Has \"review\" category",
+          "✓ All 12 edges valid",
+          "✓ Starts with input",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 847c, no thin nodes",
+          "✓ Architecture covers: protocol, recruit, adverse, fda",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (12 edges, 7 nodes)"
+        ]
+      }
+    }
+  ]
+}

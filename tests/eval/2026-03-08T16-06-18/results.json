@@ -1,0 +1,481 @@
+{
+  "timestamp": "2026-03-08T16-06-18",
+  "overall": 99,
+  "testsRun": [
+    "marketing-advice",
+    "eng-code-review",
+    "freelancer-client",
+    "execute-job-description",
+    "personality-rowan-empty",
+    "government-procurement"
+  ],
+  "poolSize": 76,
+  "results": [
+    {
+      "id": "marketing-advice",
+      "status": "ok",
+      "elapsed": 3981,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Our email open rates dropped from 35% to 12% over the last quarter. What could be wrong?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, a most curious case of the vanishing opens! The little grey cells suggest we must investigate the evidence—subject lines, sender reputation, list hygiene, and timing. Let us examine the clues systematically, mon ami.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 35,
+        "maxScore": 40,
+        "pct": 88,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (220 chars)",
+          "✗ Message too short: 220 < 250"
+        ]
+      }
+    },
+    {
+      "id": "eng-code-review",
+      "status": "ok",
+      "elapsed": 72195,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "PRs sit for days because nobody reviews them. I want an automated workflow: PR opened → assign reviewer → review deadline → merge or request changes → deploy.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building a PR automation workflow with enforcement loops.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "PR Opened",
+              "category": "trigger",
+              "description": "GitHub/GitLab webhook triggers on new pull request creation",
+              "content": "Configure a webhook in your Git provider (GitHub, GitLab, Bitbucket) to fire on the `pull_request` event with action `opened`. Payload includes PR metadata: title, description, author, branch, files changed, and base repository. Use a tool like GitHub Actions, GitLab CI, or a dedicated automation platform (e.g., Jenkins, CircleCI) to listen. Set environment variables for repo access tokens (e.g., `GITHUB_TOKEN`) with permissions to read/write PRs and assign reviewers. Validate payload integrity via HMAC signatures. Log the trigger event with timestamp and PR URL for audit. This is the entry point—ensure it's reliable and fails gracefully with retries on network errors."
+            },
+            {
+              "label": "Assign Reviewer",
+              "category": "action",
+              "description": "Auto-assign reviewer based on rules (e.g., code ownership, round-robin, availability)",
+              "content": "1. **Define assignment logic**: Use a configuration file (e.g., `CODEOWNERS` in GitHub) or a script. Options: round-robin from a team list, assign based on file paths (e.g., `backend/` → backend team), or use a tool like Pull Panda or custom logic via GitHub API. 2. **Implement**: In GitHub Actions, use `actions/github-script` or a pre-built action like `tibdex/github-app-token`. Fetch eligible reviewers, exclude the PR author, and assign via `POST /repos/{owner}/{repo}/pulls/{pull_number}/requested_reviewers`. 3. **Fallback**: If no reviewer available, escalate to a team lead or use a backup list. 4. **Notify**: Post a comment in PR with assigned reviewer and deadline. 5. **Log**: Record assignment in a tracking system (e.g., Airtable, Slack channel). Error handling: retry on API rate limits, timeout after 30 seconds."
+            },
+            {
+              "label": "Review Deadline Monitor",
+              "category": "policy",
+              "description": "Policy enforcing review within a set timeframe (e.g., 24 hours) with escalation",
+              "content": "1. **Rules**: Define SLA: e.g., 'Review must be completed within 24 hours of assignment.' Use cron jobs or scheduled workflows (GitHub Actions scheduled events) to check PR age. 2. **Enforcement**: After 24 hours, if no review, trigger escalation: a) Re-assign to another reviewer from a backup pool. b) Notify via Slack/email to team channel with @here mention. c) Increment a counter for missed reviews—track in a dashboard. 3. **Exceptions**: Exclude weekends/holidays via configuration. Allow manual overrides via PR labels (e.g., `no-rush`). 4. **Implementation**: In GitHub Actions, use `actions/github-script` to list PRs, filter by `review-requested` state, and check timestamps. Block merging if deadline breached via branch protection rules. 5. **Metrics**: Log latency to review for reporting (e.g., to Datadog)."
+            },
+            {
+              "label": "Review & Merge Gate",
+              "category": "review",
+              "description": "Human reviewer approves, requests changes, or rejects; auto-merge if approved",
+              "content": "**Approval criteria**: 1. At least one approved review from assigned reviewer (or designated backup). 2. All CI checks pass (e.g., tests, linting). 3. No unresolved comments. 4. PR is up-to-date with base branch. **Review process**: Reviewer uses GitHub/GitLab UI to comment, request changes, or approve. On approval, trigger auto-merge via GitHub Actions merge queue or a bot (e.g., Mergify, Kodiak). **Rejection handling**: If changes requested, PR moves back to author—notify via comment and reset deadline monitor. **Escalation**: If reviewer unresponsive for 12 hours after reminder, auto-reassign. **SLA**: Review completion within 24 hours (aligned with policy). **Implementation**: Use GitHub branch protection rules to require reviews and status checks. Integrate with tools like Danger for automated code style checks."
+            },
+            {
+              "label": "Deploy to Staging",
+              "category": "action",
+              "description": "Automated deployment to staging environment post-merge, with health checks",
+              "content": "1. **Trigger**: On merge to main branch (GitHub event `pull_request` with action `closed` and `merged: true`). 2. **Steps**: a) Checkout code using `actions/checkout`. b) Run build script (e.g., `npm run build` for web apps, `docker build` for containers). c) Run integration tests in staging environment (use tools like Jest, Selenium). d) Deploy to staging via platform (e.g., AWS CodeDeploy, Heroku, Kubernetes `kubectl apply`). 3. **Health checks**: After deploy, ping staging endpoint; verify response status 200 and key functionality (e.g., database connection). Use tools like Artillery for load testing if needed. 4. **Error handling**: Rollback on failure via blue-green deployment or version tags. Notify team on Slack if deploy fails. 5. **Owner**: DevOps team or automated CI/CD pipeline. Log deployment time and version in changelog."
+            },
+            {
+              "label": "PR Velocity Dashboard",
+              "category": "output",
+              "description": "Weekly report on PR review times, merge rates, and bottlenecks",
+              "content": "**Deliverable format**: Automated email/Slack message with metrics, plus a Grafana dashboard or Google Sheets update. **Sections**: 1. Summary: Total PRs opened/merged this week, average review time (goal: <24 hours), missed deadlines count. 2. Bottlenecks: List PRs pending review >24 hours, top reviewers by volume. 3. Success metrics: Merge rate (target >90%), deployment success rate (target >95%). 4. Recommendations: e.g., 'Add more reviewers to backend team.' **Distribution**: Send every Monday 9 AM to engineering team and managers. **Implementation**: Use GitHub API to fetch PR data, calculate metrics with Python/pandas, and export to CSV. Automate via cron job on a server or GitHub Actions scheduled workflow. Include visualizations: bar charts for review times, pie charts for PR states. Archive reports in a shared drive."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "monitors"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "approves"
+            },
+            {
+              "from": 3,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "outputs"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "blocks"
+            },
+            {
+              "from": 0,
+              "to": 5,
+              "label": "feeds"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 115,
+        "maxScore": 115,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 6 (min: 5)",
+          "✓ Node count: 6 ≤ 10",
+          "✓ Has \"review\" category",
+          "✓ Has \"action\" category",
+          "✓ All 8 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 807c, no thin nodes",
+          "✓ Architecture covers: assign, deadline, merge, deploy",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (8 edges, 6 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "freelancer-client",
+      "status": "ok",
+      "elapsed": 62563,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "I'm a freelance designer. I need a workflow for managing client projects — from initial inquiry to final delivery and getting paid. I keep forgetting to send invoices.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building a client project management workflow with payment automation.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Client Inquiry",
+              "category": "trigger",
+              "description": "Initial client contact via email, form, or call",
+              "content": "This node captures the moment a potential client reaches out. Set up a webhook in your contact form (e.g., using Typeform or Tally) to automatically log inquiries in a project management tool like Notion or Trello. Configure the payload to include: client name, email, project description, budget range, and timeline. Use Zapier or Make to trigger a follow-up email sequence (via Mailchimp or ConvertKit) with a discovery call link (Calendly). Store all data in a central client database (Airtable or Google Sheets) with fields for inquiry date, source, and status (new, contacted, qualified). This ensures no lead slips through and provides a clear audit trail for conversion metrics."
+            },
+            {
+              "label": "Proposal & Contract",
+              "category": "action",
+              "description": "Create and send proposal, negotiate terms, sign contract",
+              "content": "1. Draft a proposal using a template (PandaDoc, Bonsai, or Google Docs) that includes: project scope, deliverables, timeline, payment schedule (e.g., 50% upfront, 50% on delivery), and terms. 2. Attach a digital contract (via HelloSign or DocuSign) with clauses for revisions, intellectual property, and late fees. 3. Send to client via email with a tracking link to monitor opens and signatures. 4. If negotiations occur, update the proposal in real-time and log changes in the client record. 5. Upon signature, automatically trigger a payment request for the deposit using Stripe or PayPal integration. Store signed documents in a cloud folder (Dropbox or Google Drive) with client-specific naming conventions."
+            },
+            {
+              "label": "Design Execution",
+              "category": "action",
+              "description": "Active design work with client feedback loops",
+              "content": "1. Break down the project into phases (e.g., research, wireframes, mockups, revisions) in a task manager (Asana or ClickUp) with deadlines and dependencies. 2. Use design tools (Figma, Adobe Creative Cloud) and version control (Abstract or GitHub for designers) to manage files. 3. Schedule weekly check-ins via Zoom or Loom for feedback; record sessions and summarize decisions in a shared doc. 4. Implement a feedback system: client submits comments via a structured form (Notion or Trello card) to avoid scattered emails. 5. After each milestone, update the project status and trigger an internal review to ensure alignment with scope. Track time using Toggl or Harvest to monitor profitability."
+            },
+            {
+              "label": "Final Delivery & Invoice",
+              "category": "action",
+              "description": "Deliver final files and automatically generate invoice",
+              "content": "1. Compile final deliverables (source files, style guides, usage instructions) into a zip file and upload to a secure client portal (WeTransfer or Google Drive with expiration). 2. Send a delivery email with download links and a request for final approval. 3. Upon client approval (track via email or a form response), automatically trigger invoice generation using accounting software (QuickBooks, FreshBooks, or Wave). Configure the invoice to include: remaining balance per contract, itemized services, due date (net 15), and payment methods (bank transfer, credit card). 4. Integrate with a calendar tool (Google Calendar) to set a reminder for follow-up if unpaid after 7 days. 5. Update the project status to 'delivered' and log the invoice date in the financial tracker."
+            },
+            {
+              "label": "Payment Tracking",
+              "category": "state",
+              "description": "Monitor payment status and handle late payments",
+              "content": "Define states: unpaid, partially paid, paid, overdue, and collections. Transitions: invoice sent → unpaid; payment received → partially paid (if deposit) or paid; due date passed → overdue (trigger automated reminder email via Mailchimp); 30+ days overdue → collections (send formal notice via legal template). Use a tool like QuickBooks or a custom spreadsheet to track payments, with alerts for upcoming due dates. Integrate with Stripe or PayPal to automatically update status upon payment. For overdue invoices, escalate with a phone call after the second reminder. Log all interactions in the client record for future reference. Set up a monthly finance review to reconcile accounts."
+            },
+            {
+              "label": "Project Closure",
+              "category": "output",
+              "description": "Finalize project, gather feedback, archive materials",
+              "content": "Deliverable: A project closure report in PDF format, distributed to the client and internal files. Steps: 1. Send a feedback survey (Typeform or Google Forms) to assess client satisfaction and collect testimonials. 2. Compile project metrics: hours spent vs. budget, profit margin, timeline adherence. 3. Archive all project files in a designated folder (e.g., 'Archived Projects' in Dropbox) and update the client database status to 'closed'. 4. Issue a final thank-you email with a referral request and a discount offer for future work. 5. Schedule a quarterly review of closed projects to identify process improvements. Success metrics: client satisfaction score >4/5, invoice paid within 30 days, and referral rate increase. Store the report in both cloud storage and print a copy for tax records."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "outputs"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "requires"
+            },
+            {
+              "from": 4,
+              "to": 3,
+              "label": "monitors"
+            },
+            {
+              "from": 5,
+              "to": 0,
+              "label": "informs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 95,
+        "maxScore": 95,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 6 (min: 5)",
+          "✓ Node count: 6 ≤ 10",
+          "✓ All 7 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 727c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (7 edges, 6 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "execute-job-description",
+      "status": "ok",
+      "elapsed": 44132,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Write a job description for a Senior Full-Stack Engineer at a Series B fintech startup. Tech stack is React, Node.js, PostgreSQL, AWS. Remote-first, competitive equity.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Senior Full-Stack Engineer\n\n**Location:** Remote-First (Global)\n**Employment Type:** Full-Time\n**Equity:** Competitive Package\n\n## About Us\n\nWe are a Series B fintech startup on a mission to democratize access to sophisticated financial tools. Backed by leading venture capital firms, we are building a platform that empowers individuals and businesses to make smarter financial decisions. Our culture is built on innovation, collaboration, and a relentless focus on solving real-world problems. As a remote-first company, we value talent and output over location, fostering a diverse and inclusive environment where great ideas thrive.\n\n## The Opportunity\n\nWe are seeking a seasoned Senior Full-Stack Engineer to join our core product team. You will play a pivotal role in architecting, building, and scaling our customer-facing platform. This is a high-impact role where you will own significant features from conception to deployment, directly influencing our product roadmap and technical direction. You will collaborate closely with product managers, designers, and other engineers to deliver secure, scalable, and elegant solutions that our users love.\n\n## What You'll Do\n\n*   **Design & Development:** Architect, develop, test, and maintain robust, scalable, and secure full-stack features using React, Node.js, PostgreSQL, and AWS services.\n*   **End-to-End Ownership:** Take ownership of major product initiatives, from technical design and implementation to deployment, monitoring, and iterative improvement.\n*   **System Architecture:** Contribute to the evolution of our microservices architecture, making key decisions on system design, data modeling, and API contracts.\n*   **Mentorship & Collaboration:** Provide technical guidance and mentorship to mid-level and junior engineers. Foster a culture of code quality through thoughtful code reviews and knowledge sharing.\n*   **Performance & Reliability:** Optimize application performance, ensure system reliability, and participate in on-call rotations to maintain high availability of our services.\n*   **Cross-Functional Partnership:** Work directly with Product and Design to translate complex business requirements into actionable technical specifications and elegant user experiences.\n*   **Best Practices:** Champion engineering best practices, including CI/CD, automated testing, observability, and security-first development within the fintech domain.\n\n## What We're Looking For\n\n**Required Qualifications:**\n\n*   5+ years of professional software development experience with a proven track record of building and shipping complex web applications.\n*   Deep expertise in our core stack: **React** (with modern hooks and state management), **Node.js**, **PostgreSQL**, and **AWS** (e.g., EC2, Lambda, RDS, S3, CloudFront).\n*   Strong proficiency in designing RESTful and/or GraphQL APIs.\n*   Solid understanding of database design, optimization, and data integrity.\n*   Experience with modern development tools and practices: Git, CI/CD pipelines, containerization (Docker), and infrastructure-as-code (e.g., Terraform, CDK).\n*   A strong product mindset and the ability to make technical trade-offs that align with business goals.\n*   Excellent communication skills and a collaborative spirit, thriving in a fully remote, asynchronous environment.\n*   A bachelor's degree in Computer Science, Engineering, or equivalent practical experience.\n\n**Bonus Points (Nice-to-Have):**\n\n*   Prior experience in the fintech, banking, or a heavily regulated industry (knowledge of PCI DSS, SOC 2, or data privacy regulations).\n*   Experience with real-time data processing, WebSockets, or event-driven architectures.\n*   Familiarity with TypeScript, Python, or other backend languages.\n*   Contributions to open-source projects or a public portfolio of work.\n*   Experience in a fast-paced startup environment during a high-growth phase (Series A/B/C).\n\n## What We Offer\n\n*   **Competitive Compensation:** A competitive salary and a meaningful **equity stake** in a high-growth company.\n*   **Remote-First Culture:** Work from anywhere. We provide a stipend to set up your home office.\n*   **Health & Wellness:** Comprehensive medical, dental, and vision insurance.\n*   **Unlimited PTO:** We trust you to manage your time and take the rest you need to stay creative and productive.\n*   **Learning & Development:** Annual stipend for conferences, courses, and books.\n*   **Team Events:** Regular virtual and optional in-person gatherings to build connection.\n*   **The Right Tools:** Top-of-the-line hardware and software you need to do your best work.\n\n## How to Apply\n\nIf you are passionate about building the future of finance and thrive in a collaborative, high-ownership environment, we would love to hear from you.\n\nPlease submit your resume and a brief note explaining why you're excited about this role and what relevant experience you would bring to our team. Links to your GitHub, LinkedIn, or portfolio are highly encouraged.\n\n*We are an equal opportunity employer and value diversity at our company. We do not discriminate on the basis of race, religion, color, national origin, gender, sexual orientation, age, marital status, veteran status, or disability status.*",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (5240 chars)",
+          "✓ Content length: 5240 ≥ 200"
+        ]
+      }
+    },
+    {
+      "id": "personality-rowan-empty",
+      "status": "ok",
+      "elapsed": 2886,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Graph is empty. Ready for mission. Give me a build order or ask for tactical advice.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (84 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "government-procurement",
+      "status": "ok",
+      "elapsed": 104694,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Build a government procurement workflow for a city agency buying a new fleet management system. Steps: needs assessment, RFP drafting, vendor solicitation, proposal evaluation, compliance review, contract award, and implementation oversight. Must follow public procurement regulations.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, mon ami! A procurement case worthy of the little grey cells. Let us construct this workflow with the precision of a Swiss watch—every regulation observed, every step documented. Voilà, your government procurement investigation begins!",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Procurement Trigger",
+              "category": "trigger",
+              "description": "City agency identifies need for new fleet management system",
+              "content": "This initial trigger occurs when the city's transportation department identifies operational inefficiencies, aging fleet software, or new regulatory requirements necessitating a modern fleet management system. The trigger must be formally documented with: 1) Problem statement detailing current pain points (e.g., fuel tracking errors, maintenance scheduling gaps, compliance reporting deficiencies). 2) Preliminary budget estimation using historical data and benchmarking against similar municipalities. 3) Stakeholder identification including department heads, finance officers, IT personnel, and end-users. 4) Initial regulatory check against city charter Section 8.3 (Public Procurement Act) and state procurement guidelines. Documentation should include Form PR-101 (Procurement Request) with signatures from department director and finance liaison before proceeding to needs assessment phase."
+            },
+            {
+              "label": "Comprehensive Needs Assessment",
+              "category": "input",
+              "description": "Detailed analysis of requirements, constraints, and success criteria",
+              "content": "Conduct a 360-degree assessment over 2-3 weeks: 1) Functional requirements gathering through workshops with fleet managers, mechanics, dispatchers, and administrators using structured interview templates. 2) Technical specifications definition including integration requirements with existing systems (ERP, GIS, fuel card systems), data migration needs, and security standards (NIST SP 800-53 controls). 3) Legal and compliance mapping to Federal Acquisition Regulation (FAR) Part 12, state procurement code §41-2505, and local ordinance 2021-15 (Green Fleet Initiative). 4) Success metrics establishment: 15% reduction in fuel costs, 20% decrease in maintenance downtime, 100% regulatory reporting accuracy. Deliverables: Needs Assessment Report (NAR-2024) with prioritized requirements matrix, risk assessment using Monte Carlo simulation for budget variances, and stakeholder sign-off via Form PR-205."
+            },
+            {
+              "label": "RFP Development & Vendor Outreach",
+              "category": "action",
+              "description": "Create solicitation documents and initiate competitive bidding process",
+              "content": "Parallel activities executed over 4 weeks: RFP DEVELOPMENT: 1) Draft RFP using city template PR-DOC-007 with sections: technical specifications (40% weight), implementation timeline (20%), vendor qualifications (15%), cost proposal (25%). 2) Include mandatory clauses: Buy American Act compliance, disadvantaged business enterprise (DBE) participation goals (minimum 15%), cybersecurity certification requirements. 3) Legal review by city attorney's office focusing on indemnification, data ownership, and termination clauses. VENDOR OUTREACH: 1) Publish notice in official city journal and statewide procurement portal per 30-day minimum requirement. 2) Conduct pre-bid conference with mandatory attendance for serious contenders, recording Q&A for public transparency. 3) Create vendor evaluation scorecard with weighted criteria and conflict-of-interest declarations from evaluation committee members. Use procurement software (e.g., Bonfire, Periscope) for document management and audit trail."
+            },
+            {
+              "label": "Proposal Evaluation Committee",
+              "category": "review",
+              "description": "Cross-functional team evaluates vendor submissions against criteria",
+              "content": "Formal evaluation process over 3 weeks: COMMITTEE FORMATION: 5-7 members including subject matter experts (fleet operations), IT security specialist, finance representative, and community representative (citizen oversight). All members complete ethics training and sign non-disclosure agreements. EVALUATION PHASES: 1) Technical compliance check (pass/fail) against mandatory requirements using checklist FORM-EVAL-101. 2) Scored evaluation using 100-point system: technical approach (40 points), organizational capability (25), references/past performance (20), cost reasonableness (15). 3) Cost analysis including total cost of ownership over 5-year period, accounting for licensing, implementation, training, and maintenance. 4) Reference verification through structured interviews with 3-5 current clients. 5) Shortlist top 3 vendors for oral presentations and product demonstrations. Documentation: Evaluation Summary Report with scoring matrices, minority comments, and recommendation rationale."
+            },
+            {
+              "label": "Compliance & Regulatory Review",
+              "category": "policy",
+              "description": "Independent verification of procurement process integrity",
+              "content": "Parallel oversight function monitoring throughout evaluation: 1) PROCUREMENT INTEGRITY MONITORING: Daily audit trail review using blockchain-secured logging system to track all committee communications, document access, and scoring changes. 2) REGULATORY COMPLIANCE CHECK: Verify adherence to: Uniform Guidance 2 CFR 200.318 (competition requirements), Davis-Bacon Act (prevailing wage), Section 508 accessibility standards. 3) FAIRNESS ASSESSMENT: Statistical analysis of scoring patterns for bias using Benford's Law on numerical scores, review of minority/women-owned business participation. 4) PROTEST MANAGEMENT: Establish formal protest procedure with 10-day response timeline, documented in RFP Section 12.3. 5) FINAL APPROVAL PACKAGE: Compile complete procurement file including all bids, evaluation materials, conflict-of-interest forms, and compliance certifications for city council review. This node runs concurrently with evaluation and must issue 'clear to proceed' before contract award."
+            },
+            {
+              "label": "Contract Negotiation & Award",
+              "category": "action",
+              "description": "Finalize terms with selected vendor and execute formal agreement",
+              "content": "Structured 2-week negotiation phase: 1) NEGOTIATION PREPARATION: Develop bargaining position analysis using BATNA (Best Alternative to Negotiated Agreement) framework, identify 5 key non-negotiable items (data sovereignty, audit rights, service level agreements with liquidated damages). 2) CONTRACT DRAFTING: Use city's master services agreement template with specific exhibits: detailed scope of work, implementation milestones with acceptance criteria, payment schedule tied to deliverables, key personnel commitments, intellectual property rights allocation. 3) LEGAL & RISK REVIEW: City attorney reviews indemnification clauses, insurance requirements (minimum $5M cyber liability), termination for convenience provisions. Risk management office assesses performance bond requirements (10% of contract value). 4) FINAL AWARD: City manager signs Form CA-404 (Contract Award) after verification of successful vendor's surety bond and certificates of insurance. Public notice published within 48 hours per sunshine law requirements. Contract uploaded to city's contract management system with metadata tagging for future audits."
+            },
+            {
+              "label": "Implementation Oversight & Acceptance",
+              "category": "review",
+              "description": "Monitor deployment and formally accept delivered system",
+              "content": "Post-award governance over 6-12 month implementation: OVERSIGHT STRUCTURE: 1) Establish joint governance committee with monthly steering meetings, using RACI matrix for decision accountability. 2) Implementation tracking via integrated project plan in MS Project with critical path analysis, weekly status reports using red/amber/green scoring. 3) Change control process requiring formal change requests for any scope modifications exceeding 5% of original value. ACCEPTANCE PROTOCOL: 1) Phased acceptance testing: unit testing (vendor), integration testing (joint), user acceptance testing (city staff) with defect tracking in JIRA. 2) Performance validation against success metrics from needs assessment, conducting parallel run with legacy system for 30 days. 3) Final acceptance requires: all test scripts passed, training completion certificates for 95% of users, documentation delivered (system admin manuals, user guides, API specifications), cybersecurity penetration test report with zero critical vulnerabilities. 4) Formal sign-off using Form ACC-505 signed by department director, IT director, and city manager, triggering final payment and warranty period commencement."
+            },
+            {
+              "label": "Procurement Case File & Audit Trail",
+              "category": "output",
+              "description": "Complete documentation package for transparency and future reference",
+              "content": "Final compilation of entire procurement lifecycle: 1) DIGITAL REPOSITORY: Create structured case file in city's document management system (OpenText or similar) with indexed sections: initiation documents, solicitation materials, all vendor submissions, evaluation records, compliance verifications, contract documents, implementation artifacts. 2) AUDIT PREPARATION: Include cross-reference matrix showing how each regulatory requirement was addressed, with evidence location pointers. 3) LESSONS LEARNED: Conduct retrospective workshop producing improvement recommendations for future procurements (template LL-2024). 4) PUBLIC DISCLOSURE PACKAGE: Redacted version prepared for public records requests, removing proprietary vendor information per FOIA exemptions. 5) METRICS REPORTING: Calculate and document procurement KPIs: time from trigger to award (target: <180 days), number of responsive bids (target: ≥5), cost savings versus budget (target: 5-15%), DBE participation achieved. This complete file serves as legal record, knowledge base for future projects, and transparency demonstration for public accountability."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "validates"
+            },
+            {
+              "from": 4,
+              "to": 3,
+              "label": "monitors"
+            },
+            {
+              "from": 3,
+              "to": 5,
+              "label": "approves"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "requires"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "validates"
+            },
+            {
+              "from": 6,
+              "to": 5,
+              "label": "refines"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "outputs"
+            },
+            {
+              "from": 1,
+              "to": 6,
+              "label": "informs"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "informs"
+            },
+            {
+              "from": 5,
+              "to": 7,
+              "label": "feeds"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 115,
+        "maxScore": 115,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 5)",
+          "✓ Node count: 8 ≤ 10",
+          "✓ Has \"policy\" category",
+          "✓ Has \"review\" category",
+          "✓ All 13 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 1030c, no thin nodes",
+          "✓ Architecture covers: rfp, vendor, compliance, contract",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (13 edges, 8 nodes)"
+        ]
+      }
+    }
+  ]
+}

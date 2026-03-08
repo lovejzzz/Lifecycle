@@ -1,0 +1,507 @@
+{
+  "timestamp": "2026-03-08T15-48-23",
+  "overall": 100,
+  "testsRun": [
+    "pm-advice-prioritize",
+    "personality-rowan-empty",
+    "execute-api-design",
+    "manufacturing-quality-control",
+    "nonprofit-fundraising-gala",
+    "execute-postmortem",
+    "manufacturing-quality-control"
+  ],
+  "poolSize": 74,
+  "results": [
+    {
+      "id": "pm-advice-prioritize",
+      "status": "ok",
+      "elapsed": 12730,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "I have 47 feature requests from customers and my CEO wants everything done by Q3. How do I prioritize?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Aha, a classic case of prioritization under pressure! My little grey cells suggest we must investigate each request as evidence—scoring for impact, effort, and alignment, then present the findings to your CEO with a clear, data-driven roadmap. Let us examine the clues together.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (278 chars)",
+          "✓ Message length: 278 ≥ 250"
+        ]
+      }
+    },
+    {
+      "id": "personality-rowan-empty",
+      "status": "ok",
+      "elapsed": 6955,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Graph is empty. Ready for mission.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (34 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "execute-api-design",
+      "status": "ok",
+      "elapsed": 110002,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Design a REST API for a multi-tenant task management system. Include endpoints for workspaces, projects, tasks, and comments. Show URL patterns, HTTP methods, request/response bodies, auth scheme, pagination, and error codes. Support role-based access (admin, member, viewer).",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# API Design Document: Multi-Tenant Task Management System\n\n## 1. Overview\nA RESTful API for a multi-tenant task management system where tenants are isolated through a **workspace** concept. All resources belong to a workspace, and users can have different roles (Admin, Member, Viewer) per workspace, determining their access level.\n\n**Base URL:** `https://api.taskmanager.com/v1`\n**Authentication:** Bearer Token (JWT)\n**Content-Type:** `application/json`\n\n## 2. Authentication & Multi-Tenancy\n- All requests require a valid JWT in the `Authorization` header:  \n  `Authorization: Bearer <jwt_token>`\n- The JWT contains user ID and current `workspace_id` context.\n- Users must have explicit membership in a workspace to access its resources.\n- Workspace context is derived from:\n  1. Path parameter (e.g., `/workspaces/{workspaceId}/projects`)\n  2. JWT claim (default workspace for user-level endpoints)\n  3. `X-Workspace-Id` header (for endpoints without workspace in path)\n\n## 3. Role-Based Access Control (RBAC)\n| Role    | Workspace | Projects | Tasks | Comments |\n|---------|-----------|----------|-------|----------|\n| Admin   | CRUD all  | CRUD all | CRUD all | CRUD all |\n| Member  | Read only | CRUD own | CRUD own | CRUD own |\n| Viewer  | Read only | Read only| Read only | Read only |\n\n**Note:** \"Own\" means resources they created, unless assigned otherwise. Admins can manage all resources and user roles within the workspace.\n\n## 4. Resource Endpoints\n\n### 4.1 Workspaces\n**URL Pattern:** `/workspaces`\n\n| Method | Endpoint | Description | Required Role |\n|--------|----------|-------------|---------------|\n| GET | `/workspaces` | List workspaces user belongs to | Any |\n| POST | `/workspaces` | Create new workspace | None (initial creation) |\n| GET | `/workspaces/{id}` | Get workspace details | Member |\n| PUT | `/workspaces/{id}` | Update workspace | Admin |\n| DELETE | `/workspaces/{id}` | Delete workspace | Admin |\n\n**POST /workspaces Request Body:**\n```json\n{\n  \"name\": \"Acme Corp Workspace\",\n  \"description\": \"Task management for Acme Corporation\"\n}\n```\n\n**Response (201 Created):**\n```json\n{\n  \"id\": \"ws_abc123\",\n  \"name\": \"Acme Corp Workspace\",\n  \"description\": \"Task management for Acme Corporation\",\n  \"created_at\": \"2024-01-15T10:30:00Z\",\n  \"owner_id\": \"user_123\",\n  \"member_count\": 1\n}\n```\n\n### 4.2 Projects\n**URL Pattern:** `/workspaces/{workspaceId}/projects`\n\n| Method | Endpoint | Description | Required Role |\n|--------|----------|-------------|---------------|\n| GET | `/workspaces/{wsId}/projects` | List all projects | Viewer |\n| POST | `/workspaces/{wsId}/projects` | Create project | Member |\n| GET | `/workspaces/{wsId}/projects/{id}` | Get project details | Viewer |\n| PUT | `/workspaces/{wsId}/projects/{id}` | Update project | Member (own) / Admin |\n| DELETE | `/workspaces/{wsId}/projects/{id}` | Delete project | Admin |\n\n**POST /workspaces/{wsId}/projects Request Body:**\n```json\n{\n  \"name\": \"Q4 Product Launch\",\n  \"description\": \"Launch new product line in Q4\",\n  \"status\": \"active\",\n  \"start_date\": \"2024-10-01\",\n  \"end_date\": \"2024-12-15\",\n  \"tags\": [\"product\", \"launch\", \"high-priority\"]\n}\n```\n\n**Response (201 Created):**\n```json\n{\n  \"id\": \"proj_xyz789\",\n  \"workspace_id\": \"ws_abc123\",\n  \"name\": \"Q4 Product Launch\",\n  \"description\": \"Launch new product line in Q4\",\n  \"status\": \"active\",\n  \"start_date\": \"2024-10-01\",\n  \"end_date\": \"2024-12-15\",\n  \"tags\": [\"product\", \"launch\", \"high-priority\"],\n  \"created_by\": \"user_123\",\n  \"created_at\": \"2024-01-15T11:00:00Z\",\n  \"task_count\": 0\n}\n```\n\n### 4.3 Tasks\n**URL Pattern:** `/workspaces/{workspaceId}/projects/{projectId}/tasks`\n\n| Method | Endpoint | Description | Required Role |\n|--------|----------|-------------|---------------|\n| GET | `/workspaces/{wsId}/projects/{projId}/tasks` | List project tasks | Viewer |\n| POST | `/workspaces/{wsId}/projects/{projId}/tasks` | Create task | Member |\n| GET | `/workspaces/{wsId}/tasks/{id}` | Get task (direct access) | Viewer |\n| PUT | `/workspaces/{wsId}/tasks/{id}` | Update task | Member (own/assigned) / Admin |\n| DELETE | `/workspaces/{wsId}/tasks/{id}` | Delete task | Admin |\n\n**POST /workspaces/{wsId}/projects/{projId}/tasks Request Body:**\n```json\n{\n  \"title\": \"Design final mockups\",\n  \"description\": \"Create final UI mockups for review\",\n  \"status\": \"todo\",\n  \"priority\": \"high\",\n  \"assignee_id\": \"user_456\",\n  \"due_date\": \"2024-10-20\",\n  \"estimated_hours\": 8\n}\n```\n\n**Response (201 Created):**\n```json\n{\n  \"id\": \"task_def456\",\n  \"project_id\": \"proj_xyz789\",\n  \"workspace_id\": \"ws_abc123\",\n  \"title\": \"Design final mockups\",\n  \"description\": \"Create final UI mockups for review\",\n  \"status\": \"todo\",\n  \"priority\": \"high\",\n  \"assignee_id\": \"user_456\",\n  \"created_by\": \"user_123\",\n  \"due_date\": \"2024-10-20\",\n  \"estimated_hours\": 8,\n  \"actual_hours\": 0,\n  \"created_at\": \"2024-01-15T11:30:00Z\",\n  \"updated_at\": \"2024-01-15T11:30:00Z\",\n  \"comment_count\": 0\n}\n```\n\n### 4.4 Comments\n**URL Pattern:** `/workspaces/{workspaceId}/tasks/{taskId}/comments`\n\n| Method | Endpoint | Description | Required Role |\n|--------|----------|-------------|---------------|\n| GET | `/workspaces/{wsId}/tasks/{taskId}/comments` | List task comments | Viewer |\n| POST | `/workspaces/{wsId}/tasks/{taskId}/comments` | Add comment | Member |\n| PUT | `/workspaces/{wsId}/comments/{id}` | Edit comment | Member (own) / Admin |\n| DELETE | `/workspaces/{wsId}/comments/{id}` | Delete comment | Member (own) / Admin |\n\n**POST /workspaces/{wsId}/tasks/{taskId}/comments Request Body:**\n```json\n{\n  \"content\": \"Please include dark mode variants in the mockups.\",\n  \"is_internal\": false\n}\n```\n\n**Response (201 Created):**\n```json\n{\n  \"id\": \"comment_ghi789\",\n  \"task_id\": \"task_def456\",\n  \"workspace_id\": \"ws_abc123\",\n  \"content\": \"Please include dark mode variants in the mockups.\",\n  \"is_internal\": false,\n  \"created_by\": \"user_123\",\n  \"created_at\": \"2024-01-15T12:00:00Z\",\n  \"updated_at\": \"2024-01-15T12:00:00Z\"\n}\n```\n\n### 4.5 User Management (Within Workspace)\n**URL Pattern:** `/workspaces/{workspaceId}/members`\n\n| Method | Endpoint | Description | Required Role |\n|--------|----------|-------------|---------------|\n| GET | `/workspaces/{wsId}/members` | List workspace members | Viewer |\n| POST | `/workspaces/{wsId}/members` | Invite/add member | Admin |\n| PUT | `/workspaces/{wsId}/members/{userId}` | Update member role | Admin |\n| DELETE | `/workspaces/{wsId}/members/{userId}` | Remove member | Admin |\n\n**POST /workspaces/{wsId}/members Request Body:**\n```json\n{\n  \"user_email\": \"new.member@company.com\",\n  \"role\": \"member\"\n}\n```\n\n## 5. Pagination\nAll list endpoints support pagination via query parameters:\n- `?limit=50` (default: 20, max: 100)\n- `?offset=0` (default: 0)\n- `?sort=created_at` (default) or `?sort=-created_at` for descending\n\n**Pagination Response Headers:**\n```\nX-Total-Count: 125\nX-Page-Limit: 20\nX-Page-Offset: 0\n```\n\n## 6. Filtering & Searching\nTasks and projects support filtering via query parameters:\n```\nGET /workspaces/ws123/projects?status=active\nGET /workspaces/ws123/projects/proj456/tasks?priority=high&assignee_id=user456\nGET /workspaces/ws123/projects?q=launch\n```\n\n## 7. Error Responses\nStandard HTTP error codes with consistent JSON response format:\n\n**400 Bad Request:**\n```json\n{\n  \"error\": \"validation_error\",\n  \"message\": \"Invalid input data\",\n  \"details\": {\n    \"name\": [\"This field is required\"],\n    \"due_date\": [\"Date must be in the future\"]\n  }\n}\n```\n\n**401 Unauthorized:**\n```json\n{\n  \"error\": \"authentication_required\",\n  \"message\": \"Valid authentication token required\"\n}\n```\n\n**403 Forbidden:**\n```json\n{\n  \"error\": \"insufficient_permissions\",\n  \"message\": \"User lacks required role 'admin' for this operation\"\n}\n```\n\n**404 Not Found:**\n```json\n{\n  \"error\": \"resource_not_found\",\n  \"message\": \"Workspace 'ws_abc123' not found or you lack access\"\n}\n```\n\n**429 Too Many Requests:**\n```json\n{\n  \"error\": \"rate_limit_exceeded\",\n  \"message\": \"Rate limit exceeded. Try again in 60 seconds\"\n}\n```\n\n## 8. Rate Limiting\n- 1000 requests per hour per user\n- 100 requests per minute per endpoint\n- Headers included in all responses:\n  ```\n  X-RateLimit-Limit: 1000\n  X-RateLimit-Remaining: 987\n  X-RateLimit-Reset: 1705312800\n  ```\n\n## 9. Webhooks (Optional Extension)\nWorkspace admins can configure webhooks for events:\n- `task.created`, `task.updated`, `task.completed`\n- `comment.created`\n- `project.archived`\n\n**Webhook Payload Example:**\n```json\n{\n  \"event\": \"task.created\",\n  \"workspace_id\": \"ws_abc123\",\n  \"resource_id\": \"task_def456\",\n  \"resource_type\": \"task\",\n  \"occurred_at\": \"2024-01-15T11:30:00Z\",\n  \"data\": { /* Full task object */ }\n}\n```\n\n---\n\n*This API design provides a secure, scalable foundation for a multi-tenant task management system with clear resource hierarchies, granular access control, and comprehensive error handling.*",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (8822 chars)",
+          "✓ Content length: 8822 ≥ 1500"
+        ]
+      }
+    },
+    {
+      "id": "manufacturing-quality-control",
+      "status": "ok",
+      "elapsed": 218252,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Build a quality control workflow for a consumer electronics manufacturer. Cover incoming material inspection, assembly line checks, burn-in testing, final QA, packaging verification, and shipping release. We ship 10,000 units/month and our defect rate needs to drop from 3% to under 0.5%.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building quality control workflow.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Production Batch Start",
+              "category": "trigger",
+              "description": "Initiation of a production batch targeting 10,000 units/month with defect rate under 0.5%.",
+              "content": "Event: Production order received from ERP system (e.g., SAP, Oracle) triggering quality control workflow. Payload includes batch ID, quantity (e.g., 10,000 units), product specifications, and defect rate target of <0.5%. Configuration: Integrate with Manufacturing Execution System (MES) for real-time scheduling. Steps: 1. Validate order against production capacity using capacity planning tools. 2. Initiate material procurement via supplier portals with lead time tracking. 3. Schedule assembly line slots using Gantt charts in project management software. 4. Set up webhook or API call to quality control dashboard to log batch start. Tools: ERP systems, MES, custom scripts for automation. Error handling: If capacity exceeded, escalate to production manager for rescheduling."
+            },
+            {
+              "label": "Incoming Material QC",
+              "category": "test",
+              "description": "Inspection of raw materials and components upon arrival to prevent defects at source.",
+              "content": "Test what: Visual inspection for damages, dimensional checks with calipers, functional tests for electronic components using multimeters. Pass/fail criteria: Acceptable Quality Level (AQL) Level II sampling—zero critical defects (e.g., cracks, corrosion), minor defects (e.g., scratches) within 1.5% limit. Tools: Digital calipers, multimeters, inspection jigs, statistical sampling software (e.g., Minitab). Steps: 1. Unpack and log materials with barcode scanners into QC database. 2. Perform visual inspection under controlled lighting. 3. Conduct dimensional verification against CAD specifications. 4. Run functional tests on 10% sample of electronic parts. 5. Record results in quality management system (QMS). If fail: Quarantine batch, notify supplier via supplier portal, initiate return or rework process."
+            },
+            {
+              "label": "Assembly and In-line Inspection",
+              "category": "action",
+              "description": "Assembly process with real-time quality checks to catch defects early.",
+              "content": "Numbered steps: 1. Component placement using automated pick-and-place machines with vision systems. 2. Soldering with temperature-controlled soldering stations, followed by AOI (Automated Optical Inspection). 3. Mechanical assembly with torque screwdrivers set to specified values. 4. In-line functional tests after each sub-assembly using test fixtures that simulate operational conditions. Tools: Assembly lines with poka-yoke (error-proofing) devices, data loggers, SPC (Statistical Process Control) software. Error handling: Immediate line stoppage on defect detection, root cause analysis with fishbone diagrams, assign rework to trained technicians. Owner: Production supervisor. Metrics: Defect rate per station kept below 1% with real-time dashboards."
+            },
+            {
+              "label": "Burn-in Testing Suite",
+              "category": "test",
+              "description": "Extended stress testing to identify early failures and ensure reliability.",
+              "content": "What to test: Power cycling (on/off every 30 minutes), temperature cycling (-10°C to 60°C), and load testing at 120% rated capacity. Pass/fail criteria: Zero failures during 24-hour burn-in period for all units. Tools: Environmental chambers, programmable power supplies, data loggers, automated test scripts. Steps: 1. Place units in burn-in racks and connect to monitoring systems. 2. Apply specified voltage profiles and temperature cycles per product specifications. 3. Monitor for anomalies like overheating or voltage drops using real-time alerts. 4. Log performance data to centralized database for analysis. Coverage: 100% of units undergo burn-in. Failure handling: Remove defective units, send to rework station, and update defect tracking system."
+            },
+            {
+              "label": "Final QA Approval",
+              "category": "review",
+              "description": "Human review and verification before packaging and shipping to ensure compliance.",
+              "content": "Approval criteria: All previous tests passed (documented in QMS), packaging integrity verified, labeling accuracy confirmed, accessories included. Who reviews: QA team lead with escalation to quality manager if issues arise. SLA: Review completed within 4 hours of test completion. Checklist: 1. Visual inspection for cosmetic defects under standardized lighting. 2. Random sample functionality test (5% of batch) using end-user scenarios. 3. Verify packaging materials meet durability standards (e.g., drop tests). 4. Confirm documentation (manuals, certificates) is complete and correct. Tools: Barcode scanners for traceability, checklists in digital QA apps. If reject: Halt shipping, initiate root cause analysis, and require re-inspection."
+            },
+            {
+              "label": "Defect Reduction Policy",
+              "category": "policy",
+              "description": "Policy enforcing quality standards to achieve defect rate under 0.5% across all stages.",
+              "content": "Numbered rules: 1. Incoming materials must pass AQL Level II inspection with zero critical defects. 2. Assembly line defect rate per station must not exceed 1%, monitored hourly. 3. Burn-in testing failure rate target is 0.1%, with automatic alerts for deviations. 4. Final QA rejection rate is capped at 0.2%, requiring managerial approval for exceptions. Enforcement: Real-time monitoring using SPC charts and dashboards in QMS; automated alerts via Slack/email for breaches. Exceptions: Escalate to quality manager for variance approval, with mandatory corrective action reports. Tools: Quality management software (e.g., Qualio), data analytics platforms for trend analysis."
+            },
+            {
+              "label": "Shipping Release",
+              "category": "output",
+              "description": "Final step to release products for distribution with quality assurance.",
+              "content": "Deliverable format: Shipping manifest with batch ID, quality certificates, and compliance documents in PDF/EDI formats. Distribution: Hand over to logistics partners (e.g., DHL, FedEx) with tracking integration. Success metrics: On-time shipment rate >99%, defect rate confirmed below 0.5% via post-shipment audits. Steps: 1. Generate shipping documents using warehouse management system (WMS). 2. Update inventory systems to reflect shipped units. 3. Perform final cross-dock inspection to verify load integrity. 4. Notify customers with tracking information via email/SMS. Tools: WMS software, carrier APIs, analytics dashboards for performance monitoring."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "validates"
+            },
+            {
+              "from": 3,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 6,
+              "label": "approves"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "label": "monitors"
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "label": "monitors"
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "label": "monitors"
+            },
+            {
+              "from": 5,
+              "to": 4,
+              "label": "monitors"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 110,
+        "maxScore": 110,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ Has \"test\" category",
+          "✓ All 13 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 742c, no thin nodes",
+          "✓ Architecture covers: inspect, assembl, test, ship",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (13 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "nonprofit-fundraising-gala",
+      "status": "ok",
+      "elapsed": 174751,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We're a small nonprofit with 3 staff members planning our annual fundraising gala for 200 guests. Budget is only $15k. Build a workflow covering venue selection, donor outreach, sponsorship asks, event program, silent auction, volunteer coordination, and post-event thank-yous.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! Mon ami, the case of the fundraising gala is a puzzle for the little grey cells. Let us meticulously arrange the clues—venue, donors, sponsors, and more—into an elegant workflow that ensures success on a modest budget. Voilà, the investigation yields a plan worthy of Poirot!",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Gala Planning Initiation",
+              "category": "input",
+              "description": "Kick off the annual fundraising gala planning with budget and goal setting.",
+              "content": "Begin by convening the 3 staff members for a strategic planning session. Define clear objectives: target $50,000 in fundraising, 200 guests attendance, and strict adherence to the $15k budget. Use tools like Google Sheets to create a master budget tracker, allocating funds across categories: venue (target $5k), food & beverages ($4k), decor ($1k), auction items (in-kind), and miscellaneous ($5k). Establish a timeline with milestones: 6 months out for venue booking, 4 months for sponsor outreach, 2 months for program finalization. Assign roles: one staff leads venue/logistics, another handles donor relations, and the third manages volunteers and day-of coordination. Set up a shared drive (e.g., Google Drive) for all documents and regular check-in meetings every two weeks to monitor progress. Include a risk assessment for potential overruns and contingency plans, such as seeking in-kind donations to offset costs."
+            },
+            {
+              "label": "Venue and Budget Management",
+              "category": "action",
+              "description": "Select and secure a venue within budget while managing overall financial allocation.",
+              "content": "Research venues within a 30-mile radius that can accommodate 200 guests, focusing on community centers, libraries, or donated spaces from local businesses to stay within the $5k allocation. Use tools like VenueFinder or local tourism boards to identify options; prioritize venues with in-kind offerings (e.g., free tables, AV equipment). Develop a negotiation strategy: propose bartering for exposure or multi-year bookings. Once selected, draft a contract with clear terms on cancellation policies and included amenities. Update the budget spreadsheet in real-time, tracking expenses against the $15k cap—categorize into fixed (venue deposit) and variable (decor adjustments). Implement a bi-weekly budget review with staff, using criteria like cost-per-guest (target <$75) and percentage of budget spent. Create a checklist: venue visit completed, insurance secured, permits applied for, and backup venue identified. Leverage tools like QuickBooks for non-profits to monitor cash flow."
+            },
+            {
+              "label": "Donor and Sponsorship Outreach",
+              "category": "action",
+              "description": "Execute targeted outreach to donors and secure sponsorships through personalized asks.",
+              "content": "Compile a donor list of 100+ past donors and local businesses using a free CRM like HubSpot's starter plan or a spreadsheet segmented by giving history and capacity. Design sponsorship tiers: Platinum ($5k+), Gold ($2k-$5k), Silver ($500-$2k), with benefits like logo placement, speech time, and auction promotions. Craft personalized email templates and follow-up scripts; schedule outreach in waves—initial ask 4 months out, reminders at 2 months. Use tools like Mailchimp for email campaigns and Calendly for meeting scheduling. Track responses in the CRM, setting metrics: target 20% response rate and 10% conversion to sponsors. For donor outreach, plan phone banks and social media blasts (Facebook, LinkedIn) highlighting the gala's impact. Include a checklist: sponsorship packets created, follow-up dates set, thank-you notes prepared for early commits. Measure success by secured funds against the $50k goal, adjusting tactics based on feedback."
+            },
+            {
+              "label": "Event Program and Silent Auction Planning",
+              "category": "action",
+              "description": "Design the event agenda and organize silent auction items for maximum engagement.",
+              "content": "Develop a detailed program timeline: 6:00 PM welcome cocktail, 7:00 PM dinner, 8:00 PM speeches and auction, 10:00 PM closing. Coordinate with sponsors for speaker slots and AV needs. For the silent auction, procure 30+ items through donations from local vendors—use a procurement letter template and track items in a spreadsheet with descriptions, values (target $200+ per item), and donor recognition. Set up a bidding platform like 32Auctions (free for small events) or physical bid sheets; train volunteers on the process. Create a program booklet with sponsor ads and auction catalog, using Canva for design. Include a checklist: program script finalized, auction items confirmed by 1 month out, run-of-show rehearsed. Measure engagement metrics: expected auction revenue of $20k, guest feedback via post-event surveys. Adjust based on sponsor input or timeline constraints."
+            },
+            {
+              "label": "Volunteer Coordination",
+              "category": "action",
+              "description": "Recruit, train, and schedule volunteers for pre-event and day-of tasks.",
+              "content": "Recruit 15-20 volunteers via social media posts, local volunteer boards, and community groups, targeting roles: registration (4 volunteers), auction monitoring (6), guest assistance (5), and cleanup (5). Use SignUpGenius for scheduling shifts (pre-event setup, during event, post-event) and WhatsApp groups for communication. Develop a training manual covering responsibilities, emergency procedures, and donor interaction protocols—conduct a virtual training session 2 weeks prior. Create a volunteer timeline: day-of arrival at 4 PM, briefing at 4:30 PM, debrief at 11 PM. Track volunteer hours for grant reporting. Include a checklist: background checks if needed, uniforms/t-shirts ordered, contact list updated. Measure effectiveness through volunteer feedback forms and on-time task completion. Adjust schedules based on venue layout or last-minute changes."
+            },
+            {
+              "label": "Pre-Event Review and Adjustments",
+              "category": "review",
+              "description": "Conduct a comprehensive review of all plans and make necessary refinements before execution.",
+              "content": "Schedule a final review meeting 2 weeks before the gala with all staff and key volunteers. Use a detailed checklist: venue walkthrough completed (confirm setup, AV working), budget reconciled (all expenses logged, contingency fund intact), sponsorship commitments verified (logos received, contracts signed), auction items physically present and cataloged, volunteer schedules confirmed, and program timings double-checked. Assess risks: weather contingencies for outdoor elements, no-shows, or technical issues. Tools: Google Meet for virtual review, Trello for task tracking. If issues arise—e.g., venue requires additional fees or sponsor drops out—document adjustments and update plans immediately. Set criteria for approval: all items at 90% readiness or higher. This node acts as a gate; if not approved, loop back to refine previous steps, such as renegotiating venue or boosting outreach."
+            },
+            {
+              "label": "Gala Execution and Post-Event Activities",
+              "category": "output",
+              "description": "Execute the gala event and manage post-event thank-yous and follow-ups.",
+              "content": "On event day, oversee logistics: staff and volunteers execute according to the program, using a run-of-show document and walkie-talkies for coordination. Manage silent auction bidding closure and payment collection via mobile payment tools like Square. Post-event, within 48 hours, send personalized thank-you emails to all donors, sponsors, and volunteers—use templates with specific mentions of contributions. Compile a post-event report: final attendance (target 200), funds raised (against $50k goal), expenses vs. budget ($15k cap), and feedback from surveys. Share this report with stakeholders via a polished PDF created in Google Docs. Update donor records in the CRM for future outreach. Include a checklist: thank-you cards mailed within a week, auction items distributed, vendor payments processed. Measure success by donor retention rate and lessons learned for next year's planning."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 0,
+              "to": 2,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "drives"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "validates"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "approves"
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 105,
+        "maxScore": 105,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ All 8 edges valid",
+          "✓ Starts with input",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 914c, no thin nodes",
+          "✓ Architecture covers: venue, donor, auction, volunteer",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (8 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "execute-postmortem",
+      "status": "ok",
+      "elapsed": 59570,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Write a post-mortem for a 4-hour production outage where a database migration deleted the users table index, causing all login queries to full-scan a 50M row table. Response times went from 50ms to 45 seconds. The migration was tested locally with 1000 rows and passed. Oncall was paged at 2am, identified the issue at 3am, rebuilt the index at 3:30am, full recovery at 6am. 12,000 users were affected.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Post-Mortem Report: Production Outage Due to Missing Database Index\n\n**Incident Title:** Performance Degradation and Login Failures Following Database Migration  \n**Date of Incident:** [DATE]  \n**Start Time:** 02:00 UTC  \n**Detection Time:** 02:05 UTC  \n**Resolution Time:** 06:00 UTC  \n**Total Downtime:** 4 hours  \n**Impact:** ~12,000 users experienced login timeouts and failed authentication; API response times degraded from 50ms to 45 seconds.\n\n---\n\n## Executive Summary\n\nOn [DATE], a scheduled database migration inadvertently removed a critical index on the `users` table. This caused all login-related queries to perform full table scans on a 50-million-row table, resulting in severe performance degradation. The on-call engineer was paged, diagnosed the issue, and rebuilt the missing index. Full recovery was achieved by 06:00 UTC. Approximately 12,000 users were affected during the incident window.\n\n---\n\n## Timeline (UTC)\n\n- **01:45** – Database migration started in production as part of scheduled maintenance.\n- **02:00** – Migration completed. Almost immediately, monitoring alerts triggered for elevated database CPU and increased query latency.\n- **02:05** – On-call engineer paged due to \"High Database Latency\" and \"Login Error Rate Spike\" alerts.\n- **02:15–03:00** – Initial investigation focused on application logs and database resource utilization. The team observed that `SELECT` queries on the `users` table were taking 40–50 seconds.\n- **03:00** – Engineer identified that the `idx_users_email` index was missing from the `users` table.\n- **03:15** – Root cause linked to a `DROP INDEX` statement in the migration script that was intended for a different environment.\n- **03:30** – Decision made to rebuild the index online to minimize locking.\n- **03:35** – `CREATE INDEX CONCURRENTLY` initiated on the `users` table.\n- **05:45** – Index build completed. Query latency began to improve.\n- **06:00** – All systems returned to baseline performance. Incident resolved.\n\n---\n\n## Impact\n\n### User Impact\n- **12,000 users** attempting to log in experienced timeouts or failures.\n- Login response times increased from ~50ms to over 45 seconds.\n- Mobile and web sessions were intermittently terminated due to authentication failures.\n\n### Business Impact\n- Increased support ticket volume during the incident.\n- Minor degradation in trust metrics (to be quantified separately).\n\n### Technical Impact\n- Database CPU utilization peaked at 95%.\n- Connection pool exhaustion on application servers.\n- Increased latency across all user-facing services dependent on user authentication.\n\n---\n\n## Root Cause Analysis\n\n### Direct Cause\nThe migration script `202401151800_add_new_columns_to_users.sql` contained the statement:\n\n```sql\nDROP INDEX IF EXISTS idx_users_email;\n```\n\nThis command was intended for a development environment where the index was being renamed, but it was erroneously included in the production migration. The index was dropped, causing all queries filtering by `email` (including login lookups) to perform full sequential scans on the 50-million-row `users` table.\n\n### Contributing Factors\n\n1. **Inadequate Testing at Scale**  \n   The migration was tested only on a local database with ~1,000 rows, where the performance impact of a missing index was negligible. No performance or load testing was conducted against a production-sized dataset.\n\n2. **Missing Pre-Execution Validation**  \n   The deployment pipeline did not include a step to detect high-risk operations (e.g., `DROP INDEX`, `DROP TABLE`) in migration scripts or to require explicit approval for such changes.\n\n3. **Delayed Detection**  \n   While alerts fired quickly, the specific alert for “missing index” or “full table scan” was not configured. The on-call engineer spent significant time manually correlating symptoms to the missing index.\n\n4. **Migration Script Review Gap**  \n   The script was reviewed for correctness but not for performance or safety implications in a production environment.\n\n---\n\n## Resolution\n\n1. **Diagnosis**  \n   The on-call engineer identified the missing index by examining slow query logs and using `EXPLAIN` on a failing login query.\n\n2. **Corrective Action**  \n   Rebuilt the index using `CREATE INDEX CONCURRENTLY` to avoid locking the table and allow continued (though slow) access.\n\n3. **Verification**  \n   After index creation, the team monitored query latency and error rates until they returned to baseline. All systems were confirmed healthy by 06:00 UTC.\n\n---\n\n## Action Items\n\n| ID  | Action Item | Owner | ETA | Status |\n|-----|-------------|-------|-----|--------|\n| PM-01 | Implement a pre-production check that flags migrations containing `DROP` or `ALTER` operations on critical tables/indexes. | Database Engineering | 2 weeks | Open |\n| PM-02 | Enhance staging environment to mirror production data volume (anonymized) for performance testing of migrations. | Platform Engineering | 4 weeks | Open |\n| PM-03 | Create a real-time alert for full table scans on tables larger than 1M rows. | SRE | 1 week | Open |\n| PM-04 | Document and enforce a requirement for all migrations to include a rollback script tested in staging. | Engineering Manager | 2 weeks | Open |\n| PM-05 | Conduct a blameless review of the incident with the engineering team to share learnings. | Lead Engineer | 1 week | Open |\n\n---\n\n## Lessons Learned\n\n- **Testing at scale is non-negotiable.** Even simple migrations can have catastrophic performance impacts when applied to large datasets.\n- **Defensive scripting matters.** Migration tools should include safeguards—e.g., prompting for confirmation when dropping indexes on critical tables.\n- **Observability saves time.** Had an alert existed for full table scans, diagnosis could have been accelerated by an hour or more.\n- **Blameless culture enabled rapid resolution.** The team focused on solving the problem without distraction, allowing for efficient recovery.\n\n---\n\n**Prepared by:** [Name/Team]  \n**Date:** [Date of Report]  \n**Approvers:** [Engineering Manager], [SRE Lead]",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (6064 chars)",
+          "✓ Content length: 6064 ≥ 1500"
+        ]
+      }
+    },
+    {
+      "id": "manufacturing-quality-control",
+      "status": "ok",
+      "elapsed": 79068,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Build a quality control workflow for our electronics manufacturing line producing 5,000 PCBs per day. Steps: incoming material inspection, solder paste application, component placement, reflow oven, automated optical inspection, functional testing, final QA review, and packaging. Defect rate target is under 0.5%.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building a controlled manufacturing workflow with AOI and functional test feedback loops to enforce <0.5% defect rate.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Incoming Material Inspection",
+              "category": "trigger",
+              "description": "Trigger event: daily shipment arrival of PCB substrates, components, and solder paste. Starts the quality chain.",
+              "content": "**Event**: Daily raw material shipment arrival at receiving dock. **Payload**: Bill of Lading, material certificates (CoC), and supplier data packets. **Configuration**: Inspection station with calibrated tools (digital calipers, LCR meters, solder paste height gauge). **Setup**: 1) Scan shipment ID to log arrival in ERP/MES (e.g., SAP, Plex). 2) Perform AQL sampling per ANSI/ASQ Z1.4: For lot size 5,000, use General Inspection Level II, AQL 0.65 for critical defects (shorts, opens), AQL 1.0 for minor (cosmetic). 3) Verify material certifications against internal specs (e.g., IPC-4101 for laminates, J-STD-006 for solder paste). 4) Measure solder paste viscosity with viscometer (target: 800-1200 kcps). 5) Check component reel packaging for moisture sensitivity level (MSL) and bake if required per J-STD-033. 6) Log all results in quality system; quarantine non-conforming material and trigger supplier corrective action (SCAR) via ERP. **Owner**: Receiving QC Technician."
+            },
+            {
+              "label": "SMT Assembly Line",
+              "category": "action",
+              "description": "Automated stencil printing, component placement, and reflow soldering process.",
+              "content": "**Steps**: 1) **Solder Paste Printing**: Load approved PCB panel onto DEK or MPM stencil printer. Use 100% solder paste inspection (SPI) via Koh Young or CyberOptics system. Critical parameters: paste height (target 100-150µm), area, volume, and bridging detection. Reject panels outside 3-sigma control limits. 2) **Component Placement**: Programmed Fuji NXT or Siemens SIPLACE pick-and-place. Verify feeder setup, component polarity, and placement accuracy (≤50µm). Use vision alignment for fine-pitch components (QFN, BGA). 3) **Reflow Oven**: Convey through Heller or Rehm 10-zone oven. Profile per solder paste spec (e.g., SAC305): preheat (150-180°C, 60-90s), soak, peak temp 240-250°C for 45-60s, cooling rate 2-4°C/s. Monitor with KIC thermal profiler; adjust zones if profile drifts. **Tools**: SPI system, pick-and-place, reflow oven, thermal profiler. **Error Handling**: Real-time MES alerts for printer drift or placement misalignment; auto-stop line if critical defect detected. **Owner**: SMT Line Operator."
+            },
+            {
+              "label": "Automated Optical Inspection (AOI)",
+              "category": "test",
+              "description": "Post-reflow automated visual inspection for soldering defects and component presence.",
+              "content": "**What to Test**: Solder joint quality (bridging, insufficient solder, tombstoning), component presence/correctness, polarity, and alignment. **Pass/Fail Criteria**: Per IPC-A-610 Class 2. Zero tolerance for critical defects (bridging, missing ICs). Allow ≤2 minor defects (solder balls, slight misalignment) per board. **Tools**: Orbotech or Mirtec 3D AOI with LED lighting and multi-angle cameras. **Procedure**: 1) Program golden board as reference. 2) Set detection algorithms for solder fillets (heel, toe, side) and component body offset. 3) Run 100% inspection at line speed. 4) Defect classification: auto-flag for review station. 5) Statistical process control (SPC): track defect Pareto (top 5 defect types) hourly. **Coverage**: 100% of boards. **Failure Action**: Route failed boards to repair station; if defect rate exceeds 0.1%, trigger line stop and root cause analysis (e.g., stencil wear, paste contamination). **Owner**: AOI Technician."
+            },
+            {
+              "label": "Functional Testing (FCT)",
+              "category": "test",
+              "description": "In-circuit and functional validation of assembled PCB under power.",
+              "content": "**What to Test**: Electrical continuity, power-on behavior, firmware boot, signal integrity, and I/O functionality. **Pass/Fail Criteria**: All test points within datasheet tolerances (voltage ±5%, current ±10%), firmware version match, communication ports (UART, USB) responsive. **Tools**: Keysight or National Instruments ATE with pogo-pin fixture, oscilloscope, multimeter. **Procedure**: 1) Load test program for PCB variant. 2) Secure board in fixture; apply power. 3) Run in-circuit test (ICT) for shorts/opens on critical nets. 4) Execute functional test sequence: verify microcontroller clocks, memory tests, sensor readings, actuator outputs. 5) Log results to MES (serial number, test results, timestamps). **Coverage**: 100% of boards post-AOI. **Failure Action**: Route failures to diagnostic bench for troubleshooting. If failure rate >0.2%, halt testing and escalate to engineering for design/manufacturing review. **Owner**: Test Engineer."
+            },
+            {
+              "label": "Final QA Audit & Packaging",
+              "category": "review",
+              "description": "Human-led random audit and packaging verification before shipping.",
+              "content": "**Approval Criteria**: 1) Random AQL audit per MIL-STD-1916: Zero-defect acceptance for 32-sample lot. 2) Visual check: no cosmetic damage, correct labeling (UL, CE marks), serial number legibility. 3) Packaging integrity: ESD-safe bags, correct box size, filler material. 4) Documentation: shipping manifest matches quantity, customer PO. **Who Reviews**: Senior QA Inspector. **Process**: Pull 32 boards hourly from packaged lot. Inspect against master sample. Use checklist in QA software (e.g., ETQ Reliance). **Escalation**: If audit fails, hold entire lot (500 boards) for 100% re-inspection. Root cause: packaging process or upstream defect escape. **SLA**: Audit completed within 15 minutes of lot packaging. **Outcome**: Approve for shipping or reject and trigger containment. **Owner**: QA Supervisor."
+            },
+            {
+              "label": "Packaged Units Ready for Shipment",
+              "category": "output",
+              "description": "Final deliverable: inspected, tested, and approved PCBs packaged per customer requirements.",
+              "content": "**Deliverable Format**: PCBs in sealed ESD-safe bags, placed in partitioned boxes, on pallets with stretch wrap. **Distribution**: Handoff to logistics for carrier pickup (FedEx, DHL). **Success Metrics**: 1) Daily output: 5,000 boards. 2) Defect rate: <0.5% (target: ≤25 defective boards per day). 3) On-time shipment: 100% by EOD. **Documentation**: Each box includes packing slip with lot number, inspection date, and QA stamp. Digital traceability: MES record links serial numbers to inspection results, test logs, and audit reports. **Post-Shipment**: Monitor customer defect reports weekly; if field defect rate exceeds 0.1%, trigger CAPA (corrective and preventive action) review of relevant workflow nodes. **Owner**: Shipping Coordinator."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "validates"
+            },
+            {
+              "from": 3,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "approves"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 110,
+        "maxScore": 110,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 6 (min: 5)",
+          "✓ Node count: 6 ≤ 10",
+          "✓ Has \"test\" category",
+          "✓ All 7 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 912c, no thin nodes",
+          "✓ Architecture covers: inspect, solder, test, defect",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (7 edges, 6 nodes)"
+        ]
+      }
+    }
+  ]
+}

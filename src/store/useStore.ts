@@ -304,6 +304,15 @@ interface LifecycleStore {
   // Compare current vs last execution results
   lastExecutionSnapshot: Map<string, string>;
   diffLastRun: () => string;
+
+  // ── Project Management ──
+  projects: Map<string, { nodes: Node<NodeData>[]; edges: Edge[]; messages: CIDMessage[]; cidMode: CIDMode; cidAIModel: string; createdAt: number; updatedAt: number }>;
+  currentProjectName: string | null;
+  saveProject: (name: string) => string;
+  loadProject: (name: string) => { success: boolean; message: string };
+  deleteProject: (name: string) => { success: boolean; message: string };
+  listProjects: () => string;
+  renameProject: (oldName: string, newName: string) => { success: boolean; message: string };
 }
 
 // ── Agent activity logger — visible in browser console for debugging ──
@@ -2154,12 +2163,18 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         .map(m => ({ role: m.role as 'user' | 'cid', content: m.content }));
       const messages = buildMessages(chatHistory, enrichedPrompt);
 
+      // Detect if the user is requesting a build/modification (needs more time + creativity)
+      const lowerPrompt = enrichedPrompt.toLowerCase();
+      const isBuildOrModify = /\b(build|create|generate|make|design|add|remove|change|update|edit|modify|tweak|revise|insert|delete|replace|rename|move|swap)\b/.test(lowerPrompt);
+      const chatTaskType = isBuildOrModify ? 'generate' : 'analyze';
+      const chatTimeoutMs = isBuildOrModify ? 120000 : 45000;
+
       const chatController = new AbortController();
-      const chatTimeout = setTimeout(() => chatController.abort(), 45000);
+      const chatTimeout = setTimeout(() => chatController.abort(), chatTimeoutMs);
       const res = await fetch('/api/cid', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ systemPrompt, messages, model: get().cidAIModel, taskType: 'analyze' }),
+        body: JSON.stringify({ systemPrompt, messages, model: get().cidAIModel, taskType: chatTaskType }),
         signal: chatController.signal,
       });
       clearTimeout(chatTimeout);
@@ -2202,7 +2217,126 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       const result = data.result as { message: string; workflow: null | {
         nodes: Array<{ label: string; category: string; description: string; content?: string; sections?: Array<{ title: string; content?: string }> }>;
         edges: Array<{ from: number; to: number; label: string }>;
+      }; modifications?: {
+        update_nodes?: Array<{ label: string; changes: Partial<{ label: string; category: string; description: string; content: string }> }>;
+        add_nodes?: Array<{ label: string; category: string; description: string; content?: string; after?: string }>;
+        remove_nodes?: string[];
+        add_edges?: Array<{ from_label: string; to_label: string; label: string }>;
+        remove_edges?: Array<{ from_label: string; to_label: string }>;
       }};
+
+      // ── Handle workflow modifications (edit/tweak existing workflow) ──
+      if (result.modifications && !result.workflow) {
+        const mods = result.modifications;
+        store.pushHistory();
+        let modCount = 0;
+        const currentNodes = get().nodes;
+
+        // 1. Remove nodes
+        if (mods.remove_nodes?.length) {
+          for (const label of mods.remove_nodes) {
+            const node = currentNodes.find(n => n.data.label.toLowerCase() === label.toLowerCase());
+            if (node) {
+              get().deleteNode(node.id);
+              modCount++;
+            }
+          }
+        }
+
+        // 2. Update nodes
+        if (mods.update_nodes?.length) {
+          for (const update of mods.update_nodes) {
+            const node = get().nodes.find(n => n.data.label.toLowerCase() === update.label.toLowerCase());
+            if (node && update.changes) {
+              const patch: Partial<NodeData> = {};
+              if (update.changes.label) patch.label = update.changes.label;
+              if (update.changes.category) patch.category = update.changes.category as NodeCategory;
+              if (update.changes.description) patch.description = update.changes.description;
+              if (update.changes.content) patch.content = update.changes.content;
+              patch.lastUpdated = Date.now();
+              patch.version = (node.data.version || 1) + 1;
+              get().updateNodeData(node.id, patch);
+              modCount++;
+            }
+          }
+        }
+
+        // 3. Add nodes
+        if (mods.add_nodes?.length) {
+          for (const newNode of mods.add_nodes) {
+            // Find position: after a named node, or at the end
+            let x = 100, y = 100;
+            if (newNode.after) {
+              const afterNode = get().nodes.find(n => n.data.label.toLowerCase() === newNode.after!.toLowerCase());
+              if (afterNode) {
+                x = afterNode.position.x + NODE_W + 80;
+                y = afterNode.position.y;
+              }
+            } else {
+              const maxX = get().nodes.length > 0 ? Math.max(...get().nodes.map(n => n.position.x)) : 0;
+              x = maxX + NODE_W + 80;
+            }
+            const id = uid();
+            get().addNode({
+              id, type: 'lifecycleNode',
+              position: { x, y },
+              data: {
+                label: newNode.label,
+                category: (newNode.category || 'action') as NodeCategory,
+                status: 'active',
+                description: newNode.description || '',
+                content: newNode.content || '',
+                version: 1,
+                lastUpdated: Date.now(),
+              },
+            });
+            modCount++;
+          }
+        }
+
+        // 4. Remove edges
+        if (mods.remove_edges?.length) {
+          for (const edgeDef of mods.remove_edges) {
+            const srcNode = get().nodes.find(n => n.data.label.toLowerCase() === edgeDef.from_label.toLowerCase());
+            const tgtNode = get().nodes.find(n => n.data.label.toLowerCase() === edgeDef.to_label.toLowerCase());
+            if (srcNode && tgtNode) {
+              const edge = get().edges.find(e => e.source === srcNode.id && e.target === tgtNode.id);
+              if (edge) {
+                get().deleteEdge(edge.id);
+                modCount++;
+              }
+            }
+          }
+        }
+
+        // 5. Add edges
+        if (mods.add_edges?.length) {
+          for (const edgeDef of mods.add_edges) {
+            const srcNode = get().nodes.find(n => n.data.label.toLowerCase() === edgeDef.from_label.toLowerCase());
+            const tgtNode = get().nodes.find(n => n.data.label.toLowerCase() === edgeDef.to_label.toLowerCase());
+            if (srcNode && tgtNode) {
+              const exists = get().edges.some(e => e.source === srcNode.id && e.target === tgtNode.id);
+              if (!exists) {
+                get().addEdge(createStyledEdge(srcNode.id, tgtNode.id, edgeDef.label || 'drives'));
+                modCount++;
+              }
+            }
+          }
+        }
+
+        // Finalize
+        set({ isProcessing: false, showActivityPanel: true });
+        postBuildFinalize(get);
+
+        const modMsg = result.message + `\n\n🔧 **${modCount} modification${modCount !== 1 ? 's' : ''} applied** to the workflow.`;
+        const modMsgId = uid();
+        const suggestions = getSmartSuggestions(get().nodes, get().edges);
+        store.addMessage({ id: modMsgId, role: 'cid', content: '', timestamp: Date.now(), suggestions });
+        streamMessageToStore(modMsgId, modMsg, store.updateStreamingMessage);
+        store.addEvent({ id: `ev-${Date.now()}`, type: 'edited', message: `Agent modified workflow: ${modCount} changes`, timestamp: Date.now(), agent: true });
+        runReflection(curMode, prompt, result.message);
+        return;
+      }
 
       // If the API returned a workflow, build it
       if (result.workflow && result.workflow.nodes?.length > 0) {
@@ -4618,5 +4752,111 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     }
 
     return parts.join('\n');
+  },
+
+  // ── Project Management ──
+  projects: (() => {
+    try {
+      const raw = typeof window !== 'undefined' ? localStorage.getItem('lifecycle-projects') : null;
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return new Map(Object.entries(parsed));
+      }
+    } catch { /* ignore */ }
+    return new Map();
+  })(),
+  currentProjectName: null,
+
+  saveProject: (name) => {
+    const { nodes, edges, messages, cidMode, cidAIModel, projects } = get();
+    const trimmed = name.trim();
+    if (!trimmed) return 'Project name cannot be empty.';
+    if (nodes.length === 0) return 'No workflow to save. Build something first.';
+
+    const existing = projects.get(trimmed);
+    const now = Date.now();
+    const project = {
+      nodes: structuredClone(nodes),
+      edges: structuredClone(edges),
+      messages: messages.filter(m => !m._ephemeral),
+      cidMode,
+      cidAIModel,
+      createdAt: existing?.createdAt || now,
+      updatedAt: now,
+    };
+    const updated = new Map(projects);
+    updated.set(trimmed, project);
+    set({ projects: updated, currentProjectName: trimmed });
+    try { localStorage.setItem('lifecycle-projects', JSON.stringify(Object.fromEntries(updated))); } catch { /* quota */ }
+    return existing
+      ? `Updated project **"${trimmed}"** (${nodes.length} nodes, ${edges.length} edges).`
+      : `Saved project **"${trimmed}"** (${nodes.length} nodes, ${edges.length} edges).`;
+  },
+
+  loadProject: (name) => {
+    const { projects } = get();
+    const trimmed = name.trim();
+    const project = projects.get(trimmed);
+    if (!project) {
+      const available = [...projects.keys()];
+      return { success: false, message: available.length > 0 ? `No project "${trimmed}". Available: ${available.join(', ')}.` : 'No saved projects. Use `save <name>` to create one.' };
+    }
+    const store = get();
+    store.pushHistory();
+    // Restore nodeCounter to prevent ID collisions
+    if (project.nodes.length > 0) {
+      const maxId = project.nodes.reduce((max: number, n: Node<NodeData>) => {
+        const num = parseInt(n.id.replace('node-', ''), 10);
+        return isNaN(num) ? max : Math.max(max, num);
+      }, 0);
+      if (maxId >= nodeCounter) nodeCounter = maxId + 1;
+    }
+    set({
+      nodes: structuredClone(project.nodes),
+      edges: structuredClone(project.edges),
+      messages: project.messages ? structuredClone(project.messages) : [],
+      cidMode: project.cidMode || 'rowan',
+      cidAIModel: project.cidAIModel || 'deepseek-chat',
+      currentProjectName: trimmed,
+    });
+    saveToStorage({ nodes: project.nodes, edges: project.edges, events: get().events, messages: project.messages || [] });
+    return { success: true, message: `Loaded project **"${trimmed}"** (${project.nodes.length} nodes, ${project.edges.length} edges).` };
+  },
+
+  deleteProject: (name) => {
+    const { projects } = get();
+    const trimmed = name.trim();
+    if (!projects.has(trimmed)) return { success: false, message: `No project "${trimmed}" found.` };
+    const updated = new Map(projects);
+    updated.delete(trimmed);
+    set({ projects: updated, currentProjectName: get().currentProjectName === trimmed ? null : get().currentProjectName });
+    try { localStorage.setItem('lifecycle-projects', JSON.stringify(Object.fromEntries(updated))); } catch { /* quota */ }
+    return { success: true, message: `Deleted project **"${trimmed}"**.` };
+  },
+
+  listProjects: () => {
+    const { projects, currentProjectName } = get();
+    if (projects.size === 0) return 'No saved projects. Use `save <name>` to create one.';
+    const lines = [...projects.entries()].map(([name, p]) => {
+      const date = new Date(p.updatedAt).toLocaleString();
+      const current = name === currentProjectName ? ' ← current' : '';
+      return `- **${name}** — ${p.nodes.length} nodes, ${p.edges.length} edges (${date})${current}`;
+    });
+    return `### Projects (${projects.size})\n${lines.join('\n')}\n\nUse \`load <name>\` to open a project.`;
+  },
+
+  renameProject: (oldName, newName) => {
+    const { projects } = get();
+    const trimOld = oldName.trim();
+    const trimNew = newName.trim();
+    if (!projects.has(trimOld)) return { success: false, message: `No project "${trimOld}" found.` };
+    if (projects.has(trimNew)) return { success: false, message: `Project "${trimNew}" already exists.` };
+    const updated = new Map(projects);
+    const project = updated.get(trimOld)!;
+    updated.delete(trimOld);
+    updated.set(trimNew, project);
+    set({ projects: updated, currentProjectName: get().currentProjectName === trimOld ? trimNew : get().currentProjectName });
+    try { localStorage.setItem('lifecycle-projects', JSON.stringify(Object.fromEntries(updated))); } catch { /* quota */ }
+    return { success: true, message: `Renamed project **"${trimOld}"** → **"${trimNew}"**.` };
   },
 }));

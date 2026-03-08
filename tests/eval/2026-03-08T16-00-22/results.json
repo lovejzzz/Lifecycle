@@ -1,0 +1,612 @@
+{
+  "timestamp": "2026-03-08T16-00-22",
+  "overall": 96,
+  "testsRun": [
+    "marketing-advice",
+    "execute-job-description",
+    "personality-rowan-empty",
+    "legal-contract-review",
+    "cybersecurity-incident-response",
+    "legal-contract-review",
+    "education-online-course-creation"
+  ],
+  "poolSize": 76,
+  "results": [
+    {
+      "id": "marketing-advice",
+      "status": "ok",
+      "elapsed": 4449,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Our email open rates dropped from 35% to 12% over the last quarter. What could be wrong?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, a most curious case of the vanishing opens! The little grey cells suggest we must investigate the evidence—subject lines, deliverability, audience fatigue, and content relevance. Let us examine the clues systematically, mon ami.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 35,
+        "maxScore": 40,
+        "pct": 88,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (232 chars)",
+          "✗ Message too short: 232 < 250"
+        ]
+      }
+    },
+    {
+      "id": "execute-job-description",
+      "status": "ok",
+      "elapsed": 42531,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Write a job description for a Senior Full-Stack Engineer at a Series B fintech startup. Tech stack is React, Node.js, PostgreSQL, AWS. Remote-first, competitive equity.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Senior Full-Stack Engineer\n\n## About Us\nWe are a Series B fintech startup on a mission to democratize access to sophisticated financial tools. Backed by leading venture capital firms, we're building a platform that empowers individuals and businesses to make smarter financial decisions. As we scale our product and expand our market reach, we're looking for a Senior Full-Stack Engineer to join our remote-first engineering team and help architect the future of our platform.\n\n## The Role\nAs a Senior Full-Stack Engineer, you will be a key contributor across our entire technology stack, from designing intuitive user interfaces to building robust, scalable backend services. You'll collaborate closely with product managers, designers, and other engineers to translate complex financial concepts into elegant, user-friendly experiences. This role offers significant ownership and the opportunity to shape both our technical architecture and product direction.\n\n## Key Responsibilities\n- Design, develop, and maintain scalable full-stack applications using React, Node.js, PostgreSQL, and AWS services\n- Architect and implement new features and product enhancements across frontend and backend systems\n- Write clean, maintainable, and well-tested code while following best practices and coding standards\n- Collaborate with product and design teams to translate requirements into technical specifications and actionable tasks\n- Optimize application performance, reliability, and security across the stack\n- Participate in code reviews, providing constructive feedback to peers and mentoring junior engineers\n- Contribute to technical architecture decisions and help evolve our development processes\n- Troubleshoot and debug complex issues across distributed systems\n- Stay current with emerging technologies and industry trends, advocating for improvements to our tech stack when appropriate\n\n## Tech Stack\n- **Frontend:** React, TypeScript, modern JavaScript (ES6+), state management (Redux/MobX), CSS-in-JS\n- **Backend:** Node.js, Express, RESTful APIs, GraphQL (optional)\n- **Database:** PostgreSQL, Redis, ORM/query builders\n- **Infrastructure:** AWS (EC2, S3, Lambda, RDS, CloudFront), Docker, Kubernetes\n- **Tools:** Git, CI/CD (GitHub Actions/Jenkins), monitoring (Datadog/New Relic), testing frameworks (Jest, Cypress)\n\n## Qualifications\n### Required\n- 5+ years of professional software development experience with a focus on full-stack engineering\n- Deep expertise in React and modern frontend development practices\n- Strong proficiency in Node.js and backend API development\n- Extensive experience with relational databases (PostgreSQL preferred) and data modeling\n- Hands-on experience with cloud platforms, particularly AWS\n- Proven ability to design, build, and maintain scalable, production-grade systems\n- Excellent problem-solving skills and attention to detail\n- Strong communication skills and ability to work effectively in a remote, collaborative environment\n- Bachelor's degree in Computer Science, Engineering, or equivalent experience\n\n### Preferred\n- Experience in fintech, banking, or other regulated industries\n- Knowledge of financial systems, payment processing, or security best practices\n- Familiarity with microservices architecture and event-driven systems\n- Experience with TypeScript throughout the stack\n- Contributions to open-source projects or public technical blog\n\n## What We Offer\n- **Competitive Compensation:** Attractive salary package with significant equity stake\n- **Remote-First Culture:** Work from anywhere with flexible hours (core overlap hours required for collaboration)\n- **Health & Wellness:** Comprehensive medical, dental, and vision insurance\n- **Professional Growth:** Annual learning and development budget, conference attendance\n- **Equipment:** Latest technology and home office setup stipend\n- **Time Off:** Unlimited PTO with encouraged minimum usage, company holidays, and parental leave\n- **Team Connection:** Regular virtual team events, annual company offsite, and coworking stipend\n\n## Our Engineering Values\n- **Ownership:** Take pride in your work from conception to deployment and beyond\n- **Collaboration:** We succeed as a team through open communication and mutual support\n- **Quality:** Build systems that are reliable, maintainable, and scalable\n- **Innovation:** Challenge assumptions and bring creative solutions to complex problems\n- **Inclusion:** Foster an environment where diverse perspectives are valued and heard\n\n## How to Apply\nPlease submit your resume along with a brief note about why you're interested in this role and what excites you about fintech. Include links to your GitHub profile, portfolio, or any relevant projects that demonstrate your full-stack capabilities.\n\nWe are committed to building a diverse and inclusive team. We encourage applications from all qualified individuals regardless of background, identity, or experience.\n\n*Note: This position may require occasional travel for team meetings or company events.*",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (5024 chars)",
+          "✓ Content length: 5024 ≥ 200"
+        ]
+      }
+    },
+    {
+      "id": "personality-rowan-empty",
+      "status": "ok",
+      "elapsed": 3875,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Graph is empty. Ready for mission. Provide a build request or ask for strategic advice.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (87 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "legal-contract-review",
+      "status": "ok",
+      "elapsed": 79744,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Build a contract review workflow for our legal team. Steps: receive contract, initial screening, clause analysis, risk assessment, negotiation points, legal approval, and final execution. We review 30+ vendor contracts per quarter.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, mon ami! A contract review workflow — the perfect case for my little grey cells. Let us examine this with the precision of a detective examining evidence. Voilà, I have constructed a system worthy of your legal team's quarterly 30+ vendor contracts.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Contract Intake Portal",
+              "category": "input",
+              "description": "Centralized submission point for all vendor contracts requiring legal review",
+              "content": "Establish a secure digital portal (using tools like DocuSign CLM, Ironclad, or SharePoint with Power Automate) where business units submit vendor contracts with mandatory metadata: vendor name, contract value, business owner, urgency level, and business justification. Implement automated triage rules: contracts under $50k with standard templates route to expedited review, while high-value or complex agreements trigger full workflow. Create intake checklist requiring submission of all exhibits, statements of work, and previous correspondence. Set up automated acknowledgment emails to business owners with estimated review timeline based on complexity tier. Track submission date, assign unique tracking ID, and log into matter management system (Clio, NetDocuments) for audit trail. Include preliminary conflict check against existing vendor database."
+            },
+            {
+              "label": "Initial Screening & Triage",
+              "category": "action",
+              "description": "Rapid assessment of contract type, complexity, and routing to appropriate reviewer",
+              "content": "Senior paralegal conducts 15-minute screening using standardized checklist: 1) Identify contract type (MSA, SOW, NDA, Amendment) 2) Flag red-flag clauses (indemnification caps below $1M, unlimited liability, automatic renewal) 3) Check vendor risk profile using third-party tools (RapidRatings, Dun & Bradstreet) 4) Determine jurisdiction and governing law implications 5) Assess alignment with company's approved template library. Assign complexity score (1-5) based on: financial exposure >$500k = +2 points, international parties = +1 point, regulatory implications (GDPR, HIPAA) = +2 points. Route based on score: 1-2 to junior counsel, 3-4 to senior counsel, 5 to department head. Update tracking system with estimated completion date (3 days for simple, 10 days for complex)."
+            },
+            {
+              "label": "Clause Analysis Engine",
+              "category": "action",
+              "description": "Systematic review of key contractual provisions against company playbook",
+              "content": "Attorney uses clause library comparison tool (Kira Systems, LawGeex, or custom SharePoint list) to analyze 12 critical sections: 1) Limitation of Liability (target: mutual, capped at fees paid) 2) Indemnification (require broad IP and third-party claims coverage) 3) Termination (30-day cure period, 60-day notice) 4) Data Protection (GDPR/CCPA compliance, audit rights) 5) Insurance (require certificates: general $2M, cyber $5M) 6) Payment Terms (net 45 maximum) 7) IP Ownership (company retains pre-existing, owns deliverables) 8) Confidentiality (perpetual obligation) 9) Governing Law (prefer Delaware) 10) Dispute Resolution (mandatory mediation before litigation) 11) Auto-renewal (require 60-day notice window) 12) Assignment (prohibit without consent). Document deviations in red/yellow/green status with specific alternative language proposals."
+            },
+            {
+              "label": "Risk Assessment Matrix",
+              "category": "policy",
+              "description": "Evaluation of legal, financial, and operational risks with scoring methodology",
+              "content": "Apply quantitative risk scoring (1-10 scale) across four dimensions: 1) Legal Risk (weight: 40%): litigation history, regulatory exposure, enforceability concerns 2) Financial Risk (30%): exposure amount, payment terms, currency fluctuation 3) Operational Risk (20%): dependency creation, transition complexity, SLA achievability 4) Reputational Risk (10%): ESG alignment, vendor controversies. Calculate composite score: <3 = low risk (proceed), 3-6 = medium risk (negotiate), >6 = high risk (escalate). Use risk visualization tools (Tableau, Power BI) to create dashboard showing risk distribution across contract portfolio. Document mitigation strategies: insurance requirements, performance bonds, phased implementation, or contract value caps. Update risk register with findings for quarterly reporting to legal leadership."
+            },
+            {
+              "label": "Negotiation Playbook Development",
+              "category": "artifact",
+              "description": "Creation of prioritized negotiation positions with fallback options",
+              "content": "Generate negotiation brief with three-tier strategy: 1) MUST HAVE (non-negotiable): liability caps, data protection, IP ownership, termination for cause 2) SHOULD HAVE (strong preference): payment terms, insurance levels, audit rights, governing law 3) NICE TO HAVE (compromise positions): notice periods, reporting frequency, renewal terms. For each position, prepare: business rationale, legal precedent, fallback language, and escalation threshold. Include BATNA (Best Alternative to Negotiated Agreement) analysis: what happens if negotiations fail? Create redline comparison showing company's standard language vs. vendor's proposal. Schedule negotiation strategy session with business owner to align on priorities and authority limits. Document walk-away conditions clearly."
+            },
+            {
+              "label": "Legal Approval Gate",
+              "category": "review",
+              "description": "Final sign-off by appropriate authority level before execution",
+              "content": "Conduct formal review meeting with required attendees based on risk score: low risk = junior counsel approval, medium risk = senior counsel + business unit director, high risk = General Counsel + CFO. Review package includes: 1) Executive summary (2-page max) 2) Redlined contract 3) Risk assessment matrix 4) Negotiation playbook 5) Business case justification 6) Vendor due diligence report. Use digital signature workflow (DocuSign, Adobe Sign) with sequential routing: reviewer → approver → business owner. Implement four-eye principle: no single person can both prepare and approve. Document approval rationale in matter management system. If rejected, provide specific remediation requirements and return to clause analysis stage. Set 48-hour SLA for approval decisions after complete package submission."
+            },
+            {
+              "label": "Execution & Archive",
+              "category": "output",
+              "description": "Final execution, distribution, and systematic archiving of completed contract",
+              "content": "Execute final version using digital signature platform with audit trail capturing: timestamp, IP address, email verification. Distribute fully executed copies within 24 hours to: 1) Vendor primary contact 2) Company business owner 3) Accounts Payable 4) Vendor Management Office 5) Legal department archive. Upload to contract repository (Ironclad, Conga, or SharePoint with metadata: effective date, expiration date, termination notice deadline, auto-renewal date, key contact persons, value, risk score. Set up automated reminders: 90 days before expiration for renewal decision, 30 days before termination windows. Generate quarterly metrics report: average review time, risk distribution, negotiation success rates, template compliance percentage. Conduct post-mortem on high-risk contracts after 6 months to validate risk assessments."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "drives"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "informs"
+            },
+            {
+              "from": 3,
+              "to": 5,
+              "label": "monitors"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "requires"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "approves"
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 110,
+        "maxScore": 110,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ Has \"review\" category",
+          "✓ All 10 edges valid",
+          "✓ Starts with input",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 821c, no thin nodes",
+          "✓ Architecture covers: contract, risk, approv",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (10 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "cybersecurity-incident-response",
+      "status": "ok",
+      "elapsed": 89031,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Build an incident response plan workflow for our SOC team. Cover: alert triage, severity classification (P1-P4), containment procedures, evidence collection, root cause analysis, remediation, stakeholder communication, and post-incident review. We handle 200 alerts/day and need to respond to P1s within 15 minutes.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building SOC incident response workflow with P1 15-minute SLA.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Alert Ingest & Triage",
+              "category": "trigger",
+              "description": "Initial alert reception and preliminary assessment",
+              "content": "**Event Sources & Setup:** Configure SIEM (Splunk/Sentinel) to ingest alerts from EDR (CrowdStrike), firewalls (Palo Alto), IDS/IPS, cloud security tools (AWS GuardDuty), and email security. Set up webhook integration for critical alerts to trigger immediate SOC notification. **Triage Process:** 1. **Initial Filtering:** Use automated playbooks (SOAR like Phantom/Swimlane) to filter out known false positives (IP whitelists, scheduled maintenance). 2. **Manual Review:** SOC analyst reviews remaining alerts: check source IP/domain reputation (VirusTotal, AlienVault OTX), correlate with recent threat intel feeds (Recorded Future), examine log patterns for anomalies. 3. **Initial Data Capture:** Document alert timestamp, source system, affected asset(s), and initial indicators (IOCs) in ticketing system (Jira Service Desk). **Tools:** SIEM dashboard, SOAR automation, threat intel platforms. **Owner:** SOC Tier 1 analyst. **SLA:** All alerts reviewed within 5 minutes of ingestion."
+            },
+            {
+              "label": "Severity Classification (P1-P4)",
+              "category": "action",
+              "description": "Assign incident priority based on impact and urgency",
+              "content": "**Classification Matrix:** 1. **P1 (Critical):** Active data exfiltration, ransomware encryption in progress, production system outage, unauthorized admin access. **Response SLA: 15 minutes.** 2. **P2 (High):** Suspicious lateral movement, malware detection without active encryption, data exposure risk, significant performance degradation. **SLA: 1 hour.** 3. **P3 (Medium):** Phishing attempts, unsuccessful brute-force attacks, policy violations (unauthorized software). **SLA: 4 hours.** 4. **P4 (Low):** Informational alerts, scan probes from untargeted sources. **SLA: 24 hours.** **Procedure:** Analyst uses decision tree: a) Is there active data loss/destruction? → P1. b) Is critical system availability impacted? → P1. c) Are privileged credentials compromised? → P2. d) Is threat contained to isolated test system? → P3/P4. **Documentation:** Update ticket with severity, justification, and assigned responder. **Escalation:** P1 automatically pages on-call lead via PagerDuty/OpsGenie."
+            },
+            {
+              "label": "Containment & Evidence Collection",
+              "category": "action",
+              "description": "Isolate threat and preserve forensic evidence",
+              "content": "**Containment Steps:** 1. **Network Isolation:** Block malicious IPs/domains at firewall (Palo Alto), segment affected VLAN, disable compromised accounts in AD/IAM. 2. **Host Containment:** Isolate endpoint via EDR (CrowdStrike quarantine), disconnect from network, suspend suspicious processes. 3. **Application Containment:** Revoke API keys, disable compromised services in cloud console (AWS IAM). **Evidence Collection:** a) **Memory Capture:** Use Volatility or EDR tool to dump memory from affected hosts. b) **Disk Imaging:** Create forensic image (FTK Imager) of critical systems. c) **Log Preservation:** Export relevant logs (Windows Event, Apache, DB) with hashes (SHA-256). d) **Network Traffic:** Capture full packet capture (Wireshark) from border firewall. **Chain of Custody:** Document all evidence with timestamps, collector name, and storage location (encrypted S3 bucket). **Tools:** EDR, forensic suites, network taps."
+            },
+            {
+              "label": "Root Cause Analysis",
+              "category": "action",
+              "description": "Determine underlying vulnerability or failure point",
+              "content": "**Analysis Methodology:** 1. **Timeline Reconstruction:** Build attack timeline using log correlation (Splunk) from initial access to detection. 2. **IOC Enrichment:** Expand indicators (IPs, hashes) via threat intel (Recorded Future, MISP) to identify threat actor TTPs. 3. **Vulnerability Assessment:** Scan affected systems (Nessus, Qualys) for unpatched CVEs matching exploit. 4. **Configuration Review:** Check cloud security groups (AWS Security Hub), firewall rules, IAM policies for misconfigurations. 5. **Code/Deployment Audit:** For application incidents, review recent git commits, CI/CD logs (Jenkins), and deployment manifests. **Deliverable:** RCA report with: a) Primary cause (e.g., CVE-2023-12345 exploitation), b) Contributing factors (missing patch, weak password), c) Attack vector (phishing email, exposed API). **Tools:** SIEM, vulnerability scanners, git history."
+            },
+            {
+              "label": "Remediation & Communication",
+              "category": "action",
+              "description": "Fix vulnerabilities and update stakeholders",
+              "content": "**Remediation Steps:** 1. **Immediate Mitigation:** Apply patches, rotate credentials, restore from clean backups (Veeam), deploy WAF rules (Cloudflare). 2. **System Hardening:** Implement least-privilege access, enable MFA, update firewall deny lists. 3. **Monitoring Enhancement:** Create new SIEM detection rules for observed TTPs, increase logging verbosity. **Stakeholder Communication:** a) **Internal:** Hourly updates to leadership via Slack/Teams channel; include impact, ETA, actions taken. b) **Customers:** For data breaches, draft notification email (review by Legal) per GDPR/CCPA timelines. c) **Regulatory:** File required reports (SEC, GDPR) within mandated windows. **Documentation:** Update ticket with remediation steps, evidence of fix (screenshot of patched version), and communication log. **Owner:** Incident Commander."
+            },
+            {
+              "label": "Post-Incident Review",
+              "category": "review",
+              "description": "Human-led analysis of response effectiveness",
+              "content": "**Review Process:** 1. **Scheduling:** Conduct within 7 days of incident closure; include SOC, IT, legal, and business unit reps. 2. **Data Review:** Examine timeline accuracy, SLA compliance (P1 within 15 min?), containment speed, communication clarity. 3. **Lessons Learned:** Identify gaps: detection delay, tool limitations, process bottlenecks, training needs. **Approval Criteria:** a) RCA accuracy confirmed by technical lead, b) All remediation items verified completed, c) Communication audit shows regulatory compliance, d) Action items assigned with deadlines. **Output:** PIR document with: executive summary, timeline, metrics (MTTD, MTTR), root cause, corrective actions (e.g., implement EDR memory scanning), and follow-up tasks (owner, due date). **Escalation:** If review uncovers major process failure, escalate to CISO for policy update."
+            },
+            {
+              "label": "Incident Report & Knowledge Base",
+              "category": "output",
+              "description": "Final documented output and organizational learning",
+              "content": "**Report Structure:** 1. **Executive Summary:** Incident impact, duration, business cost (downtime, data loss). 2. **Technical Details:** Full attack chain, IOCs, tools used. 3. **Response Timeline:** Minute-by-minute log from alert to closure. 4. **Metrics:** MTTD (Mean Time to Detect), MTTR (Mean Time to Respond), SLA adherence (P1: 15 min). 5. **Recommendations:** Specific changes to tools, processes, training. **Distribution:** Share with SOC (for playbook updates), IT (for hardening), legal/compliance (for records), leadership (for risk assessment). **Knowledge Base Update:** a) Add new detection rules to SIEM, b) Create runbook for similar incidents in Confluence, c) Update threat intel feeds with new IOCs, d) Train SOC analysts on lessons via quarterly tabletop exercises. **Success Metrics:** Reduced false positives, faster future response, improved detection coverage."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "drives"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "requires"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "outputs"
+            },
+            {
+              "from": 5,
+              "to": 0,
+              "label": "refines"
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "label": "informs"
+            },
+            {
+              "from": 3,
+              "to": 2,
+              "label": "validates"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 105,
+        "maxScore": 110,
+        "pct": 95,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✗ Missing \"policy\" category (found: trigger, action, review, output)",
+          "✓ All 9 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 915c, no thin nodes",
+          "✓ Architecture covers: triage, contain, evidence, remediat",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (9 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "legal-contract-review",
+      "status": "ok",
+      "elapsed": 79930,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Build a contract lifecycle management workflow for our legal team. We handle 50 contracts/month: NDAs, vendor agreements, and enterprise SaaS licenses. Steps: intake request, drafting, internal legal review, counterparty negotiation, approval, e-signature, and obligation tracking post-signing. We need SLA of 5 business days for standard NDAs.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, mon ami! A contract management case worthy of the little grey cells. Let us examine this evidence: 50 contracts monthly across three types, with SLA requirements. Voilà! I have constructed a workflow that captures the entire lifecycle while ensuring compliance and tracking.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Contract Intake Portal",
+              "category": "input",
+              "description": "Centralized intake system for all contract requests with SLA tracking",
+              "content": "**Implementation Steps:** 1. Deploy a web portal (Clause.io, Conga, or custom SharePoint) where business teams submit contract requests with standardized forms. 2. Include mandatory fields: contract type (NDA/Vendor/SaaS), counterparty details, business value, urgency level, and required clauses. 3. Implement automated SLA timer starting upon submission - NDAs trigger 5-day countdown immediately. 4. Use Power Automate or Zapier to create Jira/Asana tickets with SLA alerts. 5. Add validation rules: incomplete submissions auto-reject with feedback. **Tools:** Contract lifecycle management (CLM) software, Microsoft Power Platform, Jira Service Management. **Metrics:** Intake-to-assignment time, submission completeness rate, SLA breach risk scoring."
+            },
+            {
+              "label": "Automated Draft Generation",
+              "category": "action",
+              "description": "AI-assisted contract drafting using approved templates and clause libraries",
+              "content": "**Process:** 1. System analyzes intake data to select appropriate template (NDA: 2-way/3-way, Vendor: services/goods, SaaS: enterprise/mid-market). 2. AI (LexCheck, LawGeex) populates variables: parties, dates, jurisdictions, payment terms. 3. Clause library (ContractStandards, Practical Law) suggests pre-approved alternatives based on risk profile. 4. Redlines previous similar contracts for consistency. 5. Generates first draft with tracked changes and commentary. **Quality Checks:** Template version control, missing clause detection, contradictory term flagging. **Tools:** AI drafting platforms, template management systems, version control (Git for legal docs). **Output:** Draft with negotiation playbook attached."
+            },
+            {
+              "label": "Legal Review & Risk Assessment",
+              "category": "review",
+              "description": "Attorney review focusing on risk allocation, compliance, and negotiation strategy",
+              "content": "**Review Protocol:** 1. Attorney receives draft with risk scorecard (high/medium/low flags). 2. Checklist: a) Compliance with internal policies (data privacy, insurance requirements) b) Financial risk (liability caps, indemnification, payment terms) c) Operational risk (SLAs, termination rights, audit clauses) d) Legal risk (governing law, dispute resolution). 3. Use comparison tools (Litera Compare) against fallback positions. 4. Document negotiation boundaries: must-have, nice-to-have, walk-away terms. 5. Escalate high-risk clauses to legal leadership. **Tools:** Contract review software, risk assessment matrices, compliance databases. **Time Allocation:** NDAs: 1 hour max, Vendor: 2-3 hours, SaaS: 4+ hours based on complexity."
+            },
+            {
+              "label": "Counterparty Negotiation Hub",
+              "category": "action",
+              "description": "Structured negotiation process with version control and communication tracking",
+              "content": "**Negotiation Framework:** 1. Create shared workspace (Ironclad, Docusign) with role-based access. 2. Implement redlining protocol: all changes tracked, comments require business justification. 3. Communication log: record all calls/emails with key positions. 4. Fallback position database: pre-approved alternatives for common sticking points (limitation of liability, indemnification, IP ownership). 5. Escalation path for deadlocked clauses to senior legal/business leaders. **Tools:** Collaborative negotiation platforms, communication tracking systems, fallback clause libraries. **Metrics:** Negotiation cycle time, clauses contested, compromise rate. **Special Rules:** NDAs auto-approve after 3 rounds unless material changes."
+            },
+            {
+              "label": "Approval Workflow & E-Signature",
+              "category": "review",
+              "description": "Multi-level approval routing followed by secure electronic execution",
+              "content": "**Approval Matrix:** 1. Based on contract value/risk: a) <$50k: Legal only b) $50k-$250k: Legal + Department Head c) >$250k: Legal + Department Head + Finance + Procurement. 2. Automated routing via workflow rules with escalation after 24hrs. 3. Approvers receive summary memo: key terms, risks, business justification. 4. Parallel approvals where possible to reduce cycle time. 5. Final legal sign-off before signature. **E-Signature Process:** 1. Configure signing order (internal first, then counterparty). 2. Audit trail with IP addresses, timestamps. 3. Automatic distribution of fully executed copies. 4. Integration with document management system. **Tools:** Docusign, Adobe Sign, approval workflow software. **Compliance:** E-signature legality per jurisdiction, retention policies."
+            },
+            {
+              "label": "Obligation Tracking & Compliance Monitoring",
+              "category": "artifact",
+              "description": "Post-signature management of contractual obligations, renewals, and compliance",
+              "content": "**Obligation Management System:** 1. Extract key dates and obligations using AI (Seal, Kira): renewal notices (60-90-120 day alerts), payment schedules, reporting requirements, audit rights. 2. Assign obligation owners in business teams with automated reminders. 3. Compliance dashboard: track SLA performance, insurance certificate expiration, certification requirements. 4. Renewal workflow: 120 days pre-expiration, business review of relationship performance, renegotiation trigger. 5. Amendment tracking: all changes documented with original contract lineage. **Tools:** Obligation management software, AI extraction tools, calendar integration. **Metrics:** Obligation compliance rate, renewal processing time, amendment frequency. **Reporting:** Quarterly compliance reports to legal leadership."
+            },
+            {
+              "label": "Contract Repository & Analytics",
+              "category": "output",
+              "description": "Centralized archive with search, reporting, and insights generation",
+              "content": "**Repository Architecture:** 1. Single source of truth with metadata schema: contract type, parties, effective/expiration dates, value, key clauses, risk rating. 2. Full-text search with clause-level indexing. 3. Version control for all drafts and amendments. 4. Access controls based on role and need-to-know. **Analytics & Reporting:** 1. SLA performance: actual vs. target cycle times by contract type. 2. Negotiation analytics: most contested clauses, compromise patterns. 3. Risk exposure: aggregate liability across portfolio. 4. Template effectiveness: which clauses require most negotiation. 5. Counterparty analysis: negotiation behavior by partner. **Tools:** Document management systems (iManage, NetDocuments), contract analytics platforms. **Outputs:** Monthly performance dashboards, quarterly risk assessments, annual process improvement recommendations."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "approves"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "requires"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "outputs"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 3,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 6,
+              "to": 0,
+              "label": "informs"
+            },
+            {
+              "from": 6,
+              "to": 1,
+              "label": "informs"
+            },
+            {
+              "from": 6,
+              "to": 2,
+              "label": "informs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 110,
+        "maxScore": 115,
+        "pct": 96,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ Has \"review\" category",
+          "✗ Missing \"policy\" category (found: input, action, review, artifact, output)",
+          "✓ All 11 edges valid",
+          "✓ Starts with input",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 774c, no thin nodes",
+          "✓ Architecture covers: draft, review, negotiat, sign",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (11 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "education-online-course-creation",
+      "status": "ok",
+      "elapsed": 57240,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Build a workflow for creating and launching a 12-week online coding bootcamp. Steps: curriculum design, instructor recruitment, platform setup (LMS), content recording, beta testing with 20 students, marketing and enrollment, live cohort delivery, and student outcomes tracking. Budget is $50k and we need 100 students for the first cohort.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building a 12-week bootcamp launch workflow with budget and enrollment constraints.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Bootcamp Launch Trigger",
+              "category": "trigger",
+              "description": "Initiates the 12-week online coding bootcamp project with $50k budget and 100-student target.",
+              "content": "This trigger activates the bootcamp creation workflow upon receiving a formal project charter or funding approval. The event payload includes: budget allocation of $50,000, target of 100 students for the first cohort, and a 12-week timeline. Configuration details: use tools like Notion or Asana for project tracking, set up a dedicated Slack channel for team coordination, and establish a Google Drive folder for documentation. The webhook setup involves connecting to financial systems for budget tracking and CRM tools (e.g., HubSpot) for initial student interest capture. Key actions: assign a project manager, schedule a kickoff meeting within 48 hours, and document all assumptions and risks in a project brief."
+            },
+            {
+              "label": "Curriculum & Instructor Setup",
+              "category": "action",
+              "description": "Design the 12-week curriculum and recruit instructors in parallel.",
+              "content": "1. Curriculum Design: Outline weekly modules covering topics like HTML/CSS, JavaScript, React, Node.js, and databases. Use tools like Miro for mapping learning objectives and Bloom's taxonomy. Define assessment criteria with quizzes, projects, and capstone requirements. Allocate 2 weeks for this phase. 2. Instructor Recruitment: Post job listings on platforms like LinkedIn, Indeed, and specialized forums (e.g., GitHub Jobs). Screen candidates based on teaching experience (minimum 2 years), technical expertise (portfolio review), and cultural fit. Conduct 2-round interviews with technical assessments and teaching demos. Budget $15k for instructor salaries and contracts. Use ATS like Greenhouse for tracking. Parallel execution: start recruitment while curriculum is being drafted to save time."
+            },
+            {
+              "label": "Platform & Content Production",
+              "category": "action",
+              "description": "Set up the Learning Management System (LMS) and record instructional content.",
+              "content": "1. Platform Setup: Select an LMS (e.g., Teachable, Thinkific, or custom Moodle). Configure with features: student dashboards, video hosting, assignment submissions, and discussion forums. Integrate payment gateways (Stripe/PayPal) for enrollment. Allocate $10k for licenses and development. Test user onboarding flows. 2. Content Recording: Use tools like OBS Studio for screen recording, Rode microphones for audio, and Canva for slides. Record weekly video lectures (30-60 minutes each), code-along sessions, and solution walkthroughs. Store raw files in cloud storage (Google Drive) and edit with DaVinci Resolve. Aim for 50 hours of content. Assign a producer to manage quality and consistency. Budget $5k for equipment and editing services."
+            },
+            {
+              "label": "Beta Test & Marketing Launch",
+              "category": "action",
+              "description": "Run a beta test with 20 students and initiate marketing for enrollment.",
+              "content": "1. Beta Testing: Recruit 20 beta students via early-bird discounts or referrals. Provide access to the first 4 weeks of content. Use Typeform for feedback surveys and Zoom for weekly check-ins. Track metrics: completion rates, bug reports, and satisfaction scores (target: 4.5/5). Allocate 3 weeks for this phase. 2. Marketing & Enrollment: Develop a marketing plan with channels: social media (LinkedIn, Twitter ads), SEO blog posts on coding topics, and email campaigns via Mailchimp. Set up landing pages with Unbounce, offering early enrollment discounts. Use CRM to track leads and conversions. Budget $10k for ads and tools. Goal: achieve 100 paid enrollments with a conversion rate of 5% from leads. Run A/B tests on ad copy and landing pages."
+            },
+            {
+              "label": "Live Delivery & Outcomes Tracking",
+              "category": "action",
+              "description": "Execute the live 12-week cohort and monitor student outcomes.",
+              "content": "1. Live Cohort Delivery: Schedule weekly live sessions via Zoom, with instructors hosting Q&A and workshops. Use Slack for student support and peer collaboration. Monitor engagement via LMS analytics (login frequency, assignment submissions). Have a TA support team to address issues in real-time. 2. Student Outcomes Tracking: Implement tracking from day one using tools like Google Sheets or Airtable. Metrics: graduation rate (target 80%), job placement within 3 months post-completion (target 70%), and student satisfaction (NPS score). Conduct exit surveys and 1:1 career coaching sessions. Report outcomes weekly to stakeholders. Budget $5k for career services and tracking software. Adjust curriculum based on feedback for future cohorts."
+            },
+            {
+              "label": "Bootcamp Launch Report",
+              "category": "output",
+              "description": "Final deliverable summarizing the bootcamp launch, including performance metrics and recommendations.",
+              "content": "This output is a comprehensive report detailing the bootcamp's launch success. Format: a 10-page PDF or Google Doc with sections: Executive Summary (overview of budget spend and student enrollment), Curriculum Effectiveness (analysis of beta test feedback and live session engagement), Marketing ROI (cost per acquisition and conversion rates), Student Outcomes (graduation rates, job placement data, and satisfaction scores), and Lessons Learned (what worked, what didn't, and actionable recommendations for Cohort 2). Distribute to stakeholders via email and present in a final review meeting. Success metrics: achieved 100+ enrollments, stayed within $50k budget, and met 70% job placement target. Include appendices with raw data and survey responses."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "drives"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "outputs"
+            },
+            {
+              "from": 3,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 4,
+              "to": 1,
+              "label": "informs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 105,
+        "maxScore": 110,
+        "pct": 95,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 6 (min: 5)",
+          "✓ Node count: 6 ≤ 10",
+          "✗ Missing \"review\" category (found: trigger, action, output)",
+          "✓ All 7 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 752c, no thin nodes",
+          "✓ Architecture covers: curriculum, instructor, platform, enroll",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (7 edges, 6 nodes)"
+        ]
+      }
+    }
+  ]
+}
