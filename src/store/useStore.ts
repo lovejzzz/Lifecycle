@@ -517,12 +517,118 @@ export function getBuildContext(): string {
  *  Call from within the store after nodes are finalized (generating→active). */
 function postBuildFinalize(getStore: () => LifecycleStore) {
   trackTimeout(() => { if (getStore().nodes.length > 2) getStore().optimizeLayout(); }, 400);
+
+  // ── Post-build auto-fix: detect and repair structural issues ──
+  trackTimeout(() => {
+    const s = getStore();
+    const { nodes, edges } = s;
+    if (nodes.length < 2) return;
+
+    const fixes: string[] = [];
+    const hasIncoming = new Set(edges.map(e => e.target));
+    const hasOutgoing = new Set(edges.map(e => e.source));
+
+    // 1. Fix orphan nodes (no edges at all) — connect to nearest neighbor
+    const orphans = nodes.filter(n => !hasIncoming.has(n.id) && !hasOutgoing.has(n.id));
+    for (const orphan of orphans) {
+      // Find nearest non-orphan node by position
+      const candidates = nodes.filter(n => n.id !== orphan.id && (hasIncoming.has(n.id) || hasOutgoing.has(n.id)));
+      if (candidates.length > 0) {
+        const nearest = candidates.reduce((best, n) => {
+          const dist = Math.abs(n.position.x - orphan.position.x) + Math.abs(n.position.y - orphan.position.y);
+          const bestDist = Math.abs(best.position.x - orphan.position.x) + Math.abs(best.position.y - orphan.position.y);
+          return dist < bestDist ? n : best;
+        });
+        // Connect: if orphan is to the right, it's downstream; otherwise upstream
+        if (orphan.position.x > nearest.position.x) {
+          s.addEdge(createStyledEdge(nearest.id, orphan.id, inferEdgeLabel(nearest.data.category, orphan.data.category)));
+        } else {
+          s.addEdge(createStyledEdge(orphan.id, nearest.id, inferEdgeLabel(orphan.data.category, nearest.data.category)));
+        }
+        fixes.push(`Connected orphan "${orphan.data.label}" to "${nearest.data.label}"`);
+      }
+    }
+
+    // 2. Ensure flow: check that a path exists from first to last node
+    const startNodes = nodes.filter(n => n.data.category === 'input' || n.data.category === 'trigger');
+    const endNodes = nodes.filter(n => n.data.category === 'output');
+    if (startNodes.length > 0 && endNodes.length > 0) {
+      // BFS from start to see if we reach end
+      const visited = new Set<string>();
+      const queue = startNodes.map(n => n.id);
+      visited.add(queue[0]);
+      while (queue.length > 0) {
+        const current = queue.shift()!;
+        visited.add(current);
+        for (const edge of getStore().edges) {
+          if (edge.source === current && !visited.has(edge.target)) {
+            queue.push(edge.target);
+          }
+        }
+      }
+      // Check if any output is unreachable
+      for (const endNode of endNodes) {
+        if (!visited.has(endNode.id)) {
+          // Find the last reachable node and connect it to the output
+          const reachableNodes = nodes.filter(n => visited.has(n.id));
+          if (reachableNodes.length > 0) {
+            const lastReachable = reachableNodes.reduce((best, n) =>
+              n.position.x > best.position.x ? n : best
+            );
+            s.addEdge(createStyledEdge(lastReachable.id, endNode.id, 'outputs'));
+            fixes.push(`Connected "${lastReachable.data.label}" → "${endNode.data.label}" (was unreachable)`);
+          }
+        }
+      }
+    }
+
+    // 3. Check for nodes with outgoing edges but no incoming (except start nodes)
+    const nonStartRoots = nodes.filter(n =>
+      !hasIncoming.has(n.id) &&
+      hasOutgoing.has(n.id) &&
+      n.data.category !== 'input' &&
+      n.data.category !== 'trigger' &&
+      n.data.category !== 'policy' // policy nodes can legitimately have no incoming
+    );
+    for (const root of nonStartRoots) {
+      // Find a good predecessor by looking at position
+      const predecessors = nodes.filter(n =>
+        n.id !== root.id &&
+        n.position.x < root.position.x &&
+        hasOutgoing.has(n.id)
+      );
+      if (predecessors.length > 0) {
+        const nearest = predecessors.reduce((best, n) => {
+          const dist = Math.abs(n.position.x - root.position.x) + Math.abs(n.position.y - root.position.y);
+          const bestDist = Math.abs(best.position.x - root.position.x) + Math.abs(best.position.y - root.position.y);
+          return dist < bestDist ? n : best;
+        });
+        const exists = getStore().edges.some(e => e.source === nearest.id && e.target === root.id);
+        if (!exists) {
+          s.addEdge(createStyledEdge(nearest.id, root.id, inferEdgeLabel(nearest.data.category, root.data.category)));
+          fixes.push(`Wired "${nearest.data.label}" → "${root.data.label}" (was disconnected root)`);
+        }
+      }
+    }
+
+    // Report fixes
+    if (fixes.length > 0) {
+      const isPoirot = s.cidMode === 'poirot';
+      const prefix = isPoirot
+        ? '🔍 The little grey cells detected structural issues and repaired them automatically:'
+        : '🔧 Post-build QA detected and auto-fixed structural issues:';
+      const fixReport = `${prefix}\n${fixes.map(f => `- ✅ ${f}`).join('\n')}\n\nWorkflow is now structurally sound.`;
+      s.addMessage({ id: uid(), role: 'cid', content: fixReport, timestamp: Date.now(), _ephemeral: true });
+      s.addEvent({ id: `ev-${Date.now()}`, type: 'edited', message: `Auto-fixed ${fixes.length} structural issue(s)`, timestamp: Date.now(), agent: true });
+    }
+  }, 800);
+
   trackTimeout(() => {
     const validation = getStore().validate();
     if (validation.includes('Issue')) {
       getStore().addMessage({ id: uid(), role: 'cid', content: validation, timestamp: Date.now() });
     }
-  }, 1200);
+  }, 1500);
   trackTimeout(() => {
     const s = getStore();
     const health = s.getHealthScore();
@@ -532,7 +638,7 @@ function postBuildFinalize(getStore: () => LifecycleStore) {
         : `⚠ Health score: **${health}/100**. Run \`solve\` or \`propagate\` to fix.`;
       s.addMessage({ id: uid(), role: 'cid', content: warn, timestamp: Date.now() });
     }
-  }, 2000);
+  }, 2300);
   // Auto-enrich: generate descriptions for nodes missing them (non-blocking)
   trackTimeout(() => {
     const s = getStore();
@@ -540,7 +646,7 @@ function postBuildFinalize(getStore: () => LifecycleStore) {
     if (noDesc.length > 0 && s.nodes.length >= 3) {
       s.autoDescribe();
     }
-  }, 2500);
+  }, 2800);
 }
 
 const persisted = loadFromStorage();

@@ -1,0 +1,616 @@
+{
+  "timestamp": "2026-03-08T17-04-38",
+  "overall": 99,
+  "testsRun": [
+    "founder-advice",
+    "execute-job-description",
+    "edge-build-looks-like-question",
+    "personality-poirot-empty",
+    "legal-gdpr-compliance",
+    "legal-contract-review",
+    "legal-contract-review"
+  ],
+  "poolSize": 78,
+  "results": [
+    {
+      "id": "founder-advice",
+      "status": "ok",
+      "elapsed": 41496,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We're burning $50k/month and have 6 months of runway. What should I prioritize?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Prioritize immediate cost reduction by implementing zero-based budgeting to slash non-essential expenses, focusing on high-impact revenue streams using metrics like CAC and LTV, and set up weekly cash flow monitoring with tools like Float or Pulse to track burn rate adjustments.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (279 chars)",
+          "✓ Message length: 279 ≥ 250"
+        ]
+      }
+    },
+    {
+      "id": "execute-job-description",
+      "status": "ok",
+      "elapsed": 50386,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Write a job description for a Senior Full-Stack Engineer at a Series B fintech startup. Tech stack is React, Node.js, PostgreSQL, AWS. Remote-first, competitive equity.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Senior Full-Stack Engineer\n\n## About Us\nWe are a Series B fintech startup on a mission to democratize access to sophisticated financial tools. Backed by leading investors, we're scaling rapidly to serve millions of customers. Our culture is built on innovation, ownership, and a relentless focus on solving real-world problems. We're a remote-first, globally distributed team that values transparency, collaboration, and the continuous pursuit of excellence.\n\n## The Role\nAs a Senior Full-Stack Engineer, you will be a cornerstone of our product development team. You'll architect, build, and scale critical features across our entire technology stack, directly impacting our core product and user experience. This is a high-impact role for a technical leader who enjoys solving complex challenges, mentoring other engineers, and contributing to the technical vision of a fast-growing company.\n\n## What You'll Do\n*   **Design & Development:** Architect, develop, and maintain robust, scalable, and secure features across our frontend (React) and backend (Node.js, PostgreSQL) systems.\n*   **System Ownership:** Take full ownership of features from conception and design through deployment, monitoring, and iteration. Ensure system reliability, performance, and scalability.\n*   **Technical Leadership:** Provide technical guidance and mentorship to mid-level and junior engineers. Lead by example in code reviews, design discussions, and best practices.\n*   **Collaboration:** Work closely with Product Managers, Designers, and other engineers to translate business requirements into elegant technical solutions.\n*   **Quality & Security:** Uphold the highest standards of code quality, testing (unit, integration, E2E), and security, especially critical in a fintech environment.\n*   **DevOps & Infrastructure:** Collaborate with the platform team to build, deploy, and monitor services on AWS. Contribute to CI/CD pipelines and infrastructure-as-code practices.\n*   **Innovation:** Actively research and propose improvements to our technology, architecture, and processes to keep us at the cutting edge.\n\n## What We're Looking For (Must-Haves)\n*   **5+ years** of professional software development experience with a proven track record as a Full-Stack Engineer.\n*   **Deep expertise** in our core stack: **React** (with modern hooks, state management), **Node.js**, and **PostgreSQL** (or similar relational databases).\n*   Strong experience designing, building, and consuming **RESTful and/or GraphQL APIs**.\n*   Solid understanding of **cloud platforms (AWS)** and experience with services like EC2, RDS, Lambda, S3, and CloudFormation/Terraform.\n*   Experience with software engineering best practices: version control (Git), testing frameworks, CI/CD, containerization (Docker), and agile methodologies.\n*   A strong product mindset and the ability to make technical decisions that balance speed, quality, and long-term maintainability.\n*   Excellent communication skills and the ability to thrive in a fully remote, asynchronous environment.\n*   A passion for fintech, financial data, and building secure, compliant systems.\n\n## Nice-to-Haves\n*   Experience in the **fintech, banking, or a heavily regulated industry** (knowledge of PCI DSS, SOC 2, etc.).\n*   Experience with **TypeScript**.\n*   Knowledge of real-time data processing, event-driven architecture, or message brokers (e.g., Kafka, RabbitMQ).\n*   Background in data engineering or experience with data warehouses (e.g., Redshift, Snowflake).\n*   Previous experience in a startup or high-growth technology company.\n\n## What We Offer\n*   **Meaningful Equity:** Competitive salary plus a significant equity package—you'll be an owner in our success.\n*   **Remote-First Culture:** Work from anywhere. We focus on outcomes, not hours.\n*   **Comprehensive Benefits:** Health, dental, and vision insurance; 401(k) plan; and generous PTO.\n*   **Growth & Development:** Annual learning stipend, conference attendance, and clear paths for career advancement.\n*   **The Right Tools:** Top-tier hardware and software setup for your home office.\n*   **Connected Team:** Regular virtual and in-person offsites to build camaraderie and align on our vision.\n\n**Join us and build the future of finance.**",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (4260 chars)",
+          "✓ Content length: 4260 ≥ 200"
+        ]
+      }
+    },
+    {
+      "id": "edge-build-looks-like-question",
+      "status": "ok",
+      "elapsed": 176460,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Can you set up a data pipeline for me? I have CSVs coming from 3 vendors daily and need them in BigQuery by morning.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building data pipeline workflow.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Daily CSV Trigger",
+              "category": "trigger",
+              "description": "Event that initiates the pipeline each day when CSVs arrive from vendors.",
+              "content": "Set up a scheduled trigger using Google Cloud Scheduler or Apache Airflow (Cloud Composer) to run daily at a specified time (e.g., 2 AM UTC). Configure the trigger to monitor designated sources: vendor FTP servers, cloud storage buckets (e.g., Google Cloud Storage buckets per vendor), or webhook endpoints. Use authentication keys (API tokens, service accounts) and error handling for connection failures. Define payload: metadata like vendor ID, file names, timestamps. Tools: cron jobs, Cloud Scheduler with Pub/Sub, Airflow DAGs with sensors. Steps: 1. Schedule cron job or Cloud Scheduler job with JSON payload. 2. Set up IAM roles for secure access. 3. Implement retry logic with exponential backoff for transient failures. 4. Log trigger events to Cloud Logging for auditing. Ensure the trigger fires only when all three vendors' files are expected, with timeout handling if files are delayed."
+            },
+            {
+              "label": "Vendor CSV Input",
+              "category": "input",
+              "description": "Raw CSV files from three vendors, stored temporarily for processing.",
+              "content": "Handle incoming CSVs by storing them in a centralized, secure location—use Google Cloud Storage (GCS) with separate buckets or folders per vendor. Configure automated uploads: set up vendor-specific credentials (SFTP, API keys) and scripts (Python with libraries like paramiko for SFTP, gsutil for GCS) to fetch files daily. Steps: 1. For each vendor, establish connection and download CSVs to a staging area in GCS, preserving original filenames with timestamps. 2. Validate file integrity: check for non-empty files, correct formats (.csv), and basic schema (header row). 3. Archive raw files in a cold storage bucket for compliance. Tools: gsutil commands, Cloud Functions for event-driven ingestion, Dataflow templates. Include error handling: alert via Cloud Monitoring if files are missing or corrupted, with escalation to data engineers. Set retention policies (e.g., 30 days for raw data)."
+            },
+            {
+              "label": "Ingestion & Staging",
+              "category": "action",
+              "description": "Process and stage raw CSVs into a structured format for validation and transformation.",
+              "content": "Extract CSVs from GCS and load them into a temporary staging table in BigQuery or a processing service. Use Google Dataflow with Apache Beam (Python or Java) for scalable ETL. Steps: 1. Read each CSV from GCS using Beam's TextIO, parse with pandas or Apache Commons CSV. 2. Handle encoding issues, delimiter detection, and null values. 3. Write to a staging BigQuery dataset with tables per vendor, using schema auto-detection or predefined schemas. 4. Log ingestion metrics: row counts, file sizes, errors to Cloud Logging. Tools: Dataflow jobs, BigQuery load jobs via bq command-line or API. Configure IAM permissions for Dataflow service account. Error handling: retry failed loads, send alerts to Slack/Email via Cloud Pub/Sub and Cloud Functions. Optimize for cost: use batch processing, set appropriate machine types."
+            },
+            {
+              "label": "Data Validation Test",
+              "category": "test",
+              "description": "Validate data quality and integrity against predefined rules before transformation.",
+              "content": "Run automated tests to ensure data meets quality standards. Use BigQuery SQL or Dataflow with assertions. Test criteria: 1. Schema validation: check column names, data types (e.g., dates, numerics) match expected schemas. 2. Completeness: no nulls in key fields like IDs or timestamps. 3. Uniqueness: primary keys are unique across vendors. 4. Business rules: e.g., amounts non-negative, dates within range. Tools: Great Expectations, dbt tests, or custom Python scripts. Steps: 1. Execute SQL queries in BigQuery to flag violations. 2. Log failures to a validation table in BigQuery. 3. Set pass/fail thresholds: e.g., allow 5% nulls in optional fields. 4. Integrate with monitoring: if tests fail, trigger alerts via Cloud Monitoring and roll back staging data. Coverage: aim for 95% test coverage on critical columns. Automate with Airflow tasks or Cloud Functions."
+            },
+            {
+              "label": "Compliance Policy",
+              "category": "policy",
+              "description": "Enforce data governance and compliance policies, such as GDPR or vendor-specific rules.",
+              "content": "Define and monitor policies to ensure data adheres to regulatory and internal standards. Policies: 1. Data masking: anonymize PII fields (e.g., emails, names) using encryption or hashing before storage. 2. Retention: ensure data is not kept beyond legal limits (e.g., 7 years for financial data). 3. Access control: restrict data access to authorized roles via BigQuery IAM. 4. Vendor agreements: check for data usage restrictions. Enforcement: use Cloud Data Loss Prevention (DLP) for scanning, BigQuery column-level security. Steps: 1. Configure DLP jobs to scan staging data for sensitive info. 2. Apply policies automatically: if violation found, quarantine data in a separate bucket. 3. Log policy checks to Audit Logs. Exceptions: manual review via a ticketing system (e.g., Jira). Tools: Google DLP API, BigQuery policy tags. Regular audits monthly."
+            },
+            {
+              "label": "Data Transformation",
+              "category": "action",
+              "description": "Clean, enrich, and transform staged data into a unified format for BigQuery.",
+              "content": "Transform raw data into analysis-ready tables. Use SQL in BigQuery or Dataflow for complex logic. Steps: 1. Standardize formats: convert dates to ISO 8601, currencies to USD. 2. Deduplicate records using window functions. 3. Enrich data: join with reference tables (e.g., vendor metadata from a separate dataset). 4. Aggregate: if needed, summarize daily metrics. Tools: BigQuery SQL scripts, Dataflow with ParDo transformations, or dbt for modular SQL. Error handling: catch transformation errors (e.g., type mismatches) and log to an error table. Optimize performance: partition tables by date, cluster by key columns. Schedule transformation jobs after validation passes, with fallback to previous day's data on failure. Use version control for SQL scripts in GitHub."
+            },
+            {
+              "label": "BigQuery Loading",
+              "category": "action",
+              "description": "Load transformed data into final BigQuery tables for consumption.",
+              "content": "Insert transformed data into production BigQuery tables, ensuring atomic updates. Steps: 1. Use BigQuery's MERGE or INSERT statements to update target tables, handling incremental loads (append or overwrite partitions). 2. Set up table schema: define partitioning by ingestion date, clustering by vendor ID. 3. Monitor load jobs: check for errors like quota limits or schema mismatches via BigQuery API. Tools: bq load commands, Dataflow sink to BigQuery, or Airflow operators. Error handling: if load fails, retry with exponential backoff up to 3 times, then notify team. Performance: batch loads to avoid small file problem, use streaming inserts for real-time needs. Log success metrics: rows loaded, latency to Cloud Monitoring. Secure data: encrypt at rest with BigQuery's built-in encryption."
+            },
+            {
+              "label": "Pipeline Output",
+              "category": "output",
+              "description": "Final data available in BigQuery for morning reporting and analysis.",
+              "content": "Deliver the processed data as ready-to-query tables in BigQuery, with documentation and monitoring. Steps: 1. Verify data freshness: ensure tables are updated by 6 AM daily, using last modified timestamps. 2. Distribute access: grant roles (e.g., data analysts, BI tools) via BigQuery IAM, and share dataset links. 3. Generate summary reports: auto-create dashboards in Looker Studio with key metrics like row counts, processing times. 4. Set up alerts: monitor for anomalies (e.g., data volume drops >10%) via Cloud Monitoring. Tools: BigQuery scheduled queries for aggregation, Cloud Scheduler for post-load triggers. Success metrics: SLA of 99.9% uptime, data latency under 4 hours. Archive old partitions to Cold Storage after 90 days. Document schema and lineage in Data Catalog."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 5,
+              "label": "validates"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "monitors"
+            },
+            {
+              "from": 3,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 4,
+              "to": 2,
+              "label": "blocks"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "drives"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "outputs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 90,
+        "maxScore": 90,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 4)",
+          "✓ All 10 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 837c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (10 edges, 8 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "personality-poirot-empty",
+      "status": "ok",
+      "elapsed": 10922,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, mon ami, we have nothing but a blank canvas at the moment — the case has not yet begun. The little grey cells await your instructions for the first clue in our investigation. What fresh case shall we undertake?",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (214 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "legal-gdpr-compliance",
+      "status": "ok",
+      "elapsed": 90933,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We just got our first EU customer and we have zero GDPR compliance. Build me a workflow to get compliant — data audit, privacy policy, consent management, breach notification process, DPO appointment.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, mon ami, the case of the missing GDPR compliance! A most urgent dossier. Fear not—we shall marshal the little grey cells and construct a meticulous investigation workflow. Every clue matters, from data mapping to breach protocols. Voilà!",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "EU Customer Onboarding Trigger",
+              "category": "trigger",
+              "description": "Initial event signaling the need for GDPR compliance due to first EU customer",
+              "content": "This trigger initiates the GDPR compliance workflow upon confirmation of the first European Union customer. Key evidence to collect immediately: customer contact details, service scope, data categories involved (e.g., personal identifiers, payment info), and contract terms referencing GDPR. Tools: CRM system (e.g., Salesforce), contract repository, and project management tool (e.g., Jira) to create a compliance epic. Steps: 1. Log trigger in compliance register with timestamp and stakeholder alerts. 2. Assign a temporary lead (e.g., Legal or Product Head) to coordinate initial response. 3. Schedule a kickoff meeting within 48 hours involving Legal, Engineering, and Product teams. 4. Draft a high-level impact assessment outlining potential fines (up to 4% of global turnover) and timelines. Criteria: Trigger is validated when EU customer's signed contract includes GDPR clause or data processing involves EU residents' personal data."
+            },
+            {
+              "label": "Comprehensive Data Audit & Mapping",
+              "category": "action",
+              "description": "Systematic inventory of all personal data flows, storage, and processing activities",
+              "content": "Conduct a forensic data audit to map every touchpoint of personal data. Methodology: 1. Deploy data discovery tools like DataGrail, OneTrust, or manual questionnaires to all departments (Engineering, Marketing, Support). 2. Create a Record of Processing Activities (ROPA) per GDPR Article 30, detailing data categories (e.g., names, emails, IP addresses), purposes, retention periods, and third-party processors (e.g., AWS, Stripe). 3. Interview data owners to identify gaps—check for dark data in logs, backups, or test environments. 4. Visualize data flows with diagrams (Lucidchart) showing EU data ingress/egress. Tools: Spreadsheets for ROPA, data mapping software, and collaboration platforms (Confluence). Deliverables: Completed ROPA, data flow maps, and a risk register highlighting high-risk processing (e.g., sensitive data, automated decision-making). Timeline: 2-3 weeks with weekly syncs."
+            },
+            {
+              "label": "Privacy Policy & Consent Framework",
+              "category": "action",
+              "description": "Draft and implement GDPR-compliant privacy notices and consent mechanisms",
+              "content": "Develop legally robust privacy policies and user-centric consent management. Steps: 1. Draft privacy policy using templates from GDPR experts or legal counsel, covering data collected, lawful basis (consent/legitimate interest), data subject rights (access, erasure), and international transfers (SCCs). 2. Integrate consent management platform (CMP) like Cookiebot, Consent Manager, or custom solution for granular opt-ins (per purpose, withdrawable). 3. Update UI/UX: Add cookie banners, preference centers, and clear privacy links across websites/apps. 4. Test consent flows with tools like GDPR Checklist or audit scripts to ensure valid (explicit, informed, unambiguous) consent. Tools: Legal drafting software (LexCheck), CMP APIs, A/B testing for UX. Metrics: Consent rate tracking, reduction in unnecessary data collection. Review by legal counsel mandatory before deployment."
+            },
+            {
+              "label": "Breach Response & DPO Appointment",
+              "category": "action",
+              "description": "Establish incident response plan and designate Data Protection Officer",
+              "content": "Build a breach notification protocol and appoint oversight. Breach process: 1. Create incident runbook with escalation matrix (CTO, Legal, PR) and containment steps (isolate systems, preserve evidence). 2. Set up monitoring with SIEM tools (Splunk, Datadog) for anomalous data access. 3. Define notification thresholds: Report to supervisory authority within 72 hours of awareness (via online portals like ICO UK), notify affected individuals if high risk. 4. Conduct quarterly tabletop simulations. DPO appointment: Assess if mandatory (core activities require large-scale monitoring). If yes, appoint internal/external DPO (GDPR Article 37), ensure independence, and publish contact details. Tools: Incident management (PagerDuty), DPO candidate vetting (legal networks), documentation (Google Docs with versioning). Budget for DPO salary (€60k-€100k) and breach insurance."
+            },
+            {
+              "label": "Compliance Review & Gap Assessment",
+              "category": "review",
+              "description": "Human-led review of all artifacts against GDPR requirements before go-live",
+              "content": "A rigorous review phase where stakeholders validate readiness. Process: 1. Convene review board: DPO (or interim), Legal Counsel, Security Lead, and Product Head. 2. Evaluate deliverables: Audit maps (completeness score >90%), privacy policy (clarity, lawful basis alignment), consent flows (user testing results), breach plan (response time <24h). 3. Use checklist: GDPR Articles 5-12, 15-22, 33-34. Tools: Compliance platforms (Vanta, Drata) for automated checks, manual sampling of data subject access requests (DSAR) simulations. 4. Document gaps (e.g., missing data processing agreements with vendors) and assign owners. Criteria: Approval requires zero critical gaps (fines >€10M), moderate gaps need mitigation plans. Timeline: 1-week review sprint with daily standups. Output: Signed-off compliance certificate or revised action items."
+            },
+            {
+              "label": "GDPR Compliance Launch & Monitoring",
+              "category": "output",
+              "description": "Final implementation of compliance measures and ongoing oversight dashboard",
+              "content": "Deploy all compliance components and establish continuous monitoring. Launch steps: 1. Roll out updated privacy policy and consent banners globally, with changelog communication to users. 2. Execute vendor DPA sign-offs (e.g., cloud providers, analytics tools) using standard contractual clauses. 3. Train staff via GDPR e-learning modules (30-min course completion tracked in HR system). 4. Activate monitoring dashboard covering: DSAR fulfillment times (<30 days), breach drill results, consent rates, and audit log reviews. Tools: Dashboard (Tableau, Power BI), training platform (LinkedIn Learning), automated compliance scanners. Metrics: Monthly reports to leadership including number of data subjects, incidents, and regulatory updates. Continuous improvement: Quarterly policy reviews, annual audit refreshes, and adaptation to new EU guidelines (e.g., Data Governance Act). Final deliverable: GDPR-compliant operational status with all artifacts archived."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "validates"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "validates"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "approves"
+            },
+            {
+              "from": 4,
+              "to": 1,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 100,
+        "maxScore": 105,
+        "pct": 95,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 6 (min: 5)",
+          "✓ Node count: 6 ≤ 10",
+          "✗ Missing \"policy\" category (found: trigger, action, review, output)",
+          "✓ Has \"review\" category",
+          "✓ All 7 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 902c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (7 edges, 6 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "legal-contract-review",
+      "status": "ok",
+      "elapsed": 165093,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Build a contract review workflow for our legal team. Steps: receive contract, initial screening, clause analysis, risk assessment, negotiation points, legal approval, and final execution. We review 30+ vendor contracts per quarter.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! I have assembled the contract review workflow with the precision of a detective on a case, mon ami. Each step is a clue in the investigation, leading from receipt to execution with thorough analysis and elegant feedback loops.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Contract Receipt",
+              "category": "input",
+              "description": "Initial submission of vendor contracts for review",
+              "content": "This node represents the entry point for all vendor contracts into the legal review pipeline. Contracts are received via designated channels such as email, a centralized intake form (e.g., using tools like Jira Service Management or Asana), or integrated contract management platforms like Ironclad or Concord. Upon receipt, automated logging triggers: capture metadata (vendor name, date, contract type), assign a unique tracking ID, and perform initial virus scans. A checklist ensures completeness: verify all attachments, confirm signatory parties, and check for basic compliance flags (e.g., GDPR or SOX references). For 30+ contracts per quarter, implement a triage system to prioritize based on value, urgency, or risk level, using a scoring matrix. Store all documents in a secure, cloud-based repository with version control to maintain an audit trail. Standard operating procedures include notifying the legal team via Slack or Microsoft Teams alerts and updating a master dashboard for real-time visibility."
+            },
+            {
+              "label": "Initial Screening",
+              "category": "action",
+              "description": "Rapid assessment for completeness and red flags",
+              "content": "Conduct a swift, high-level review to filter out contracts requiring immediate attention or those that are non-standard. Use a standardized checklist: verify all required fields (dates, parties, scope), check for missing exhibits or appendices, and scan for obvious red flags like unlimited liability clauses or automatic renewals without notice. Leverage AI tools such as Kira Systems or LawGeex for automated clause detection and comparison against company templates. Document findings in a shared legal workspace (e.g., Notion or Confluence), flagging contracts for fast-track approval if they meet predefined low-risk criteria (e.g., standard NDAs under $50k). For others, assign a risk score (low, medium, high) based on factors like contract value, vendor reputation, and regulatory implications. This step should take no more than 15-30 minutes per contract, with outputs feeding into deeper analysis nodes."
+            },
+            {
+              "label": "Clause Analysis",
+              "category": "action",
+              "description": "Detailed examination of key contractual clauses",
+              "content": "Perform an in-depth review of critical clauses to identify deviations from company standards and potential legal exposures. Focus on areas like indemnification, limitation of liability, termination rights, intellectual property ownership, data protection (GDPR/CCPA compliance), and service level agreements (SLAs). Use a clause library (e.g., in ContractWorks or LinkSquares) to compare against approved templates, highlighting variances with color-coded annotations. Steps include: extract clauses using OCR or NLP tools, assess language for ambiguity or unfavorable terms, and document recommended revisions. For each clause, assign a severity rating (critical, major, minor) and provide rationale based on legal precedents or internal policies. Collaborate with subject matter experts (e.g., finance for payment terms, IT for security clauses) via integrated comments in tools like Google Docs or Microsoft Word with track changes. Output a detailed report summarizing findings for negotiation preparation."
+            },
+            {
+              "label": "Risk Assessment",
+              "category": "action",
+              "description": "Evaluation of legal, financial, and operational risks",
+              "content": "Systematically assess and quantify risks associated with the contract to inform decision-making and negotiation strategy. Use a risk matrix (e.g., a 5x5 grid for impact vs. likelihood) to score risks in categories: legal (e.g., non-compliance penalties), financial (e.g., cost overruns or revenue loss), operational (e.g., vendor dependency or service disruptions), and reputational (e.g., public exposure). Tools include risk assessment software like RiskOptics or custom spreadsheets with formulas for weighted scoring. Steps: gather data from clause analysis and external sources (vendor financial health via Dun & Bradstreet, past performance reviews), conduct scenario analysis for worst-case outcomes, and calculate a composite risk score. Document mitigation strategies for high-risk items, such as insurance requirements or contingency plans. Output a risk register that prioritizes issues and feeds into negotiation points, ensuring alignment with company risk appetite thresholds."
+            },
+            {
+              "label": "Negotiation Points",
+              "category": "action",
+              "description": "Development of strategy and key points for vendor negotiations",
+              "content": "Based on clause analysis and risk assessment, craft a targeted negotiation plan to address identified issues and achieve favorable terms. Steps: prioritize negotiation items into must-haves (e.g., cap on liability, data security guarantees) and nice-to-haves (e.g., payment terms flexibility), using a MoSCoW method (Must, Should, Could, Won't). Develop talking points and fallback positions for each clause, supported by legal arguments and market benchmarks (e.g., industry standard rates or compliance norms). Tools include negotiation playbooks stored in Confluence, and collaboration platforms like Slack for internal stakeholder alignment (involve procurement, finance, and business units). Create draft redlines and alternative language proposals, documenting rationale for each change. Schedule negotiation sessions with vendors, using tools like Calendly for scheduling and Zoom for virtual meetings. Output a negotiation brief that outlines strategy, timelines, and authority limits for legal team review."
+            },
+            {
+              "label": "Legal Approval",
+              "category": "review",
+              "description": "Human review and sign-off by legal team lead or counsel",
+              "content": "This node serves as a gatekeeper for final legal endorsement before execution. A senior legal team member reviews all prior outputs: screening notes, clause analysis reports, risk assessments, and negotiation points. Steps: conduct a comprehensive review to ensure consistency, compliance with internal policies (e.g., anti-bribery laws, confidentiality standards), and alignment with business objectives. Use a checklist for approval criteria: all high-risk items mitigated, negotiation outcomes documented, and stakeholder buy-in confirmed. Tools include approval workflows in contract management software (e.g., DocuSign or PandaDoc) with electronic signatures for internal sign-off. If issues persist, provide specific feedback and route back to negotiation points for refinement. Document the approval decision with comments and timestamps, and update the contract status in the tracking system. This step ensures accountability and reduces legal exposure, with an average turnaround time of 1-2 days per contract."
+            },
+            {
+              "label": "Final Execution",
+              "category": "output",
+              "description": "Signing, distribution, and archiving of the executed contract",
+              "content": "Execute the contract upon legal approval, ensuring all parties sign and the document is properly archived for compliance and future reference. Steps: prepare the final version incorporating all agreed changes, using e-signature platforms like DocuSign or Adobe Sign to obtain signatures from authorized representatives. Verify signature authenticity and completeness, then distribute executed copies to all parties via secure email or portal access. Update internal systems: log the contract in the contract repository (e.g., using Airtable or SharePoint), set reminders for key dates (renewals, audits, or performance reviews), and notify relevant departments (finance for billing, operations for service commencement). Implement a post-execution checklist: confirm insurance certificates are received, conduct a final compliance check, and archive supporting documents. This node outputs a fully executed contract, a storage link, and a closure report, completing the workflow with an audit trail for 30+ quarterly reviews."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "requires"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "approves"
+            },
+            {
+              "from": 5,
+              "to": 4,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 110,
+        "maxScore": 110,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ Has \"review\" category",
+          "✓ All 8 edges valid",
+          "✓ Starts with input",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 999c, no thin nodes",
+          "✓ Architecture covers: contract, risk, approv",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (8 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "legal-contract-review",
+      "status": "ok",
+      "elapsed": 198224,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Build a contract lifecycle management workflow for our legal team. We handle 50 contracts/month: NDAs, vendor agreements, and enterprise SaaS licenses. Steps: intake request, drafting, internal legal review, counterparty negotiation, approval, e-signature, and obligation tracking post-signing. We need SLA of 5 business days for standard NDAs.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! Mon ami, I have deduced the perfect workflow for your contract management. Voilà, a meticulous plan to handle 50 contracts monthly with elegance and precision, ensuring that SLA for NDAs is met with the little grey cells at work.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Contract Intake Request",
+              "category": "trigger",
+              "description": "Initial submission and logging of contract requests",
+              "content": "This node triggers the contract lifecycle upon receipt of a request. Use a centralized intake portal such as Jira Service Management, Asana, or a custom web form to capture details like contract type (NDA, vendor agreement, enterprise SaaS license), requester information, urgency level, and estimated value. Automate classification with AI tools (e.g., Kira Systems or LawGeex) to assign priority and start the SLA timer for standard NDAs, targeting 5 business days. Implement validation checks to ensure all required documents and data are attached, and set up notifications via Slack or email to alert the legal team. Integrate OCR for scanned uploads and calendar tools (like Google Calendar) for deadline tracking, ensuring no request slips through the cracks. Maintain a log in a database (e.g., Airtable or Salesforce) for audit trails and reporting on intake volume and response times."
+            },
+            {
+              "label": "Drafting Phase",
+              "category": "action",
+              "description": "Creation and initial preparation of contract drafts",
+              "content": "Here, draft contracts using standardized templates from a contract management system like DocuSign CLM, Concord, or Ironclad. Begin by gathering requirements from stakeholders via collaborative tools such as Confluence or Notion, ensuring clauses are tailored to the contract type (e.g., NDAs with confidentiality terms, vendor agreements with service levels, SaaS licenses with usage rights). Follow a checklist for key elements: parties involved, term duration, payment terms, liability clauses, and termination conditions. Use version control in GitHub or similar platforms to track changes, and employ AI-assisted drafting tools (e.g., LexCheck) for consistency. Collaborate with business units through shared documents (Google Docs or Microsoft Word with track changes), and set a preliminary review by junior legal staff to catch obvious errors before formal review. Document all assumptions and open points for negotiation in a centralized log."
+            },
+            {
+              "label": "Internal Legal Review",
+              "category": "review",
+              "description": "Legal team assessment for compliance, risk, and alignment",
+              "content": "This review gate involves senior legal analysts or attorneys examining the draft for legal soundness, regulatory compliance (e.g., GDPR, CCPA), and company policy adherence. Use a structured review process with tools like Litera Compare for redlining and commentary. Criteria include risk scoring based on contract value, counterparty reputation, and jurisdictional requirements. Establish approval thresholds: low-risk NDAs may require one reviewer, while high-value agreements need multiple sign-offs. Incorporate feedback loops via collaborative platforms (e.g., Microsoft Teams or Slack integrations) to discuss issues in real-time. If changes are needed, document specific revisions and route back to drafting; if approved, proceed to negotiation. Maintain a review checklist covering indemnification, insurance, intellectual property, and dispute resolution clauses, and log decisions in a central repository for audit purposes."
+            },
+            {
+              "label": "Counterparty Negotiation",
+              "category": "action",
+              "description": "Engagement with external parties to finalize terms",
+              "content": "Execute negotiations using a systematic approach: start by sharing the draft via secure channels like DocuSign or OneDrive, and schedule meetings via Calendly or Outlook. Employ negotiation playbooks tailored to contract types—e.g., for NDAs, focus on confidentiality scope and duration; for SaaS licenses, prioritize service level agreements (SLAs) and data security. Use collaboration tools such as SharePoint or Google Workspace for real-time editing and comment tracking. Implement version control to manage counter-proposals, and maintain a negotiation log in tools like DealRoom or Airtable to track concessions and deadlines. Involve key stakeholders (e.g., procurement, finance) for input on commercial terms. If terms are unacceptable, trigger a redrafting loop; otherwise, prepare the final version for approval. Set reminders for follow-ups and use CRM integrations (like Salesforce) to monitor counterparty responsiveness."
+            },
+            {
+              "label": "Final Approval",
+              "category": "review",
+              "description": "Internal sign-off from authorized personnel before execution",
+              "content": "This review node ensures final internal buy-in from relevant authorities, such as legal department heads, business unit leaders, or finance directors, depending on contract value and type. Use an approval workflow in tools like Adobe Sign or PandaDoc, with multi-level routing based on risk thresholds. Criteria include alignment with business objectives, budget compliance, and residual risk assessment after negotiation. Implement a checklist for final verification: all negotiated changes incorporated, external counsel feedback integrated (if applicable), and compliance with internal policies (e.g., anti-bribery, data privacy). Set up escalation paths for disputes via email or dedicated approval apps. Once approved, generate an approval certificate and update the contract status in the CLM system. If rejected, document reasons and route back to negotiation or drafting for refinement."
+            },
+            {
+              "label": "E-Signature Process",
+              "category": "action",
+              "description": "Electronic execution of the contract with all parties",
+              "content": "Facilitate e-signature using platforms like DocuSign, Adobe Sign, or HelloSign for legal validity and efficiency. Steps include: upload the final contract version, configure signer roles and order (e.g., internal signatories first, then counterparties), set authentication methods (SMS codes, email verification), and add audit trails. Send signature requests via email with clear instructions and deadlines, and use tracking dashboards to monitor progress in real-time. Integrate with calendar tools to send reminders for pending signatures. Upon completion, automatically store the executed contract in a secure repository (e.g., Box or Dropbox) and update metadata in the CLM system. Generate post-signature reports including timestamps and IP addresses for compliance. Handle exceptions like signature declines by notifying legal team for manual intervention and re-routing if necessary."
+            },
+            {
+              "label": "SLA Monitoring for NDAs",
+              "category": "policy",
+              "description": "Parallel policy to enforce 5-business-day SLA for standard NDAs",
+              "content": "This policy node acts as a constraint to monitor and enforce the SLA for standard NDAs throughout the workflow. Implement using workflow automation tools like Zapier or Microsoft Power Automate to track time from intake to e-signature. Set up criteria: start timer upon intake request submission, pause during external negotiation delays, and resume upon counterparty response. Use dashboards in tools like Smartsheet or Jira to visualize SLA compliance, with color-coded alerts (green for on-track, red for at-risk). Define escalation procedures: if the 5-day deadline is approaching, trigger notifications to legal team leads and automate priority bumps in the workflow. Integrate with calendar systems to account for business days only. Regularly audit SLA performance with monthly reviews, adjusting processes based on data analytics from tools like Google Analytics or custom logs. Block progression if SLA is severely at risk, requiring manual override."
+            },
+            {
+              "label": "Obligation Tracking & Reporting",
+              "category": "output",
+              "description": "Post-signing monitoring of contract obligations and performance",
+              "content": "This output node delivers ongoing management of contract lifecycles post-execution. Use CLM software like Icertis or Agiloft to track key obligations: renewal dates, payment schedules, service levels, and compliance milestones. Set up automated alerts for upcoming deadlines via email or Slack integrations. Implement dashboards in tools like Tableau or Power BI to visualize metrics: contract value, risk exposure, SLA adherence (e.g., ensuring NDAs meet the 5-day target), and counterparty performance. Regularly audit contracts for compliance with terms, using AI tools to scan for anomalies. Generate monthly reports for stakeholders, covering trends, bottlenecks, and improvement recommendations. Store all related documents—amendments, certificates, and communications—in a centralized archive. Establish a feedback loop to refine drafting templates based on post-signing insights."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "approves"
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "approves"
+            },
+            {
+              "from": 5,
+              "to": 7,
+              "label": "outputs"
+            },
+            {
+              "from": 6,
+              "to": 0,
+              "label": "monitors"
+            },
+            {
+              "from": 6,
+              "to": 1,
+              "label": "monitors"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "informs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 115,
+        "maxScore": 115,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 5)",
+          "✓ Node count: 8 ≤ 10",
+          "✓ Has \"review\" category",
+          "✓ Has \"policy\" category",
+          "✓ All 11 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 918c, no thin nodes",
+          "✓ Architecture covers: draft, review, negotiat, sign",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (11 edges, 8 nodes)"
+        ]
+      }
+    }
+  ]
+}

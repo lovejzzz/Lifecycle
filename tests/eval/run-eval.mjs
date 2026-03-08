@@ -662,6 +662,22 @@ const POOL = [
     prompt: 'Build a workflow for our company\'s annual budget planning cycle. We\'re a 200-person SaaS company with 8 departments. Steps: historical spend analysis, department budget requests, executive review and negotiation, board approval, quarterly reforecasting, and variance reporting. Total budget is $25M and the CFO wants 15% more accountability this year.',
     expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['review'], mustMentionInNodes: ['budget|spend|allocat', 'department|team', 'approv|board|executive', 'forecast|variance|report'] },
   },
+
+  // Healthcare patient intake — new domain, tests clinical workflow with compliance policy gates
+  {
+    id: 'healthcare-patient-intake',
+    agent: 'rowan', taskType: 'generate',
+    prompt: 'Build a patient intake workflow for our new urgent care clinic. Steps: online pre-registration, insurance verification, HIPAA consent forms, triage assessment, provider assignment, and visit documentation. We see 80 patients/day and need average intake under 15 minutes.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['review'], mustMentionInNodes: ['registr|intake|patient', 'insurance|verif', 'triage|assess', 'document|record'] },
+  },
+
+  // Supply chain with explicit policy requirement — stress tests the recurring policy-category gap
+  {
+    id: 'supply-chain-risk-management',
+    agent: 'poirot', taskType: 'generate',
+    prompt: 'Build a supply chain risk management workflow for our electronics manufacturing. We source from 12 suppliers across 4 countries. Steps: supplier risk scoring, compliance policy checks (conflict minerals, labor standards), dual-sourcing strategy, inventory buffer analysis, disruption simulation, and quarterly supplier reviews. We need a policy gate before any new supplier is approved.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['policy', 'review'], mustMentionInNodes: ['supplier|sourc', 'risk|score', 'compliance|policy', 'review|audit'] },
+  },
 ];
 
 // ─── Agent System Prompts (synced with src/lib/prompts.ts) ─────────────────

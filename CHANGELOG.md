@@ -1,5 +1,24 @@
 # Changelog
 
+### 2026-03-08 — Round 101: Post-Build Auto-Fix + Dual-Model Eval + Pool 80 Tests
+
+**Post-build auto-fix implemented in `postBuildFinalize()`:**
+- Detects orphan nodes (no edges) → connects to nearest neighbor
+- Ensures end-to-end flow (BFS from start to output) → adds missing edges
+- Fixes disconnected roots (non-start, no incoming) → wires to nearest upstream
+- Excludes policy nodes from disconnected-root check (legitimately standalone)
+- Reports all fixes to user with summary message
+
+**Dual-model eval — Round 101:**
+- DeepSeek Chat: **98% (6/6 passed)** — `support-advice` 88% (224c vs 250 min, recurring terse-Rowan pattern), `finance-audit-readiness` 96% (missing policy category)
+- DeepSeek Reasoner: **99% (7/7 passed)** — `legal-gdpr-compliance` 95% (missing policy category). Reasoner avg 105s/test vs Chat 52s — slower but richer workflows
+
+**Key finding:** Policy category gap persists — both models occasionally skip `policy` for compliance/governance workflows. Not critical (content covers policy topics) but category tag is missed.
+
+**Pool: 78 → 80 tests:** `healthcare-patient-intake` (clinical intake with compliance gates), `supply-chain-risk-management` (explicit policy requirement to stress recurring weakness).
+
+**Build:** Clean — 0 lint warnings, typecheck passes, production build succeeds.
+
 ### 2026-03-08 — Round 100: Agent Modification Power + Project Save/Load + Multi-Output Tests (78 tests)
 
 **Three major features implemented:**
