@@ -1,0 +1,505 @@
+{
+  "timestamp": "2026-03-08T18-41-52",
+  "overall": 99,
+  "testsRun": [
+    "eng-deploy-process",
+    "personality-poirot-empty",
+    "eng-advice-architecture",
+    "edge-ultra-terse",
+    "education-course-creation",
+    "execute-competitive-analysis"
+  ],
+  "poolSize": 88,
+  "results": [
+    {
+      "id": "eng-deploy-process",
+      "status": "ok",
+      "elapsed": 67788,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "My team pushes to production by SSH-ing into the server and running git pull. We need a real deployment process. We use React, Node, and PostgreSQL on AWS.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building a robust CI/CD pipeline to replace manual SSH deployments.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Code Push Trigger",
+              "category": "trigger",
+              "description": "Developer pushes code to main branch, initiating the deployment pipeline",
+              "content": "This node triggers the CI/CD pipeline when a developer pushes code to the `main` branch in the Git repository (e.g., GitHub, GitLab, or AWS CodeCommit). Configure a webhook in your Git provider to send a POST request to your CI/CD tool (e.g., GitHub Actions, AWS CodePipeline, or Jenkins) on push events. The payload includes commit SHA, branch name, and author details. Set up branch protection rules to require pull request reviews and status checks before merging to `main`. Use environment variables for secure configuration (e.g., `GITHUB_TOKEN`, `AWS_ACCESS_KEY_ID`). In AWS, you can use EventBridge to capture CodeCommit events and trigger CodePipeline. Ensure the trigger filters only for `main` branch to avoid unnecessary builds from feature branches."
+            },
+            {
+              "label": "Build & Test Phase",
+              "category": "action",
+              "description": "Automated build, unit tests, and integration tests for React frontend and Node backend",
+              "content": "Execute parallel build and test steps using a CI/CD tool like GitHub Actions or AWS CodeBuild. For the React frontend: 1. Install dependencies with `npm ci` for reproducible builds. 2. Run `npm run build` to generate production-ready static files in the `build/` directory. 3. Execute unit tests with `npm test` (using Jest and React Testing Library) and ensure coverage thresholds (e.g., >80% line coverage). For the Node backend: 1. Install dependencies with `npm ci`. 2. Run `npm run build` if using TypeScript (compile to JavaScript). 3. Execute unit tests with `npm test` (using Jest or Mocha) and integration tests that mock PostgreSQL with tools like `pg-mem` or a test container. Use environment variables for test database connections. Store build artifacts (e.g., frontend `build/`, backend compiled code) for later stages. Fail the pipeline on test failures or build errors, and notify the team via Slack or email."
+            },
+            {
+              "label": "Security & Compliance Check",
+              "category": "policy",
+              "description": "Automated security scanning and policy enforcement before deployment",
+              "content": "Run parallel security scans and compliance checks as a policy gate. 1. Use `npm audit` or Snyk to detect vulnerabilities in Node dependencies, failing on high-severity issues. 2. Run SAST (Static Application Security Testing) with SonarQube or ESLint security rules to catch code vulnerabilities (e.g., SQL injection, XSS). 3. Scan for secrets in code using TruffleHog or GitLeaks to prevent credential exposure. 4. Enforce code style with Prettier and ESLint, failing on critical rules. Configure these as required checks in GitHub or AWS CodePipeline. Exceptions must be documented via pull request comments with justification. Automatically generate a compliance report and store it in an S3 bucket. Block deployment if any policy violation is detected unless overridden by a security lead."
+            },
+            {
+              "label": "Staging Deployment",
+              "category": "action",
+              "description": "Deploy the application to a staging environment on AWS for final validation",
+              "content": "Deploy the built artifacts to a staging environment that mirrors production. Use AWS services: 1. For React frontend, upload the `build/` directory to an S3 bucket configured for static website hosting, and invalidate CloudFront cache. 2. For Node backend, deploy to AWS Elastic Beanstalk or ECS Fargate: package the application into a Docker container, push to Amazon ECR, and update the service. 3. For PostgreSQL, apply database migrations using a tool like Sequelize or Knex.js in a controlled manner, with rollback scripts. Use AWS CloudFormation or Terraform for infrastructure-as-code to ensure consistency. Set environment variables for staging (e.g., `NODE_ENV=staging`, database connection strings from AWS Secrets Manager). Verify deployment health with a readiness probe (e.g., HTTP GET to `/health` endpoint)."
+            },
+            {
+              "label": "Staging Review & Approval",
+              "category": "review",
+              "description": "Manual review and approval of the staging deployment before promoting to production",
+              "content": "Conduct a manual review by the team lead or QA engineer after staging deployment. Criteria: 1. Functional testing: verify key user flows (e.g., login, data submission) in the staging environment using a checklist. 2. Performance check: ensure page load times < 3 seconds and API response times < 500ms, using AWS CloudWatch metrics. 3. Database validation: confirm migrations applied correctly and no data corruption. 4. Log review: check application logs in CloudWatch for errors or warnings. The reviewer uses a shared document or tool like Jira to record findings. Approval requires all criteria met; if issues are found, reject and add comments, triggering a refinement back to the Build & Test Phase. SLA: review within 2 hours of deployment notification. Escalate to senior dev if unresolved after 4 hours."
+            },
+            {
+              "label": "Production Deployment",
+              "category": "action",
+              "description": "Automated deployment to production environment with zero-downtime strategy",
+              "content": "Execute production deployment after approval, using blue-green or rolling deployment to minimize downtime. Steps: 1. For React frontend, update the production S3 bucket and CloudFront distribution, with cache invalidation. 2. For Node backend, deploy the Docker container to ECS Fargate or Elastic Beanstalk, shifting traffic gradually using AWS Application Load Balancer. 3. For PostgreSQL, apply migrations during low-traffic windows, with backups taken beforehand using AWS RDS snapshots. Use AWS CodeDeploy for orchestration, with health checks and automatic rollback on failure (e.g., if error rate > 5%). Update environment variables to production values from AWS Secrets Manager. Monitor deployment via CloudWatch alarms for errors, latency, and resource utilization. Notify the team on Slack upon completion."
+            },
+            {
+              "label": "Post-Deployment Verification",
+              "category": "test",
+              "description": "Automated smoke tests and monitoring to confirm production deployment success",
+              "content": "Run automated post-deployment tests to ensure the production application is functioning correctly. 1. Smoke tests: execute a suite of critical path tests (e.g., homepage load, API endpoints) using tools like Postman or Cypress, checking for HTTP 200 responses and correct content. 2. Integration tests: verify database connectivity and read/write operations with a test transaction that is rolled back. 3. Performance tests: measure key metrics (e.g., response time, throughput) against baselines using AWS CloudWatch Synthetics. Pass criteria: all smoke tests pass, error rate < 1%, and latency within SLA. Fail criteria: any test failure or anomaly triggers an alert to the on-call engineer via PagerDuty, with automatic rollback considered. Store test results in an S3 bucket for audit. Update dashboards in Grafana or CloudWatch for real-time visibility."
+            },
+            {
+              "label": "Deployment Report & Metrics",
+              "category": "output",
+              "description": "Final output with deployment summary, metrics, and artifacts for audit and improvement",
+              "content": "Generate a comprehensive deployment report as the final deliverable. Content: 1. Summary: deployment timestamp, commit SHA, author, and environment. 2. Metrics: deployment duration, success/failure status, error rates, and performance benchmarks from CloudWatch. 3. Artifacts: links to build logs, test reports, security scan results, and infrastructure changes (CloudFormation stack updates). 4. Recommendations: insights for improvement (e.g., test coverage trends, vulnerability counts). Format as a Markdown or PDF document stored in an S3 bucket, with a Slack notification to the team. Distribute to stakeholders via email or Confluence. Use this report for retrospectives and compliance audits. Success metrics include deployment frequency (aim for daily), lead time (< 1 hour), and mean time to recovery (MTTR < 30 minutes)."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "monitors"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "approves"
+            },
+            {
+              "from": 4,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "drives"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "outputs"
+            },
+            {
+              "from": 2,
+              "to": 5,
+              "label": "blocks"
+            },
+            {
+              "from": 6,
+              "to": 1,
+              "label": "informs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 105,
+        "maxScore": 105,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 5)",
+          "✓ Node count: 8 ≤ 10",
+          "✓ Has \"test\" category",
+          "✓ Has \"action\" category",
+          "✓ All 11 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 827c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (11 edges, 8 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "personality-poirot-empty",
+      "status": "ok",
+      "elapsed": 3167,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Mon ami, the case is fresh—the board is empty, awaiting our first clue. Let us begin by examining the evidence and constructing a meticulous workflow.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (150 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "eng-advice-architecture",
+      "status": "ok",
+      "elapsed": 3506,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "We have a Django monolith serving 50k users. Page loads are 4-6 seconds, database has 200+ tables, and deployments take 45 minutes. The team wants to add real-time features. Should we refactor, rewrite, or bolt on new services?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Refactor strategically. Split the monolith into bounded contexts using domain-driven design, extract read-heavy services first, implement caching with Redis, and adopt a gradual strangler pattern. Avoid a full rewrite—it's too risky at 50k users.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 35,
+        "maxScore": 40,
+        "pct": 88,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (246 chars)",
+          "✗ Message too short: 246 < 250"
+        ]
+      }
+    },
+    {
+      "id": "edge-ultra-terse",
+      "status": "ok",
+      "elapsed": 47142,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Bug triage workflow.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, a case of the elusive bugs—they multiply like rabbits in the codebase, mon ami! Let us construct a meticulous triage workflow to sort the clues, prioritize the evidence, and dispatch our finest developers to the scene. Voilà, the blueprint for order amidst chaos!",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Bug Report Submission",
+              "category": "trigger",
+              "description": "Initial bug report from users, monitoring tools, or automated tests",
+              "content": "This node captures the entry point for all bug reports. Use a centralized system like Jira, GitHub Issues, or Linear with mandatory fields: title, description, steps to reproduce, environment details (OS, browser, version), severity self-assessment (low/medium/high/critical), and attachments (screenshots, logs). Implement webhooks from monitoring tools (e.g., Sentry, Datadog) to auto-create tickets. Assign a unique ID and timestamp. Establish SLAs: critical bugs must be triaged within 1 hour, high within 4 hours, others within 24 hours. Include a checklist: Is the report complete? Is it a duplicate? Does it contain PII? Use tags for source (user-reported, automated, internal)."
+            },
+            {
+              "label": "Initial Triage & Deduplication",
+              "category": "action",
+              "description": "Quick validation and deduplication of incoming bug reports",
+              "content": "Perform an initial scan using tools like Jira's duplicate finder or custom scripts. Check for similar titles, stack traces, or error codes. If duplicate, link to existing bug and close with a comment. For incomplete reports, assign back to reporter with a template request for missing info. Apply initial labels: 'needs-more-info', 'duplicate', 'invalid' (if not a bug), or 'ready-for-triage'. Use a triage bot (e.g., with GitHub Actions) to auto-comment on common issues. Metrics to track: duplicate rate (% of reports), time to initial triage (avg < 15 mins). Maintain a triage log for audit trails."
+            },
+            {
+              "label": "Severity & Priority Assessment",
+              "category": "policy",
+              "description": "Evaluate bug impact and urgency based on predefined criteria",
+              "content": "Assess severity (technical impact) and priority (business urgency) using a matrix. Severity levels: Critical (system down, data loss), High (major feature broken), Medium (minor feature issue), Low (cosmetic). Priority levels: P0 (fix now, within 24 hours), P1 (fix this week), P2 (fix next sprint), P3 (backlog). Criteria: user impact (# affected users), revenue impact, security risk, regulatory compliance. Use a scoring system (e.g., 1-10) with weighted factors. Tools: custom dashboards in Jira with priority fields, or dedicated triage tools like Bugzilla. Involve product managers for business context. Document rationale in ticket comments."
+            },
+            {
+              "label": "Assignment & Scheduling",
+              "category": "action",
+              "description": "Assign bug to appropriate team or developer and schedule for resolution",
+              "content": "Based on severity/priority, assign to relevant team (frontend, backend, DevOps) using round-robin or expertise-based routing. Tools: Jira automations, Slack integrations for notifications. For critical bugs, page on-call engineer via PagerDuty. Schedule P0/P1 bugs into current sprint; P2/P3 into backlog grooming. Set due dates: P0 (1 day), P1 (3 days), P2 (1 sprint), P3 (when capacity allows). Update ticket with assignee, estimated effort (story points), and target release version. Use labels: 'blocked', 'waiting-for-dependencies'. Conduct a daily triage sync meeting to review assignments and adjust as needed."
+            },
+            {
+              "label": "Bug Resolution & Verification",
+              "category": "test",
+              "description": "Fix implementation and validation through testing",
+              "content": "Developer implements fix following branch strategy (e.g., git flow). Write unit/integration tests covering the bug scenario. Use CI/CD pipelines (e.g., GitHub Actions, Jenkins) to run automated tests. For critical bugs, include a rollback plan. After fix, update ticket with PR link, test results, and deployment details. Verification steps: QA engineer or original reporter validates fix in staging environment. Checklist: Does fix address root cause? Are there regressions? Is documentation updated? Tools: TestRail for test cases, BrowserStack for cross-browser testing. Metrics: time to fix (from assignment to resolution), first-time fix rate (%)."
+            },
+            {
+              "label": "Post-Mortem & Reporting",
+              "category": "output",
+              "description": "Final analysis and reporting on bug triage outcomes",
+              "content": "Generate weekly/monthly reports on bug metrics: total reports, triage time, resolution time, duplicate rate, severity distribution. Use tools like Jira dashboards, Google Data Studio, or custom SQL queries. For critical bugs, conduct a blameless post-mortem meeting to identify root causes and preventive actions (e.g., code reviews, monitoring alerts). Document lessons learned in a knowledge base (Confluence, Notion). Output artifacts: bug triage report (PDF/email), trend charts, improvement recommendations (e.g., 'add more logging in payment module'). Share with stakeholders (engineering, product, support). Continuous improvement: review triage process quarterly and update policies based on data."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "requires"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "requires"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "outputs"
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 4,
+              "to": 2,
+              "label": "informs"
+            },
+            {
+              "from": 5,
+              "to": 0,
+              "label": "monitors"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 95,
+        "maxScore": 95,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 6 (min: 4)",
+          "✓ Node count: 6 ≤ 10",
+          "✓ All 8 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 651c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (8 edges, 6 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "education-course-creation",
+      "status": "ok",
+      "elapsed": 71308,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "I'm creating an online course on machine learning. I need a full production workflow: curriculum design, lesson scripting, video recording, editing, quiz creation, platform upload, beta testing with students, and launch. Build me the pipeline.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, mon ami, a case of educational creation! Let us assemble the clues for a robust production pipeline—where curriculum design is the blueprint, and student feedback refines the final masterpiece. Voilà, the workflow emerges.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Course Blueprint & Curriculum Design",
+              "category": "input",
+              "description": "Initial planning phase: define learning objectives, target audience, and course structure",
+              "content": "Begin by conducting a needs analysis: identify the target learner's background (e.g., beginners with Python basics) and define SMART learning objectives (e.g., 'By course end, students will build a logistic regression model from scratch'). Outline the curriculum in modules, each with 3-5 lessons, ensuring a logical flow from fundamentals (supervised learning) to advanced topics (neural networks). Use tools like Miro for mind mapping and Google Docs for syllabus drafting. Include criteria: each module must have a clear outcome, estimated duration (e.g., 2 hours per module), and alignment with real-world projects (e.g., a capstone on image classification). Validate with a SME review—this phase sets the foundation, so iterate until objectives are measurable and scope is feasible within 8-10 weeks total."
+            },
+            {
+              "label": "Lesson Scripting & Content Creation",
+              "category": "action",
+              "description": "Develop detailed scripts, slides, and supplementary materials for each lesson",
+              "content": "Transform curriculum outlines into actionable content. For each lesson, write a script with speaking notes, timing markers, and key points (e.g., explain bias-variance tradeoff with analogies). Create slides using Canva or PowerPoint, incorporating visuals like diagrams (e.g., decision tree splits) and code snippets. Develop Jupyter notebooks for hands-on exercises, ensuring they're commented and include datasets (e.g., from Kaggle). Tools: Google Docs for scripting, GitHub for code storage, and Figma for slide design. Steps: 1) Draft script (300-500 words per lesson), 2) Review for clarity and engagement, 3) Build slides with consistent branding, 4) Prepare downloadable resources (cheatsheets, datasets). Criteria: Each script must include a hook, core content, summary, and call-to-action for practice."
+            },
+            {
+              "label": "Video Recording & Production",
+              "category": "action",
+              "description": "Record video lessons with screencasting and presenter footage, then initial editing",
+              "content": "Set up a recording studio: use a DSLR or webcam (Logitech C920) for presenter shots, OBS Studio for screencasting code, and a lavalier mic for audio. Record in segments—each lesson as separate clips for easier editing. Follow a checklist: lighting (softbox lights), backdrop (professional, clutter-free), and attire (brand-consistent). Record presenter segments with teleprompter assistance (e.g., Teleprompter Pro) to maintain flow. Simultaneously, capture screencasts of code execution and slides. Save raw files in organized folders (e.g., 'Module1_Raw'). Use DaVinci Resolve for initial cuts: sync audio/video, remove pauses, and add lower-thirds for key terms. Output rough edits for review—aim for 10-15 minute per lesson to optimize retention."
+            },
+            {
+              "label": "Post-Production & Quality Polish",
+              "category": "action",
+              "description": "Edit videos, add graphics/animations, and ensure audio/video quality standards",
+              "content": "Enhance rough edits with professional touches. In DaVinci Resolve or Adobe Premiere, add motion graphics (e.g., animated arrows highlighting code sections) using templates from Envato Elements. Normalize audio with Auphonic to eliminate background noise and balance levels. Color grade footage for consistent look. Insert B-roll (e.g., stock footage of data centers) to break monotony. Add subtitles using Descript or Rev.com for accessibility. Export in multiple resolutions (1080p and 720p) and formats (MP4 for web). Conduct a quality checklist: video length (<15 mins), audio clarity (no echoes), visual consistency (brand colors), and subtitle accuracy. Store final videos in cloud storage (Google Drive) with version control."
+            },
+            {
+              "label": "Quiz & Assessment Development",
+              "category": "action",
+              "description": "Create interactive quizzes, assignments, and a final project to evaluate learning",
+              "content": "Design assessments that align with learning objectives. Use Typeform or Google Forms for quizzes per module—include multiple-choice, coding challenges (e.g., 'Fix this Python function'), and open-ended questions. For hands-on assignments, provide Jupyter notebooks with TODO sections and automated grading via nbgrader. Develop a capstone project (e.g., 'Build a spam classifier') with a rubric covering accuracy, code quality, and documentation. Tools: GitHub Classroom for assignment distribution, and H5P for interactive quizzes. Steps: 1) Draft 5-10 questions per module, 2) Validate difficulty with a SME, 3) Create answer keys and explanations, 4) Set up auto-grading scripts for code submissions. Criteria: Quizzes must test both theory (e.g., 'What is overfitting?') and application (e.g., 'Write a confusion matrix')."
+            },
+            {
+              "label": "Beta Testing with Student Cohort",
+              "category": "test",
+              "description": "Release course to a small group for feedback on content, usability, and engagement",
+              "content": "Recruit 10-20 beta testers via LinkedIn or existing mailing lists. Onboard them to a staging platform (e.g., Teachable sandbox) with access to all modules. Collect structured feedback using surveys (SurveyMonkey) after each module, focusing on clarity, pacing, and technical issues. Host live Q&A sessions via Zoom to gather qualitative insights. Monitor analytics: completion rates, quiz scores, and time-on-page. Use tools like Hotjar for heatmaps on course pages. Steps: 1) Provide testers with guidelines and incentives (e.g., free course access), 2) Schedule feedback milestones weekly, 3) Aggregate data into a report highlighting pain points (e.g., 'Lesson 3 too fast'). Criteria: Beta test must surface at least 3 major improvements before launch."
+            },
+            {
+              "label": "Platform Upload & Launch Preparation",
+              "category": "action",
+              "description": "Upload finalized content to the chosen LMS, configure settings, and prepare marketing",
+              "content": "Select an LMS like Teachable, Udemy, or self-hosted Moodle. Upload videos, quizzes, and resources in organized sections—ensure mobile compatibility. Configure settings: pricing tiers, certificates, and drip scheduling (release modules weekly). Integrate email automation (Mailchimp) for welcome sequences and reminders. Optimize SEO: write compelling course descriptions with keywords (e.g., 'machine learning for beginners'). Create landing pages with testimonials from beta testers. Tools: Canva for promotional graphics, Buffer for social media scheduling. Steps: 1) Bulk upload via LMS dashboard, 2) Test all links and quizzes, 3) Set up analytics (Google Analytics for tracking), 4) Draft launch announcement emails. Criteria: Platform must support SCORM for quizzes, offer 99.9% uptime, and include discussion forums for community."
+            },
+            {
+              "label": "Course Launch & Performance Monitoring",
+              "category": "output",
+              "description": "Final launch to public, with ongoing tracking of enrollment, engagement, and iteratio",
+              "content": "Execute the launch plan: go live on the scheduled date, promote via email blasts, social media, and partnerships (e.g., AI influencers). Monitor real-time metrics using LMS dashboards and Google Analytics—track enrollment numbers, completion rates, and revenue. Set up KPIs: target 1000 enrollments in first month, 70% completion rate, and NPS >50. Collect post-launch feedback via in-course surveys and review sections. Use tools like Mixpanel for cohort analysis (e.g., how Module 1 completion affects final project success). Plan iterative updates: based on data, refine content quarterly (e.g., re-record lessons with low engagement). Steps: 1) Announce launch across channels, 2) Monitor daily for technical glitches, 3) Engage with student discussions, 4) Schedule first update cycle at 3-month mark. Deliverable: A live, revenue-generating course with a roadmap for continuous improvement."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "feeds"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 5,
+              "label": "triggers"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "label": "refines"
+            },
+            {
+              "from": 3,
+              "to": 6,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 6,
+              "label": "feeds"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "triggers"
+            },
+            {
+              "from": 7,
+              "to": 0,
+              "label": "informs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 105,
+        "maxScore": 105,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 5)",
+          "✓ Node count: 8 ≤ 10",
+          "✓ All 12 edges valid",
+          "✓ Starts with input",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 802c, no thin nodes",
+          "✓ Architecture covers: curriculum, record, test, launch",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (12 edges, 8 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "execute-competitive-analysis",
+      "status": "ok",
+      "elapsed": 71988,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Write a competitive analysis for a B2B project management SaaS entering a market dominated by Jira, Asana, Monday.com, and Linear. Our differentiator is AI-powered sprint planning and automatic risk detection. We are pre-revenue with 200 beta users. Include market positioning, SWOT analysis, competitive matrix, and go-to-market recommendations.",
+        "agent": "poirot",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Competitive Analysis Report: AI-Powered Project Management SaaS\n\n## Executive Summary\nThe B2B project management software market is a high-growth, saturated battlefield dominated by established incumbents. Our entry, codenamed **\"Axiom,\"** introduces a paradigm shift through proprietary AI engines for intelligent sprint planning and pre-emptive risk detection. Currently in a pre-revenue beta phase with 200 engaged users, Axiom is positioned not as a generalist tool, but as a **\"Proactive Project Intelligence Platform\"** for technical and product teams who view current solutions as either too rigid or too passive. This analysis dissects the competitive landscape, evaluates our strategic position, and outlines a path to secure a defensible niche.\n\n## 1. Market Positioning: The Proactive Intelligence Niche\n\n**Target Persona:** The \"Pressure-Cooker Product Leader\" in mid-market tech companies (50-500 employees). This individual manages complex software development cycles, is measured on delivery predictability, and spends significant manual effort on sprint planning, dependency mapping, and firefighting unforeseen blockers. They are frustrated by the reactive nature of current tools.\n\n**Positioning Statement:** For technical product teams burdened by unpredictable delivery cycles and manual planning overhead, Axiom is the project management platform that uses artificial intelligence to automate sprint planning and surface risks before they cause delays. Unlike Jira or Monday.com, our system proactively analyzes team velocity, work patterns, and dependency chains to recommend optimal plans and alert you to potential failures, transforming project management from a reactive reporting exercise into a predictive command center.\n\n**Value Proposition Pillars:**\n1.  **Predictive Planning:** AI generates sprint backlogs balanced for estimated effort, priority, and team capacity, learning from historical performance.\n2.  **Pre-emptive Risk Radar:** Algorithms detect signals of future delays (e.g., task clustering, slipping dependencies, individual workload spikes, historical bug recurrence) and flag them with suggested mitigations.\n3.  **Context-Aware Automation:** Reduces manual administrative work by intelligently categorizing tickets, suggesting assignees, and updating timelines based on real-time progress.\n\n## 2. SWOT Analysis\n\n**Strengths:**\n*   **Core AI Differentiation:** Proprietary algorithms for planning and risk detection are not easily replicated by incumbents' bolt-on features.\n*   **Agile & Lean Footprint:** As a new entrant, we are unencumbered by legacy code or a bloated feature set, allowing for a focused, modern UX.\n*   **High Beta Engagement:** 200 beta users provide rich, qualitative feedback and early validation of the core hypothesis.\n*   **Founder/Team Expertise:** Deep domain knowledge in both agile development and machine learning applications.\n\n**Weaknesses:**\n*   **Zero Brand Recognition:** Entering a market where brand trust and network effects are significant barriers.\n*   **Pre-Revenue & Funding Dependent:** Limited resources for sales, marketing, and rapid scaling compared to well-funded incumbents.\n*   **Feature Immaturity:** Lacks the vast ecosystem of integrations, plugins, and ancillary features that mature platforms offer.\n*   **Scalability Unproven:** AI model performance and platform stability at enterprise scale remain untested.\n\n**Opportunities:**\n*   **AI-Hype Cycle:** Market readiness for AI-driven solutions is at an all-time high, reducing education costs.\n*   **Agile Transformation Pain:** Growing adoption of agile/scrum at mid-market companies creates a pool of teams struggling with planning efficiency.\n*   **Incumbent Complacency:** Major players are slow to innovate core workflows, focusing on horizontal expansion and ecosystem.\n*   **API-First Economy:** Ability to integrate deeply with developer tools (GitHub, GitLab, CI/CD pipelines) to gather superior data for our AI.\n\n**Threats:**\n*   **\"Feature, Not Product\" Risk:** Jira (via Atlas), Asana (AI), or Monday.com could attempt to build or acquire similar AI capabilities.\n*   **Market Consolidation:** Acquisition by a larger player (e.g., Salesforce, Adobe) could alter the competitive dynamics overnight.\n*   **Economic Downturn:** B2B SaaS spending may contract, making it harder to displace established \"safe choice\" vendors.\n*   **Data Privacy & \"Black Box\" Concerns:** Enterprises may be wary of AI making planning suggestions without transparent rationale.\n\n## 3. Competitive Matrix\n\n| Feature/Capability | **Axiom (Us)** | **Jira** | **Asana** | **Monday.com** | **Linear** |\n| :--- | :--- | :--- | :--- | :--- | :--- |\n| **Core Strength** | AI-Powered Predictive Planning | Issue Tracking & Process Rigidity | Workflow Management & Clarity | Visual Project Customization | Speed & Developer Experience |\n| **AI Sprint Planning** | **Core Product** (Automated, learning) | Limited (Basic estimation) | Basic (Timeline automation) | Basic (Auto-scheduling) | None |\n| **Risk Detection** | **Core Product** (Proactive alerts) | Reactive (Dashboards & reports) | Reactive (Portfolio warnings) | Reactive (Timeline alerts) | None |\n| **Ease of Use** | High (AI-driven simplicity) | Low (Complex, requires admin) | High | High | Very High (for devs) |\n| **Customization** | Moderate (Configurable AI rules) | Very High | High | Very High | Low |\n| **Integrations** | Low (Growing, API-first) | **Very High (Ecosystem)** | Very High | High | Moderate (Dev-focused) |\n| **Ideal Customer** | Tech teams needing predictability | Large enterprises with complex processes | Cross-functional non-tech teams | General business teams | Small/medium tech startups |\n| **Pricing Model** | TBD (Likely per-user, value-based) | Complex, tiered per-user | Tiered per-user | Tiered per-user | Simple per-user |\n\n**Key Insight:** The matrix reveals a **white space**. Jira and Linear are developer-adjacent but reactive. Asana and Monday.com are user-friendly but lack deep agile intelligence. Axiom's unique intersection is **developer-centric workflow + proactive AI**.\n\n## 4. Go-to-Market & Strategic Recommendations\n\n**Phase 1: Niche Penetration & Validation (Next 6-12 Months)**\n*   **Land-and-Expand via Beta:** Convert the 200 beta users into 20-30 lighthouse customers in the mid-market tech vertical. Offer aggressive founding-member pricing in exchange for case studies and public testimonials.\n*   **GTM Channel: Product-Led Growth (PLG) with Sales-Assist.**\n    *   **Motion:** Free tier for single-project/small team with full AI features (capped actions). Frictionless sign-up targeting individual team leads.\n    *   **Conversion Trigger:** Usage of risk detection and planning features unlocks need for multi-project management, team admin, and advanced analytics → prompt for sales contact.\n*   **Content & Community:** Launch a \"State of Predictable Delivery\" blog and podcast. Target the pain points of engineering VPs and product directors. Create tangible ROI calculators (e.g., \"Calculate your planning overhead\").\n*   **Partnerships:** Form technical alliances with DevOps/platform tools (e.g., GitLab, Datadog, Slack) for deep data integration and co-marketing.\n\n**Phase 2: Vertical & Horizontal Expansion (12-24 Months)**\n*   **Double Down on Tech Vertical:** Develop vertical-specific AI models (e.g., for SaaS product dev, fintech compliance projects, game development sprints).\n*   **Address the \"Black Box\":** Invest in \"Explainable AI\" features—clear visualizations showing *why* a risk was flagged or a plan was suggested—to build trust and counter a key threat.\n*   **Build the Integration Moat:** Prioritize building robust, bi-directional APIs and key integrations to become the \"central brain\" for development data, making displacement costly.\n*   **Explore Hybrid Model:** Introduce an on-premise/private cloud version for security-conscious enterprises in regulated industries (fintech, healthtech), a segment often underserved by the pure-play incumbents.\n\n**Phase 3: Ecosystem Defense (24+ Months)**\n*   **Open the Platform:** Launch an API marketplace for third-party developers to build on Axiom's AI engine (e.g., specialized risk detectors for regulatory compliance, hardware launch timelines).\n*   **Expand AI Scope:** Move from project-level to portfolio-level predictive analytics, helping VPs forecast quarterly delivery across multiple teams.\n*   **Strategic Acquisitions:** Consider acquiring complementary tools in the DevOps observability or resource management space to enrich data inputs and solidify the platform.\n\n**Conclusion:**\nThe incumbents are giants, but they are looking backward, building better reports on what already happened. Axiom's mandate is to look forward. Our initial battle is not for market share, but for **mindshare**—to establish \"proactive project intelligence\" as a necessary category. By executing a ruthless focus on the \"Pressure-Cooker Product Leader,\" leveraging our AI not as a feature but as the product's core nervous system, and scaling through a disciplined PLG motion, we can carve out a sustainable and valuable position in the ecosystem. The beta users are the first evidence; the market is waiting for a solution that doesn't just manage work, but guarantees its outcome.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (9315 chars)",
+          "✓ Content length: 9315 ≥ 1500"
+        ]
+      }
+    }
+  ]
+}

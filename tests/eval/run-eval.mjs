@@ -742,6 +742,22 @@ const POOL = [
     prompt: 'Should I have a separate staging environment, or is it enough to test in dev? Actually, just build me a deployment pipeline with proper environments.',
     expect: { hasWorkflow: true, minNodes: 4, maxNodes: 10, mustMentionInNodes: ['deploy|staging|prod', 'test|qa'] },
   },
+
+  // Disaster recovery / business continuity — tests resilience-focused workflow with dependency nodes
+  {
+    id: 'disaster-recovery-plan',
+    agent: 'rowan', taskType: 'generate',
+    prompt: 'Build a disaster recovery workflow for our SaaS platform. We have 3 AWS regions, 500TB of customer data, RPO of 1 hour and RTO of 4 hours. Steps: threat assessment, backup verification, failover testing, communication plan, recovery execution, and post-incident review. We need this for SOC2 compliance.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['test', 'review'], mustMentionInNodes: ['backup|failover', 'recovery|restor', 'test|verif', 'review|post-incident'] },
+  },
+
+  // Very long detailed prompt — tests handling of verbose user input
+  {
+    id: 'edge-verbose-prompt',
+    agent: 'poirot', taskType: 'generate',
+    prompt: 'I run a small artisanal chocolate company. We source cacao from three countries (Ecuador, Ghana, Madagascar), each with different harvest seasons. We roast, conch, temper, and mold everything in our 2000 sq ft facility with 4 employees. I need a workflow for managing our entire production cycle from bean sourcing to retail delivery. We also do custom corporate gift orders during Q4 which doubles our volume. Our current process is all on paper and post-it notes — we keep missing orders and our inventory tracking is a mess. Please build something comprehensive that covers procurement, production scheduling, quality control, inventory management, order fulfillment, and shipping. We sell through our own website, two local retail partners, and seasonal farmers markets.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustMentionInNodes: ['sourc|procur|cacao', 'product|roast|temper', 'quality|control', 'order|fulfil|ship'] },
+  },
 ];
 
 // ─── Agent System Prompts (synced with src/lib/prompts.ts) ─────────────────

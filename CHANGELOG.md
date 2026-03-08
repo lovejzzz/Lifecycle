@@ -1,5 +1,23 @@
 # Changelog
 
+### 2026-03-08 — Round 106: 99% Chat (Rowan-Brevity Pattern) + Pool 88→90
+
+**Eval results: 99% (6/6 passed, 405/410 points) — DeepSeek Chat**
+
+One borderline test:
+- `eng-advice-architecture` (88%): 246c vs 250 min — 4 chars short. Advice quality excellent (DDD bounded contexts, strangler pattern, Redis caching, "avoid full rewrite at 50k users"). Rowan's terse style consistently clips advice 4-10 chars below threshold. Not worth a prompt fix — the concise advice is genuinely better than padding.
+
+Quality highlights:
+- `eng-deploy-process` (Rowan, 100%): 8 nodes, 827c avg. Replaces "SSH git pull" with full CI/CD. Policy gate `blocks` production, dual feedback loops. Specific AWS services: ECR, ECS Fargate, CloudFront, Secrets Manager, CodeDeploy.
+- `edge-ultra-terse` "Bug triage workflow." (Poirot, 100%): From 3 words → 6-node workflow with policy gate for severity, post-mortem output.
+- `execute-competitive-analysis` (Poirot, 100%): 9,315c. Consistently production-quality across runs.
+
+**No code changes needed.**
+
+**Pool: 88 → 90 tests:** `disaster-recovery-plan` (DR/BCP with RPO/RTO requirements, SOC2), `edge-verbose-prompt` (very long detailed prompt — artisanal chocolate company with multi-channel sales).
+
+**Build:** Clean — 0 lint warnings, typecheck passes, production build succeeds.
+
 ### 2026-03-08 — Round 105: 100% Reasoner — Marketing-Advice Fixed + Pool 86→88
 
 **Eval results: 100% (6/6 passed, 365/365 points) — DeepSeek Reasoner**
