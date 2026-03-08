@@ -790,6 +790,20 @@ const POOL = [
     prompt: 'Create a CI/CD pipeline for our mobile app. Actually wait — make sure the testing phase includes both unit tests AND integration tests as separate steps, and add a rollback mechanism after production deployment.',
     expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['test'], mustMentionInNodes: ['unit|test', 'deploy|production', 'rollback|revert'] },
   },
+
+  // ─── Round 109 additions ─────────────────────────────────────────────────
+  {
+    id: 'supply-chain-traceability',
+    agent: 'rowan', taskType: 'generate',
+    prompt: 'Build a supply chain traceability workflow for our organic food company. We need to track products from farm to shelf — supplier onboarding, batch tracking, quality inspections at each handoff, cold chain monitoring, recall procedures, and compliance reporting for FDA audits.',
+    expect: { hasWorkflow: true, minNodes: 6, maxNodes: 10, mustHaveCategories: ['test', 'policy'], mustMentionInNodes: ['supplier|farm|source', 'quality|inspect', 'recall|compliance|audit'] },
+  },
+  {
+    id: 'edge-emotional-vague',
+    agent: 'poirot', taskType: 'analyze',
+    prompt: 'Everything is falling apart. The team is burnt out, deadlines keep slipping, and I don\'t even know what to prioritize anymore. Help.',
+    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 200 },
+  },
 ];
 
 // ─── Agent System Prompts (synced with src/lib/prompts.ts) ─────────────────

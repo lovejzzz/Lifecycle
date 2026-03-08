@@ -1,0 +1,546 @@
+{
+  "timestamp": "2026-03-08T20-44-06",
+  "overall": 99,
+  "testsRun": [
+    "pm-user-research",
+    "personality-rowan-empty",
+    "edge-conflicting-advice",
+    "execute-runbook",
+    "edge-ultra-short-prompt",
+    "disaster-recovery-plan"
+  ],
+  "poolSize": 94,
+  "results": [
+    {
+      "id": "pm-user-research",
+      "status": "ok",
+      "elapsed": 88812,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We're redesigning our onboarding flow. I want to do proper user research — recruit users, run interviews, analyze findings, create recommendations, test prototypes. Build this for me.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! The case of the onboarding redesign calls for a meticulous investigation. Voilà, I have assembled a workflow to uncover user clues and craft an elegant solution, mon ami.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Project Kickoff and Scope Definition",
+              "category": "trigger",
+              "description": "Initiates the user research project for redesigning the onboarding flow with clear objectives and constraints.",
+              "content": "**Step 1: Define Project Goals** – Collaborate with stakeholders to set specific, measurable objectives (e.g., reduce drop-off by 20%, improve user satisfaction scores). Use tools like Miro or Confluence for documentation. **Step 2: Scope Research** – Determine target user segments (e.g., new sign-ups, power users), timeline (2-4 weeks), and budget. Create a project charter with roles (PM, UX researcher, designer). **Step 3: Set Success Metrics** – Establish KPIs such as task completion rates, time-to-first-value, and qualitative feedback points. Tools: Google Sheets for tracking, Trello for task management. **Step 4: Assemble Team** – Identify key members: researchers for interviews, analysts for data synthesis, and designers for prototyping. Conduct a kickoff meeting to align everyone on the mission."
+            },
+            {
+              "label": "User Recruitment and Interview Planning",
+              "category": "action",
+              "description": "Recruit participants and design interview protocols to gather deep insights into onboarding pain points.",
+              "content": "**Step 1: Participant Recruitment** – Use screening surveys via UserTesting or Respondent to filter for diverse demographics (e.g., age, tech-savviness). Aim for 8-12 participants per segment for saturation. **Step 2: Develop Interview Guide** – Craft open-ended questions focusing on first impressions, confusion points, and emotional responses. Include tasks like walking through current onboarding. Tools: Otter.ai for transcription, Zoom for sessions. **Step 3: Schedule and Logistics** – Coordinate calendars using Calendly, send consent forms, and prepare incentives (gift cards). **Step 4: Pilot Testing** – Conduct a dry run with internal team to refine questions and timing. Ensure recording equipment is functional for seamless data capture."
+            },
+            {
+              "label": "Conduct User Interviews and Data Collection",
+              "category": "action",
+              "description": "Execute interviews to collect qualitative data on user experiences and behaviors during onboarding.",
+              "content": "**Step 1: Facilitate Sessions** – Lead 45-60 minute interviews in a neutral, empathetic manner. Use techniques like laddering to probe deeper into motivations. Record audio/video with participant consent. **Step 2: Capture Observations** – Take real-time notes on non-verbal cues, friction points, and 'aha' moments. Tools: Notion for note-taking, Hotjar for session replays if remote. **Step 3: Gather Artifacts** – Collect screenshots, user journey maps, or diary entries if applicable. **Step 4: Debrief Post-Interview** – Immediately after each session, team debriefs to highlight key quotes and patterns using a shared Miro board. Store all data in a secure, organized repository like Airtable."
+            },
+            {
+              "label": "Analyze Findings and Synthesize Insights",
+              "category": "artifact",
+              "description": "Process interview data to identify themes, pain points, and opportunities for the redesign.",
+              "content": "**Step 1: Transcribe and Code Data** – Use Otter.ai or Rev.com for accurate transcriptions. Apply thematic analysis with codes like 'confusion', 'delight', 'abandonment' using NVivo or Dedoose. **Step 2: Affinity Diagramming** – Group codes into clusters on a digital whiteboard (Miro or FigJam) to reveal patterns such as common drop-off steps or feature requests. **Step 3: Create Personas and Journey Maps** – Develop detailed personas (e.g., 'Novice Nancy') and current-state journey maps highlighting emotional highs and lows. **Step 4: Derive Key Insights** – Summarize findings into actionable statements (e.g., 'Users need clearer value proposition in step 2'). Tools: Google Slides for reporting, frequency analysis for quantitative data if available."
+            },
+            {
+              "label": "Develop Recommendations and Create Prototypes",
+              "category": "action",
+              "description": "Translate insights into design recommendations and build interactive prototypes for testing.",
+              "content": "**Step 1: Brainstorm Solutions** – Host workshops with cross-functional teams to ideate on fixes for identified pain points. Use techniques like crazy 8s or storyboarding. **Step 2: Prioritize Ideas** – Apply frameworks like RICE (Reach, Impact, Confidence, Effort) to rank recommendations. Focus on high-impact, low-effort changes first. **Step 3: Design Prototypes** – Create low-fidelity wireframes in Figma or Sketch, then evolve to high-fidelity interactive prototypes. Include key flows: sign-up, tutorial, first action. **Step 4: Document Rationale** – Link each design decision back to user insights with annotations. Prepare a design spec for developers, including accessibility considerations and microcopy improvements."
+            },
+            {
+              "label": "User Testing of Prototypes",
+              "category": "test",
+              "description": "Validate prototypes with users to ensure design recommendations effectively address onboarding issues.",
+              "content": "**Step 1: Plan Test Sessions** – Recruit a new set of 5-8 users (similar to interview pool) for usability testing. Define tasks like completing onboarding and providing feedback. **Step 2: Conduct Tests** – Use moderated sessions via Lookback or UserZoom, observing completion rates, errors, and time-on-task. Ask think-aloud questions to capture real-time reactions. **Step 3: Collect Metrics** – Measure success with SUS (System Usability Scale) scores, task success rates, and heatmaps if using tools like Hotjar. **Step 4: Analyze Results** – Compare performance against benchmarks, identify usability issues (e.g., navigation confusion), and document verbatim feedback. Compile findings into a test report with severity ratings (critical, major, minor)."
+            },
+            {
+              "label": "Stakeholder Review and Iteration Gate",
+              "category": "review",
+              "description": "Human approval checkpoint to review findings, refine designs, and decide on next steps before finalization.",
+              "content": "**Step 1: Present Findings** – Share a comprehensive report with stakeholders (PMs, execs, devs) covering research insights, prototype designs, and test results. Use a slide deck or live demo in Figma. **Step 2: Facilitate Discussion** – Lead a meeting to discuss trade-offs, resource allocation, and timeline adjustments. Encourage feedback on feasibility and alignment with business goals. **Step 3: Decision Making** – Use a structured format like DACI (Driver, Approver, Contributor, Informed) to reach consensus on changes. Document decisions in Confluence. **Step 4: Plan Iterations** – If revisions are needed, create an action plan with assigned owners and deadlines. Set criteria for approval: e.g., all critical usability issues resolved, stakeholder sign-off via a digital tool like Jira or Asana."
+            },
+            {
+              "label": "Final Onboarding Flow Design and Handoff",
+              "category": "output",
+              "description": "Deliver the polished onboarding flow design with documentation for implementation and future reference.",
+              "content": "**Step 1: Finalize Designs** – Incorporate feedback from testing and review into high-fidelity mockups. Ensure consistency with brand guidelines and accessibility standards (WCAG 2.1). **Step 2: Create Documentation** – Develop a design system component library in Figma, including specs for developers (colors, typography, interactions). Write user stories and acceptance criteria in Jira. **Step 3: Prepare Handoff Materials** – Export assets (icons, images), provide interactive prototypes via Figma links, and schedule a kickoff with engineering teams. **Step 4: Establish Monitoring Plan** – Set up analytics (e.g., Mixpanel, Amplitude) to track post-launch metrics like conversion rates and user feedback loops. Document lessons learned in a retrospective report for continuous improvement."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "informs"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "outputs"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "validates"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "approves"
+            },
+            {
+              "from": 5,
+              "to": 4,
+              "label": "refines"
+            },
+            {
+              "from": 6,
+              "to": 4,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 95,
+        "maxScore": 95,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 5)",
+          "✓ Node count: 8 ≤ 10",
+          "✓ All 9 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 764c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (9 edges, 8 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "personality-rowan-empty",
+      "status": "ok",
+      "elapsed": 4525,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Graph's empty. Ready for orders.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (32 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "edge-conflicting-advice",
+      "status": "ok",
+      "elapsed": 23588,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We need to ship a critical security patch ASAP but our QA team is on vacation for 2 weeks. The CEO wants it live today. What do we do?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Mission critical. Bypass formal QA by enforcing automated security scans with OWASP ZAP, conducting peer reviews with senior developers, and deploying via canary release with immediate monitoring and a rollback plan. CEO must sign off on the risk.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has message (247 chars)",
+          "✓ Message length: 247 ≥ 200"
+        ]
+      }
+    },
+    {
+      "id": "execute-runbook",
+      "status": "ok",
+      "elapsed": 68930,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Write a production incident runbook for a microservices e-commerce platform. Cover severity classification (P1-P4), escalation paths, communication templates, rollback procedures, and post-incident review. Include specific commands for Kubernetes and AWS.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Incident Runbook: E-Commerce Microservices Platform\n\n## 1. Purpose and Scope\nThis runbook provides standardized procedures for responding to production incidents affecting the microservices-based e-commerce platform. It covers detection, classification, communication, resolution, and post-incident review for services including user authentication, product catalog, shopping cart, checkout, payment processing, and order fulfillment.\n\n## 2. Severity Classification\n\n### P1 - Critical\n**Impact:** Complete platform outage, data loss/corruption, security breach, or financial impact >$10K/hour\n**Examples:** \n- Checkout service 100% unavailable\n- Payment processing failed for all transactions\n- Database corruption affecting orders\n- Security breach exposing customer PII\n\n**Response SLA:** Immediate (within 15 minutes)\n**Resolution SLA:** 1 hour\n\n### P2 - High\n**Impact:** Major functionality degraded, significant performance issues affecting >30% users\n**Examples:**\n- Product search unavailable\n- Shopping cart failures for multiple regions\n- Checkout latency >10 seconds\n- Partial payment failures\n\n**Response SLA:** 30 minutes\n**Resolution SLA:** 4 hours\n\n### P3 - Medium\n**Impact:** Minor functionality impaired, performance issues affecting <30% users\n**Examples:**\n- Product image loading failures\n- Recommendation engine degraded\n- Single payment gateway timeout\n- Elevated error rates in non-critical services\n\n**Response SLA:** 2 hours\n**Resolution SLA:** 24 hours\n\n### P4 - Low\n**Impact:** Cosmetic issues, minor performance degradation\n**Examples:**\n- UI formatting issues\n- Non-critical metric alerts\n- Cache miss rate increase\n- Minor latency spikes\n\n**Response SLA:** 8 hours\n**Resolution SLA:** 72 hours\n\n## 3. Escalation Matrix\n\n### Primary On-Call Rotation\n- **Level 1:** Site Reliability Engineer (24/7 coverage)\n- **Level 2:** Senior SRE/Platform Engineer\n- **Level 3:** Service Owner/Principal Engineer\n- **Level 4:** Engineering Director/CTO\n\n### Escalation Timeline\n```\nP1: L1 → L2 → L3 → L4 (immediately cascading)\n    0min    5min   10min   15min\n     \nP2: L1 → L2 → L3\n    0min    30min   60min\n     \nP3: L1 → L2 (if no progress in 2 hours)\n     \nP4: L1 only (escalate after 8 hours if unresolved)\n```\n\n## 4. Communication Protocol\n\n### Internal Communication Channels\n- **Primary:** Slack #incidents channel\n- **Secondary:** PagerDuty/VictorOps\n- **Conference Bridge:** Zoom Room INC-ECOMM-123 (always open)\n\n### External Communication Templates\n\n#### Initial Outage Notification\n**Subject:** [P1/P2] E-Commerce Platform Service Disruption - [DD/MM/YYYY HH:MM UTC]\n\n**Body:**\n```\nImpact: [Brief description of customer impact]\nServices Affected: [List services]\nStart Time: [UTC timestamp]\nCurrent Status: Investigating\nUpdates: We will provide updates every 30 minutes\nSupport: [Link to status page]\n```\n\n#### Update Template\n**Subject:** UPDATE: [P1/P2] E-Commerce Platform - [DD/MM/YYYY HH:MM UTC]\n\n**Body:**\n```\nImpact: [Updated description]\nServices Affected: [Updated list]\nStart Time: [UTC timestamp]\nCurrent Status: [Identified/Repairing/Verifying]\nRoot Cause: [If known]\nNext Update: [Time of next update]\n```\n\n#### Resolution Notification\n**Subject:** RESOLVED: [P1/P2] E-Commerce Platform - [DD/MM/YYYY HH:MM UTC]\n\n**Body:**\n```\nImpact: [Final description]\nServices Affected: [Final list]\nStart Time: [UTC timestamp]\nResolution Time: [UTC timestamp]\nDuration: [Total downtime]\nRoot Cause: [Summary]\nRemediation: [Actions taken]\nFollow-up: Post-mortem within 24 hours\n```\n\n## 5. Diagnostic Procedures\n\n### Initial Health Checks\n\n#### Kubernetes Cluster Status\n```bash\n# Check cluster nodes\nkubectl get nodes --context=production\nkubectl describe nodes | grep -A 10 -B 5 \"Conditions:\"\n\n# Check pod status across all namespaces\nkubectl get pods --all-namespaces --context=production | grep -v Running\n\n# Check critical deployments\nkubectl get deployments -n ecommerce --context=production\nkubectl rollout status deployment/[deployment-name] -n ecommerce --context=production\n```\n\n#### AWS Infrastructure Checks\n```bash\n# Check RDS instances\naws rds describe-db-instances --db-instance-identifier ecommerce-prod \\\n  --query 'DBInstances[0].DBInstanceStatus'\n\n# Check Elastic Load Balancer\naws elbv2 describe-load-balancers --names ecommerce-prod-alb \\\n  --query 'LoadBalancers[0].State.Code'\n\n# Check CloudWatch alarms\naws cloudwatch describe-alarms --alarm-name-prefix ecommerce-prod \\\n  --state-value ALARM\n```\n\n### Service-Specific Checks\n\n#### Database Connectivity\n```bash\n# Test PostgreSQL connectivity\nkubectl exec -it $(kubectl get pod -l app=checkout-service -o jsonpath='{.items[0].metadata.name}' -n ecommerce) \\\n  --context=production -- nc -zv orders-db.ecommerce.svc.cluster.local 5432\n\n# Check replication lag\naws rds describe-db-instances --db-instance-identifier ecommerce-prod-read-replica \\\n  --query 'DBInstances[0].ReadReplicaDBInstanceIdentifiers'\n```\n\n#### Redis Cache\n```bash\n# Check Redis cluster status\nkubectl exec -it redis-client-pod -n ecommerce --context=production -- \\\n  redis-cli -h redis-master.ecommerce.svc.cluster.local INFO replication\n\n# Test cache connectivity\nkubectl exec -it $(kubectl get pod -l app=catalog-service -o jsonpath='{.items[0].metadata.name}' -n ecommerce) \\\n  --context=production -- redis-cli -h cart-cache.ecommerce.svc.cluster.local PING\n```\n\n## 6. Rollback Procedures\n\n### Kubernetes Deployment Rollback\n\n#### Standard Rollback\n```bash\n# Identify current revision\nkubectl rollout history deployment/[service-name] -n ecommerce --context=production\n\n# Rollback to previous version\nkubectl rollout undo deployment/[service-name] -n ecommerce --context=production\n\n# Force rollback if stuck\nkubectl rollout undo deployment/[service-name] -n ecommerce --context=production --to-revision=[revision-number]\nkubectl patch deployment/[service-name] -n ecommerce --context=production -p \\\n  '{\"spec\":{\"paused\":false}}'\n```\n\n#### Emergency Blue-Green Switch\n```bash\n# Switch traffic from blue to green deployment\nkubectl patch svc/[service-name] -n ecommerce --context=production -p \\\n  '{\"spec\":{\"selector\":{\"version\":\"green\"}}}'\n\n# Verify traffic shift\nkubectl get endpoints [service-name] -n ecommerce --context=production -o wide\n```\n\n### Database Rollback Procedures\n\n#### Point-in-Time Recovery (RDS)\n```bash\n# Restore to latest restorable time\naws rds restore-db-instance-to-point-in-time \\\n  --source-db-instance-identifier ecommerce-prod \\\n  --target-db-instance-identifier ecommerce-prod-recovered \\\n  --restore-time $(date -u +\"%Y-%m-%dT%H:%M:%SZ\" --date=\"15 minutes ago\") \\\n  --db-instance-class db.r5.large\n\n# Update application to use recovered instance\nkubectl set env deployment/[service-name] -n ecommerce --context=production \\\n  DB_HOST=ecommerce-prod-recovered.abcdefghijkl.us-east-1.rds.amazonaws.com\n```\n\n#### Redis Cache Reset\n```bash\n# Flush cache if corrupted\nkubectl exec -it redis-master-0 -n ecommerce --context=production -- \\\n  redis-cli FLUSHALL\n\n# Restore from backup\naws s3 cp s3://ecommerce-backups/redis/dump.rdb - | \\\n  kubectl exec -i redis-master-0 -n ecommerce --context=production -- \\\n  redis-cli -x RESTORE\n```\n\n## 7. Service Restoration Checklists\n\n### Checkout Service Restoration\n1. [ ] Verify database connectivity\n2. [ ] Check Redis cache health\n3. [ ] Validate payment gateway connections\n4. [ ] Test checkout workflow with test transaction\n5. [ ] Monitor error rates for 5 minutes\n6. [ ] Gradually increase traffic (if rate-limited during incident)\n\n### Catalog Service Restoration\n1. [ ] Verify Elasticsearch cluster health\n2. [ ] Check product database connectivity\n3. [ ] Validate image CDN availability\n4. [ ] Test search functionality\n5. [ ] Warm cache with popular queries\n\n## 8. Post-Incident Review Process\n\n### Timeline Documentation\n**Within 1 hour of resolution:** Create initial timeline in incident management tool\n\n**Template:**\n```\n## Incident Timeline\n- **Detected:** [Time] - [Detection method]\n- **Acknowledged:** [Time] - [Person]\n- **Escalated:** [Time] - [To whom]\n- **Diagnosed:** [Time] - [Root cause identified]\n- **Repair Started:** [Time] - [Actions]\n- **Verified:** [Time] - [Testing completed]\n- **Resolved:** [Time] - [Customer impact ended]\n- **Communicated:** [Time] - [External notification]\n```\n\n### Blameless Post-Mortem Template\n**Scheduled within 24 hours for P1/P2 incidents**\n\n**Sections:**\n1. **Executive Summary** (2-3 sentences)\n2. **Impact Assessment**\n   - Duration of outage\n   - Affected services/customers\n   - Business metrics impact\n3. **Timeline** (5-minute increments)\n4. **Root Cause Analysis**\n   - Primary cause\n   - Contributing factors\n5. **Action Items**\n   - Immediate fixes (1-7 days)\n   - Short-term improvements (30 days)\n   - Long-term investments (90 days)\n6. **Lessons Learned**\n7. **Appendix**\n   - Log excerpts\n   - Monitoring gaps\n   - Communication transcripts\n\n### Action Item Tracking\n```bash\n# Create Jira tickets from post-mortem\n# Tag with: incident-[date], severity-[level], team-[name]\n# Priority: Critical (P1), High (P2), Medium (P3)\n```\n\n## 9. Preventative Measures Checklist\n\n### Post-Incident Actions\n- [ ] Update monitoring thresholds based on incident patterns\n- [ ] Review and update runbooks with new learnings\n- [ ] Test rollback procedures in staging environment\n- [ ] Update capacity planning based on peak load during incident\n- [ ] Schedule game days for similar failure scenarios\n\n### Monthly Review\n- [ ] Analyze incident trends\n- [ ] Update escalation contacts\n- [ ] Validate backup and restore procedures\n- [ ] Review communication templates\n- [ ] Train new team members on incident procedures\n\n---\n\n**Document Version:** 2.3  \n**Last Updated:** [Current Date]  \n**Owner:** Platform Reliability Team  \n**Approvers:** Head of Engineering, Head of Product, CTO",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (9790 chars)",
+          "✓ Content length: 9790 ≥ 1500"
+        ]
+      }
+    },
+    {
+      "id": "edge-ultra-short-prompt",
+      "status": "ok",
+      "elapsed": 118530,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Onboarding.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! The onboarding case is solved, mon ami. Voilà, a meticulous workflow to ensure every new hire is seamlessly integrated, with all clues and evidence meticulously arranged for a flawless start.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Hire Initiation",
+              "category": "trigger",
+              "description": "Event that triggers the onboarding process upon new hire acceptance",
+              "content": "This node activates when a new hire formally accepts the job offer, initiating the onboarding sequence. Detailed steps: 1. Receive and verify the signed offer letter via digital signature platforms like DocuSign. 2. Update the HR management system (e.g., Workday or BambooHR) with employee details, generating a unique ID and setting the start date. 3. Automate notifications to relevant teams (IT, facilities, payroll) using tools like Zapier or Microsoft Power Automate. 4. Schedule a welcome call or email with the new hire to confirm contact information and provide initial resources. 5. Initiate background check requests by integrating with screening services like Checkr. Compliance checklist: Ensure data privacy adherence (GDPR, CCPA), confirm offer terms, and document consent for processing. Tools: HRMS dashboards, email automation, calendar scheduling. Timeframe: Immediate upon acceptance to set the foundation for subsequent steps."
+            },
+            {
+              "label": "Background Check",
+              "category": "action",
+              "description": "Verification of candidate's criminal, employment, and educational history",
+              "content": "Conduct comprehensive background checks to validate candidate credentials and ensure safety. Steps: 1. Obtain explicit consent from the candidate using standardized forms compliant with FCRA and local laws. 2. Submit verification requests to accredited providers like HireRight or GoodHire, monitoring progress via their APIs or dashboards. 3. Review reports for discrepancies in criminal records, employment dates, and degree authenticity; escalate any red flags to HR managers for resolution. 4. Document findings in a secure employee file, using encryption tools like Box or SharePoint. 5. Set criteria: No felony convictions, employment history matches resume within 90%, educational certificates verified. Tools: Integration with ATS (e.g., Greenhouse), automated alerts for completion, audit logs. Timeline: 3-5 business days, with follow-ups for delays."
+            },
+            {
+              "label": "Paperwork Submission",
+              "category": "action",
+              "description": "Processing of legal and administrative documents required for employment",
+              "content": "Manage the collection, verification, and storage of all necessary paperwork. Steps: 1. Distribute digital forms via platforms like Adobe Sign or PandaDoc, including W-4, I-9, direct deposit details, confidentiality agreements, and employee handbook acknowledgments. 2. Set automated reminders for submission deadlines using tools like Asana or Trello. 3. Verify document completeness and accuracy, cross-referencing with government databases for I-9 compliance within 3 days of hire. 4. Securely archive documents in cloud storage (e.g., Google Drive with access controls) and update the HR system. 5. Checklist: All signatures obtained, tax forms filled correctly, policy acknowledgments recorded. Tools: Document management systems, compliance scanners, email trackers. Best practices: Regular audits for data integrity and legal updates."
+            },
+            {
+              "label": "Orientation Training",
+              "category": "action",
+              "description": "Comprehensive training sessions on company culture, policies, and role-specific skills",
+              "content": "Deliver structured orientation to acclimate new hires to the organization. Steps: 1. Schedule blended sessions (virtual/in-person) using Zoom or Microsoft Teams, with agendas covering company history, code of conduct, safety protocols, and software tools. 2. Utilize a learning management system (LMS) like Cornerstone or TalentLMS to assign mandatory modules, track progress, and administer quizzes with a passing score of 80% or higher. 3. Implement mentorship programs by pairing new hires with buddies for ongoing support. 4. Conduct interactive workshops on team collaboration tools (e.g., Slack, Jira) and role-specific skills. 5. Collect feedback via surveys (SurveyMonkey) to refine content. Criteria: Completion of all modules within 1-2 weeks, positive feedback scores, mentor check-ins scheduled."
+            },
+            {
+              "label": "Compliance Test",
+              "category": "test",
+              "description": "Validation that onboarding steps meet legal, regulatory, and internal policy standards",
+              "content": "Test and ensure adherence to compliance requirements throughout onboarding. Steps: 1. Review background check reports against EEOC guidelines to prevent discrimination, using compliance software like LogicGate for automated checks. 2. Audit paperwork submissions for completeness, verifying I-9 documents with E-Verify and ensuring tax form accuracy. 3. Validate training completion against mandatory standards (e.g., OSHA for safety, GDPR for data privacy). 4. Monitor data handling processes for privacy breaches, employing tools like Varonis for real-time alerts. 5. Generate a compliance report detailing any gaps and triggering corrective actions if failures occur. Criteria: All legal requirements met, no policy violations, audit trails maintained. Tools: Regulatory databases, checklists, incident reporting systems."
+            },
+            {
+              "label": "Final Approval",
+              "category": "review",
+              "description": "Human review and sign-off by manager or HR to greenlight onboarding completion",
+              "content": "Manager or HR representative conducts a final review to approve the onboarding process. Steps: 1. Aggregate all outputs: background check results, paperwork archives, training completion certificates, and compliance test reports into a consolidated dashboard (e.g., using Tableau or Power BI). 2. Schedule a review meeting with the new hire's manager to discuss any issues, such as training gaps or document discrepancies. 3. Evaluate criteria: All steps completed satisfactorily, no outstanding compliance flags, positive feedback from orientation. 4. Make a decision: approve to proceed, reject with specific feedback, or request modifications, documenting the outcome in the HR system. 5. If rejected, provide detailed reasoning and loop back to relevant nodes (e.g., refine training or paperwork). Tools: Approval workflows in HRMS, email notifications, decision logs."
+            },
+            {
+              "label": "Onboarding Complete",
+              "category": "output",
+              "description": "Final deliverable marking successful onboarding and employee integration",
+              "content": "Complete the onboarding process by fully integrating the employee into the company ecosystem. Steps: 1. Update the employee's status to 'active' in the HR system, triggering automated provisioning of IT access (e.g., via Okta for SSO, issuing hardware through ITglue). 2. Schedule and facilitate first team meetings, sending calendar invites and introduction emails to foster connections. 3. Distribute welcome packages (physical or digital) containing company swag, policy documents, and resource guides. 4. Finalize payroll setup by confirming bank details and tax withholdings, using tools like ADP or Gusto. 5. Collect post-onboarding feedback via NPS surveys to measure satisfaction and identify improvement areas. Deliverables: Employee fully onboarded, all systems access granted, documentation archived. Metrics: Time-to-productivity (aim for <30 days), employee engagement scores."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 0,
+              "to": 2,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "validates"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "approves"
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "label": "monitors"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "informs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 92,
+        "maxScore": 95,
+        "pct": 97,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 4)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ All 9 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 863c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "⚡ Architecture: has parallel branches (9 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "disaster-recovery-plan",
+      "status": "ok",
+      "elapsed": 161105,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Build a disaster recovery workflow for our SaaS platform. We have 3 AWS regions, 500TB of customer data, RPO of 1 hour and RTO of 4 hours. Steps: threat assessment, backup verification, failover testing, communication plan, recovery execution, and post-incident review. We need this for SOC2 compliance.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building disaster recovery workflow with SOC2 compliance integrated.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Disaster Event Detection",
+              "category": "trigger",
+              "description": "Triggers the workflow upon detection of a disaster or manual initiation",
+              "content": "Disaster event detection is configured using AWS CloudWatch alarms that monitor critical metrics across 3 AWS regions, such as EC2 instance health, RDS database availability, S3 bucket accessibility, and network latency spikes. Alarms are set with thresholds aligned with RPO (1 hour) and RTO (4 hours) goals—e.g., any service degradation beyond 30 minutes triggers an alert. Payload includes event type (e.g., region outage, data corruption), timestamp, affected resources (ARNs), and severity level. Integrate with SNS topics to push notifications to incident management tools like PagerDuty for automatic ticket creation, and set up a secure API endpoint (using API Gateway with IAM authentication) for manual triggers. Ensure all triggers log to AWS CloudTrail for SOC2 audit trails, with detailed metadata for forensic analysis. Regularly test trigger mechanisms quarterly to avoid false negatives."
+            },
+            {
+              "label": "Threat Assessment & Initial Response",
+              "category": "action",
+              "description": "Assess the threat scope and initiate immediate response actions",
+              "content": "Upon trigger, the incident response team (IRT) executes a threat assessment within 15 minutes. Steps: 1) Collect data from AWS GuardDuty for threat intelligence, VPC Flow Logs for network anomalies, and AWS Config for resource compliance checks. 2) Analyze impact using dashboards in Amazon QuickSight to identify affected customer data (500TB scale) and service dependencies. 3) Determine disaster type (e.g., regional failure, ransomware) and decide on failover necessity based on RTO/RPO thresholds. 4) Activate IRT communication via Slack channels and assign roles: lead investigator, coordinator, tech lead. Tools: AWS Systems Manager for runbooks, Jira for task tracking. Error handling: If assessment exceeds 30 minutes, escalate to senior management and consider partial failover. Document all findings in an incident report template stored in S3."
+            },
+            {
+              "label": "Backup Verification & Data Integrity",
+              "category": "action",
+              "description": "Verify backups are consistent and meet RPO of 1 hour",
+              "content": "Execute backup verification immediately after threat assessment to ensure data recoverability. Steps: 1) Use AWS Backup to validate recent snapshots of RDS, EBS, and S3 across all 3 regions, checking for completion timestamps within the last hour to meet RPO. 2) Run integrity checks with custom Python scripts (using boto3) to compare checksums of backup files against production data, focusing on critical customer datasets (500TB). 3) Verify encryption status (AWS KMS) and access controls (IAM policies) for SOC2 compliance. 4) If anomalies are found, trigger automated repair via AWS Lambda functions or notify engineers for manual intervention. Tools: AWS CLI commands for listing snapshots, CloudWatch metrics for backup health. Criteria: All backups must pass validation before proceeding; otherwise, initiate data restoration from alternate backups and update incident report."
+            },
+            {
+              "label": "Regular Failover Testing",
+              "category": "test",
+              "description": "Periodic testing of failover procedures to ensure readiness",
+              "content": "Conduct failover testing quarterly or triggered by threat assessment to validate recovery capabilities. Steps: 1) Simulate disaster in a non-production AWS region using AWS Fault Injection Simulator (FIS) to induce failures (e.g., AZ outage). 2) Execute failover scripts (Terraform or CloudFormation templates) to redirect traffic via Route 53 health checks and update ALB target groups. 3) Test data synchronization from backups to recovery region using AWS DMS or S3 Cross-Region Replication, ensuring 500TB data transfer within RTO. 4) Validate application functionality with automated tests (Selenium for UI, Postman for APIs) and monitor performance with CloudWatch dashboards. Pass/fail criteria: All services must be restored within 4 hours (RTO) with no data loss beyond 1 hour (RPO). Document results in a test report and update runbooks."
+            },
+            {
+              "label": "Communication Plan Activation",
+              "category": "action",
+              "description": "Activate internal and external communication protocols",
+              "content": "Activate the communication plan concurrently with threat assessment to maintain transparency. Steps: 1) Use PagerDuty to alert on-call teams and executives with predefined escalation policies (SLA: response within 10 minutes). 2) Send status updates to customers via email (using Amazon SES templates) and post on status page (e.g., Atlassian Statuspage) every 30 minutes, including impact scope and ETA. 3) Internal coordination: Create dedicated Slack channels for real-time updates, and hold briefings via Zoom with recorded sessions for audit. 4) Notify SOC2 auditors through secure channels, providing incident details for compliance reporting. Tools: Pre-written message templates stored in S3, AWS Lambda to automate notifications. Error handling: If communication fails, fall back to SMS via Twilio and log issues for post-incident review."
+            },
+            {
+              "label": "Recovery Execution & Failover",
+              "category": "action",
+              "description": "Execute the actual failover and recovery to restore services",
+              "content": "Perform recovery execution to meet RTO of 4 hours. Steps: 1) Initiate failover by updating DNS records in Route 53 to point to healthy AWS regions, using weighted routing policies for gradual cutover. 2) Restore data from verified backups: Launch EC2 instances from AMI snapshots, restore RDS databases from backups, and sync S3 buckets with versioning enabled for 500TB data. 3) Configure network settings (VPC peering, security groups) and load balancers (ALB) to handle traffic. 4) Monitor recovery with CloudWatch alarms for service health and use AWS X-Ray for tracing application performance. Tools: AWS CLI or SDK for automation, Ansible for configuration management. Criteria: All critical services must be operational within 4 hours; if not, escalate to manual intervention and document deviations. Post-recovery, run smoke tests to confirm functionality."
+            },
+            {
+              "label": "Post-Incident Review & Lessons Learned",
+              "category": "review",
+              "description": "Review the incident and recovery process for improvements",
+              "content": "Conduct a post-incident review within 48 hours after recovery. Steps: 1) Gather cross-functional team (IRT, engineering, support) to analyze timeline using incident reports from PagerDuty and logs from CloudTrail. 2) Evaluate performance against RPO/RTO metrics: calculate actual data loss and downtime, and identify gaps (e.g., backup delays, communication lags). 3) Document lessons learned in a Confluence page, with action items such as updating runbooks, enhancing monitoring, or retraining staff. 4) For SOC2 compliance, ensure review includes access log audits, data handling procedures, and update the compliance evidence repository. Approval criteria: Review must be signed off by incident manager and compliance officer; escalate unresolved issues to CTO. SLA: Complete review within 5 business days and implement changes within 30 days."
+            },
+            {
+              "label": "SOC2 Compliance Monitoring",
+              "category": "policy",
+              "description": "Parallel policy constraints to ensure compliance throughout the workflow",
+              "content": "Enforce SOC2 compliance rules across all workflow steps. Numbered rules: 1) Access Control: All actions must use IAM roles with least privilege, logged in CloudTrail; exceptions require managerial approval. 2) Data Encryption: Customer data (500TB) must be encrypted at rest (AWS KMS) and in transit (TLS 1.2), with key rotation every 90 days. 3) Audit Logging: All disaster recovery activities (triggers, assessments, recoveries) must be recorded in CloudTrail and retained for 7 years per SOC2 requirements. 4) Incident Response: Regular audits (monthly) to verify RPO/RTO adherence and backup integrity; failures trigger corrective action plans. Enforcement: Automated checks with AWS Config rules, manual reviews by compliance team. Exceptions: Documented with risk assessments and approved by CISO. Monitor via AWS Security Hub for real-time alerts."
+            },
+            {
+              "label": "System Recovery Complete & SOC2 Compliance Report",
+              "category": "output",
+              "description": "Final deliverable including restored system status and compliance documentation",
+              "content": "Produce the final output after recovery and review. Deliverable format: 1) A system status dashboard (hosted on Amazon QuickSight) showing all services as operational, with metrics like uptime (99.9% target), data integrity checks passed, and customer impact minimized. 2) A SOC2 compliance report in PDF format, detailing incident response adherence to controls (e.g., CC6.1 for monitoring, CC7.1 for threat assessment), including evidence logs from CloudTrail, backup verification records, and communication logs. 3) Distribute to stakeholders: internal teams via SharePoint, customers via email, and auditors through a secure portal. Success metrics: RPO and RTO met, zero compliance violations, and customer satisfaction scores post-incident. Update annually or per incident for continuous improvement."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "triggers"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "validates"
+            },
+            {
+              "from": 2,
+              "to": 5,
+              "label": "requires"
+            },
+            {
+              "from": 3,
+              "to": 5,
+              "label": "requires"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "outputs"
+            },
+            {
+              "from": 6,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 6,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 6,
+              "to": 4,
+              "label": "refines"
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "label": "refines"
+            },
+            {
+              "from": 7,
+              "to": 1,
+              "label": "monitors"
+            },
+            {
+              "from": 7,
+              "to": 2,
+              "label": "monitors"
+            },
+            {
+              "from": 7,
+              "to": 5,
+              "label": "monitors"
+            },
+            {
+              "from": 7,
+              "to": 6,
+              "label": "monitors"
+            },
+            {
+              "from": 5,
+              "to": 8,
+              "label": "outputs"
+            },
+            {
+              "from": 6,
+              "to": 8,
+              "label": "updates"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 115,
+        "maxScore": 115,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 9 (min: 5)",
+          "✓ Node count: 9 ≤ 10",
+          "✓ Has \"test\" category",
+          "✓ Has \"review\" category",
+          "✓ All 19 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 856c, no thin nodes",
+          "✓ Architecture covers: backup, recovery, test, review",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (19 edges, 9 nodes)"
+        ]
+      }
+    }
+  ]
+}

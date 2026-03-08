@@ -1,5 +1,23 @@
 # Changelog
 
+### 2026-03-08 — Round 109: 99% Reasoner-Only + Pool 94→96
+
+**Eval results: 99% (6/6 passed) — DeepSeek Reasoner only**
+
+Switched to deepseek-reasoner exclusively (dropped deepseek-chat). Claude Opus 4.6 now reviews all outputs.
+
+Highlights:
+- `disaster-recovery-plan` (Rowan, 100%): **19 edges across 9 nodes** — densest Rowan graph ever seen. SOC2 compliance monitoring as `policy` node. Full feedback loops + parallel branches. Proves Rowan can match Poirot's architectural density when the domain demands it.
+- `pm-user-research` (Poirot, 100%): 8 nodes, 9 edges with feedback loops + parallel branches for onboarding redesign user research pipeline. 764c avg content depth.
+- `edge-ultra-short-prompt` (Poirot, 97%): Single-word prompt "Onboarding." produced 7-node HR onboarding workflow. Parallel branches present but no feedback loops — the only deduction. Proves reasoner handles minimal context well.
+- `execute-runbook` (Rowan, 100%): 9,790c production incident runbook with P1-P4 severity classification, Kubernetes/AWS-specific commands.
+
+New tests added (94→96):
+- `supply-chain-traceability`: Organic food farm-to-shelf with FDA compliance, cold chain monitoring, recall procedures. Tests policy + test categories.
+- `edge-emotional-vague`: Emotionally charged, vague cry for help — tests agent empathy and analyze-mode detection without generating a workflow.
+
+**Model policy:** DeepSeek Reasoner only going forward. No more chat/reasoner alternation.
+
 ### 2026-03-08 — Artifact Preview/Edit Panel (Major Feature)
 
 **New component: `ArtifactPanel.tsx`** — A Claude Artifacts-inspired preview/edit panel for node content.
