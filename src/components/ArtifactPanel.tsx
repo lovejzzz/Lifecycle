@@ -428,12 +428,14 @@ export default function ArtifactPanel() {
   const currentText = node
     ? (artifactPanelTab === 'result' ? (node.data.executionResult || '') : (node.data.content || ''))
     : '';
-  const prevSyncKey = useRef('');
-  const syncKey = `${activeArtifactNodeId}:${artifactPanelTab}:${artifactPanelMode}:${currentText}`;
-  if (syncKey !== prevSyncKey.current) {
-    prevSyncKey.current = syncKey;
-    if (editDraft !== currentText) setEditDraft(currentText);
-  }
+  const prevSyncKeyRef = useRef('');
+  useEffect(() => {
+    const syncKey = `${activeArtifactNodeId}:${artifactPanelTab}:${artifactPanelMode}:${currentText}`;
+    if (syncKey !== prevSyncKeyRef.current) {
+      prevSyncKeyRef.current = syncKey;
+      if (editDraft !== currentText) setEditDraft(currentText);
+    }
+  }, [activeArtifactNodeId, artifactPanelTab, artifactPanelMode, currentText, editDraft]);
 
   // Keyboard shortcuts: Ctrl+F (find), Ctrl+B/I (format), Escape (close fullscreen)
   useEffect(() => {
