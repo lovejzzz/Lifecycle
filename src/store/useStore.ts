@@ -2407,7 +2407,8 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       sessionGeneration[curMode].interactionCount++;
       sessionGeneration[curMode].successStreak++;
 
-      const result = data.result as { message: string; workflow: null | {
+      // Safety: ensure data.result is a parsed object, not a raw JSON string
+      let result = data.result as { message: string; workflow: null | {
         nodes: Array<{ label: string; category: string; description: string; content?: string; sections?: Array<{ title: string; content?: string }> }>;
         edges: Array<{ from: number; to: number; label: string }>;
       }; modifications?: {
@@ -2417,6 +2418,9 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         add_edges?: Array<{ from_label: string; to_label: string; label: string }>;
         remove_edges?: Array<{ from_label: string; to_label: string }>;
       }};
+      if (typeof data.result === 'string') {
+        try { result = JSON.parse(data.result); } catch { /* keep as-is */ }
+      }
 
       // ── Handle workflow modifications (edit/tweak existing workflow) ──
       if (result.modifications && !result.workflow) {
