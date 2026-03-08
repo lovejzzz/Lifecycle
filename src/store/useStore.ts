@@ -6,7 +6,11 @@ import type { NodeData, LifecycleEvent, CIDMessage, NodeCategory, CIDMode, Agent
 import { registerCustomCategory, EDGE_LABEL_COLORS, BUILT_IN_CATEGORIES } from '@/lib/types';
 import { getAgent, getInterviewQuestions, buildEnrichedPrompt } from '@/lib/agents';
 import { buildSystemPrompt, buildMessages } from '@/lib/prompts';
-import { createDefaultHabits, createDefaultGeneration, createDefaultReflection, processAllReflections, detectPatterns } from '@/lib/reflection';
+import {
+  createDefaultHabits, createDefaultGeneration, createDefaultReflection,
+  migrateHabitsV1toV2, migrateReflectionV1toV2,
+  computeGenerationContext, reflectOnInteraction, applyReflectionActions, updateGrowthEdges,
+} from '@/lib/reflection';
 import {
   NODE_W, NODE_H, findFreePosition,
   topoSort, ANIMATED_LABELS, createStyledEdge, inferEdgeLabel,
@@ -546,16 +550,24 @@ function saveRules(rules: string[]) {
   try { localStorage.setItem(RULES_KEY, JSON.stringify(rules)); } catch { /* ignore */ }
 }
 
-// ─── 5-Layer Agent Personality State ──────────────────────────────────────────
+// ─── 5-Layer Living Generative Entity State ─────────────────────────────────
 const HABITS_KEY = 'lifecycle-agent-habits';
+const REFLECTION_KEY = 'lifecycle-agent-reflection';
 
 function loadHabits(): Record<CIDMode, HabitLayer> {
-  if (typeof window === 'undefined') return { rowan: createDefaultHabits(), poirot: createDefaultHabits() };
+  if (typeof window === 'undefined') return { rowan: createDefaultHabits('rowan'), poirot: createDefaultHabits('poirot') };
   try {
     const raw = localStorage.getItem(HABITS_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      // V1 → V2 migration: convert old flat habits to new rich model
+      return {
+        rowan: migrateHabitsV1toV2(parsed.rowan || {}, 'rowan'),
+        poirot: migrateHabitsV1toV2(parsed.poirot || {}, 'poirot'),
+      };
+    }
   } catch { /* ignore */ }
-  return { rowan: createDefaultHabits(), poirot: createDefaultHabits() };
+  return { rowan: createDefaultHabits('rowan'), poirot: createDefaultHabits('poirot') };
 }
 
 function saveHabits(habits: Record<CIDMode, HabitLayer>) {
@@ -563,19 +575,17 @@ function saveHabits(habits: Record<CIDMode, HabitLayer>) {
   try { localStorage.setItem(HABITS_KEY, JSON.stringify(habits)); } catch { /* ignore */ }
 }
 
-// Ephemeral generation state (reset each session)
-const sessionGeneration: Record<CIDMode, GenerationLayer> = {
-  rowan: createDefaultGeneration(),
-  poirot: createDefaultGeneration(),
-};
-
-// Reflection state (persisted until processed)
-const REFLECTION_KEY = 'lifecycle-agent-reflection';
 function loadReflection(): Record<CIDMode, ReflectionLayer> {
   if (typeof window === 'undefined') return { rowan: createDefaultReflection(), poirot: createDefaultReflection() };
   try {
     const raw = localStorage.getItem(REFLECTION_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return {
+        rowan: migrateReflectionV1toV2(parsed.rowan || {}),
+        poirot: migrateReflectionV1toV2(parsed.poirot || {}),
+      };
+    }
   } catch { /* ignore */ }
   return { rowan: createDefaultReflection(), poirot: createDefaultReflection() };
 }
@@ -585,17 +595,15 @@ function saveReflection(reflection: Record<CIDMode, ReflectionLayer>) {
   try { localStorage.setItem(REFLECTION_KEY, JSON.stringify(reflection)); } catch { /* ignore */ }
 }
 
-// Loaded at startup
+// Ephemeral generation state (reset each session)
+const sessionGeneration: Record<CIDMode, GenerationLayer> = {
+  rowan: createDefaultGeneration(),
+  poirot: createDefaultGeneration(),
+};
+
+// Loaded at startup with migration
 const loadedHabits = loadHabits();
 const loadedReflection = loadReflection();
-
-// Process any pending reflections from last session
-for (const mode of ['rowan', 'poirot'] as CIDMode[]) {
-  if (loadedReflection[mode].pendingReflections.length > 0) {
-    loadedHabits[mode] = processAllReflections(loadedHabits[mode], loadedReflection[mode].pendingReflections);
-    loadedReflection[mode] = createDefaultReflection();
-  }
-}
 saveHabits(loadedHabits);
 saveReflection(loadedReflection);
 
@@ -611,25 +619,30 @@ function getAgentLayers(mode: CIDMode): AgentPersonalityLayers {
   };
 }
 
-/** Update generation layer (ephemeral, session-scoped) */
-function updateGeneration(mode: CIDMode, update: Partial<GenerationLayer>) {
-  Object.assign(sessionGeneration[mode], update);
+/** Update generation context from current interaction signals */
+function refreshGenerationContext(mode: CIDMode, userMessage: string, nodeCount: number, recentMessages: string[]) {
+  const ctx = computeGenerationContext(userMessage, nodeCount, recentMessages, sessionGeneration[mode].sessionStartedAt);
+  sessionGeneration[mode].context = ctx;
 }
 
-/** Add a reflection entry */
-function addReflectionEntry(mode: CIDMode, entry: import('@/lib/types').ReflectionEntry) {
-  loadedReflection[mode].pendingReflections.push(entry);
-  saveReflection(loadedReflection);
-}
+/** Run reflection on an interaction and apply results */
+function runReflection(mode: CIDMode, userMessage: string, agentResponse: string) {
+  const agent = getAgent(mode);
+  const actions = reflectOnInteraction(userMessage, agentResponse, loadedHabits[mode], sessionGeneration[mode].context);
+  if (actions.length === 0) return;
 
-/** Process pending reflections into habit modifications */
-function processAgentReflections(mode: CIDMode) {
-  if (loadedReflection[mode].pendingReflections.length === 0) return;
-  loadedHabits[mode] = processAllReflections(loadedHabits[mode], loadedReflection[mode].pendingReflections);
-  loadedReflection[mode] = { pendingReflections: [], lastReflectionAt: Date.now() };
+  const { habits, drives } = applyReflectionActions(actions, loadedHabits[mode], agent.drivingForce);
+  loadedHabits[mode] = habits;
+  // Drive adjustments are logged but don't modify the static agent config at runtime
+  // (they'd need to be persisted separately for true drive evolution — future enhancement)
+  void drives;
+
+  // Update growth edges
+  loadedReflection[mode] = updateGrowthEdges(loadedReflection[mode], actions);
+
   saveHabits(loadedHabits);
   saveReflection(loadedReflection);
-  cidLog('processReflections', { mode, habits: loadedHabits[mode].interactionPatterns.length });
+  cidLog('reflection', { mode, actions: actions.length, domains: loadedHabits[mode].domainExpertise.length, depth: loadedHabits[mode].relationshipDepth.toFixed(2) });
 }
 
 // Context-aware welcome: when returning to a saved workflow, add a summary greeting
@@ -685,17 +698,10 @@ export const useLifecycleStore = create<LifecycleStore>((set, get) => ({
     const oldMode = s.cidMode;
     const agent = getAgent(mode);
 
-    // Layer 5: Reflect on mode switch — detect patterns from outgoing agent's session
-    const recentUserMsgs = s.messages
-      .filter(m => m.role === 'user' && m.content)
-      .slice(-10)
-      .map(m => m.content);
-    if (recentUserMsgs.length >= 3) {
-      const detected = detectPatterns(recentUserMsgs, loadedHabits[oldMode].interactionPatterns);
-      for (const entry of detected) addReflectionEntry(oldMode, entry);
-    }
-    // Process reflections for the outgoing agent
-    processAgentReflections(oldMode);
+    // Layer 5: Run reflection for outgoing agent on mode switch
+    const lastUserMsg = s.messages.filter(m => m.role === 'user').slice(-1)[0]?.content || '';
+    const lastCidMsg = s.messages.filter(m => m.role === 'cid').slice(-1)[0]?.content || '';
+    if (lastUserMsg) runReflection(oldMode, lastUserMsg, lastCidMsg);
     // Reset generation state for new agent
     sessionGeneration[mode] = createDefaultGeneration();
 
@@ -2136,6 +2142,10 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     set({ isProcessing: true });
 
     try {
+      // Layer 4: Refresh generation context from real-time signals BEFORE building prompt
+      const recentUserMsgs = store.messages.filter(m => m.role === 'user' && m.content).slice(-5).map(m => m.content);
+      refreshGenerationContext(store.cidMode, enrichedPrompt, store.nodes.length, recentUserMsgs);
+
       const agent = getAgent(store.cidMode);
       const layers = getAgentLayers(store.cidMode);
       const systemPrompt = buildSystemPrompt(store.cidMode, store.nodes, store.edges, store.cidRules, agent, layers) + getBuildContext();
@@ -2184,15 +2194,10 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
 
       set({ aiEnabled: true });
 
-      // Layer 4 update: track interaction success
+      // Layer 4: Update generation state on success
       const curMode = store.cidMode;
-      const gen = sessionGeneration[curMode];
-      gen.interactionCount++;
-      gen.successStreak++;
-      gen.activeGoal = prompt.slice(0, 80);
-      if (gen.recentObservations.length >= 5) gen.recentObservations.shift();
-      gen.recentObservations.push(`Responded to: "${prompt.slice(0, 50)}"`);
-      if (gen.successStreak >= 3) gen.currentMood = 'satisfied';
+      sessionGeneration[curMode].interactionCount++;
+      sessionGeneration[curMode].successStreak++;
 
       const result = data.result as { message: string; workflow: null | {
         nodes: Array<{ label: string; category: string; description: string; content?: string; sections?: Array<{ title: string; content?: string }> }>;
@@ -2324,13 +2329,14 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
           mode: 'api',
         });
 
-        // Layer 5: Reflect on workflow completion
-        addReflectionEntry(curMode, {
-          trigger: 'workflow_complete',
-          observation: `Built ${newNodes.length}-node workflow for: "${prompt.slice(0, 60)}"`,
-          habitModification: { action: 'add', newPattern: `Experienced building workflows for: ${prompt.slice(0, 40)}` },
-          timestamp: Date.now(),
-        });
+        // Layer 5: Run real reflection on this interaction
+        runReflection(curMode, prompt, result.message || `Built ${newNodes.length}-node workflow`);
+        // Track domain expertise: increment workflowsBuilt for matching domains
+        for (const domain of loadedHabits[curMode].domainExpertise) {
+          if (prompt.toLowerCase().includes(domain.domain.toLowerCase().split(' ')[0])) {
+            domain.workflowsBuilt++;
+          }
+        }
 
         // Workflow diff summary for extend mode
         const diffSuffix = isExtending && (newNodes.length > 0 || newEdges.length > 0)
@@ -2353,13 +2359,14 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         streamMessageToStore(chatMsgId, result.message, store.updateStreamingMessage, () => {
           set({ isProcessing: false });
         });
+        // Layer 5: Reflect on chat-only interaction too
+        runReflection(curMode, prompt, result.message);
       }
     } catch (_err) {
       // Layer 4: Track error in generation state
       const errMode = store.cidMode;
       sessionGeneration[errMode].errorCount++;
       sessionGeneration[errMode].successStreak = 0;
-      sessionGeneration[errMode].currentMood = 'cautious';
 
       // Remove thinking, fallback to template
       set(s => ({

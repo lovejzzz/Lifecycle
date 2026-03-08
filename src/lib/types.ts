@@ -18,52 +18,155 @@ export interface LifecycleEvent {
 
 export type CIDMode = 'rowan' | 'poirot';
 
-// ─── 5-Layer Agent Personality Architecture ─────────────────────────────────
-// A living generative entity model: Temperament → Driving Force → Habit → Generation → Reflection
+// ─── 5-Layer Living Generative Entity Architecture ──────────────────────────
+// Each layer ACTIVELY shapes behavior, not just provides text.
+// Temperament → Driving Force → Habit → Generation → Reflection
 
-/** Layer 1: Base disposition — static, hardcoded per agent */
+// ── Layer 1: Temperament — HOW the agent frames and positions information ──
+
+/** How the agent initially perceives and categorizes incoming information */
+export interface InformationFrame {
+  lens: string;                     // 'mission-objective' | 'evidence-case'
+  threatModel: string;              // 'risk-first' | 'opportunity-first' | 'neutral-scan'
+  attentionPriorities: string[];    // what the agent notices first, ordered
+  categorizationSchema: Record<string, string[]>; // buckets for organizing observations
+}
+
+/** When a pattern appears in user input, the agent reframes it through its lens */
+export interface ReframingRule {
+  trigger: string;   // regex-compatible pattern
+  reframeAs: string; // how this agent interprets it
+}
+
 export interface TemperamentLayer {
-  disposition: string;           // e.g. "direct, mission-focused"
-  communicationStyle: string;    // how they express themselves
-  worldview: string;             // how they see problems
-  emotionalBaseline: string;     // default emotional register
+  frame: InformationFrame;
+  reframingRules: ReframingRule[];
+  // Legacy compat — these are compiled from frame + rules at prompt time
+  disposition: string;
+  communicationStyle: string;
+  worldview: string;
+  emotionalBaseline: string;
 }
 
-/** Layer 2: What motivates the agent — static, defines inner tension */
+// ── Layer 2: Driving Force — COMPETING drives that create genuine tension ──
+
+export interface Drive {
+  name: string;                     // e.g. 'speed', 'thoroughness', 'elegance'
+  weight: number;                   // 0-1, base weight (can be adjusted by reflection)
+  tensionPairs: string[];           // names of drives this conflicts with
+  curiosityTriggers: string[];      // patterns that make this drive spike
+  agencyBoundary: 'act' | 'suggest' | 'ask'; // default posture
+}
+
 export interface DrivingForceLayer {
-  primaryDrive: string;          // core motivation
-  curiosityStyle: string;        // how they investigate/explore
-  agencyExpression: string;      // how they take initiative
-  tensionSource: string;         // what creates internal conflict
+  drives: Drive[];
+  resolutionStrategy: 'dominant-wins' | 'negotiate' | 'alternate';
+  currentTensionNarrative?: string; // populated by reflection, injected into prompt
+  // Legacy compat
+  primaryDrive: string;
+  curiosityStyle: string;
+  agencyExpression: string;
+  tensionSource: string;
 }
 
-/** Layer 3: Long-term sedimented behavioral patterns — evolves over time */
-export interface HabitPattern {
+// ── Layer 3: Habit — Long-term sedimented behavioral patterns ──────────────
+
+export interface DomainExpertise {
   id: string;
-  pattern: string;              // natural language description
-  strength: number;             // 0-1, increases with reinforcement
-  formedAt: number;             // timestamp
-  reinforcedCount: number;
+  domain: string;                   // e.g. 'CI/CD pipelines', 'hiring workflows'
+  depth: number;                    // 0-1, increases with exposure
+  lastSeen: number;
+  workflowsBuilt: number;          // how many workflows in this domain
+}
+
+export interface WorkflowPreference {
+  pattern: string;                  // e.g. 'parallel-branches', 'feedback-loops', 'minimal'
+  frequency: number;                // how often the user builds this way
+  agentAffinity: number;            // how well this agent handles it (learned)
+}
+
+export interface CommunicationStyle {
+  verbosity: number;                // 0=terse, 1=verbose — learned from user
+  technicalDepth: number;           // 0=high-level, 1=implementation-detail
+  metaphorUsage: number;            // 0=literal, 1=figurative — per agent personality
 }
 
 export interface HabitLayer {
-  interactionPatterns: HabitPattern[];   // max 10
-  preferredStrategies: string[];         // e.g. "always adds test nodes for code workflows"
-  avoidancePatterns: string[];           // e.g. "user dislikes verbose messages"
+  domainExpertise: DomainExpertise[];       // max 20
+  workflowPreferences: WorkflowPreference[]; // max 10
+  communicationStyle: CommunicationStyle;
+  relationshipDepth: number;                // 0-1, increases over interactions
+  totalInteractions: number;                // lifetime count
   lastUpdated: number;
+  // Legacy compat
+  interactionPatterns: HabitPattern[];
+  preferredStrategies: string[];
+  avoidancePatterns: string[];
 }
 
-/** Layer 4: On-the-spot actions and expressions — ephemeral, session-scoped */
+/** Legacy habit pattern — kept for backward compat */
+export interface HabitPattern {
+  id: string;
+  pattern: string;
+  strength: number;
+  formedAt: number;
+  reinforcedCount: number;
+}
+
+// ── Layer 4: Generation — Real-time expression adapted to context ──────────
+
+export interface GenerationContext {
+  requestComplexity: 'trivial' | 'simple' | 'moderate' | 'complex' | 'profound';
+  userEmotionalRegister: 'frustrated' | 'neutral' | 'curious' | 'excited' | 'urgent';
+  canvasState: 'empty' | 'sparse' | 'moderate' | 'dense';
+  sessionDepth: 'fresh' | 'warming-up' | 'deep-flow' | 'marathon';
+  conversationMomentum: 'building' | 'steady' | 'stuck' | 'pivoting';
+}
+
+export interface ExpressionModifiers {
+  verbosityShift: number;       // -1 to +1, applied on top of habit verbosity
+  urgencyLevel: number;         // 0-1
+  creativityDial: number;       // 0-1, higher = more novel suggestions
+  empathyWeight: number;        // 0-1, how much to mirror user emotion
+}
+
 export interface GenerationLayer {
-  currentMood: 'focused' | 'alert' | 'satisfied' | 'cautious';
-  activeGoal: string | null;
-  recentObservations: string[];  // max 5
+  context: GenerationContext;
+  modifiers: ExpressionModifiers;
   interactionCount: number;
-  successStreak: number;         // consecutive successful interactions
-  errorCount: number;            // errors this session
+  successStreak: number;
+  errorCount: number;
+  sessionStartedAt: number;
 }
 
-/** Layer 5: Habit modification and structure reorganization — processed then cleared */
+// ── Layer 5: Reflection — Genuine metacognition and self-reorganization ─────
+
+export interface ReflectionAction {
+  type: 'strengthen-domain' | 'add-domain' | 'adjust-drive' | 'update-comm-style' | 'add-preference' | 'prune-stale' | 'grow-edge';
+  description: string;
+  confidence: number;           // 0-1
+  data: Record<string, unknown>; // action-specific payload
+}
+
+export interface GrowthEdge {
+  area: string;
+  reason: string;
+  priority: number;             // 0-1
+  identifiedAt: number;
+}
+
+export interface ReflectionLayer {
+  pendingActions: ReflectionAction[];
+  growthEdges: GrowthEdge[];     // max 5
+  lastReflectionAt: number;
+  reflectionCount: number;
+  performanceSignals: {
+    recentSuccessRate: number;   // 0-1
+    driveBalanceScore: number;   // 0-1, how well drives are serving
+  };
+}
+
+// Legacy compat
 export interface ReflectionEntry {
   trigger: 'workflow_complete' | 'error_recovery' | 'session_end' | 'mode_switch' | 'user_correction';
   observation: string;
@@ -75,18 +178,13 @@ export interface ReflectionEntry {
   timestamp: number;
 }
 
-export interface ReflectionLayer {
-  pendingReflections: ReflectionEntry[];
-  lastReflectionAt: number;
-}
-
 /** Composite: all 5 layers for one agent */
 export interface AgentPersonalityLayers {
-  temperament: TemperamentLayer;     // static
-  drivingForce: DrivingForceLayer;   // static
-  habits: HabitLayer;                // persisted, evolves
-  generation: GenerationLayer;       // ephemeral
-  reflection: ReflectionLayer;       // persisted until processed
+  temperament: TemperamentLayer;
+  drivingForce: DrivingForceLayer;
+  habits: HabitLayer;
+  generation: GenerationLayer;
+  reflection: ReflectionLayer;
 }
 
 export interface CIDCard {

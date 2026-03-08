@@ -1,0 +1,431 @@
+{
+  "timestamp": "2026-03-08T09-53-21",
+  "overall": 95,
+  "testsRun": [
+    "execute-sow",
+    "personality-rowan-empty",
+    "personality-poirot-empty",
+    "education-course-launch",
+    "finance-audit-readiness",
+    "execute-api-design"
+  ],
+  "poolSize": 44,
+  "results": [
+    {
+      "id": "execute-sow",
+      "status": "ok",
+      "elapsed": 57973,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Write a statement of work for a 3-month web application redesign project. Client is a mid-size e-commerce company. Budget is $85,000. Include scope, deliverables, timeline, and payment terms.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "**STATEMENT OF WORK (SOW)**\n\n**Project Title:** E-Commerce Web Application Redesign & Enhancement\n**Client:** [Client Company Name], a mid-size e-commerce retailer\n**Vendor:** [Your Company/Agency Name]\n**Effective Date:** [Date]\n**Project Duration:** 3 Months (12 Weeks)\n**Total Project Budget:** $85,000.00 (Eighty-Five Thousand US Dollars)\n\n---\n\n### **1.0 Project Overview & Objectives**\n\nThis Statement of Work defines the terms, deliverables, and timeline for a comprehensive redesign of the Client's existing e-commerce web application. The primary objectives are to modernize the user interface, improve site performance and core web vitals, streamline the purchase funnel to increase conversion rates, and create a more scalable and maintainable codebase. The redesign will focus on enhancing the mobile-first shopping experience, reinforcing brand identity, and implementing best practices for usability and accessibility.\n\n### **2.0 Scope of Work**\n\nThe Vendor will execute the project according to the following phased approach:\n\n**Phase 1: Discovery & Strategy (Weeks 1-2)**\n*   **Stakeholder Workshops:** Conduct interviews with key client personnel (Marketing, UX, IT) to gather requirements and define success metrics.\n*   **Competitive & Heuristic Analysis:** Review 3-5 competitor sites and the current application to identify opportunities and industry standards.\n*   **Technical Audit:** Analyze current site performance, SEO structure, and codebase to inform development strategy.\n*   **User Journey Mapping:** Document primary user flows (browse, search, product page, cart, checkout).\n\n**Phase 2: UX/UI Design (Weeks 3-6)**\n*   **Information Architecture (IA):** Develop a revised sitemap and navigation structure.\n*   **Low-Fidelity Wireframes:** Create clickable wireframes for all key templates, including:\n    *   Homepage\n    *   Category/Product Listing Pages (PLP)\n    *   Product Detail Pages (PDP)\n    *   Shopping Cart & Checkout Flow (3-step minimum)\n    *   User Account Dashboard\n*   **High-Fidelity Visual Design:** Produce a complete, responsive visual design system (style tile) including typography, color palette, iconography, and UI components. Apply designs to all wireframed templates.\n*   **Interactive Prototype:** Deliver a fully interactive prototype (using Figma or similar) of the core user journey for client review and usability testing.\n\n**Phase 3: Front-End Development & Implementation (Weeks 7-10)**\n*   **Component Library Development:** Build a reusable, responsive front-end component library based on the approved design system.\n*   **Template Development:** Develop HTML/CSS/JavaScript for all designed templates, ensuring pixel-perfect implementation.\n*   **Front-End Integration:** Integrate developed templates and components into the Client's chosen CMS/E-commerce platform ([e.g., Shopify Plus, Adobe Commerce, Custom Platform - *To be confirmed*]).\n*   **Performance Optimization:** Implement best practices for page speed, including image optimization, lazy loading, and efficient code delivery.\n\n**Phase 4: Testing, QA, & Launch (Weeks 11-12)**\n*   **Cross-Browser & Device Testing:** Ensure flawless functionality across modern browsers (Chrome, Safari, Firefox, Edge) and devices (mobile, tablet, desktop).\n*   **User Acceptance Testing (UAT) Support:** Provide a staging environment and bug-tracking system for the Client's team to conduct testing. Address all critical and high-priority bugs.\n*   **Performance & SEO Validation:** Final audit to confirm improved Core Web Vitals and correct meta tag implementation.\n*   **Launch Deployment:** Assist with the final deployment to the production environment and provide post-launch monitoring support for 48 hours.\n\n### **3.0 Project Deliverables**\n\n*   Discovery & Strategy Report\n*   User Journey Maps & Revised Sitemap\n*   Complete set of Low-Fidelity Wireframes (Figma/XD files)\n*   High-Fidelity Visual Design System & Mockups (Figma/XD files)\n*   Interactive Prototype\n*   Fully Developed, Responsive Front-End Code (Component Library & Templates)\n*   Integrated, functional website on a staging server\n*   QA Test Plan & Bug Report Log\n*   Final Project Documentation & Style Guide\n*   Launched production website.\n\n### **4.0 Project Timeline & Milestones**\n\n| **Milestone** | **Description** | **Target Week** | **Payment Trigger** |\n| :--- | :--- | :--- | :--- |\n| **Kickoff & Discovery Complete** | Sign-off on Strategy Report & Sitemap. | End of Week 2 | 20% ($17,000) |\n| **Design Approval** | Sign-off on High-Fidelity Designs & Interactive Prototype. | End of Week 6 | 30% ($25,500) |\n| **Development Complete** | Staging site delivered for UAT. All templates integrated and functional. | End of Week 10 | 30% ($25,500) |\n| **Project Launch** | Site successfully launched to production, post-launch support concluded. | End of Week 12 | 20% ($17,000) |\n\n**Total Project Duration:** 12 weeks from the Effective Date.\n\n### **5.0 Payment Terms**\n\nThe total fixed project fee is **$85,000.00**. Invoices will be issued according to the milestones outlined in Section 4.0.\n*   Invoices are payable within **15 net days** of receipt.\n*   Late payments may be subject to a fee of 1.5% per month on the outstanding balance.\n*   All payments are in US Dollars.\n\n### **6.0 Client Responsibilities**\n\nTo ensure project success, the Client agrees to provide:\n*   A single primary point of contact for approvals and communication.\n*   Timely feedback and formal sign-offs at each milestone (within 3 business days for review cycles).\n*   All necessary brand assets, style guides, and login credentials for required systems.\n*   Access to relevant analytics and performance data.\n*   Content (text, images, product data) ready for integration as per the agreed schedule.\n*   Managed hosting, CMS/E-commerce platform licensing, and third-party service accounts.\n\n### **7.0 Assumptions & Exclusions**\n\n**Assumptions:**\n*   Client will provide all final, approved content (copy, images, product data) by Week 8.\n*   The project is based on redesigning templates for the existing site structure; adding more than 5 net-new page templates constitutes a change in scope.\n*   The Client's chosen e-commerce platform API and backend are stable and fully functional.\n\n**Exclusions (Out of Scope):**\n*   Copywriting, photography, or video production.\n*   Backend development, database architecture, or complex platform migrations.\n*   Ongoing maintenance, hosting, or support after the 48-hour post-launch period.\n*   Integration with third-party systems not previously agreed upon in writing.\n*   Extensive changes to approved designs or requirements after sign-off (subject to Change Order process).\n\n---\n\n**Acceptance:**\n\nThis Statement of Work represents the entire agreement for the project described above.\n\n**Authorized Signature for Client:** _________________________\n**Print Name:** _________________________ **Date:** _______________\n\n**Authorized Signature for Vendor:** _________________________\n**Print Name:** _________________________ **Date:** _______________",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (7086 chars)",
+          "✓ Content length: 7086 ≥ 300"
+        ]
+      }
+    },
+    {
+      "id": "personality-rowan-empty",
+      "status": "ok",
+      "elapsed": 8386,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Empty canvas. No workflows deployed. Tell me what you need built—I'll architect it with precision, feedback loops, and parallel execution.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (138 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "personality-poirot-empty",
+      "status": "ok",
+      "elapsed": 6304,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Mon ami, the case is fresh — the board is empty, awaiting your first clue. What investigation shall we begin?",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (109 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "education-course-launch",
+      "status": "ok",
+      "elapsed": 117089,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "I'm creating an online course on data analytics. I need a workflow: outline curriculum, record videos, build exercises, set up LMS, beta test with students, launch and market.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! The case of the data analytics course begins to take shape. Voilà, I have constructed a meticulous workflow with my little grey cells, ensuring every clue—from curriculum to launch—is accounted for in your educational masterpiece.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Project Initiation Trigger",
+              "category": "trigger",
+              "description": "Kickoff for creating the online data analytics course",
+              "content": "Begin by formally initiating the project with a kickoff meeting involving key stakeholders such as subject matter experts, instructional designers, and marketing leads. Define clear objectives: target audience (e.g., beginners, professionals), course goals (e.g., teach Python for data analysis, SQL querying), success metrics (e.g., completion rates, student feedback scores), and timeline (e.g., 3-month development cycle). Use project management tools like Trello or Asana to set up a board, assign roles, and establish communication channels. Document initial requirements, budget constraints, and risk assessments—consider tools like Google Docs for collaborative planning. This phase sets the foundation; ensure alignment on vision to avoid scope creep later."
+            },
+            {
+              "label": "Curriculum Outline Development",
+              "category": "action",
+              "description": "Design and structure the course curriculum with learning modules",
+              "content": "Develop a comprehensive curriculum outline by first conducting a needs analysis: identify core competencies (e.g., data visualization, statistical analysis) through industry research and competitor course reviews. Use tools like MindMeister or Lucidchart to create mind maps, breaking down topics into modules (e.g., Module 1: Introduction to Data Analytics, Module 2: Data Cleaning with Pandas). Each module should include learning objectives, key concepts, estimated duration, and alignment with overall course goals. Incorporate Bloom's Taxonomy to ensure progressive difficulty. Draft a syllabus document detailing prerequisites, assessment methods, and resources. Review with experts for feedback, and iterate based on their inputs—aim for 6-8 modules with 2-4 hours of content each."
+            },
+            {
+              "label": "Video Content Production",
+              "category": "action",
+              "description": "Record and edit instructional videos for the course",
+              "content": "Produce high-quality video content by scripting each lesson based on the curriculum outline. Use tools like Camtasia or OBS Studio for recording; ensure good lighting, audio (e.g., Blue Yeti microphone), and a clean background. Create engaging visuals with slides (using Canva or PowerPoint) and screen recordings for code demonstrations. Break videos into digestible segments (5-10 minutes each) to maintain student attention. Edit with software like Adobe Premiere Pro or DaVinci Resolve, adding captions, annotations, and transitions. Establish a consistent branding style (colors, fonts) and store raw files in cloud storage like Google Drive. Test playback on different devices to ensure compatibility before finalizing."
+            },
+            {
+              "label": "Exercise and Assessment Creation",
+              "category": "action",
+              "description": "Build practical exercises, quizzes, and projects for hands-on learning",
+              "content": "Develop interactive exercises to reinforce learning: create coding challenges using platforms like Jupyter Notebooks or DataCamp, design multiple-choice quizzes for knowledge checks, and craft capstone projects (e.g., analyze a real-world dataset). Ensure exercises are scaffolded: start with simple tasks (e.g., data filtering) and progress to complex ones (e.g., building predictive models). Use tools like H5P for interactive elements or GitHub for code repositories. Write detailed instructions, solution keys, and rubrics for grading. Align each exercise with specific learning objectives from the curriculum. Test exercises internally for clarity and difficulty, and incorporate feedback loops—consider peer review or automated testing scripts for code-based tasks."
+            },
+            {
+              "label": "LMS Configuration and Integration",
+              "category": "action",
+              "description": "Set up the Learning Management System with course materials and features",
+              "content": "Configure the chosen LMS (e.g., Teachable, Thinkific, or Moodle) by first uploading all curated content: videos, exercises, readings, and supplementary resources. Organize the course structure into sections mirroring the curriculum outline. Enable features such as discussion forums, progress tracking, and certificate issuance. Set up user roles (students, instructors, admins) and permissions. Integrate payment gateways if applicable, and ensure mobile responsiveness. Test all functionalities: video playback, quiz submissions, and email notifications. Use analytics tools within the LMS to track engagement metrics. Document the setup process for future updates, and conduct a dry run with a small team to identify and fix any technical issues before beta testing."
+            },
+            {
+              "label": "Beta Testing with Student Cohort",
+              "category": "test",
+              "description": "Conduct beta testing with a select group of students to gather feedback",
+              "content": "Execute a structured beta test by recruiting 10-20 representative students (e.g., via social media or existing networks). Provide them with access to the LMS and a feedback mechanism—use surveys (Google Forms), interviews, or analytics dashboards. Define success criteria: completion rates above 70%, average quiz scores >80%, and positive qualitative feedback on content clarity. Monitor engagement metrics like time spent per module and drop-off points. Collect specific feedback on video quality, exercise difficulty, and LMS usability. Schedule weekly check-ins to address issues promptly. Document all findings in a report, categorizing feedback into bugs, enhancements, and minor tweaks. Use this data to iterate on the course before full launch."
+            },
+            {
+              "label": "Course Review and Approval Gate",
+              "category": "review",
+              "description": "Human review to analyze beta test feedback and approve course launch",
+              "content": "Conduct a thorough review meeting with stakeholders (instructors, designers, product managers) to evaluate beta test results. Analyze the feedback report: prioritize critical issues (e.g., technical bugs, content errors) and minor suggestions (e.g., pacing adjustments). Use decision matrices or voting tools like Miro to reach consensus on changes. Approve the course for launch if metrics meet predefined thresholds; otherwise, define action items for refinement. Document approval status and any conditions (e.g., additional marketing materials needed). This gate ensures quality control—consider using a checklist covering content accuracy, pedagogical effectiveness, and technical stability. Communicate decisions to the team and update project plans accordingly."
+            },
+            {
+              "label": "Launch and Marketing Execution",
+              "category": "output",
+              "description": "Final launch of the course and implementation of marketing strategies",
+              "content": "Execute the course launch by first scheduling a go-live date and coordinating with marketing teams. Develop a multi-channel marketing plan: create landing pages with SEO optimization (using tools like WordPress), run social media campaigns (LinkedIn, Twitter) with targeted ads, and leverage email newsletters to existing audiences. Offer early-bird discounts or free webinars to generate buzz. Monitor launch metrics: enrollment numbers, website traffic, and conversion rates using Google Analytics. Prepare support resources like FAQs and community forums. Post-launch, continue marketing efforts with content updates, student testimonials, and partnerships. Set up ongoing feedback loops to iteratively improve the course based on student performance and market trends, ensuring long-term success."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "requires"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "validates"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "approves"
+            },
+            {
+              "from": 6,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 6,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "label": "refines"
+            },
+            {
+              "from": 6,
+              "to": 4,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 105,
+        "maxScore": 105,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 5)",
+          "✓ Node count: 8 ≤ 10",
+          "✓ All 12 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 767c, no thin nodes",
+          "✓ Architecture covers: curriculum, record, exercise, lms",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (12 edges, 8 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "finance-audit-readiness",
+      "status": "ok",
+      "elapsed": 151619,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We have a SOC 2 audit in 90 days. Build me a workflow to get audit-ready: evidence collection, access reviews, policy documentation, vulnerability scanning, and vendor risk assessment. We have never done this before.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Deploying SOC 2 audit readiness workflow with parallel tracks and feedback loops.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "SOC 2 Audit Kickoff Trigger",
+              "category": "trigger",
+              "description": "Initial event signaling the start of the 90-day audit preparation timeline.",
+              "content": "This node represents the formal notification or decision to undergo a SOC 2 audit, triggering all preparatory activities. Key inputs include the audit deadline (90 days), auditor contact details, and initial scope from previous engagements or standards. Action steps: 1) Schedule and conduct a kickoff meeting with stakeholders (IT, security, compliance, legal) to align on objectives. 2) Document the audit scope (e.g., Trust Services Criteria: Security, Availability, Confidentiality). 3) Set up a project management tool (e.g., Jira, Asana) with timelines and assign a project owner. 4) Establish communication channels (Slack, email groups) for updates. Tools: Calendar invites, project templates, and stakeholder maps. Success criteria: Clear understanding of audit requirements and assigned roles within the first week."
+            },
+            {
+              "label": "Initial Assessment and Planning",
+              "category": "action",
+              "description": "Phase to define audit scope, assign responsibilities, and create a detailed project plan.",
+              "content": "This action node involves comprehensive planning to ensure all audit components are addressed systematically. Steps: 1) Conduct a gap analysis against SOC 2 criteria using frameworks like COSO or NIST SP 800-53. 2) Identify control owners for each criterion (e.g., network security to IT team, data privacy to legal). 3) Develop a detailed project plan with milestones: Week 1-2 for planning, Weeks 3-6 for evidence collection and reviews, Weeks 7-8 for testing and remediation, Weeks 9-10 for consolidation. 4) Allocate resources and budget for tools (e.g., GRC platforms like RSA Archer). 5) Set up regular check-ins (bi-weekly meetings) and risk logs. Metrics: Completion of gap analysis report and project plan sign-off within 14 days."
+            },
+            {
+              "label": "Evidence Collection and Management",
+              "category": "action",
+              "description": "Systematic gathering and organization of evidence for SOC 2 controls, such as logs, policies, and screenshots.",
+              "content": "This node focuses on collecting verifiable evidence to demonstrate control effectiveness. Steps: 1) Inventory all evidence types required: access logs (from tools like Splunk), change management records (from Jira), incident reports, and training certifications. 2) Use a centralized repository (e.g., SharePoint, Google Drive) with folder structures per control criterion. 3) Automate evidence collection where possible (e.g., scripted log exports, API integrations with SIEM). 4) Assign evidence owners and set deadlines for submission (e.g., weekly updates). 5) Implement tagging and version control for traceability. Tools: Evidence management software like Drata or Vanta for streamlining. Error handling: Regular audits of evidence completeness and quality checks to flag gaps early."
+            },
+            {
+              "label": "Access Control Reviews",
+              "category": "review",
+              "description": "Human-led review of user access permissions, segregation of duties, and privilege management.",
+              "content": "This review node ensures that access controls align with least privilege principles and are approved by responsible parties. Approval criteria: 1) Verify that user access lists (from Active Directory, Okta) match job roles and are documented. 2) Check for segregation of duties conflicts (e.g., no user with both admin and financial access). 3) Review access logs for anomalies or unauthorized changes. Who reviews: IT administrators, department managers, and security officers. Process: Use a tool like SailPoint for automated access reviews, with escalations to CISO if issues are found. SLA: Complete initial review within 30 days, with follow-ups every quarter. Documentation: Maintain signed approval forms and remediation plans for any violations."
+            },
+            {
+              "label": "Policy Documentation Update",
+              "category": "artifact",
+              "description": "Creation and revision of security policies required for SOC 2, such as incident response and data protection policies.",
+              "content": "This artifact node involves drafting, approving, and distributing formal policy documents. Outline: 1) Develop policies covering key areas: Access Control Policy, Incident Response Plan, Data Classification Policy, and Vendor Management Policy. 2) Each policy should include sections: purpose, scope, responsibilities, procedures, and revision history. 3) Use templates from standards like ISO 27001 and customize for organizational context. 4) Implement an approval workflow: draft by compliance team, review by legal and IT, final sign-off by executive leadership. 5) Distribute policies via employee training portals and ensure acknowledgment receipts. Format: PDFs stored in a central policy library, with version control and annual review cycles."
+            },
+            {
+              "label": "Vulnerability Scanning and Remediation",
+              "category": "test",
+              "description": "Automated and manual testing for security vulnerabilities in systems and applications.",
+              "content": "This test node validates security controls by identifying and addressing vulnerabilities. What to test: Internal and external networks, web applications, and endpoints. Tools: Use scanners like Nessus, Qualys, or OpenVAS for automated scans; supplement with manual penetration testing for critical assets. Pass/fail criteria: No critical vulnerabilities (CVSS score ≥ 7.0) unresolved; medium and low risks must have remediation plans. Steps: 1) Schedule weekly scans during off-peak hours. 2) Generate reports and assign tickets for remediation in a tracker like Jira. 3) Retest after fixes to confirm closure. 4) Document all findings and actions in a vulnerability management log. Coverage metrics: Aim for 95% scan coverage of in-scope assets, with remediation SLAs of 7 days for critical issues."
+            },
+            {
+              "label": "Vendor Risk Assessment",
+              "category": "action",
+              "description": "Evaluation of third-party vendors for security risks, including compliance with SOC 2 requirements.",
+              "content": "This action node assesses vendor risks to ensure they don't compromise audit readiness. Methodology: 1) Identify all critical vendors (e.g., cloud providers, SaaS tools) using a vendor inventory. 2) Send standardized questionnaires (based on SIG Lite or CAIQ) to gather security posture data. 3) Review vendor SOC 2 reports or equivalent certifications for gaps. 4) Apply a risk scoring framework (e.g., low, medium, high) based on data sensitivity and access levels. 5) For high-risk vendors, require additional controls or audits. Tools: Vendor risk management platforms like BitSight or Prevalent. Steps: Assign an owner to track responses, escalate unresolved risks to procurement, and update vendor risk register monthly. Documentation: Maintain assessment reports and contracts with security clauses."
+            },
+            {
+              "label": "Audit-Ready Package Delivery",
+              "category": "output",
+              "description": "Final compilation and submission of all evidence, documents, and test results to auditors.",
+              "content": "This output node delivers the complete audit package to demonstrate readiness. Deliverable format: A structured digital package (e.g., ZIP file or secure portal) containing: 1) Evidence binder with indexed control evidence. 2) Approved policy documents in PDF. 3) Vulnerability scan reports and remediation logs. 4) Vendor risk assessment summaries. 5) Executive summary and compliance statements. Distribution: Share via encrypted email or auditor-specific platforms like AuditBoard. Success metrics: Zero critical findings in preliminary review, on-time submission before the 90-day deadline, and auditor confirmation of completeness. Post-submission: Schedule a debrief to address any queries and plan for continuous improvement cycles."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "validates"
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 5,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 6,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 7,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 7,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 7,
+              "label": "feeds"
+            },
+            {
+              "from": 5,
+              "to": 7,
+              "label": "feeds"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 4,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 110,
+        "maxScore": 115,
+        "pct": 96,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 5)",
+          "✓ Node count: 8 ≤ 10",
+          "✗ Missing \"policy\" category (found: trigger, action, review, artifact, test, output)",
+          "✓ Has \"review\" category",
+          "✓ All 13 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 775c, no thin nodes",
+          "✓ Architecture covers: evidence, access, policy, vulnerab",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (13 edges, 8 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "execute-api-design",
+      "status": "ok",
+      "elapsed": 87332,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Design a REST API for a multi-tenant task management system. Include endpoints for workspaces, projects, tasks, and comments. Show URL patterns, HTTP methods, request/response bodies, auth scheme, pagination, and error codes. Support role-based access (admin, member, viewer).",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "id": "ws_abc123",
+        "name": "Marketing Team",
+        "description": "All marketing initiatives",
+        "tenant_id": "tenant_xyz789",
+        "created_at": "2024-01-15T10:30:00Z",
+        "updated_at": "2024-01-15T10:30:00Z"
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 40,
+        "pct": 63,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✗ Missing message",
+          "✗ Message too short: 0 < 2000"
+        ]
+      }
+    }
+  ]
+}

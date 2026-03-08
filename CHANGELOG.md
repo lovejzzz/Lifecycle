@@ -1,5 +1,46 @@
 # Changelog
 
+### 2026-03-08 — Round 82: Deep 5-Layer Redesign — Living Generative Entity (Architecture)
+
+**Major overhaul: shallow text injection → deep behavioral engine**
+
+Round 80's implementation was a skeleton — structured text fields injected into prompts. This round makes each layer ACTIVELY shape behavior:
+
+**Layer 1 — Temperament (Information Framing):**
+- NEW: `InformationFrame` with lens, threat model, attention priorities, categorization schemas
+- NEW: `ReframingRules` — when specific patterns appear in user input, the agent reframes through its cognitive lens
+- Rowan: mission-objective lens, risk-first threat model, notices blockers/dependencies/critical-path first
+- Poirot: evidence-case lens, neutral-scan threat model, notices inconsistencies/hidden-connections first
+
+**Layer 2 — Driving Force (Competing Tensions):**
+- REPLACED: single `primaryDrive` string → array of `Drive` objects with weights, tension pairs, curiosity triggers
+- Rowan: speed (0.8) vs thoroughness (0.6) — tension resolves via `dominant-wins` strategy
+- Poirot: elegance (0.8) vs pragmatism (0.5) — tension resolves via `negotiate` strategy
+- NEW: `resolveDriverTensions()` dynamically adjusts drive weights based on context (urgency boosts speed, complexity boosts thoroughness)
+- NEW: Generates tension narratives injected into prompt ("Your drive for speed takes priority, but you acknowledge the pull toward thoroughness")
+
+**Layer 3 — Habit (Rich Learning Model):**
+- REPLACED: category counter → `DomainExpertise[]` with depth scores, workflow counts
+- NEW: `WorkflowPreference[]` tracks user's architectural preferences (parallel-branches, feedback-loops, minimal)
+- NEW: `CommunicationStyle` with verbosity, technicalDepth, metaphorUsage — adapts from user feedback
+- NEW: `relationshipDepth` (0-1) grows with every interaction
+- 14 domain pattern detectors: CI/CD, frontend, backend, databases, cloud, HR, marketing, security, ML, QA, incident response, legal, design, fintech
+
+**Layer 4 — Generation (Real-time Signal Processing):**
+- REPLACED: mood counters → `GenerationContext` computed fresh each turn
+- `computeGenerationContext()` analyzes: request complexity (5 levels), user emotion (5 registers), canvas state, session depth, conversation momentum
+- `computeExpressionModifiers()` translates signals into: verbosity shift, urgency level, creativity dial, empathy weight
+- Empty canvas → high creativity. Frustrated user → high empathy. Complex request → more verbose. Marathon session → skip pleasantries.
+
+**Layer 5 — Reflection (Genuine Metacognition):**
+- REPLACED: add/strengthen pattern → `reflectOnInteraction()` with 5 analysis passes
+- Domain exposure detection, workflow preference tracking, communication feedback detection, stale habit pruning, growth edge identification
+- `applyReflectionActions()` — pure function that modifies habits and drive weights
+- `GrowthEdge[]` — areas the agent identifies for self-improvement, injected into prompt
+- Runs after EVERY interaction (both workflow builds and chat responses)
+
+**Eval result: 95% (5/6 passed)** — execute-api-design 63% is a recurring model formatting issue, not personality-related. All personality and workflow tests pass at 96-100%.
+
 ### 2026-03-08 — Round 81: Post-5-Layer Eval — Quality Validation (Eval-Driven)
 
 **Eval result: 100% (6/6 passed) — two consecutive runs at 100%**

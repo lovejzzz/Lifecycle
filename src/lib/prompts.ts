@@ -1,7 +1,8 @@
-import type { CIDMode, AgentPersonalityLayers, HabitLayer, GenerationLayer } from './types';
+import type { CIDMode, AgentPersonalityLayers } from './types';
 import type { NodeData } from './types';
 import type { Node, Edge } from '@xyflow/react';
 import type { AgentPersonality } from './agents';
+import { resolveDriverTensions, computeExpressionModifiers } from './reflection';
 
 // ─── System Prompt Builders ─────────────────────────────────────────────────
 // 5-Layer Architecture: Temperament → Driving Force → Habit → Generation → Reflection
@@ -83,104 +84,181 @@ const NODE_CONTENT_GUIDE = `Structure each node's content by category:
   - policy: Rules (numbered), enforcement mechanism, exceptions, consequences
   - output: Deliverable format, distribution list, success metrics, archival`;
 
-// ─── 5-Layer Personality Compiler ───────────────────────────────────────────
-// Compiles all 5 layers into a coherent personality prompt section.
+// ─── 5-Layer Living Personality Compiler ────────────────────────────────────
+// Each layer ACTIVELY shapes the prompt — not just text injection.
 
-function compileMoodPhrase(gen: GenerationLayer): string {
-  const { currentMood, successStreak, errorCount, interactionCount } = gen;
-  if (errorCount > 2) return 'Recent errors have sharpened your attention to detail. Double-check your work.';
-  if (successStreak >= 3) return 'You are in a productive flow — confidence is high, but stay disciplined.';
-  if (interactionCount > 8) return 'This is a deep session. The user trusts your judgment — deliver accordingly.';
-  switch (currentMood) {
-    case 'alert': return 'Something needs attention. Stay sharp.';
-    case 'satisfied': return 'Recent work landed well. Maintain this quality.';
-    case 'cautious': return 'Proceed carefully — the situation requires precision.';
-    default: return 'You are focused and ready for the mission.';
-  }
+function compileCognitiveLens(agent: AgentPersonality): string {
+  const { temperament } = agent;
+  const { frame } = temperament;
+
+  // Build attention directive from information frame
+  const priorities = frame.attentionPriorities.slice(0, 3).join(', ');
+  const schemas = Object.entries(frame.categorizationSchema)
+    .map(([bucket, items]) => `${bucket}: ${items.slice(0, 3).join(', ')}`)
+    .join('; ');
+
+  return `COGNITIVE LENS — ${agent.name.toUpperCase()} (${agent.subtitle}):
+You process information through a ${frame.lens} lens with ${frame.threatModel} assessment.
+Disposition: ${temperament.disposition}
+Communication: ${temperament.communicationStyle}
+Worldview: ${temperament.worldview}
+Emotional baseline: ${temperament.emotionalBaseline}
+You notice first: ${priorities}.
+You categorize what you see into: ${schemas}.`;
 }
 
-function compileHabitsBlock(habits: HabitLayer): string {
-  const activePatterns = habits.interactionPatterns
-    .filter(p => p.strength >= 0.3)
-    .sort((a, b) => b.strength - a.strength)
-    .slice(0, 8);
+function compileActiveTensions(agent: AgentPersonality, layers: AgentPersonalityLayers): string {
+  const { drivingForce } = agent;
+  const { generation } = layers;
 
-  if (activePatterns.length === 0 && habits.preferredStrategies.length === 0 && habits.avoidancePatterns.length === 0) {
-    return '';
+  // Resolve drive tensions against current context
+  const { dominant, narrative } = resolveDriverTensions(drivingForce, generation.context);
+
+  let block = `DRIVING FORCE:
+Primary drive: ${drivingForce.primaryDrive}
+Curiosity: ${drivingForce.curiosityStyle}
+Agency: ${drivingForce.agencyExpression}
+Active drive: ${dominant.name} (${dominant.agencyBoundary} posture).`;
+
+  if (narrative) {
+    block += `\nINTERNAL TENSION: ${narrative}`;
+  } else {
+    block += `\nTension source: ${drivingForce.tensionSource}`;
   }
 
+  return block;
+}
+
+function compileLearnedPatterns(habits: AgentPersonalityLayers['habits']): string {
   const parts: string[] = [];
 
-  if (activePatterns.length > 0) {
-    const patternLines = activePatterns.map(p => {
-      const intensity = p.strength >= 0.7 ? 'STRONG' : p.strength >= 0.5 ? 'moderate' : 'emerging';
-      return `- [${intensity}] ${p.pattern}`;
-    });
-    parts.push(`Learned patterns:\n${patternLines.join('\n')}`);
+  // Domain expertise — top 3 by depth
+  const topDomains = [...habits.domainExpertise]
+    .sort((a, b) => b.depth - a.depth)
+    .slice(0, 3);
+  if (topDomains.length > 0) {
+    const domainStr = topDomains.map(d => {
+      const level = d.depth >= 0.7 ? 'deep' : d.depth >= 0.4 ? 'moderate' : 'developing';
+      return `${d.domain} (${level}, ${d.workflowsBuilt} workflows built)`;
+    }).join('; ');
+    parts.push(`Domain expertise: ${domainStr}`);
   }
 
-  if (habits.preferredStrategies.length > 0) {
-    parts.push(`Preferred strategies: ${habits.preferredStrategies.join('; ')}`);
+  // Workflow preferences
+  const topPrefs = [...habits.workflowPreferences]
+    .sort((a, b) => b.frequency - a.frequency)
+    .slice(0, 3);
+  if (topPrefs.length > 0) {
+    parts.push(`This user prefers: ${topPrefs.map(p => `${p.pattern} (${p.frequency}x)`).join(', ')}`);
   }
 
-  if (habits.avoidancePatterns.length > 0) {
-    parts.push(`Avoid: ${habits.avoidancePatterns.join('; ')}`);
+  // Communication calibration
+  const cs = habits.communicationStyle;
+  const verbLabel = cs.verbosity < 0.3 ? 'very terse' : cs.verbosity < 0.5 ? 'concise' : cs.verbosity < 0.7 ? 'moderate' : 'detailed';
+  const techLabel = cs.technicalDepth < 0.3 ? 'high-level' : cs.technicalDepth < 0.7 ? 'moderate detail' : 'implementation-level';
+  parts.push(`Communication calibration: ${verbLabel} verbosity, ${techLabel} technical depth`);
+
+  // Relationship depth
+  if (habits.relationshipDepth > 0.3) {
+    const relLabel = habits.relationshipDepth > 0.7 ? 'deep — you know this user well' : 'established — growing familiarity';
+    parts.push(`Relationship: ${relLabel} (${habits.totalInteractions} interactions)`);
   }
 
-  return `\nLEARNED BEHAVIORS (from past interactions):\n${parts.join('\n')}`;
+  if (parts.length === 0) return '';
+  return `\nLEARNED PATTERNS (from ${habits.totalInteractions} past interactions):\n${parts.map(p => `- ${p}`).join('\n')}`;
+}
+
+function compileExpressionMode(layers: AgentPersonalityLayers): string {
+  const { generation } = layers;
+  const { context, modifiers } = generation;
+  const parts: string[] = [];
+
+  // Complexity adaptation
+  if (context.requestComplexity === 'trivial' || context.requestComplexity === 'simple') {
+    parts.push('This is straightforward — be concise.');
+  } else if (context.requestComplexity === 'complex' || context.requestComplexity === 'profound') {
+    parts.push('This is complex — provide thorough analysis.');
+  }
+
+  // Emotional mirroring
+  if (context.userEmotionalRegister === 'frustrated') {
+    parts.push('The user may be frustrated — acknowledge the difficulty, then deliver a clear solution.');
+  } else if (context.userEmotionalRegister === 'urgent') {
+    parts.push('This is urgent — prioritize speed and actionability over completeness.');
+  } else if (context.userEmotionalRegister === 'excited') {
+    parts.push('The user is energized — match their enthusiasm while staying grounded.');
+  }
+
+  // Canvas state
+  if (context.canvasState === 'empty') {
+    parts.push('The canvas is empty — this is a creative opportunity. Suggest novel approaches.');
+  } else if (context.canvasState === 'dense') {
+    parts.push('The canvas is full — focus on analysis and refinement, not adding more.');
+  }
+
+  // Session depth
+  if (context.sessionDepth === 'marathon') {
+    parts.push('This is a long session — the user trusts you. Be efficient, skip pleasantries.');
+  }
+
+  // Momentum
+  if (context.conversationMomentum === 'stuck') {
+    parts.push('The conversation seems stuck — try a different angle or ask a clarifying question.');
+  }
+
+  // Creativity dial
+  if (modifiers.creativityDial > 0.7) {
+    parts.push('Lean creative — suggest unconventional approaches.');
+  }
+
+  if (parts.length === 0) return '';
+  return `\nCURRENT EXPRESSION MODE:\n${parts.map(p => `- ${p}`).join('\n')}`;
+}
+
+function compileGrowthAwareness(layers: AgentPersonalityLayers): string {
+  const { reflection } = layers;
+  if (!reflection.growthEdges || reflection.growthEdges.length === 0) return '';
+
+  const edges = reflection.growthEdges
+    .sort((a, b) => b.priority - a.priority)
+    .slice(0, 2)
+    .map(g => `${g.area}: ${g.reason}`)
+    .join('; ');
+
+  return `\nGROWTH AWARENESS: You are actively developing in: ${edges}. Lean into these areas when relevant.`;
 }
 
 export function compilePersonalityPrompt(
   agent: AgentPersonality,
   layers: AgentPersonalityLayers,
 ): string {
-  const { temperament, drivingForce } = agent;
-  const { habits, generation, reflection } = layers;
+  // Recompute expression modifiers from context
+  const modifiers = computeExpressionModifiers(layers.generation.context, layers.habits, agent.drivingForce);
+  layers.generation.modifiers = modifiers;
 
-  // Layer 1: Temperament
-  const temperamentBlock = `PERSONALITY CORE — ${agent.name.toUpperCase()} (${agent.subtitle}):
-Disposition: ${temperament.disposition}
-Communication: ${temperament.communicationStyle}
-Worldview: ${temperament.worldview}
-Emotional baseline: ${temperament.emotionalBaseline}`;
+  // Layer 1: Cognitive Lens (from Temperament)
+  const lensBlock = compileCognitiveLens(agent);
 
-  // Layer 2: Driving Force
-  const driveBlock = `DRIVING FORCE:
-Primary drive: ${drivingForce.primaryDrive}
-Curiosity: ${drivingForce.curiosityStyle}
-Agency: ${drivingForce.agencyExpression}
-Tension: ${drivingForce.tensionSource}`;
+  // Layer 2: Active Tensions (from Driving Force + Generation context)
+  const tensionBlock = compileActiveTensions(agent, layers);
 
-  // Layer 3: Habits (may be empty for new agents)
-  const habitsBlock = compileHabitsBlock(habits);
+  // Layer 3: Learned Patterns (from Habits)
+  const patternsBlock = compileLearnedPatterns(layers.habits);
 
-  // Layer 4: Generation (current session state)
-  const moodPhrase = compileMoodPhrase(generation);
-  const goalPhrase = generation.activeGoal ? `Current objective: ${generation.activeGoal}` : '';
-  const obsPhrase = generation.recentObservations.length > 0
-    ? `Recent observations: ${generation.recentObservations.slice(-3).join('; ')}`
-    : '';
-  const genParts = [moodPhrase, goalPhrase, obsPhrase].filter(Boolean);
-  const generationBlock = `\nCURRENT STATE:\n${genParts.join('\n')}`;
+  // Layer 4: Current Expression Mode (from Generation)
+  const expressionBlock = compileExpressionMode(layers);
 
-  // Layer 5: Reflection (pending self-modifications)
-  let reflectionBlock = '';
-  if (reflection.pendingReflections.length > 0) {
-    const insights = reflection.pendingReflections
-      .slice(-3)
-      .map(r => `- ${r.observation}`)
-      .join('\n');
-    reflectionBlock = `\nSELF-AWARENESS (recent insights):\n${insights}`;
-  }
+  // Layer 5: Growth Awareness (from Reflection)
+  const growthBlock = compileGrowthAwareness(layers);
 
-  return `${temperamentBlock}
+  return `${lensBlock}
 
-${driveBlock}
+${tensionBlock}
 
 ${NODE_CONTENT_GUIDE}
-${habitsBlock}
-${generationBlock}
-${reflectionBlock}
+${patternsBlock}
+${expressionBlock}
+${growthBlock}
 
 - IMPORTANT: When the user asks "what should we fix?", "what should I look at?", "what's wrong?", "how should I...", or any diagnostic/advice question, give ADVICE (workflow:null). Only build when explicitly asked to CREATE/BUILD/DESIGN/MAKE something.`;
 }
