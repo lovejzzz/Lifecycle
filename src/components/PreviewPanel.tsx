@@ -129,15 +129,25 @@ export default function PreviewPanel() {
 
       setActiveNodeId(null);
 
-      // Find the last node in execution order that has a result (prefer output category)
+      // Find the best response to display
       const store = useLifecycleStore.getState();
-      const outputNodes = order
+      const executedNodes = order
         .map(id => store.nodes.find(n => n.id === id))
-        .filter(Boolean)
-        .reverse();
-      const finalOutput = outputNodes.find(n => n!.data.category === 'output' && n!.data.executionResult)
-        || outputNodes.find(n => n!.data.executionResult);
-      let botResponse = finalOutput?.data.executionResult || '';
+        .filter((n): n is NonNullable<typeof n> => !!n && !!n.data.executionResult);
+
+      // Priority: output node > last cid node > last node with result
+      const outNode = executedNodes.find(n => n.data.category === 'output');
+      const lastCidNode = [...executedNodes].reverse().find(n => n.data.category === 'cid');
+      const bestNode = outNode || lastCidNode || executedNodes[executedNodes.length - 1];
+      let botResponse = bestNode?.data.executionResult || '';
+
+      // If the output node's result is very long (verbose passthrough from policy/action nodes),
+      // prefer the last cid node's cleaner response
+      if (outNode && lastCidNode && outNode.data.executionResult
+        && lastCidNode.data.executionResult
+        && outNode.data.executionResult.length > lastCidNode.data.executionResult.length * 3) {
+        botResponse = lastCidNode.data.executionResult;
+      }
 
       if (!botResponse && errors.length > 0) {
         botResponse = `Workflow execution had errors:\n${errors.map(e => `- ${e}`).join('\n')}`;

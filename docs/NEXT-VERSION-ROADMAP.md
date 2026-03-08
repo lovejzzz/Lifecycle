@@ -1037,6 +1037,496 @@ Each item includes specific files, implementation steps, acceptance criteria, an
 
 ---
 
+### 21. Self-Editing Persistent Memory with Core/Archival Tiers
+**Status:** [ ] Not started
+**Version target:** 1.21.0
+**Inspiration:** Letta/MemGPT's two-tier memory architecture — core memory (always in-context, like RAM) vs. archival memory (stored externally, like disk). Agents actively self-edit their own memory blocks using tool calls, deciding what to promote/demote. See [Letta docs](https://docs.letta.com/concepts/memgpt/) and [Letta memory management](https://docs.letta.com/advanced/memory-management/). Also inspired by CrewAI's short-term/long-term/entity memory split ([CrewAI 2025 review](https://latenode.com/blog/ai-frameworks-technical-infrastructure/crewai-framework/crewai-framework-2025-complete-review-of-the-open-source-multi-agent-ai-platform)).
+**Complexity:** Medium-Large (3-4 hours)
+
+**Problem:** Lifecycle's Habit Layer (`src/lib/reflection.ts`, lines 334-498) evolves through passive observation — `reflectOnInteraction()` detects domain signals, preferences, and communication feedback. But the agent never *actively decides* what to remember. It cannot say "This user's deployment always targets AWS ECS — I should remember that" and store it as a persistent fact. Letta's core innovation is that agents self-edit their memory using explicit tool calls (`core_memory_append`, `core_memory_replace`, `archival_memory_insert`, `archival_memory_search`). CrewAI similarly separates short-term (in-conversation) from long-term (cross-session) memory with entity extraction. Lifecycle has no equivalent: the `HabitLayer` in `src/lib/types.ts` stores domain expertise and workflow preferences, but these are coarse statistical signals, not specific factual memories like "user's company uses Kubernetes on GCP" or "user prefers Tailwind over styled-components."
+
+**Implementation:**
+
+1. **File: `src/lib/types.ts`** — Add a `MemoryStore` type alongside the existing `HabitLayer`:
+   ```typescript
+   export interface MemoryEntry {
+     id: string;
+     tier: 'core' | 'archival';
+     content: string;          // The fact/preference/context
+     category: 'user-pref' | 'project-fact' | 'domain-knowledge' | 'workflow-pattern';
+     createdAt: number;
+     lastAccessedAt: number;
+     accessCount: number;
+     source: 'agent-extracted' | 'user-stated' | 'reflection-inferred';
+   }
+
+   export interface MemoryStore {
+     coreMemory: MemoryEntry[];     // Always injected into system prompt (max 10)
+     archivalMemory: MemoryEntry[]; // Searchable, retrieved on demand (max 100)
+   }
+   ```
+
+2. **File: `src/lib/prompts.ts`** — In `buildSystemPrompt()` (line 382), inject core memory entries after the personality block and before the graph serialization:
+   ```typescript
+   const coreMemoryBlock = memoryStore?.coreMemory.length
+     ? `\nCORE MEMORY (always available — facts you've learned about this user):\n${memoryStore.coreMemory.map(m => `- [${m.category}] ${m.content}`).join('\n')}`
+     : '';
+   ```
+   Also add a `MEMORY TOOLS` section to `SHARED_CAPABILITIES` (after line 96) that tells the LLM it can return memory operations:
+   ```
+   MEMORY OPERATIONS (optional — include when you learn something worth remembering):
+   "memory_ops": [
+     { "action": "save", "tier": "core", "content": "User deploys to AWS ECS", "category": "project-fact" },
+     { "action": "search", "query": "deployment preferences" },
+     { "action": "promote", "id": "mem-123" },  // archival → core
+     { "action": "forget", "id": "mem-456" }
+   ]
+   ```
+
+3. **File: `src/store/useStore.ts`** — Add `memoryStore` to Zustand state and process `memory_ops` from CID responses:
+   - After parsing the LLM response JSON, check for `memory_ops` array
+   - `save`: Create a new `MemoryEntry`, insert into the appropriate tier
+   - `search`: Fuzzy-match against archival memory entries, inject matches into next prompt
+   - `promote`: Move entry from archival to core (if core < 10 entries; otherwise demote least-accessed core entry to archival)
+   - `forget`: Remove entry entirely
+   - Persist `memoryStore` to localStorage alongside existing habit/reflection data
+
+4. **File: `src/lib/reflection.ts`** — In `reflectOnInteraction()` (line 334), add a new reflection action type `'extract-memory'` that fires when the user explicitly states a preference or fact:
+   ```typescript
+   // Detect explicit user statements worth memorizing
+   if (/\b(we use|we always|our team|my company|I prefer|we deploy to|our stack)\b/i.test(lower)) {
+     actions.push({
+       type: 'extract-memory',
+       description: `User stated a fact worth remembering`,
+       confidence: 0.85,
+       data: { content: userMessage.slice(0, 200), category: 'user-pref', tier: 'core' },
+     });
+   }
+   ```
+
+5. **File: `src/app/api/cid/route.ts`** — After parsing the LLM response, extract `memory_ops` from the JSON and return them alongside the existing `message`/`workflow`/`modifications` fields. No separate endpoint needed.
+
+**Acceptance criteria:**
+- [ ] CID proactively saves user facts (e.g., "we use Kubernetes") to core memory after the user states them
+- [ ] Core memory entries appear in the system prompt on subsequent interactions
+- [ ] Core memory capped at 10 entries; overflow demotes least-accessed to archival
+- [ ] Archival memory searchable via `memory_ops.search`
+- [ ] Memory persists across sessions via localStorage
+- [ ] Memory entries have categories for filtering (user-pref, project-fact, domain-knowledge, workflow-pattern)
+- [ ] No regression in prompt size — core memory adds max ~500 tokens
+
+---
+
+### 22. LangGraph-Style Execution Checkpointing with Resume and Time-Travel
+**Status:** [ ] Not started
+**Version target:** 1.22.0
+**Inspiration:** LangGraph's checkpointing architecture — every graph execution saves a checkpoint at each node boundary, enabling resume-from-failure, time-travel debugging, and human-in-the-loop interrupts. See [LangGraph checkpointing](https://deepwiki.com/langchain-ai/langgraph/4.1-checkpointing-architecture) and [LangGraph interrupts](https://docs.langchain.com/oss/python/langgraph/interrupts). Also inspired by Dify v1.5.0's "Last Run" feature where every node caches its last execution ([Dify 1.5.0 blog](https://dify.ai/blog/dify-1-5-0-real-time-workflow-debugging-that-actually-works)).
+**Complexity:** Medium-Large (3-4 hours)
+
+**Problem:** When `executeWorkflow()` in `src/store/useStore.ts` runs a 9-node workflow and node 6 fails (e.g., API timeout), all progress from nodes 1-5 is lost in terms of resumability. The user must re-execute the entire workflow, re-paying for LLM calls on nodes that already succeeded. LangGraph solves this with checkpoints at every node boundary — if node 6 fails, you resume from the checkpoint after node 5. Additionally, Dify v1.5.0 caches every node's last execution (inputs, outputs, timing), letting users modify upstream data and re-run a single downstream node without re-executing expensive predecessors. Lifecycle stores `executionResult` on each node's data (in `NodeData.executionResult`, `src/lib/types.ts`), but there is no formal checkpoint system, no resume capability, and no way to roll back to a previous execution state.
+
+**Implementation:**
+
+1. **File: `src/lib/types.ts`** — Add checkpoint types:
+   ```typescript
+   export interface ExecutionCheckpoint {
+     id: string;
+     workflowRunId: string;
+     nodeId: string;
+     nodeLabel: string;
+     timestamp: number;
+     status: 'success' | 'error' | 'skipped';
+     inputContext: string;    // What was sent to the node
+     outputResult: string;    // What the node produced
+     durationMs: number;
+     tokenUsage?: { prompt: number; completion: number };
+   }
+
+   export interface WorkflowRun {
+     id: string;
+     startedAt: number;
+     completedAt: number | null;
+     status: 'running' | 'completed' | 'failed' | 'paused';
+     checkpoints: ExecutionCheckpoint[];
+     failedAtNodeId?: string;
+   }
+   ```
+
+2. **File: `src/store/useStore.ts`** — Modify `executeWorkflow()` (the topological execution loop) to save a checkpoint after each node completes:
+   ```typescript
+   // Inside the node execution loop:
+   const checkpoint: ExecutionCheckpoint = {
+     id: uid(), workflowRunId: currentRun.id, nodeId, nodeLabel: node.data.label,
+     timestamp: Date.now(), status: 'success',
+     inputContext: upstreamContext.slice(0, 2000),
+     outputResult: (node.data.executionResult || '').slice(0, 5000),
+     durationMs: Date.now() - nodeStartTime,
+   };
+   currentRun.checkpoints.push(checkpoint);
+   ```
+   On failure: save checkpoint with `status: 'error'`, set `currentRun.failedAtNodeId`, set `currentRun.status = 'paused'`.
+
+3. **File: `src/store/useStore.ts`** — Add `resumeWorkflow()` action:
+   ```typescript
+   resumeWorkflow: async () => {
+     const run = get().currentWorkflowRun;
+     if (!run || run.status !== 'paused') return;
+     const successIds = new Set(run.checkpoints.filter(c => c.status === 'success').map(c => c.nodeId));
+     // Re-run executeWorkflow but skip nodes in successIds
+     // Resume from failedAtNodeId
+   }
+   ```
+
+4. **File: `src/store/useStore.ts`** — Add `replayFromCheckpoint(checkpointId: string)` for time-travel:
+   - Find the checkpoint, restore all node `executionResult` values from checkpoints up to that point
+   - Clear execution results for nodes after the checkpoint
+   - Set `currentWorkflowRun.status = 'paused'` at that point so user can resume from there
+
+5. **File: `src/components/PreviewPanel.tsx`** — When `currentWorkflowRun.status === 'paused'`, show a "Resume" button with context:
+   ```
+   Workflow paused at "Policy Analysis" (node 6/9)
+   5 nodes completed successfully | 1 failed | 3 remaining
+   [Resume from failure] [Retry failed node] [Restart workflow]
+   ```
+   Style: amber border card with action buttons, consistent with existing panel styling.
+
+6. **File: `src/components/CIDPanel.tsx`** — After a failed workflow execution, CID's message should reference the checkpoint state:
+   - "Node 'Policy Analysis' failed after 4.2s. 5 upstream nodes succeeded. You can resume from the failure point or retry just that node."
+
+**Acceptance criteria:**
+- [ ] Each node execution saves a checkpoint with input/output/timing
+- [ ] Failed workflow shows "Resume" button; clicking it skips already-succeeded nodes
+- [ ] "Retry failed node" re-executes only the failed node using cached upstream data
+- [ ] Time-travel: user can click any checkpoint to restore state at that point
+- [ ] Checkpoints stored in memory during session (not localStorage — too large)
+- [ ] Resume saves LLM cost by not re-calling succeeded nodes
+- [ ] Full `executeWorkflow()` still works as before when no previous run exists
+
+---
+
+### 23. Dify-Style Iteration/Loop Nodes for Batch Processing
+**Status:** [ ] Not started
+**Version target:** 1.23.0
+**Inspiration:** Dify's Iteration node that processes array elements sequentially and the Loop node that repeats until exit conditions are met ([Dify iteration docs](https://legacy-docs.dify.ai/guides/workflow/node/iteration), [Dify Loop Node tweet](https://x.com/dify_ai/status/1903011106022625554)). Also inspired by LangGraph's cyclic graph support where nodes can loop back with state updates, and n8n's SplitInBatches node for chunked processing ([n8n AI Agent 2026 guide](https://strapi.io/blog/build-ai-agents-n8n)).
+**Complexity:** Medium (2-3 hours)
+
+**Problem:** Lifecycle's `executeWorkflow()` in `src/store/useStore.ts` runs each node exactly once in topological order. There is no way to express "process each item in this list" or "keep refining until quality threshold is met." If a user builds a "Content Pipeline" that needs to process 10 blog post ideas, they must create 10 parallel branches manually or run the workflow 10 times. Dify solves this with dedicated Iteration nodes (process array items) and Loop nodes (repeat until condition). LangGraph supports cyclic graphs where a node can loop back with updated state. Currently, `buildNodesFromPrompt()` in `src/lib/intent.ts` (line 206) creates only linear/branching graphs — never loops. The `topoSort()` in `src/lib/graph.ts` explicitly handles DAGs and would break on cycles.
+
+**Implementation:**
+
+1. **File: `src/lib/types.ts`** — Add iteration configuration to `NodeData`:
+   ```typescript
+   // Add to NodeData interface:
+   iterationConfig?: {
+     mode: 'foreach' | 'while';
+     // foreach: split upstream result by delimiter, run once per item
+     splitDelimiter?: string;       // default: '\n' (one item per line)
+     maxIterations?: number;        // safety cap, default 20
+     // while: repeat until condition met
+     exitCondition?: string;        // natural language condition evaluated by LLM
+     currentIteration?: number;     // runtime state
+     iterationResults?: string[];   // collected results from each iteration
+   };
+   ```
+
+2. **File: `src/store/useStore.ts`** — Modify `executeNode()` to handle iteration nodes. When `nodeData.iterationConfig` is set:
+   ```typescript
+   if (d.iterationConfig?.mode === 'foreach') {
+     const upstreamResult = getUpstreamResult(nodeId);
+     const items = upstreamResult.split(d.iterationConfig.splitDelimiter || '\n').filter(Boolean);
+     const results: string[] = [];
+     const maxIter = Math.min(items.length, d.iterationConfig.maxIterations || 20);
+     for (let i = 0; i < maxIter; i++) {
+       updateNodeData(nodeId, { iterationConfig: { ...d.iterationConfig, currentIteration: i + 1 } });
+       // Execute with item-specific context: "Processing item {i+1}/{total}: {item}"
+       const result = await callCIDAPI(nodeId, `Process item ${i + 1}/${maxIter}: ${items[i]}`);
+       results.push(result);
+     }
+     updateNodeData(nodeId, { executionResult: results.join('\n---\n'), iterationConfig: { ...d.iterationConfig, iterationResults: results } });
+   } else if (d.iterationConfig?.mode === 'while') {
+     let iteration = 0;
+     let lastResult = getUpstreamResult(nodeId);
+     const maxIter = d.iterationConfig.maxIterations || 10;
+     while (iteration < maxIter) {
+       iteration++;
+       updateNodeData(nodeId, { iterationConfig: { ...d.iterationConfig, currentIteration: iteration } });
+       const result = await callCIDAPI(nodeId, `Iteration ${iteration}. Previous result:\n${lastResult}\n\nExit condition: "${d.iterationConfig.exitCondition}". If the condition is met, respond with exactly "EXIT:" followed by the final result. Otherwise, continue refining.`);
+       if (result.startsWith('EXIT:')) { lastResult = result.slice(5).trim(); break; }
+       lastResult = result;
+     }
+     updateNodeData(nodeId, { executionResult: lastResult });
+   }
+   ```
+
+3. **File: `src/lib/prompts.ts`** — In `SHARED_CAPABILITIES` (after line 68), add iteration node documentation so the LLM can generate them:
+   ```
+   ITERATION NODES:
+   Nodes with category "action" or "cid" can include an "iterationConfig" to process items in a loop:
+   - "foreach": splits upstream output by delimiter, processes each item. Use for batch processing.
+   - "while": repeats until an exit condition is met. Use for refinement loops.
+   Include iterationConfig in the node JSON when the user asks for batch/bulk/each/every/loop/repeat/iterate operations.
+   ```
+
+4. **File: `src/components/LifecycleNode.tsx`** — When `iterationConfig` exists, show iteration progress in the node card:
+   ```typescript
+   {nodeData.iterationConfig && (
+     <div className="mb-1.5 flex items-center gap-1.5">
+       <span className="text-[8px] text-cyan-400/50 uppercase tracking-wider">
+         {nodeData.iterationConfig.mode === 'foreach' ? 'Batch' : 'Loop'}
+       </span>
+       {nodeData.iterationConfig.currentIteration && (
+         <span className="text-[8px] text-white/30 font-mono">
+           {nodeData.iterationConfig.currentIteration}/{nodeData.iterationConfig.maxIterations || '?'}
+         </span>
+       )}
+     </div>
+   )}
+   ```
+
+5. **File: `src/components/NodeDetailPanel.tsx`** — Add an "Iteration" section when editing action/cid nodes:
+   - Toggle: "Enable iteration" checkbox
+   - Mode selector: "For Each Item" / "Repeat Until"
+   - For foreach: delimiter input, max iterations slider
+   - For while: exit condition text input, max iterations slider
+
+**Acceptance criteria:**
+- [ ] "foreach" iteration node splits upstream text and processes each item
+- [ ] "while" iteration node repeats until LLM responds with "EXIT:" prefix
+- [ ] Iteration progress visible on the node card (e.g., "Batch 3/10")
+- [ ] Max iteration cap prevents runaway loops (default 20 for foreach, 10 for while)
+- [ ] CID can generate iteration nodes when user says "process each", "for every", "batch", "iterate"
+- [ ] Iteration results concatenated with delimiter in `executionResult`
+- [ ] Node detail panel has UI for configuring iteration mode and parameters
+- [ ] Non-iteration nodes execute identically to current behavior (no regression)
+
+---
+
+### 24. Collapsible Node Groups with Subgraph Composition
+**Status:** [ ] Not started
+**Version target:** 1.24.0
+**Inspiration:** ComfyUI's Subgraphs feature (November 2025) — select multiple nodes and collapse them into a single "super-node" that hides internal complexity while preserving all connections. See [ComfyUI Subgraphs blog](https://blog.comfy.org/p/subgraphs-are-coming-to-comfyui). Also inspired by Dify's iteration blocks that visually contain a sub-workflow, and LangGraph's subgraph composition where a node can itself be a full graph ([LangGraph GitHub](https://github.com/langchain-ai/langgraph)).
+**Complexity:** Medium-Large (3-4 hours)
+
+**Problem:** Lifecycle workflows with 7-10 nodes already fill the canvas densely. Users building complex pipelines (e.g., a CI/CD workflow with build + test + deploy phases) cannot visually group related nodes. The `LifecycleNode` component (`src/components/LifecycleNode.tsx`) renders every node at the same hierarchy level — there is no concept of nesting or grouping. Multi-select exists (`multiSelectedIds` in the Zustand store, used in `Canvas.tsx` for rubber-band selection around line 180+), but it only supports delete and drag — not collapse. ComfyUI's subgraphs reduced workflow clutter by 50% in community benchmarks. For Lifecycle, a "Build Phase" group containing 3 nodes (Lint, Unit Test, Build) could collapse to a single card showing "Build Phase (3 nodes)" with only external edges visible.
+
+**Implementation:**
+
+1. **File: `src/lib/types.ts`** — Add `NodeGroup` type:
+   ```typescript
+   export interface NodeGroup {
+     id: string;
+     label: string;
+     nodeIds: string[];          // IDs of nodes in this group
+     collapsed: boolean;
+     color: string;              // Group border color
+     position: { x: number; y: number };  // Position when collapsed
+     size: { width: number; height: number };  // Bounding box when expanded
+   }
+   ```
+   Add to `NodeData`:
+   ```typescript
+   groupId?: string;  // Which group this node belongs to (if any)
+   ```
+
+2. **File: `src/store/useStore.ts`** — Add group management actions:
+   ```typescript
+   nodeGroups: NodeGroup[];
+
+   createGroup: (label: string) => {
+     const selectedIds = get().multiSelectedIds;
+     if (selectedIds.size < 2) return;
+     const groupId = uid();
+     const memberNodes = get().nodes.filter(n => selectedIds.has(n.id));
+     // Compute bounding box of selected nodes
+     const minX = Math.min(...memberNodes.map(n => n.position.x));
+     const minY = Math.min(...memberNodes.map(n => n.position.y));
+     const maxX = Math.max(...memberNodes.map(n => n.position.x + 270));
+     const maxY = Math.max(...memberNodes.map(n => n.position.y + 160));
+     // Tag each node with groupId
+     for (const node of memberNodes) {
+       updateNodeData(node.id, { groupId });
+     }
+     set(s => ({ nodeGroups: [...s.nodeGroups, {
+       id: groupId, label, nodeIds: [...selectedIds], collapsed: false,
+       color: getNodeColors(memberNodes[0].data.category).primary,
+       position: { x: minX, y: minY },
+       size: { width: maxX - minX + 40, height: maxY - minY + 40 },
+     }]}));
+   },
+
+   toggleGroupCollapse: (groupId: string) => {
+     set(s => ({
+       nodeGroups: s.nodeGroups.map(g =>
+         g.id === groupId ? { ...g, collapsed: !g.collapsed } : g
+       ),
+     }));
+   },
+
+   ungroupNodes: (groupId: string) => {
+     const group = get().nodeGroups.find(g => g.id === groupId);
+     if (!group) return;
+     for (const nodeId of group.nodeIds) {
+       updateNodeData(nodeId, { groupId: undefined });
+     }
+     set(s => ({ nodeGroups: s.nodeGroups.filter(g => g.id !== groupId) }));
+   },
+   ```
+
+3. **File: `src/components/Canvas.tsx`** — When a group is collapsed, hide member nodes and render a single group placeholder node instead:
+   ```typescript
+   const visibleNodes = useMemo(() => {
+     const collapsedGroupIds = new Set(nodeGroups.filter(g => g.collapsed).map(g => g.id));
+     const hiddenNodeIds = new Set<string>();
+     for (const g of nodeGroups) {
+       if (g.collapsed) g.nodeIds.forEach(id => hiddenNodeIds.add(id));
+     }
+     const filtered = nodes.filter(n => !hiddenNodeIds.has(n.id));
+     // Add placeholder nodes for collapsed groups
+     for (const g of nodeGroups) {
+       if (g.collapsed) {
+         filtered.push({
+           id: `group-${g.id}`, type: 'lifecycleNode',
+           position: g.position,
+           data: {
+             label: g.label, category: 'note' as NodeCategory,
+             status: 'active', description: `${g.nodeIds.length} nodes (click to expand)`,
+             version: 1, lastUpdated: Date.now(), _isGroupPlaceholder: true, _groupId: g.id,
+           },
+         });
+       }
+     }
+     return filtered;
+   }, [nodes, nodeGroups]);
+   ```
+   For edges: remap edges that connect to hidden nodes so they connect to the group placeholder instead.
+
+4. **File: `src/components/Canvas.tsx`** — When expanded, render a colored bounding rectangle behind group member nodes:
+   ```typescript
+   // Render group background rectangles
+   {nodeGroups.filter(g => !g.collapsed).map(g => (
+     <div key={g.id} className="absolute rounded-xl border-2 border-dashed pointer-events-none"
+       style={{
+         left: g.position.x - 20, top: g.position.y - 30,
+         width: g.size.width, height: g.size.height,
+         borderColor: `${g.color}40`, backgroundColor: `${g.color}08`,
+       }}>
+       <span className="absolute -top-5 left-2 text-[10px] font-medium" style={{ color: `${g.color}80` }}>
+         {g.label}
+       </span>
+     </div>
+   ))}
+   ```
+
+5. **File: `src/components/NodeContextMenu.tsx`** — Add "Group Selected Nodes" option when multiple nodes are selected, and "Ungroup" when right-clicking a group member.
+
+**Acceptance criteria:**
+- [ ] Multi-selecting 2+ nodes and choosing "Group" creates a named group with colored bounding box
+- [ ] Collapsing a group hides member nodes and shows a single placeholder card
+- [ ] External edges to/from grouped nodes are remapped to the placeholder when collapsed
+- [ ] Expanding restores all member nodes and edges to their original positions
+- [ ] Groups persist across sessions (stored in Zustand, serialized to localStorage)
+- [ ] Context menu shows "Group Selected" (multi-select) and "Ungroup" (group member)
+- [ ] Group placeholder shows member count and category summary
+- [ ] Workflow execution still works correctly with grouped nodes (groups are visual-only)
+
+---
+
+### 25. Dify-Style Variable Inspector Panel for Real-Time Execution Debugging
+**Status:** [ ] Not started
+**Version target:** 1.25.0
+**Inspiration:** Dify v1.5.0's Variable Inspect panel — a bottom-of-canvas panel that shows all node variables in real-time, lets you edit values mid-execution, and caches "Last Run" data per node for re-running downstream nodes without re-executing upstream. See [Dify 1.5.0 announcement](https://dify.ai/blog/dify-1-5-0-real-time-workflow-debugging-that-actually-works) and [Dify debug docs](https://docs.dify.ai/en/guides/workflow/debug-and-preview/step-run). Also inspired by Rivet's per-node input/output inspection ([Rivet GitHub](https://github.com/Ironclad/rivet)) and AutoGen Studio's real-time agent action streams ([AutoGen v0.4 blog](https://www.microsoft.com/en-us/research/blog/autogen-v0-4-reimagining-the-foundation-of-agentic-ai-for-scale-extensibility-and-robustness/)).
+**Complexity:** Medium-Large (3-4 hours)
+
+**Problem:** During and after `executeWorkflow()`, Lifecycle shows execution status (running/success/error) and a truncated result preview on each node card (`src/components/LifecycleNode.tsx`, lines 283-343). But there is no centralized view of what data flowed between nodes. The `ArtifactPanel` (`src/components/ArtifactPanel.tsx`) shows one node's content at a time. To debug a failed workflow, users must click into each node individually to see its execution result — there is no way to see "Node A output X, Node B received Y, Node B produced Z" in one view. Dify's Variable Inspect panel shows ALL node variables simultaneously in a single bottom panel, with the ability to edit a value and re-run just the downstream node. Rivet shows real-time input/output per node during execution. Lifecycle's `PreviewPanel.tsx` shows a `nodeTrace` (line 276) but only as labels, not actual data payloads.
+
+**Implementation:**
+
+1. **File: `src/components/VariableInspector.tsx`** (NEW, ~250 lines) — A slide-up bottom panel (height 220px, resizable):
+   ```typescript
+   export default function VariableInspector() {
+     const { nodes, edges, isExecutingWorkflow } = useLifecycleStore();
+
+     // Build a table of all nodes with their execution data
+     const nodeData = useMemo(() => nodes.map(n => ({
+       id: n.id,
+       label: n.data.label,
+       category: n.data.category,
+       status: n.data.executionStatus || 'idle',
+       inputPreview: getNodeInput(n.id, nodes, edges),   // What flowed IN
+       outputPreview: n.data.executionResult?.slice(0, 300) || null,  // What flowed OUT
+       duration: n.data._executionDurationMs || null,
+       error: n.data.executionError || null,
+     })), [nodes, edges]);
+
+     return (
+       <motion.div className="fixed bottom-0 left-0 right-0 h-[220px] bg-[#0a0a12]/95 backdrop-blur-xl border-t border-white/[0.06] z-35">
+         {/* Header */}
+         <div className="flex items-center justify-between px-4 py-2 border-b border-white/[0.04]">
+           <span className="text-[11px] font-medium text-white/70">Variable Inspector</span>
+           <span className="text-[9px] text-white/30">{nodes.length} nodes</span>
+         </div>
+         {/* Table */}
+         <div className="overflow-x-auto overflow-y-auto h-[180px] scrollbar-thin">
+           <table className="w-full text-[10px]">
+             <thead>
+               <tr className="text-white/30 border-b border-white/[0.04]">
+                 <th className="px-3 py-1.5 text-left w-[140px]">Node</th>
+                 <th className="px-3 py-1.5 text-left">Input</th>
+                 <th className="px-3 py-1.5 text-left">Output</th>
+                 <th className="px-3 py-1.5 text-right w-[60px]">Time</th>
+                 <th className="px-3 py-1.5 text-center w-[60px]">Status</th>
+               </tr>
+             </thead>
+             <tbody>
+               {nodeData.map(n => (
+                 <tr key={n.id} className="border-b border-white/[0.02] hover:bg-white/[0.02]">
+                   <td className="px-3 py-1.5 text-white/60 font-medium truncate">{n.label}</td>
+                   <td className="px-3 py-1.5 text-white/30 truncate max-w-[200px]">{n.inputPreview || '-'}</td>
+                   <td className="px-3 py-1.5 text-white/30 truncate max-w-[200px]">{n.outputPreview || '-'}</td>
+                   <td className="px-3 py-1.5 text-white/20 text-right font-mono">{n.duration ? `${(n.duration/1000).toFixed(1)}s` : '-'}</td>
+                   <td className="px-3 py-1.5 text-center">
+                     <span className={`inline-block w-2 h-2 rounded-full ${statusColor(n.status)}`} />
+                   </td>
+                 </tr>
+               ))}
+             </tbody>
+           </table>
+         </div>
+       </motion.div>
+     );
+   }
+   ```
+
+2. **File: `src/store/useStore.ts`** — Add `showVariableInspector: boolean` toggle and `toggleVariableInspector()` action. Track `_executionDurationMs` on `NodeData` by recording `Date.now()` before and after each `executeNode()` call.
+
+3. **File: `src/components/TopBar.tsx`** — Add a "Debug" toggle button next to the existing "Preview" and "Activity" buttons:
+   ```typescript
+   <button onClick={toggleVariableInspector}
+     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium ${
+       showVariableInspector ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' : '...'
+     }`}>
+     <Code size={12} />
+     <span className="hidden sm:inline">Debug</span>
+   </button>
+   ```
+
+4. **File: `src/components/VariableInspector.tsx`** — Add click-to-expand on any cell: clicking an input/output cell opens a full-text popover showing the complete value (not truncated), with a "Copy" button. Style: `max-w-lg max-h-60 overflow-auto bg-zinc-800/95 border border-white/10 rounded-lg p-3 text-[10px] text-white/70 font-mono whitespace-pre-wrap`.
+
+5. **File: `src/components/VariableInspector.tsx`** — Add a "Re-run" button per row: clicking it calls `executeNode(nodeId)` to re-execute just that node using cached upstream data. This mimics Dify's ability to edit a value and re-run downstream without re-executing everything.
+
+**Acceptance criteria:**
+- [ ] "Debug" toggle in TopBar shows/hides the Variable Inspector bottom panel
+- [ ] Panel shows all nodes in a table with input preview, output preview, duration, and status
+- [ ] Clicking a cell expands to show full value with copy button
+- [ ] "Re-run" button per node re-executes just that node
+- [ ] Panel updates in real-time during workflow execution (running nodes show spinner)
+- [ ] Duration tracked per node (stored in `_executionDurationMs` on NodeData)
+- [ ] Panel doesn't overlap with CIDPanel (respects panel layout)
+- [ ] Panel handles 10+ nodes without performance issues (no full re-render on status changes)
+- [ ] Auto-opens during workflow execution, stays open after completion
+
+---
+
 ## Completed
 
 _(Move items here after implementation)_

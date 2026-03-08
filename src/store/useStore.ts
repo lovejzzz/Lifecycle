@@ -1190,7 +1190,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       if (cat === 'action') return `Execute the action for "${label}". ${desc} Describe the operation, its inputs, outputs, and any side effects.`;
       if (cat === 'patch') return `Generate a patch or fix for "${label}". ${desc} Identify the issue, describe the fix, and provide the corrected content.`;
       if (cat === 'dependency') return `Analyze and resolve dependencies for "${label}". ${desc} List required dependencies, their status, and any conflicts.`;
-      if (cat === 'output' && !d.outputFormat) return `Prepare the final output for "${label}". ${desc} Format the content for delivery.`;
+      if (cat === 'output' && !d.outputFormat) return null; // Output nodes pass through upstream content
       return null;
     })();
 
