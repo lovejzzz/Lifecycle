@@ -2900,7 +2900,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     const { nodes, edges } = get();
     if (nodes.length === 0) return 'No workflow yet. Tell me what to build.';
 
-    const agent = getAgent(get().cidMode);
+    const _agent = getAgent(get().cidMode);
     const stale = nodes.filter(n => n.data.status === 'stale');
     const reviewing = nodes.filter(n => n.data.status === 'reviewing');
     const locked = nodes.filter(n => n.data.status === 'locked');
@@ -2996,7 +2996,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     const { nodes, edges } = get();
     if (nodes.length === 0) return 'No workflow yet. Tell me what to build.';
 
-    const agent = getAgent(get().cidMode);
+    const _agent = getAgent(get().cidMode);
 
     // Find root nodes (no incoming edges)
     const hasIncoming = new Set(edges.map(e => e.target));
@@ -4193,7 +4193,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
 
   // Workflow compression — find duplicates, redundant pass-through nodes, and boilerplate
   compressWorkflow: () => {
-    const { nodes, edges, cidMode, pushHistory } = get();
+    const { nodes, cidMode, pushHistory } = get();
     if (nodes.length === 0) return 'No workflow to compress.';
     const findings: string[] = [];
     let removedCount = 0;
@@ -4466,7 +4466,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
 
   retryFailed: async () => {
     const store = get();
-    const { nodes, edges, cidMode } = store;
+    const { nodes, cidMode } = store;
     const failedNodes = nodes.filter(n =>
       n.data.executionStatus === 'error' && n.data.executionError !== 'Skipped: upstream dependency failed'
     );
@@ -4478,7 +4478,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     }
 
     // Clear error status on failed nodes and their downstream skipped nodes
-    const failedIds = new Set(failedNodes.map(n => n.id));
+    const _failedIds = new Set(failedNodes.map(n => n.id));
     const skippedNodes = nodes.filter(n =>
       n.data.executionStatus === 'error' && n.data.executionError === 'Skipped: upstream dependency failed'
     );

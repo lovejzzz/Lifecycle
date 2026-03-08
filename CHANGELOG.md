@@ -1,5 +1,28 @@
 # Changelog
 
+### 2026-03-08 — Round 90: Fifth Consecutive 100% + Lint Cleanup (14→9) + Pool Expansion (60 tests)
+
+**Eval results: 100% (6/6 passed, 340/340 points) — DeepSeek Reasoner, fifth consecutive perfect score**
+
+**Lint cleanup: 14 → 9 warnings (5 fixed):**
+- Removed unused `edges` destructure in `compressWorkflow` (useStore.ts:4196)
+- Removed unused `edges` destructure in `retryFailed` (useStore.ts:4469)
+- Prefixed unused `failedIds` with `_` (useStore.ts:4481)
+- Prefixed unused `agent` in `getStatusReport` and `explainWorkflow` (useStore.ts:2903,2999)
+
+**Quality highlights from deep evaluation:**
+- `marketing-campaign`: **1150c avg content density** — budget allocation exactly matches $10k ($4k Google, $3k social, $2k email, $1k creative). State node with explicit transitions (Normal → Alert → Critical). Test node requires p-value < 0.05 for A/B significance. Mentions SEMrush, Klaviyo, Copy.ai, Google Optimize.
+- `marketing-blog`: Parallel branch from drafting → SEO optimization + multimedia design, both converge at editorial review. Mentions Yoast, Hemingway App, GatherContent. 594c avg — adequate but thinnest content this session.
+- `execute-sow`: 6737 chars — 20/25/25/30 payment split. Clear exclusions, pixel-perfect mockups in scope.
+- `culture-advice-remote-team` (new R88 test): "Forcing a return is like blaming the weather for a sinking ship" — excellent Poirot metaphor, 411 chars. Correctly diagnoses root cause investigation needed.
+- Both personality tests pass with distinct, natural character voice.
+
+**Audit updated:** Code Quality grade B+ → A- (lint warnings halved from 23 to 9 in two rounds).
+
+**Test pool: 58 → 60 tests:**
+- `hospitality-restaurant-opening` — Rowan, new domain (food/hospitality), tests review gate for health dept approval
+- `edge-verbose-prompt` — Poirot, extremely long detailed prompt (200+ words), tests whether agent maintains structure with verbose input
+
 ### 2026-03-08 — Round 89: DeepSeek Chat Eval + Model Override + Pool Expansion (58 tests)
 
 **Eval results: 100% (6/6 passed, 330/330 points) — first eval with DeepSeek Chat (deepseek-chat)**

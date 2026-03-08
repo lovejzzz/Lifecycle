@@ -1,0 +1,362 @@
+{
+  "timestamp": "2026-03-08T12-31-51",
+  "overall": 100,
+  "testsRun": [
+    "marketing-campaign",
+    "marketing-blog",
+    "execute-sow",
+    "personality-rowan-empty",
+    "personality-poirot-empty",
+    "culture-advice-remote-team"
+  ],
+  "poolSize": 58,
+  "results": [
+    {
+      "id": "marketing-campaign",
+      "status": "ok",
+      "elapsed": 197110,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "I need to launch a Black Friday campaign across email, social media, and Google Ads. Budget is $10k. Make me a workflow that covers everything from creative to post-campaign analysis.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Deploying Black Friday campaign workflow.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Campaign Brief",
+              "category": "input",
+              "description": "Initial parameters, budget allocation, and channel setup for Black Friday",
+              "content": "**Event Details:** Black Friday campaign running from November 20-30, with peak activity on November 24. Budget of $10,000 allocated as follows: $4,000 for Google Ads (focus on high-intent keywords like 'Black Friday deals [product]' and retargeting audiences from past 30 days), $3,000 for social media ads (Facebook and Instagram, using carousel ads for product highlights and story ads for urgency), $2,000 for email marketing (Mailchimp or Klaviyo for automation, design templates, and copy), and $1,000 for creative assets (graphics, videos via Canva or Adobe Spark). **Configuration:** Set up webhooks in Google Ads and Facebook Ads Manager for real-time budget tracking; configure daily spend caps ($500/day for Google Ads, $300/day for social) to prevent overshoot. **Tools:** Use Google Analytics for baseline metrics, Trello for task management, and Slack for team coordination. **Payload:** Document all in a campaign brief template with sections for objectives (e.g., 20% sales increase, 15% email list growth), target audience segments (e.g., past purchasers, cart abandoners), and success KPIs (ROAS > 3, CTR > 2%). Share via shared drive and assign owner—Marketing Manager."
+            },
+            {
+              "label": "Strategy Planning",
+              "category": "action",
+              "description": "Define target audience, messaging, and detailed channel strategies",
+              "content": "**Steps:** 1. **Market Analysis:** Use SEMrush to analyze competitor Black Friday keywords and ad copy; leverage Google Trends to identify peak search periods. 2. **Audience Segmentation:** Split into three groups: Loyal Customers (past 6-month buyers), Consideration Stage (website visitors in last 30 days), and Cold Audiences (lookalikes based on high-value segments). Tools: CRM export, Facebook Audience Insights. 3. **Messaging Framework:** Develop core value propositions: 'Early Access Deals' for email, 'Limited-Time Offers' for social, 'Discount Codes' for Google Ads. 4. **Channel-Specific Plans:** Email: Drip sequence with 3 emails (teaser, launch day, last chance); Social: Ad sets with different creatives for awareness and conversion; Google Ads: Campaigns with shopping ads and search ads. 5. **Budget Refinement:** Allocate based on historical ROAS: Google Ads $4k (expected CPA $40), Social $3k (CPA $30), Email $2k (CPA $10), Creative $1k. 6. **Timeline:** Week 1-2: Creative development; Week 3: Soft launch and testing; Week 4: Full launch. 7. **Risk Mitigation:** Prepare backup creatives and pause rules for underperforming ads. Assign roles: Content Lead for copy, Design Lead for assets, Ads Specialist for execution."
+            },
+            {
+              "label": "Creative Development",
+              "category": "artifact",
+              "description": "Production of all creative assets for email, social media, and Google Ads",
+              "content": "**Email Assets:** Design responsive templates in HTML/CSS using tools like Beefree or Stripo; copy includes subject lines ('Black Friday Early Bird Access!'), body text with urgency cues, and clear CTAs ('Shop Now'). Create variants for A/B testing: Version A with discount-focused messaging, Version B with product highlights. **Social Media Assets:** Produce 5-10 graphics per platform (Facebook, Instagram) using Canva Pro: carousel ads showcasing top products, story ads with countdown timers, and video ads (15-30 seconds) highlighting deals. Copy: Hashtags (#BlackFriday2023), emojis, and link to landing page. **Google Ads Assets:** Develop text ads (headlines: 'Up to 50% Off Black Friday Sale', descriptions with keywords), responsive search ads with 3 headlines and 2 descriptions, and shopping feed optimization via Google Merchant Center. **Tools:** Adobe Creative Cloud for high-res designs, Loom for video editing, Copy.ai for generating ad variations. **Checklist:** All assets must follow brand guidelines (colors, fonts), include alt text for accessibility, and be saved in shared folders (Google Drive) with naming conventions: 'BF_Email_Teaser_V1'. Review with legal for compliance on discount claims."
+            },
+            {
+              "label": "Creative Approval",
+              "category": "review",
+              "description": "Human review and sign-off on all creative assets before launch",
+              "content": "**Approval Criteria:** 1. **Brand Consistency:** Assets must match brand voice and visual identity (e.g., logo placement, color palette HEX codes). 2. **Message Accuracy:** Verify discount percentages, dates, and terms—no false advertising. 3. **Technical Specifications:** Email templates tested in Litmus for client compatibility; ad dimensions correct per platform (Facebook: 1080x1080px, Instagram Story: 1080x1920px). 4. **Compliance:** Ensure GDPR compliance for email opt-ins and ad targeting; check for trademark issues. **Reviewers:** Marketing Manager (final sign-off), Legal Advisor (compliance), Design Lead (quality). **Process:** Use a review tool like Filestage or Asana tasks; gather feedback within 48 hours SLA. **Escalation:** If revisions needed, route back to Creative Development node with specific comments; if approved, mark as 'Ready for Launch' and trigger next step. **Documentation:** Log approvals in a shared spreadsheet with timestamps and reviewer comments."
+            },
+            {
+              "label": "Multi-Channel Launch",
+              "category": "action",
+              "description": "Execute campaign across email, social media, and Google Ads simultaneously",
+              "content": "**Steps:** 1. **Email Launch:** Schedule in Mailchimp: Send teaser email 2 days before Black Friday to segmented list (50k subscribers), launch day email at 12 AM EST, and follow-up email 24 hours later. Use automation triggers based on opens/clicks. 2. **Social Media Launch:** In Facebook Ads Manager, create campaign with objectives (Conversions for retargeting, Reach for cold audiences), set budgets ($1,500 for launch day), upload creatives, and activate. Use Instagram Stories ads with swipe-up links. 3. **Google Ads Launch:** Launch search campaigns with keywords ('black friday sale [product]'), set bidding strategy (Maximize Conversions with target CPA $50), and enable shopping ads via Merchant Center feed. 4. **Landing Pages:** Ensure dedicated Black Friday landing pages are live with tracking pixels (Google Tag Manager, Facebook Pixel). 5. **Coordination:** Use a project management tool (ClickUp) to sync launch times; assign team members to monitor initial performance (first 2 hours). **Error Handling:** Have backup ads ready to swap if any fail; implement pause rules for ads with CTR < 0.5% in first 6 hours."
+            },
+            {
+              "label": "Live Monitoring",
+              "category": "state",
+              "description": "Ongoing observation of campaign performance across all channels",
+              "content": "**Monitoring Tools:** Google Analytics for website traffic and conversion tracking; Facebook Ads Manager for social metrics (impressions, CPC); Google Ads dashboard for search performance (clicks, ROAS); Email service provider reports (open rates, click-through rates). **Key Metrics to Watch:** Daily spend vs. budget (alert if exceeds 10% over), ROAS (target > 3), CTR (target > 2% for ads, 15% for emails), conversion rate (target 5%). **States:** 'Normal' (metrics within range), 'Alert' (metrics deviate by 20%, trigger review), 'Critical' (budget overshoot or technical issues, escalate immediately). **Triggers:** Set up automated alerts via Slack or email for: budget depletion at 80%, ROAS drop below 2, or ad disapproval. **Actions:** Daily check-ins at 9 AM and 5 PM EST; update a live dashboard (Google Data Studio) with real-time data. **Owner:** Ads Specialist with backup from Marketing Manager. **Transition:** If issues arise, move to Performance Optimization node; if campaign ends, trigger Post-Campaign Analysis."
+            },
+            {
+              "label": "Performance Optimization",
+              "category": "test",
+              "description": "A/B testing and adjustments based on real-time data during the campaign",
+              "content": "**What to Test:** 1. **Ad Copy Variants:** Test different headlines and CTAs in Google Ads (e.g., 'Save Big' vs. 'Limited Stock'). 2. **Creative Elements:** A/B test social media ad images (static vs. video) using Facebook's split testing tool. 3. **Email Subject Lines:** Test urgency ('24 Hours Left!') vs. benefit-focused ('Exclusive Deals Inside') via Mailchimp A/B testing. **Pass/Fail Criteria:** Variant must improve CTR by at least 10% or reduce CPA by 15% to be considered a winner; otherwise, revert to control. **Tools:** Google Optimize for landing page tests, Facebook A/B Testing feature, Email marketing platform built-in testing. **Steps:** Run tests for 48 hours with significant traffic (minimum 1,000 impressions per variant); analyze results using statistical significance (p-value < 0.05). **Adjustments:** Based on results, pause underperforming ads, increase budget for top performers, and tweak targeting (e.g., narrow audiences). **Feedback Loop:** Document learnings in a shared log and refine Live Monitoring parameters. **Owner:** Data Analyst with input from Content Team."
+            },
+            {
+              "label": "Post-Campaign Analysis",
+              "category": "output",
+              "description": "Comprehensive report on campaign performance, learnings, and recommendations",
+              "content": "**Deliverable Format:** PDF report with sections: Executive Summary (key results vs. objectives), Channel Performance Breakdown (email, social, Google Ads with metrics), Creative Analysis (top-performing assets), Budget Utilization (actual spend vs. allocated, ROAS calculation), and Recommendations for Future Campaigns. **Metrics to Include:** Total sales generated, overall ROAS, CPA per channel, email list growth, social engagement rates, and customer acquisition cost. **Tools:** Pull data from Google Analytics, ad platforms, and CRM; visualize with Google Sheets or Tableau. **Steps:** 1. Compile all data 7 days post-campaign to capture post-purchase tracking. 2. Compare against pre-campaign benchmarks. 3. Identify success factors (e.g., best-performing ad copy: '50% Off' generated 30% more conversions). 4. Document failures and root causes (e.g., low CTR on certain creatives due to poor imagery). 5. Create actionable insights: For next campaign, allocate more budget to Google Ads if ROAS > 4, or refine email segmentation. **Distribution:** Share report via email to stakeholders (CEO, Marketing Team), store in shared drive, and schedule a debrief meeting to discuss learnings. **Success Metrics:** Report completion within 10 days, stakeholder satisfaction survey score > 8/10."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "approves"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "triggers"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "feeds"
+            },
+            {
+              "from": 6,
+              "to": 5,
+              "label": "refines"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "outputs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 95,
+        "maxScore": 95,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 5)",
+          "✓ Node count: 8 ≤ 10",
+          "✓ All 8 edges valid",
+          "✓ Starts with input",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 1150c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (8 edges, 8 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "marketing-blog",
+      "status": "ok",
+      "elapsed": 124825,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Our blog is a mess. We publish whenever someone feels like it, no editorial calendar, no SEO, no promotion. Design a proper content pipeline for us.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! The case of the chaotic blog is now before us, mon ami. Let us design a meticulous content pipeline to bring order and strategy, using the little grey cells to uncover clues for success. Voilà, the blueprint for a disciplined editorial process!",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Editorial Calendar & Planning",
+              "category": "trigger",
+              "description": "Initiates the content pipeline with structured scheduling and topic ideation.",
+              "content": "Begin by establishing a monthly editorial calendar using tools like Trello, Asana, or Airtable to map out content themes, assign writers, and set deadlines. Conduct keyword research with SEMrush or Ahrefs to identify high-impact topics aligned with SEO goals. Hold a planning meeting with stakeholders to align content with marketing objectives, create detailed content briefs including target audience, tone, and key messages. Document all ideas in a shared dashboard, ensuring transparency and accountability. Set up recurring reviews to adjust the calendar based on performance metrics and emerging trends, fostering agility in your strategy."
+            },
+            {
+              "label": "Content Drafting & Creation",
+              "category": "action",
+              "description": "Writers produce initial drafts based on the editorial brief.",
+              "content": "Use Google Docs or Notion for collaborative writing, starting with an outline that includes introduction, body sections, and conclusion. Incorporate target keywords naturally, aim for 1,000-2,000 words with internal links to existing content. Follow brand style guides for tone and voice, and include calls-to-action. Set a first-draft deadline within 3-5 days of assignment, with peer reviews for clarity. Use tools like Grammarly for grammar checks, and ensure all sources are cited accurately. Iterate based on early feedback from SEO and design teams to minimize rework later."
+            },
+            {
+              "label": "SEO & Quality Optimization",
+              "category": "test",
+              "description": "Validate and enhance content for search engines and readability.",
+              "content": "Run the draft through Yoast SEO or Rank Math to check keyword density, meta titles (under 60 chars), and descriptions (150-160 chars). Optimize headings (H1 for title, H2/H3 for subsections) and ensure mobile responsiveness. Use Hemingway App to achieve readability scores of Grade 6-8, and add alt text for all images with relevant keywords. Implement schema markup for articles using JSON-LD. Validate with Google Search Console for indexation issues, and perform a final link check to avoid broken URLs. This step ensures content meets technical SEO standards before review."
+            },
+            {
+              "label": "Multimedia & Design Integration",
+              "category": "action",
+              "description": "Enhance content with visuals, videos, and design elements.",
+              "content": "Create or source high-quality images, infographics, and videos using Canva or Adobe Creative Suite, aligning with brand colors and themes. Optimize media files: compress images with TinyPNG, use WebP format, and add descriptive filenames and alt tags for SEO. Embed videos from YouTube or Vimeo with transcripts for accessibility. Design featured images that are shareable on social media (1200x630 px). Coordinate with content to ensure multimedia complements the narrative, and update the draft with embedded elements, captions, and credits for a polished finish."
+            },
+            {
+              "label": "Editorial Review & Approval",
+              "category": "review",
+              "description": "Human gate for quality, accuracy, and brand compliance.",
+              "content": "Conduct a thorough review using a checklist: fact-check all statements with verified sources, assess tone consistency per brand guidelines, and ensure no grammatical errors remain. Use tools like GatherContent for collaborative feedback, involving subject matter experts if technical accuracy is needed. Set approval criteria: content must pass SEO checks, design alignment, and clarity for the target audience. If issues arise, provide specific, actionable feedback and route back to drafting. Only approve when all boxes are ticked, documenting the decision in the editorial log for traceability."
+            },
+            {
+              "label": "Publishing & Distribution",
+              "category": "output",
+              "description": "Final step to publish content and initiate promotion.",
+              "content": "Schedule the approved content in your CMS (e.g., WordPress) based on the editorial calendar, with pre-publish checks: test all links, ensure images display correctly, and set up social media snippets using plugins like Yoast. Notify the team via Slack or email upon publication. Immediately share on social platforms (LinkedIn, Twitter, Facebook) with tailored messaging, and add to email newsletters via Mailchimp. Monitor initial engagement with Google Analytics, and update the content log with publication dates and URLs. This node delivers the final, live blog post as the pipeline's output."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "validates"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "approves"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 100,
+        "maxScore": 100,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 6 (min: 5)",
+          "✓ Node count: 6 ≤ 10",
+          "✓ Has \"review\" category",
+          "✓ All 7 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 594c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (7 edges, 6 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "execute-sow",
+      "status": "ok",
+      "elapsed": 63533,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Write a statement of work for a 3-month web application redesign project. Client is a mid-size e-commerce company. Budget is $85,000. Include scope, deliverables, timeline, and payment terms.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Statement of Work: E-Commerce Web Application Redesign\n\n**Project Title:** Modernization of E-Commerce Platform User Experience & Interface\n**Client:** [Client Company Name], a mid-sized e-commerce retailer\n**Vendor:** [Your Company/Agency Name]\n**Effective Date:** [Date]\n**Project Duration:** 3 Months (Approximately 12-13 weeks)\n**Total Project Budget:** $85,000\n\n---\n\n## 1. Project Overview & Objectives\n\nThis Statement of Work (SOW) defines the terms, deliverables, and scope for a comprehensive redesign of the Client's customer-facing web application. The primary goal is to modernize the user interface (UI), enhance the user experience (UX) across key purchase pathways, and implement a refreshed visual design system to improve customer engagement and conversion rates.\n\n**Key Objectives:**\n*   **Increase Conversion Rate:** Streamline the checkout process and product discovery to reduce friction and cart abandonment.\n*   **Modernize Brand Perception:** Implement a contemporary, visually cohesive design that aligns with current market trends and reinforces brand credibility.\n*   **Improve Site Performance:** Ensure the new design is optimized for speed and responsiveness across all device types (desktop, tablet, mobile).\n*   **Enhance Usability:** Conduct user-centered design to create intuitive navigation and a more accessible shopping experience.\n*   **Establish a Scalable Foundation:** Deliver a component-based design system for future updates and feature additions.\n\n## 2. Scope of Work\n\nThe project will be executed in phases, focusing on the core customer journey from landing to purchase.\n\n### **Phase 1: Discovery & Strategy (Weeks 1-3)**\n*   **Stakeholder Workshops:** Facilitate meetings with key client stakeholders to understand business goals, brand guidelines, and technical constraints.\n*   **Heuristic Evaluation & Analytics Review:** Audit the existing application to identify UX pain points, usability issues, and analyze current user behavior data.\n*   **Competitive & Comparative Analysis:** Review leading e-commerce sites to identify industry best practices and opportunities for differentiation.\n*   **User Persona Development:** Create detailed user personas representing the Client's primary customer segments.\n*   **User Journey Mapping:** Document key user flows (e.g., browsing, product page, checkout) to identify optimization opportunities.\n*   **Project Plan & Sitemap Refinement:** Finalize the detailed project timeline and site structure.\n\n### **Phase 2: Design & Prototyping (Weeks 4-9)**\n*   **Visual Design Direction:** Present 2-3 distinct visual design concepts (mood boards, style tiles) for the homepage and core templates.\n*   **Design System Development:** Create a comprehensive UI component library (Figma/Sketch) including typography, color palette, buttons, forms, icons, and interactive states.\n*   **High-Fidelity Wireframes & Mockups:** Design complete, pixel-perfect mockups for all pages and states within the agreed scope, including:\n    *   Homepage\n    *   Category/Product Listing Pages (PLPs)\n    *   Product Detail Pages (PDPs)\n    *   Shopping Cart & Checkout Process (3-4 steps)\n    *   User Account Dashboard (overview view)\n    *   Search Results Page\n*   **Interactive Prototype:** Develop a clickable prototype in Figma to demonstrate key user flows and interactions for client review and user testing.\n\n### **Phase 3: Front-End Development & Handoff (Weeks 10-12)**\n*   **Responsive Front-End Development:** Convert approved high-fidelity designs into clean, semantic, and responsive HTML/CSS/JavaScript.\n*   **Browser & Device Testing:** Ensure consistent rendering and functionality across modern browsers (Chrome, Firefox, Safari, Edge) and device breakpoints.\n*   **Performance Optimization:** Optimize assets (images, code) for fast loading times.\n*   **Collaboration with Client's Development Team:** Provide support during the integration phase with the Client's back-end systems and CMS.\n*   **Final Delivery & Documentation:**\n    *   All source design files (Figma/Sketch).\n    *   Fully developed, responsive front-end code.\n    *   Complete design system documentation and component library.\n    *   Style guide for future development.\n\n### **Exclusions (Out of Scope)**\n*   Back-end development, database changes, or API modifications.\n*   Content creation or copywriting (excluding UX microcopy recommendations).\n*   Third-party plugin or payment gateway integration development.\n*   Post-launch marketing or ongoing maintenance (support can be quoted separately).\n*   Extensive user testing with external participant recruitment.\n\n## 3. Deliverables\n\n1.  **Discovery Report:** Summary of findings, user personas, journey maps, and strategic recommendations.\n2.  **Sitemap & Annotated Project Plan.**\n3.  **Visual Design Concepts** (2-3 options).\n4.  **Complete High-Fidelity Mockups** for all pages in scope.\n5.  **Interactive Prototype** of key user flows.\n6.  **UI Component Library / Design System** (Figma/Sketch file).\n7.  **Fully Developed, Responsive Front-End Code** (HTML, CSS, JS).\n8.  **Technical Documentation & Style Guide.**\n\n## 4. Project Timeline & Milestones\n\n*   **Kick-off & Project Start:** Week 1\n*   **Milestone 1 – Discovery Complete & Strategy Approved:** End of Week 3\n*   **Milestone 2 – Visual Design Direction Approved:** End of Week 5\n*   **Milestone 3 – All High-Fidelity Mockups Approved:** End of Week 9\n*   **Milestone 4 – Front-End Development Complete & Code Delivered:** End of Week 12\n*   **Project Closure & Final Acceptance:** Week 13\n\nA detailed week-by-week schedule will be maintained in the project management tool (e.g., Asana, Jira).\n\n## 5. Payment Terms\n\nThe total fixed project fee is **$85,000**. Payments are tied to project milestones as outlined below:\n\n1.  **Upon SOW Signing:** **$17,000 (20%)** due to initiate project work.\n2.  **Upon Approval of Milestone 1 (Discovery):** **$21,250 (25%)** due.\n3.  **Upon Approval of Milestone 2 (Visual Design):** **$21,250 (25%)** due.\n4.  **Upon Final Delivery & Acceptance (Milestone 4):** **$25,500 (30%)** due.\n\nAll invoices are payable within **15 days** of receipt. A late payment fee of 1.5% per month may be applied to overdue balances.\n\n---\n\n**Acceptance:**\n\nThis Statement of Work, when signed by both parties, represents a mutual agreement on the project scope, deliverables, timeline, and budget.\n\n**Client Signature:** _________________________\n**Printed Name:** _________________________\n**Title:** _________________________\n**Date:** _________________________\n\n**Vendor Signature:** _________________________\n**Printed Name:** _________________________\n**Title:** _________________________\n**Date:** _________________________",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (6737 chars)",
+          "✓ Content length: 6737 ≥ 300"
+        ]
+      }
+    },
+    {
+      "id": "personality-rowan-empty",
+      "status": "ok",
+      "elapsed": 7413,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "We have an empty workspace. Ready for mission input. Tell me what you need built, and I’ll architect the workflow.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (114 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "personality-poirot-empty",
+      "status": "ok",
+      "elapsed": 7789,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Mon ami, we have a pristine canvas before us—a blank slate awaiting the first clues of our investigation. I see no nodes, no edges, no evidence of a workflow yet. Très intéressant! Shall we begin a case?",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (203 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "culture-advice-remote-team",
+      "status": "ok",
+      "elapsed": 15766,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We went fully remote 6 months ago. Team velocity is down 30%, people skip standups, Slack is dead silent, and two senior engineers are about to quit. The CEO thinks forcing everyone back to the office will fix it. What should we actually do?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, mon ami, a troubling case indeed. The symptoms are clear—declining velocity, silent channels, fleeing talent—but the CEO's prescription is like blaming the weather for a sinking ship. Forcing a return is a brute-force solution that will likely hasten the exodus. We must investigate the root causes: is this a failure of process, a cultural sepsis, or a tooling mismatch? Let us apply the little grey cells.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (411 chars)",
+          "✓ Message length: 411 ≥ 250"
+        ]
+      }
+    }
+  ]
+}

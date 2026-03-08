@@ -474,6 +474,24 @@ const POOL = [
     prompt: 'Write a security incident report for a data breach where an attacker exploited an unpatched Log4j vulnerability to access our customer database. 15,000 user records were exposed including emails and hashed passwords. The breach was detected 72 hours after initial access via anomalous CloudWatch logs.',
     expect: { hasContent: true, minContentLen: 1500 },
   },
+
+  // ─── Round 90 additions ─────────────────────────────────────────────────────
+
+  // Hospitality / restaurant — new domain, tests operational workflow with state + dependency nodes
+  {
+    id: 'hospitality-restaurant-opening',
+    agent: 'rowan', taskType: 'generate',
+    prompt: 'We\'re opening a new restaurant in 3 months. Build a workflow: secure location and permits, design the menu, hire and train staff, set up supply chain, build out the kitchen, soft launch, grand opening. Budget is $200k and we need health department approval before opening.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['review'], mustMentionInNodes: ['permit|license|health', 'menu|food', 'staff|hire|train', 'launch|open'] },
+  },
+
+  // Edge case: extremely long, detailed prompt — tests whether agent handles verbosity without losing structure
+  {
+    id: 'edge-verbose-prompt',
+    agent: 'poirot', taskType: 'generate',
+    prompt: 'OK so here is the situation. We are a 50-person B2B SaaS company selling project management tools. Our current release process is a total disaster. Here is what happens: developers commit to main whenever they want, sometimes 20 times a day. There are no feature flags. QA is one person named Sarah who manually tests everything on her laptop. We have no staging environment — we test in production. Deployments are done by the CTO via SSH at 2am because that is when traffic is lowest. Last month we had three outages because untested code went live. The board is furious. The CTO wants to fix this but does not know where to start. Can you build us a proper release management workflow that covers feature development, code review, automated testing, staging, release approval, deployment, and rollback?',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['test', 'review'], mustMentionInNodes: ['review|code review|pr', 'test|automat|ci', 'staging|stage', 'deploy|release|rollback'] },
+  },
 ];
 
 // ─── Agent System Prompts (synced with src/lib/prompts.ts) ─────────────────
