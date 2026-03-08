@@ -2366,7 +2366,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
 
       // Detect if the user is requesting a build/modification (needs more time + creativity)
       const lowerPrompt = enrichedPrompt.toLowerCase();
-      const isBuildOrModify = /\b(build|create|generate|make|design|add|remove|change|update|edit|modify|tweak|revise|insert|delete|replace|rename|move|swap)\b/.test(lowerPrompt);
+      const isBuildOrModify = /\b(build|create|generate|make|design|add|remove|change|update|edit|modify|tweak|revise|insert|delete|replace|rename|move|swap|speed\s*up|optimiz|faster|too\s*slow)\b/.test(lowerPrompt);
       const chatTaskType = isBuildOrModify ? 'generate' : 'analyze';
 
       // Set taskType in generation context so compilePersonalityPrompt can inject goal declarations
@@ -2439,6 +2439,15 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       }};
       if (typeof data.result === 'string') {
         try { result = JSON.parse(data.result); } catch { /* keep as-is */ }
+      }
+
+      // Guard: If the user asked a pure question (what/how/should/why + no action verbs),
+      // strip accidental modifications — the LLM sometimes modifies when it should advise
+      const isAdviceQuestion = /^(what|how|should|why|tell|explain|describe|can you tell|do you think)\b/i.test(prompt.trim())
+        && !/\b(add|remove|change|rename|speed|fix|optimiz|merge|split|delete|move|swap|insert)\b/i.test(prompt.toLowerCase());
+      if (isAdviceQuestion && result.modifications && !result.workflow) {
+        cidLog('chatWithCID:stripped-modifications', { reason: 'advice question detected', prompt: prompt.slice(0, 60) });
+        result.modifications = undefined;
       }
 
       // ── Handle workflow modifications (edit/tweak existing workflow) ──
