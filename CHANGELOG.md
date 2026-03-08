@@ -1,5 +1,27 @@
 # Changelog
 
+### 2026-03-08 — Artifact Preview/Edit Panel (Major Feature)
+
+**New component: `ArtifactPanel.tsx`** — A Claude Artifacts-inspired preview/edit panel for node content.
+
+Features:
+- **Split Preview/Edit**: Toggle between rendered markdown preview and monospace editor. Supports both node content and execution results via tab switch.
+- **Selection-based AI Rewriting**: Select any text in preview mode → floating toolbar appears → type an instruction → CID rewrites just that portion using the current model. Inspired by ChatGPT Canvas.
+- **Version History**: Every save creates a version snapshot (capped at 20). Navigate and restore previous versions. Inspired by Claude Artifacts' version arrows.
+- **Downstream Impact + Sync**: Shows all nodes affected by changes. One-click Sync button cascades staleness to downstream nodes — this is our killer feature for keeping related artifacts in sync.
+- **Shared Markdown Renderer**: Extracted `renderMarkdown()` from CIDPanel into `src/lib/markdown.tsx` for reuse. Supports headers, lists, code blocks, tables, blockquotes, bold, italic, inline code, links.
+
+Integration:
+- LifecycleNode: Eye icon on hover opens panel; "preview result" on execution output
+- NodeDetailPanel: Eye icon in execution result header
+- Canvas: AnimatePresence wrapper for smooth transitions
+
+Also shipped earlier this session:
+- Pre-flight workflow validation (LangGraph-inspired)
+- Agent-branded typing indicator (Rowan/Poirot name + dots)
+
+**Build:** Clean — 0 lint warnings, typecheck passes, production build succeeds.
+
 ### 2026-03-08 — Round 108: 98% Chat (Rowan Category Pattern) + Pool 92→94
 
 **Eval results: 98% (7/7 passed) — DeepSeek Chat**
