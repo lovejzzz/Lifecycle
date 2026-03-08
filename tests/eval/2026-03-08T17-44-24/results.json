@@ -1,0 +1,37 @@
+{
+  "timestamp": "2026-03-08T17-44-24",
+  "overall": 100,
+  "testsRun": [
+    "culture-advice-remote-team"
+  ],
+  "poolSize": 82,
+  "results": [
+    {
+      "id": "culture-advice-remote-team",
+      "status": "ok",
+      "elapsed": 5761,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "We went fully remote 6 months ago. Team velocity is down 30%, people skip standups, Slack is dead silent, and two senior engineers are about to quit. The CEO thinks forcing everyone back to the office will fix it. What should we actually do?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, mon ami, this is a classic case of misdiagnosis! The CEO sees the symptoms—silent Slack, skipped standups, fleeing talent—and prescribes the old remedy: the office. But the little grey cells tell me the real ailment lies deeper: a breakdown in remote collaboration rituals and psychological safety. Forcing a return would be like arresting the butler without checking for fingerprints. Let us investigate the evidence and rebuild your remote operating system.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (463 chars)",
+          "✓ Message length: 463 ≥ 250"
+        ]
+      }
+    }
+  ]
+}

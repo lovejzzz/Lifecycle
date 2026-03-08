@@ -1,0 +1,595 @@
+{
+  "timestamp": "2026-03-08T17-43-20",
+  "overall": 100,
+  "testsRun": [
+    "support-escalation",
+    "personality-poirot-empty",
+    "healthcare-patient-intake",
+    "culture-advice-remote-team",
+    "execute-postmortem",
+    "media-content-multiformat",
+    "healthcare-patient-intake"
+  ],
+  "poolSize": 82,
+  "results": [
+    {
+      "id": "support-escalation",
+      "status": "ok",
+      "elapsed": 61211,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Customers keep complaining their tickets go into a black hole. Design an escalation workflow — ticket comes in, auto-classify priority, route to right team, SLA tracking, escalate if overdue.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, the classic 'black hole' complaint! My little grey cells detect a case of missing escalation protocols. Let us design a system that tracks every ticket like a detective follows clues, with automatic routing and SLA enforcement to ensure no case goes cold.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Ticket Submission",
+              "category": "trigger",
+              "description": "Initial customer ticket creation through portal, email, or chat",
+              "content": "When a customer submits a ticket through any channel (Zendesk, Freshdesk, Intercom, email), the workflow triggers. Capture: customer ID, contact method, timestamp, initial description, and any attachments. Implement webhook listeners for each channel to centralize intake. Set up duplicate detection by comparing ticket content against recent submissions (using fuzzy matching at 85% similarity threshold). Auto-tag with submission source and create unique case ID following pattern: [YYYYMMDD]-[SOURCE]-[6-digit-seq]. Log all metadata to audit trail. Initial status: 'New' with timestamp for SLA clock start."
+            },
+            {
+              "label": "Priority Classification Engine",
+              "category": "action",
+              "description": "AI-powered priority scoring based on content, customer tier, and keywords",
+              "content": "Process ticket content through NLP classifier (using pre-trained model fine-tuned on historical ticket data). Analyze: 1) Keyword detection for 'urgent', 'broken', 'down', 'critical' with weighted scores. 2) Sentiment analysis (negative/angry tickets get +1 priority level). 3) Customer tier lookup (enterprise = +1, VIP = +2). 4) Historical resolution time for similar issues. Output: Priority score 1-5 (1=critical, 5=low). Set SLA targets: P1=1hr response/4hr resolve, P2=4hr/24hr, P3=24hr/72hr, P4=48hr/5d, P5=72hr/10d. Store classification confidence score and reasoning in ticket metadata for auditability."
+            },
+            {
+              "label": "Team Routing Matrix",
+              "category": "action",
+              "description": "Intelligent assignment based on priority, skill requirements, and team capacity",
+              "content": "Match ticket to team using: 1) Topic classification (billing, technical, account, feature request). 2) Required skill level (junior vs senior based on complexity score). 3) Team capacity monitoring (using real-time load from help desk API). 4) Geographic/timezone alignment for follow-the-sun support. Implement round-robin within qualified teams to distribute load. If no capacity, auto-queue with estimated wait time notification to customer. For P1/P2 tickets, bypass queues and assign directly to on-call engineer via PagerDuty/Opsgenie integration. Update ticket with assigned team/individual and send internal notification via Slack/Microsoft Teams."
+            },
+            {
+              "label": "SLA Monitoring Dashboard",
+              "category": "state",
+              "description": "Real-time tracking of all tickets against their SLA deadlines with visual alerts",
+              "content": "Continuous monitoring of: 1) Response time countdown (time until first human response required). 2) Resolution time countdown (time until ticket must be closed). 3) Escalation thresholds (50%, 80%, 90% of SLA elapsed). Display in real-time dashboard (Grafana/DataDog) with color coding: green=on track, yellow=approaching limit, red=breached. Calculate metrics: % tickets within SLA, average time to first response, escalation rate. Set up automated health checks every 5 minutes comparing current time against SLA deadlines. Store historical SLA performance data for weekly/monthly reporting."
+            },
+            {
+              "label": "Escalation Triggers",
+              "category": "trigger",
+              "description": "Automatic escalation actions when tickets approach or breach SLA thresholds",
+              "content": "Execute escalation sequence based on SLA percentage: At 50% elapsed → Notify assigned agent via in-app alert + email. At 80% elapsed → Notify team lead + increase priority by 1 level. At 90% elapsed → Auto-reassign to senior team member + notify department head. At 100% breached → Create incident report + notify director level + trigger post-mortem process. Each escalation adds audit comment to ticket and sends customer notification with updated ETA. Implement exponential backoff for repeated escalations (don't spam). Include weekend/holiday adjustments in SLA calculations using business hours configuration."
+            },
+            {
+              "label": "Escalation Resolution Review",
+              "category": "review",
+              "description": "Human review of escalated tickets to ensure proper handling and prevent recurrence",
+              "content": "When ticket escalates to level 3 (department head) or has breached SLA, trigger mandatory review. Review checklist: 1) Root cause analysis (why did initial assignment fail?). 2) Resource allocation assessment (was team understaffed?). 3) Process gap identification (missing knowledge base article?). 4) Customer impact assessment (compensation/credit consideration). 5) Preventive measures documentation. Review conducted by support manager within 24 hours of escalation closure. Output: Review report attached to ticket, process improvement ticket created if systemic issue found, customer satisfaction follow-up scheduled for high-impact cases. Approve/Reject decision on whether escalation was handled appropriately."
+            },
+            {
+              "label": "Performance Analytics & Reporting",
+              "category": "output",
+              "description": "Weekly/Monthly reports on escalation patterns, SLA compliance, and improvement opportunities",
+              "content": "Generate automated reports including: 1) Escalation rate by team/priority/category. 2) Average time between escalation levels. 3) Top 5 reasons for escalation (lack of resources, complex issues, misclassification). 4) Cost of escalations (agent hours, management time). 5) Customer satisfaction correlation (CSAT scores for escalated vs non-escalated tickets). Use Tableau/PowerBI dashboards with drill-down capability. Schedule weekly email to leadership with key metrics and anomalies. Include actionable insights: 'Team A needs additional training on billing issues', 'P2 tickets consistently escalate at 70% rate - adjust SLA'. Archive reports for quarterly trend analysis and annual review."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "monitors"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "triggers"
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 6,
+              "label": "feeds"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "informs"
+            },
+            {
+              "from": 2,
+              "to": 6,
+              "label": "informs"
+            },
+            {
+              "from": 4,
+              "to": 6,
+              "label": "feeds"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 100,
+        "maxScore": 100,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ Has \"trigger\" category",
+          "✓ All 11 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 643c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (11 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "personality-poirot-empty",
+      "status": "ok",
+      "elapsed": 3289,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, mon ami, the canvas is blank—a fresh case with no clues yet. But do not fret; every great investigation begins with a single question. What mystery shall we unravel today?",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (175 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "healthcare-patient-intake",
+      "status": "ok",
+      "elapsed": 57233,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Design a patient intake workflow for a telehealth clinic. Steps include appointment scheduling, insurance verification, medical history form, consent collection, provider assignment, and video call setup. Must be HIPAA compliant.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, mon ami! A telehealth intake case—très intéressant! Let us examine the evidence and construct a workflow that protects patient data while ensuring smooth operation. The little grey cells are already working on this HIPAA-compliant investigation.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Patient Appointment Request",
+              "category": "trigger",
+              "description": "Initial patient contact through website, phone, or portal",
+              "content": "This trigger initiates the entire intake process. Patients can request appointments through multiple channels: encrypted web forms (using TLS 1.2+), secure patient portal (HIPAA-compliant like Epic MyChart or Athenahealth), or phone calls with staff trained in privacy protocols. All initial data collection must include minimal necessary information: patient name, contact method, reason for visit (using general categories like 'follow-up' or 'new concern' rather than detailed symptoms in this phase), and preferred time windows. The system should automatically timestamp the request and assign a unique patient identifier. Staff must verify the request source is secure before proceeding—checking for HTTPS, encrypted VoIP systems, or secure messaging platforms. This phase establishes the first point of HIPAA accountability with access logging."
+            },
+            {
+              "label": "Parallel Verification & Documentation",
+              "category": "state",
+              "description": "Simultaneous insurance validation and medical history collection",
+              "content": "Two critical parallel processes occur here: 1) Insurance verification through real-time eligibility checks using clearinghouses like Change Healthcare or Availity, requiring patient insurance ID, group number, and date of birth. The system must log verification attempts and results while never storing full insurance card images unless encrypted at rest. 2) Secure medical history collection through encrypted digital forms (using platforms like Phreesia or DocuSign with BAA) that include structured fields for medications, allergies, past surgeries, family history, and current symptoms. Forms must include validation rules (required fields, date formats) and save progress automatically. Both processes require patient identity verification through two-factor authentication (text code or security questions) before sensitive data exchange. All data transmissions must use end-to-end encryption."
+            },
+            {
+              "label": "HIPAA Compliance Checkpoint",
+              "category": "policy",
+              "description": "Continuous privacy and security monitoring throughout intake",
+              "content": "This parallel policy node monitors all intake activities for HIPAA compliance. It includes: 1) Access control monitoring—tracking who views patient data with role-based permissions (minimum necessary principle), logging all access attempts with timestamps and user IDs. 2) Data encryption validation—ensuring all data in transit uses TLS 1.2+ and data at rest uses AES-256 encryption. 3) Business Associate Agreement (BAA) verification—confirming all third-party tools (scheduling, forms, video) have executed BAAs. 4) Audit trail generation—automated logging of all patient data interactions for potential breach investigation. 5) Security incident monitoring—automated alerts for unusual access patterns or data export attempts. This node runs continuously alongside other steps, not sequentially."
+            },
+            {
+              "label": "Consent Collection & Provider Matching",
+              "category": "action",
+              "description": "Obtaining informed consent and assigning appropriate clinician",
+              "content": "Once verification and history are complete, the system presents digital consent forms covering: telehealth treatment consent, financial responsibility, privacy practices acknowledgment, and communication preferences (secure messaging vs phone). Forms must use plain language at 6th-grade reading level with translation options for major languages. Simultaneously, the triage algorithm analyzes medical history and reason for visit to match with appropriate provider based on: specialty requirements, availability within patient's time window, patient preferences (gender, language), and provider current caseload. The matching algorithm must consider urgency indicators from medical history while maintaining patient choice—presenting 2-3 provider options when possible. All consent documents are electronically signed with audit trails including IP address, timestamp, and document version hash."
+            },
+            {
+              "label": "Appointment Finalization",
+              "category": "review",
+              "description": "Human review and scheduling confirmation",
+              "content": "A staff member reviews the complete intake package: verified insurance, completed medical history, signed consents, and provider match. Checklist includes: 1) Confirm all required fields completed in medical history, 2) Validate insurance eligibility response shows active coverage, 3) Verify consent forms are properly signed and dated, 4) Check provider availability matches patient preference, 5) Ensure no contradictory information in medical history (e.g., allergies conflicting with medications). If issues found, staff contacts patient through secure channel with specific questions. Once approved, the system sends appointment confirmation through patient's preferred secure method (encrypted email, portal message, or SMS with no PHI) including: date/time, provider name, video platform instructions, and pre-visit reminders. The scheduling system (like Calendly Enterprise with BAA or Epic) creates calendar events with secure video links."
+            },
+            {
+              "label": "Secure Video Setup & Intake Completion",
+              "category": "output",
+              "description": "Final technical setup and patient readiness confirmation",
+              "content": "This output node delivers the fully prepared telehealth visit package. The system: 1) Generates unique, expiring video conference links using HIPAA-compliant platforms (Doxy.me, Zoom for Healthcare, or Epic's video tool) with waiting room features enabled. 2) Sends patient technical check instructions including browser requirements, audio/video testing steps, and troubleshooting contacts. 3) Prepares the provider dashboard with consolidated patient information: verified insurance, medical history summary, consent status, and reason for visit—all displayed through secure EHR interface. 4) Creates automated reminders (24 hours and 1 hour before appointment) through secure channels. 5) Documents completion of all intake steps in audit trail with timestamps for each component. The patient receives a final 'ready for visit' confirmation with all access information, completing the intake workflow while maintaining full HIPAA compliance through encrypted communications and minimal necessary data exposure."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 0,
+              "to": 2,
+              "label": "monitors"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "monitors"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "validates"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "requires"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "outputs"
+            },
+            {
+              "from": 4,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 2,
+              "to": 5,
+              "label": "validates"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 110,
+        "maxScore": 110,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 6 (min: 5)",
+          "✓ Node count: 6 ≤ 10",
+          "✓ Has \"policy\" category",
+          "✓ All 9 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 901c, no thin nodes",
+          "✓ Architecture covers: insurance, consent, hipaa",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (9 edges, 6 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "culture-advice-remote-team",
+      "status": "error",
+      "elapsed": 45009,
+      "error": "api_error: The operation was aborted due to timeout",
+      "request": {
+        "prompt": "We went fully remote 6 months ago. Team velocity is down 30%, people skip standups, Slack is dead silent, and two senior engineers are about to quit. The CEO thinks forcing everyone back to the office will fix it. What should we actually do?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "error": "api_error",
+        "message": "The operation was aborted due to timeout"
+      },
+      "scoring": {
+        "score": 0,
+        "maxScore": 1,
+        "pct": 0,
+        "checks": [
+          "✗ API error: api_error"
+        ]
+      }
+    },
+    {
+      "id": "execute-postmortem",
+      "status": "ok",
+      "elapsed": 60861,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Write a post-mortem for a 4-hour production outage where a database migration deleted the users table index, causing all login queries to full-scan a 50M row table. Response times went from 50ms to 45 seconds. The migration was tested locally with 1000 rows and passed. Oncall was paged at 2am, identified the issue at 3am, rebuilt the index at 3:30am, full recovery at 6am. 12,000 users were affected.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Post-Mortem Report: Production Outage Due to Missing Database Index\n\n**Date of Incident:** [Date]\n**Start Time:** 02:00 UTC\n**Detection Time:** 02:05 UTC\n**Resolution Time:** 06:00 UTC\n**Total Downtime:** ~4 hours\n**Impact:** ~12,000 users unable to authenticate; API login endpoint response times degraded from 50ms to 45+ seconds.\n\n## Executive Summary\nA scheduled database migration intended to optimize the `users` table inadvertently dropped a critical index on the `email` column. This caused all authentication queries to perform full table scans on a 50-million-row table, rendering the login system unusable. The migration had passed local testing with a small dataset (1,000 rows) where performance impact was negligible. The on-call engineer was paged, diagnosed the issue, and restored service by rebuilding the index. The root cause was a gap in pre-production validation for migrations against large datasets.\n\n## Timeline (UTC)\n- **01:45:** Automated database migration job begins in production.\n- **02:00:** Monitoring alerts fire for elevated database CPU and degraded login endpoint latency. On-call engineer paged.\n- **02:05–03:00:** Initial investigation focused on application logs and database resource saturation. Suspected query plan regression or lock contention.\n- **03:00:** Engineer identified missing `idx_users_email` index via database metadata inspection.\n- **03:15:** Decision made to rebuild the index. A maintenance window was communicated internally.\n- **03:30:** Index rebuild initiated. Due to table size and production load, the operation took approximately 2.5 hours.\n- **06:00:** Index rebuild completed. Login latency returned to baseline (~50ms). Service fully restored.\n\n## Impact\n- **User Impact:** Approximately 12,000 unique users attempting to log in received timeouts or extreme delays. The authentication service was effectively unavailable.\n- **Business Impact:** User acquisition and engagement metrics dropped during the outage. Customer support ticket volume increased by 300%.\n- **System Impact:** Database CPU sustained at 95%+ utilization. Read queries on the `users` table were blocked or severely slowed, affecting secondary services relying on user data.\n\n## Root Cause Analysis\nThe direct cause was the execution of a migration script that included a `DROP INDEX IF EXISTS idx_users_email` statement, intended to replace it with a new composite index. The new index creation failed silently due to a syntax error (a trailing comma in the SQL statement), leaving the table without any index on the `email` column.\n\n**Why did this happen?**\n\n1. **Inadequate Testing at Scale:** The migration was validated only on a local development database with 1,000 rows. At that scale, the full table scan added only milliseconds of latency, making the performance regression undetectable.\n2. **Silent Failure in Migration Script:** The migration framework did not catch the syntax error in the subsequent `CREATE INDEX` statement. The transaction was not rolled back because the `DROP INDEX` succeeded, and the error was logged but did not fail the deployment pipeline.\n3. **Lack of Pre-Production Performance Validation:** The migration pipeline did not include a mandatory step to run critical query plans against a production-sized dataset in a staging environment.\n4. **Missing Safeguard:** No automated check was in place to prevent the removal of indexes on columns identified as critical for query performance (e.g., those used in `WHERE` clauses of high-traffic endpoints).\n\n## Contributing Factors\n- **Timing:** The migration ran during a period of historically low traffic, but login attempts from our global user base were still significant.\n- **Alerting Latency:** Alerts for degraded performance fired promptly, but the alert for “missing index” was not configured.\n- **Documentation Gap:** The migration plan did not explicitly flag the `email` index as high-risk.\n\n## Resolution and Recovery\n1. **Diagnosis:** The on-call engineer queried `pg_stat_user_indexes` (PostgreSQL) and observed zero scans on `idx_users_email`, then confirmed its absence in `pg_indexes`.\n2. **Action:** After ensuring no other dependencies were affected, the engineer executed `CREATE INDEX CONCURRENTLY idx_users_email ON users(email)`. The `CONCURRENTLY` option allowed reads/writes to continue but extended the rebuild time.\n3. **Verification:** Post-rebuild, query plans were checked to confirm index usage, and latency metrics were monitored until stable.\n\n## Corrective and Preventative Actions\n\n**Short-term (Completed):**\n- [ ] Rolled back the faulty migration and restored the original index definition.\n- [ ] Added automated verification step in deployment pipeline to confirm existence of critical indexes post-migration.\n- [ ] Updated runbook to include “missing index” as a primary investigation path for sudden query performance degradation.\n\n**Medium-term (Target: 30 days):**\n- [ ] Implement a “shadow” staging environment with anonymized production-scale data for all database migration testing.\n- [ ] Enhance migration framework to require a performance impact assessment for any index change (drop/create/alter).\n- [ ] Introduce a pre-production checklist that mandates validation of query plans for top 10 most frequent queries.\n\n**Long-term (Target: 90 days):**\n- [ ] Develop a database change management policy requiring peer review for any index modification on high-traffic tables.\n- [ ] Implement automated anomaly detection on query patterns to alert on plan regressions within minutes.\n- [ ] Create a “critical index” registry with automated monitoring and alerting if any are missing or unused.\n\n## Lessons Learned\n1. **Testing at scale is non-negotiable.** Performance impacts often only manifest with production-sized data volumes.\n2. **Defensive coding for migrations is crucial.** Changes should be atomic and reversible, with explicit checks for success after each step.\n3. **Visibility into database schema changes must be real-time.** The team should have been alerted the moment the index disappeared, not after symptoms arose.\n4. **Blameless culture enabled swift diagnosis.** The team focused on system gaps rather than individual error, allowing for honest log analysis and rapid collaboration.\n\n## Appreciation\nThanks to the on-call engineer for their systematic diagnosis and effective recovery under pressure, and to the customer support and communications teams for managing user outreach during the incident.\n\n---\n\n**Incident Commander:** [Name]  \n**Authors:** [Names]  \n**Status:** Closed  \n**Next Review:** Scheduled for [Date] to verify completion of preventative actions.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (6662 chars)",
+          "✓ Content length: 6662 ≥ 1500"
+        ]
+      }
+    },
+    {
+      "id": "media-content-multiformat",
+      "status": "ok",
+      "elapsed": 59269,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "We record a weekly 1-hour podcast episode (MP3). Build a workflow that repurposes each episode into: a full written transcript (DOCX), a 2000-word blog post (Markdown), 5 short video clips for social media (MP4 with captions), an email newsletter summary (HTML), and a YouTube video with chapter markers. Each format has different requirements and review gates.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, mon ami! A classic case of content repurposing! The evidence suggests we need a systematic approach to transform a single podcast episode into multiple formats with proper quality gates. Let me examine the clues and construct a workflow worthy of Hercule Poirot's little grey cells!",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Podcast Recording (Input)",
+              "category": "input",
+              "description": "Weekly 1-hour MP3 podcast episode ready for processing",
+              "content": "This is the primary input artifact - a 60-minute MP3 audio file containing the complete podcast episode. Before processing begins, verify the following: audio quality meets standards (no clipping, consistent volume levels, minimal background noise), file is properly named with episode number and date (e.g., EP45_2024-03-15.mp3), and metadata includes episode title, guest names, and show notes. Store in a designated 'raw_podcasts' directory with backup to cloud storage. Create an accompanying metadata file with timestamps for key discussion points, sponsor mentions, and any content warnings. This preparation ensures smooth downstream processing and maintains quality consistency across episodes."
+            },
+            {
+              "label": "Transcription & Chapter Marking",
+              "category": "action",
+              "description": "Generate transcript and identify natural chapter breaks",
+              "content": "Using AI transcription tools (Descript, Otter.ai, or Whisper API), convert the MP3 to text with speaker diarization. Aim for 95%+ accuracy rate. Simultaneously, analyze the audio for natural breaks using silence detection and topic modeling to identify 5-7 logical chapters. Outputs: 1) Full transcript in DOCX format with speaker labels, timestamps, and chapter markers. 2) JSON file with chapter timestamps and titles. 3) Cleaned text file for further processing. Quality check: Review transcript for proper names, technical terms, and ambiguous phrases. Use a checklist: Are speaker labels consistent? Are timestamps accurate to within 5 seconds? Does each chapter have a clear theme? Budget 2-3 hours for manual correction of AI errors."
+            },
+            {
+              "label": "Content Review Gate",
+              "category": "review",
+              "description": "Human review of transcript accuracy and chapter structure",
+              "content": "A human editor reviews the transcript and chapter structure before content creation branches. Checklist: 1) Verify factual accuracy of statements (especially statistics or claims). 2) Ensure transcript readability (paragraph breaks, proper punctuation). 3) Confirm chapter markers align with natural conversation breaks and each chapter has a distinct focus. 4) Flag any sensitive content requiring editing. 5) Approve or reject with specific feedback. If rejected, the transcript returns to the previous step with detailed notes. If approved, the workflow proceeds to parallel content creation branches. This gate prevents propagating errors to multiple outputs. Use a standardized review form in Notion or Google Docs with required fields for each checklist item."
+            },
+            {
+              "label": "Parallel Content Creation",
+              "category": "action",
+              "description": "Simultaneous creation of blog post, social clips, newsletter, and YouTube assets",
+              "content": "Four parallel processes using the approved transcript and chapters: 1) BLOG: Expand transcript into 2000-word Markdown article using AI (ChatGPT, Claude) with SEO optimization, adding introductions, conclusions, and section headers. Include 3-5 relevant images with alt text. 2) SOCIAL CLIPS: Identify 5 compelling 30-60 second segments using chapter markers. Create MP4 videos with Descript/Canva, adding captions (burned-in or SRT), branding, and hooks. 3) NEWSLETTER: Extract key insights for HTML email using Beehiou/Mailchimp templates, focusing on actionable takeaways with clear CTAs. 4) YOUTUBE: Prepare chapter markers file for YouTube upload, create custom thumbnail, write video description with timestamps. All outputs go to respective staging folders with naming conventions."
+            },
+            {
+              "label": "Format-Specific Reviews",
+              "category": "review",
+              "description": "Parallel review gates for each content type",
+              "content": "Simultaneous specialized reviews: 1) BLOG REVIEW: Check for SEO optimization (headings, keyword density, meta description), readability (Flesch score >60), factual accuracy, and proper image attribution. 2) VIDEO REVIEW: Verify clip selection represents episode highlights, captions are accurate and readable, branding is consistent, and aspect ratios are correct for each platform (9:16 for TikTok/Reels, 1:1 for Instagram, 16:9 for YouTube Shorts). 3) NEWSLETTER REVIEW: Test email rendering across devices, check links, verify subject line effectiveness (use SubjectLine.com), ensure mobile responsiveness. 4) YOUTUBE REVIEW: Validate chapter markers align with content, thumbnail is click-worthy, description includes all required links and hashtags. Each review has its own checklist and approver."
+            },
+            {
+              "label": "Final Assembly & Distribution",
+              "category": "output",
+              "description": "Package all approved assets and schedule distribution",
+              "content": "Consolidate all approved assets into a distribution package: 1) Schedule blog post publication via WordPress/Ghost with proper categories and tags. 2) Upload YouTube video with chapters, set to premiere or schedule. 3) Queue social clips in social media management tool (Buffer, Hootsuite) with platform-specific captions and hashtags. 4) Schedule newsletter delivery via email service provider. 5) Create a master tracking spreadsheet with all URLs, publication times, and performance tracking setup (UTM parameters, analytics tags). Final verification: All assets are correctly named, all links work, scheduling times are staggered appropriately (e.g., blog first, then social, then newsletter), and backup copies are archived. Output confirmation email to team with all links and schedule."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "approves"
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 3,
+              "label": "refines"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "approves"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 110,
+        "maxScore": 110,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 6 (min: 5)",
+          "✓ Node count: 6 ≤ 10",
+          "✓ Has \"review\" category",
+          "✓ All 7 edges valid",
+          "✓ Starts with input",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 765c, no thin nodes",
+          "✓ Architecture covers: transcript, blog, video, email",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (7 edges, 6 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "healthcare-patient-intake",
+      "status": "ok",
+      "elapsed": 70470,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Build a patient intake workflow for our new urgent care clinic. Steps: online pre-registration, insurance verification, HIPAA consent forms, triage assessment, provider assignment, and visit documentation. We see 80 patients/day and need average intake under 15 minutes.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building patient intake workflow for 80/day throughput with <15 min target.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Patient Pre-Registration Trigger",
+              "category": "trigger",
+              "description": "Patient initiates intake via online portal or walk-in registration",
+              "content": "**Trigger Event:** Patient accesses urgent care clinic intake via: 1) Online pre-registration portal (web/mobile) with secure patient identity verification (e.g., SMS OTP or email link). 2) Walk-in registration at clinic kiosk or front desk. **Payload:** Patient demographic data (name, DOB, contact), chief complaint, insurance information (carrier, ID, group #), and emergency contact. **Configuration:** Integrate with scheduling system (e.g., Epic, Cerner) to check real-time availability; set up automated SMS/email confirmations upon submission. **Webhook Setup:** Trigger webhook to EHR system upon form submission, passing patient data to next step; include validation for required fields (HIPAA-compliant data encryption in transit). **Error Handling:** If validation fails, auto-retry logic with fallback to manual entry queue; log errors for IT monitoring."
+            },
+            {
+              "label": "Insurance Verification & HIPAA Consent",
+              "category": "action",
+              "description": "Automated insurance eligibility check and digital consent form signing",
+              "content": "**Steps:** 1) Use real-time eligibility API (e.g., Change Healthcare, Availity) to verify insurance coverage, copay, deductible within 60 seconds; flag high-deductible plans for financial counseling. 2) Present digital HIPAA consent form (and treatment consent) via e-signature platform (e.g., DocuSign, Adobe Sign) integrated with EHR; patient signs on tablet or mobile device. 3) Store signed consents in HIPAA-compliant document management (e.g., Box, SharePoint) with audit trail. **Tools:** Insurance verification API, e-signature software, EHR integration middleware. **Owner:** Front desk staff or automated system; escalate to billing specialist if verification fails. **Error Handling:** If API fails, queue for manual verification by staff within 5 minutes; retry logic with 3 attempts."
+            },
+            {
+              "label": "Triage Assessment",
+              "category": "action",
+              "description": "Clinical triage by nurse to prioritize acuity and collect vitals",
+              "content": "**Steps:** 1) Nurse greets patient, conducts brief interview (chief complaint, pain scale 0-10, symptom onset). 2) Collect vitals: temperature (temporal scanner), blood pressure (automated cuff), heart rate (pulse oximeter), oxygen saturation, weight. 3) Use standardized triage protocol (e.g., Emergency Severity Index Level 1-5) to assign acuity: Level 1 (emergent) → immediate provider; Level 2-3 → wait <10 min; Level 4-5 → routine queue. 4) Document findings in EHR triage note template. **Tools:** Vitals monitors, tablet with EHR access (e.g., Epic Hyperspace), triage decision support software. **Owner:** Licensed nurse (RN/LPN); target time 3-5 minutes per patient. **Error Handling:** If acuity unclear, escalate to charge nurse; log deviations for quality review."
+            },
+            {
+              "label": "Provider Assignment & Rooming",
+              "category": "state",
+              "description": "Dynamic assignment of patient to available provider and exam room",
+              "content": "**States:** 'Awaiting Provider' (after triage), 'Assigned' (provider matched), 'Roomed' (in exam room), 'Delayed' (if no provider/room available). **Transitions:** 1) From 'Awaiting Provider': System auto-assigns based on provider availability, specialty match (e.g., pediatric vs. adult), and load balancing; use real-time dashboard (e.g., LeanTaaS iQueue) to track provider status. 2) To 'Assigned': Notify provider via secure messaging (e.g., TigerConnect) and patient via waiting room display. 3) To 'Roomed': Medical assistant escorts patient to prepped exam room; update EHR room status. **Triggers:** Provider availability change, room cleaning completion (tracked via IoT sensors). **SLA:** Target <2 minutes from triage to rooming; alert supervisor if delay >5 minutes."
+            },
+            {
+              "label": "Visit Documentation & Coding",
+              "category": "action",
+              "description": "Provider documents encounter and assigns preliminary diagnosis codes",
+              "content": "**Steps:** 1) Provider conducts exam using EHR template (SOAP format: Subjective, Objective, Assessment, Plan). 2) Order diagnostics (labs, imaging) via integrated CPOE; e-prescribe medications via Surescripts. 3) Assign preliminary ICD-10 diagnosis codes and CPT procedure codes for billing; use AI-assisted coding tool (e.g., Nuance) to suggest codes based on documentation. 4) Complete after-visit summary (AVS) with instructions, follow-up plan. **Tools:** EHR clinical documentation, coding software, e-prescribing network. **Owner:** Provider (MD/PA/NP); target documentation time <5 minutes. **Error Handling:** If coding unclear, flag for billing specialist review; use auto-save to prevent data loss."
+            },
+            {
+              "label": "Quality & Compliance Review",
+              "category": "review",
+              "description": "Supervisor reviews intake metrics and HIPAA compliance before finalizing",
+              "content": "**Approval Criteria:** 1) Intake time <15 minutes (track via timestamp audit). 2) HIPAA consent signed and stored. 3) Triage acuity appropriate per protocol. 4) Documentation complete (no missing fields). 5) Preliminary coding accurate (cross-check with chief complaint). **Who Reviews:** Nurse supervisor or clinic manager; use quality dashboard (e.g., Tableau) showing real-time metrics. **Escalation:** If criteria failed, escalate to medical director for root cause analysis; hold patient record until resolved. **SLA:** Review within 30 minutes of visit end; approve/reject with comments in EHR. **Success Metrics:** 95% intake under 15 min, 100% consent compliance, <5% coding errors."
+            },
+            {
+              "label": "Patient Discharge & Follow-up",
+              "category": "output",
+              "description": "Finalize visit, process discharge, and schedule follow-up as needed",
+              "content": "**Deliverable Format:** 1) Printed/wigital after-visit summary (AVS) with diagnosis, medications, instructions. 2) Billing claim generated and transmitted to payer. 3) Follow-up appointment scheduled in EHR (if needed). 4) Patient satisfaction survey sent via SMS/email (e.g., Press Ganey). **Distribution:** AVS to patient via portal/print; claim to insurance via clearinghouse (e.g., Change Healthcare); survey via automated system. **Success Metrics:** Discharge time <2 minutes, 90% survey response rate, clean claim rate >98%. **Tools:** EHR discharge module, billing software, survey platform. **Finalization:** Mark visit complete in EHR; archive record; trigger data analytics for operational reporting."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "drives"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "approves"
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 4,
+              "label": "refines"
+            },
+            {
+              "from": 2,
+              "to": 6,
+              "label": "informs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 110,
+        "maxScore": 110,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ Has \"review\" category",
+          "✓ All 9 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 761c, no thin nodes",
+          "✓ Architecture covers: registr, insurance, triage, document",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (9 edges, 7 nodes)"
+        ]
+      }
+    }
+  ]
+}

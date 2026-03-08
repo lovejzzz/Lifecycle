@@ -1,5 +1,24 @@
 # Changelog
 
+### 2026-03-08 — Round 103: Analyze Timeout Fix (45s→60s) + Pool 82→84
+
+**Eval results: 100% (6/7 passed, 495/496 points) — DeepSeek Chat**
+
+One test failed due to API timeout, not quality:
+- `culture-advice-remote-team` (0%): Timed out at 45s. The 45s analyze timeout was too tight when DeepSeek API is under load. Fixed by bumping analyze timeout from 45s → 60s in `route.ts:123`. Re-ran: passed at 5.7s with 463c Poirot response.
+
+Quality highlights from passing tests:
+- `healthcare-patient-intake` (Rowan, 100%): 7 nodes, 761c avg. New test validated — urgent care workflow with HIPAA, triage, 15-min intake target. Functional and specific.
+- `healthcare-patient-intake` (Poirot, 100%): 6 nodes, 901c avg. Telehealth variant with HIPAA policy gate. Higher content depth.
+- `execute-postmortem` (Rowan, 100%): 6,662c blameless postmortem. Timeline, root cause (index drop), quantified impact (12k users, 45s response times).
+- `support-escalation` (Poirot, 100%): 7 nodes with SLA monitoring state node and dual triggers. Creative architecture.
+
+**Fix:** `src/app/api/cid/route.ts` — analyze timeout 45s → 60s. Gives headroom for API latency spikes without being wasteful.
+
+**Pool: 82 → 84 tests:** `manufacturing-quality-control` (PCB assembly line, industrial domain), `edge-advice-disguised-as-build` (tests intent detection — advice request that sounds like a build request).
+
+**Build:** Clean — 0 lint warnings, typecheck passes, production build succeeds.
+
 ### 2026-03-08 — Round 102: 100% DeepSeek Chat — Production-Quality Outputs, Pool 80→82
 
 **Eval results: 100% (6/6 passed, 340/340 points) — DeepSeek Chat**

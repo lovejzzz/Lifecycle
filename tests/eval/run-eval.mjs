@@ -687,6 +687,22 @@ const POOL = [
     expect: { hasWorkflow: true, minNodes: 4, maxNodes: 10 },
   },
 
+  // Manufacturing quality control — tests industrial domain with dependency and patch categories
+  {
+    id: 'manufacturing-quality-control',
+    agent: 'rowan', taskType: 'generate',
+    prompt: 'Build a quality control workflow for our electronics PCB assembly line. Steps: incoming material inspection, solder paste printing, component placement, reflow soldering, automated optical inspection (AOI), functional testing, X-ray inspection for BGA components, and final packaging. We produce 2000 boards/day with a target defect rate under 50 PPM.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['test'], mustMentionInNodes: ['inspect|aoi', 'solder|reflow', 'test|functional', 'packag'] },
+  },
+
+  // Advice that sounds like it could be a build request — tests intent boundary
+  {
+    id: 'edge-advice-disguised-as-build',
+    agent: 'rowan', taskType: 'analyze',
+    prompt: 'I have a microservices architecture with 12 services, but deployments keep breaking because of version incompatibilities between services. What\'s the best approach to handle this?',
+    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 250 },
+  },
+
   // Supply chain with explicit policy requirement — stress tests the recurring policy-category gap
   {
     id: 'supply-chain-risk-management',

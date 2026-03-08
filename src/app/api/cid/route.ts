@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
     // Retry up to 3 times on rate limit (429) with exponential backoff
     // Generate/execute tasks need more time — LLMs produce larger payloads
     // deepseek-reasoner is significantly slower due to chain-of-thought
-    const baseTimeout = taskType === 'analyze' ? 45000 : 120000;
+    const baseTimeout = taskType === 'analyze' ? 60000 : 120000;
     const timeoutMs = isReasonerModel ? Math.max(baseTimeout, 240000) : baseTimeout;
     let response: Response | null = null;
     const reqConfig = buildPayloadAndHeaders();
