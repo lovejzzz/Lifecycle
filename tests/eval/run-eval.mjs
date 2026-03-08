@@ -710,6 +710,22 @@ const POOL = [
     prompt: 'Build a supply chain risk management workflow for our electronics manufacturing. We source from 12 suppliers across 4 countries. Steps: supplier risk scoring, compliance policy checks (conflict minerals, labor standards), dual-sourcing strategy, inventory buffer analysis, disruption simulation, and quarterly supplier reviews. We need a policy gate before any new supplier is approved.',
     expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['policy', 'review'], mustMentionInNodes: ['supplier|sourc', 'risk|score', 'compliance|policy', 'review|audit'] },
   },
+
+  // Event planning with tight dependencies — tests dependency-aware scheduling
+  {
+    id: 'event-product-launch',
+    agent: 'rowan', taskType: 'generate',
+    prompt: 'We\'re launching a new hardware product in 8 weeks. Build a launch workflow covering: press embargo coordination, demo unit production, media kit creation, launch event logistics (venue, catering, AV), social media campaign scheduling, pre-order system setup, and post-launch analytics dashboard. Budget is $120k and the CEO wants live-streamed keynote.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustMentionInNodes: ['press|media|embargo', 'demo|product', 'launch|event|keynote', 'social|campaign'] },
+  },
+
+  // Content execution — technical RFC document
+  {
+    id: 'execute-rfc',
+    agent: 'rowan', taskType: 'execute',
+    prompt: 'Write an RFC proposing that our team adopt trunk-based development instead of our current GitFlow branching strategy. We have 8 developers, deploy 3 times per week, and our feature branches currently live for 2-3 weeks on average. Include problem statement, proposed solution, migration plan, risks, and alternatives considered.',
+    expect: { hasWorkflow: false, hasContent: true, minContentLen: 2000 },
+  },
 ];
 
 // ─── Agent System Prompts (synced with src/lib/prompts.ts) ─────────────────
