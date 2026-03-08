@@ -1,5 +1,24 @@
 # Changelog
 
+### 2026-03-08 — Round 74: Workflow Architecture Validation (Eval-Driven)
+
+**New eval capability: architecture checks**
+- Added `mustMentionInNodes` scoring: validates that workflow nodes actually address the key concepts in the user's prompt (e.g., code review workflow must contain nodes mentioning assign, deadline, merge, deploy)
+- Added `flow path` check: verifies a directed path exists from first to last node (catches disconnected subgraphs)
+- Applied architecture checks to 7 test cases: founder-mvp-launch, eng-code-review, eng-oncall, pm-feature-ship, hr-onboarding, legal-gdpr, edge-terse-prompt
+
+**Prompt fixes:**
+- Last-node category enforcement: "even if it produces a document or report, use output as the category for the final deliverable" — fixes model using `artifact` for final nodes
+- Expert advice depth: added instruction for specific tools/metrics/techniques in advice responses — fixes shallow Poirot advice (was 227c vague, now requires domain expertise)
+- API timeout for generate/execute: 90s → 120s — fixes timeouts on complex Poirot workflows with rich content
+
+**Eval results:** 100% (385/385) with architecture validation passing
+- eng-code-review: 883c avg content, architecture covers assign/deadline/merge/deploy
+- hr-hiring: 719c avg content, directed flow verified
+- pm-user-research: 739c avg content
+
+**Test pool:** 32 → 34 (added education course launch, imperative-phrasing analysis edge case)
+
 ### 2026-03-08 — Round 73: Rowan Content Depth Breakthrough (Eval-Driven)
 
 **Root cause found:** Eval script had its own stripped-down system prompts that were missing all improvements from prompts.ts. Synced eval prompts with production prompts — this was the unlock.

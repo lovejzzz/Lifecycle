@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
 
     // Retry up to 3 times on rate limit (429) with exponential backoff
     // Generate/execute tasks need more time — LLMs produce larger payloads
-    const timeoutMs = taskType === 'analyze' ? 45000 : 90000;
+    const timeoutMs = taskType === 'analyze' ? 45000 : 120000;
     let response: Response | null = null;
     const reqConfig = buildPayloadAndHeaders();
     for (let attempt = 0; attempt < 4; attempt++) {

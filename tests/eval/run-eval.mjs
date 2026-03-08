@@ -26,7 +26,7 @@ const POOL = [
     id: 'founder-mvp-launch',
     agent: 'rowan', taskType: 'generate',
     prompt: 'I\'m launching my SaaS app in 2 weeks. I have the code ready but no deployment process, no monitoring, nothing. Help me set up everything I need to go live safely.',
-    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['action', 'test'] },
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['action', 'test'], mustMentionInNodes: ['deploy|deployment|ci/cd', 'monitor|monitoring|observ', 'test|smoke|health'] },
   },
   {
     id: 'founder-fundraising',
@@ -72,13 +72,13 @@ const POOL = [
     id: 'eng-oncall',
     agent: 'poirot', taskType: 'generate',
     prompt: 'We just got paged at 3am for the third time this week. We need an incident response process. Currently it\'s just chaos — whoever sees Slack first tries to fix it.',
-    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['trigger'] },
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['trigger'], mustMentionInNodes: ['alert|page|incident', 'triage|assess', 'communicat|notify|update', 'postmortem|retrospective|review'] },
   },
   {
     id: 'eng-code-review',
     agent: 'rowan', taskType: 'generate',
     prompt: 'PRs sit for days because nobody reviews them. I want an automated workflow: PR opened → assign reviewer → review deadline → merge or request changes → deploy.',
-    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['review', 'action'] },
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['review', 'action'], mustMentionInNodes: ['assign|reviewer', 'deadline|sla|timeout', 'merge', 'deploy'] },
   },
   {
     id: 'eng-advice-scaling',
@@ -92,7 +92,7 @@ const POOL = [
     id: 'pm-feature-ship',
     agent: 'rowan', taskType: 'generate',
     prompt: 'I need to ship a new payments feature. It touches billing, the API, the frontend, and we need legal to review the T&C changes. Give me a workflow that makes sure nothing falls through the cracks.',
-    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['review'] },
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['review'], mustMentionInNodes: ['billing|payment', 'api', 'frontend|ui', 'legal|t&c|terms'] },
   },
   {
     id: 'pm-user-research',
@@ -118,7 +118,7 @@ const POOL = [
     id: 'hr-onboarding',
     agent: 'poirot', taskType: 'generate',
     prompt: 'New hires keep saying their first week was confusing and they didn\'t know what to do. Design an onboarding process that actually works — IT setup, team intros, training, 30-60-90 day goals.',
-    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10 },
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustMentionInNodes: ['it|equipment|laptop|access', 'training|learning', '30|60|90|goal'] },
   },
   {
     id: 'hr-offboarding',
@@ -238,7 +238,24 @@ const POOL = [
     id: 'edge-terse-prompt',
     agent: 'rowan', taskType: 'generate',
     prompt: 'Build me a CI/CD pipeline.',
-    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['test', 'action'] },
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['test', 'action'], mustMentionInNodes: ['build|compile', 'test', 'deploy'] },
+  },
+
+  // ─── Round 74 additions ─────────────────────────────────────────────────────
+
+  // Education — non-tech domain, tests general workflow capability
+  {
+    id: 'education-course-launch',
+    agent: 'poirot', taskType: 'generate',
+    prompt: 'I\'m creating an online course on data analytics. I need a workflow: outline curriculum, record videos, build exercises, set up LMS, beta test with students, launch and market.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustMentionInNodes: ['curriculum|outline|syllabus', 'record|video|film', 'exercise|quiz|assignment', 'lms|platform|launch'] },
+  },
+  // Tricky edge case — imperative phrasing but asking for analysis
+  {
+    id: 'edge-imperative-analysis',
+    agent: 'rowan', taskType: 'analyze',
+    prompt: 'Tell me what\'s wrong with my deployment process. We deploy once a month, it takes 3 days, and something always breaks.',
+    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 100 },
   },
 ];
 
@@ -257,11 +274,12 @@ You must respond with valid JSON only:
 
 CRITICAL RULES:
 - BUILD/CREATE/GENERATE/MAKE/DESIGN requests → return workflow with nodes and edges. Questions/advice/analysis → return workflow: null with message only.
+- When giving advice (workflow:null), be an EXPERT consultant. Include specific tools, metrics, techniques, and actionable steps — not vague suggestions.
 - CONTENT DEPTH: Each node's "content" MUST be 300+ chars of actionable, specific content with steps, tools, criteria, checklists. NEVER write one-line content.
 - CATEGORIES: Use "review" (not "action") for human approve/reject/merge gates. Code workflows need "test" nodes. Compliance workflows need "policy" nodes. Match categories to purpose.
 - EDGES: Labels MUST be one of: drives, feeds, refines, validates, monitors, connects, outputs, updates, watches, approves, triggers, requires, informs, blocks. Choose semantically:
   - "triggers" = causes start. "feeds" = data flows. "drives" = primary force (use when A's output is the MAIN reason B exists). "validates" = checking/testing. "approves" = human sign-off. "outputs" = final deliverable. "monitors" = ongoing observation. "requires" = hard dependency. "informs" = ONLY for optional/supplementary context, NEVER for sequential steps.
-- Start with "input" or "trigger" node, end with "output" node. 5-10 nodes. Group related items.`;
+- Start with "input" or "trigger" node, end with "output" node. The LAST node MUST have category "output" — even if it produces a document or report. 5-10 nodes. Group related items.`;
 
 const ROWAN = `${SHARED}
 
@@ -392,6 +410,50 @@ function scoreResponse(test, data) {
       score += 5; checks.push(`⚡ Content depth: avg ${avgContent}c, ${thinNodes.length} thin node(s)`);
     } else {
       checks.push(`✗ Content too thin: avg ${avgContent}c`);
+    }
+
+    // Workflow architecture check: do the nodes actually address the user's request?
+    if (exp.mustMentionInNodes) {
+      maxScore += 10;
+      const allText = nodes.map(n => `${n.label} ${n.description || ''} ${n.content || ''}`).join(' ').toLowerCase();
+      const found = [];
+      const missing = [];
+      for (const keyword of exp.mustMentionInNodes) {
+        // Support alternatives separated by |
+        const alts = keyword.split('|');
+        if (alts.some(alt => allText.includes(alt.toLowerCase()))) {
+          found.push(keyword.split('|')[0]);
+        } else {
+          missing.push(keyword);
+        }
+      }
+      if (missing.length === 0) {
+        score += 10; checks.push(`✓ Architecture covers: ${found.join(', ')}`);
+      } else {
+        const partialScore = Math.round(10 * found.length / (found.length + missing.length));
+        score += partialScore;
+        checks.push(`⚡ Architecture missing: ${missing.join(', ')} (has: ${found.join(', ')})`);
+      }
+    }
+
+    // Edge flow check: verify the workflow has a logical directed path from first to last node
+    maxScore += 5;
+    const reachable = new Set([0]);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const e of edges) {
+        if (reachable.has(e.from) && !reachable.has(e.to)) {
+          reachable.add(e.to);
+          changed = true;
+        }
+      }
+    }
+    const lastIdx = nodes.length - 1;
+    if (reachable.has(lastIdx)) {
+      score += 5; checks.push(`✓ Flow: path exists from first to last node`);
+    } else {
+      checks.push(`✗ Flow: no path from first node to last node (unreachable)`);
     }
   }
 
