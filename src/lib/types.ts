@@ -18,6 +18,77 @@ export interface LifecycleEvent {
 
 export type CIDMode = 'rowan' | 'poirot';
 
+// ─── 5-Layer Agent Personality Architecture ─────────────────────────────────
+// A living generative entity model: Temperament → Driving Force → Habit → Generation → Reflection
+
+/** Layer 1: Base disposition — static, hardcoded per agent */
+export interface TemperamentLayer {
+  disposition: string;           // e.g. "direct, mission-focused"
+  communicationStyle: string;    // how they express themselves
+  worldview: string;             // how they see problems
+  emotionalBaseline: string;     // default emotional register
+}
+
+/** Layer 2: What motivates the agent — static, defines inner tension */
+export interface DrivingForceLayer {
+  primaryDrive: string;          // core motivation
+  curiosityStyle: string;        // how they investigate/explore
+  agencyExpression: string;      // how they take initiative
+  tensionSource: string;         // what creates internal conflict
+}
+
+/** Layer 3: Long-term sedimented behavioral patterns — evolves over time */
+export interface HabitPattern {
+  id: string;
+  pattern: string;              // natural language description
+  strength: number;             // 0-1, increases with reinforcement
+  formedAt: number;             // timestamp
+  reinforcedCount: number;
+}
+
+export interface HabitLayer {
+  interactionPatterns: HabitPattern[];   // max 10
+  preferredStrategies: string[];         // e.g. "always adds test nodes for code workflows"
+  avoidancePatterns: string[];           // e.g. "user dislikes verbose messages"
+  lastUpdated: number;
+}
+
+/** Layer 4: On-the-spot actions and expressions — ephemeral, session-scoped */
+export interface GenerationLayer {
+  currentMood: 'focused' | 'alert' | 'satisfied' | 'cautious';
+  activeGoal: string | null;
+  recentObservations: string[];  // max 5
+  interactionCount: number;
+  successStreak: number;         // consecutive successful interactions
+  errorCount: number;            // errors this session
+}
+
+/** Layer 5: Habit modification and structure reorganization — processed then cleared */
+export interface ReflectionEntry {
+  trigger: 'workflow_complete' | 'error_recovery' | 'session_end' | 'mode_switch' | 'user_correction';
+  observation: string;
+  habitModification: {
+    action: 'strengthen' | 'weaken' | 'add' | 'remove';
+    targetId?: string;
+    newPattern?: string;
+  };
+  timestamp: number;
+}
+
+export interface ReflectionLayer {
+  pendingReflections: ReflectionEntry[];
+  lastReflectionAt: number;
+}
+
+/** Composite: all 5 layers for one agent */
+export interface AgentPersonalityLayers {
+  temperament: TemperamentLayer;     // static
+  drivingForce: DrivingForceLayer;   // static
+  habits: HabitLayer;                // persisted, evolves
+  generation: GenerationLayer;       // ephemeral
+  reflection: ReflectionLayer;       // persisted until processed
+}
+
 export interface CIDCard {
   id: string;
   label: string;

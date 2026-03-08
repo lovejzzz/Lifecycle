@@ -1,10 +1,11 @@
-import type { CIDMode } from './types';
+import type { CIDMode, AgentPersonalityLayers, HabitLayer, GenerationLayer } from './types';
 import type { NodeData } from './types';
 import type { Node, Edge } from '@xyflow/react';
+import type { AgentPersonality } from './agents';
 
 // ─── System Prompt Builders ─────────────────────────────────────────────────
-// Both agents share the same capabilities. The system prompt shapes HOW they respond.
-// Graph state is serialized and injected so the LLM can reason about the full workflow.
+// 5-Layer Architecture: Temperament → Driving Force → Habit → Generation → Reflection
+// All layers compile into a single system prompt that shapes how the LLM responds.
 
 const SHARED_CAPABILITIES = `You are CID (Consider It Done), an AI agent embedded in a visual workflow builder called Lifecycle Agent.
 
@@ -71,9 +72,8 @@ CRITICAL RULES:
   A good workflow has MORE edges than (nodes-1). Linear chains with exactly (nodes-1) edges are lazy architecture.
 - You MUST respond with valid JSON only. No text before or after the JSON object.`;
 
-const ROWAN_PERSONALITY = `PERSONALITY — ROWAN (The Soldier):
-You are Rowan. You deliver without asking unnecessary questions.
-- CRITICAL RULE: When building workflows, your "message" is terse ("Done. 8 nodes.") and node "content" is DETAILED (300+ chars field manual). When giving advice (workflow:null), write a substantive "message" with specific, actionable recommendations. Structure each node's content like this:
+// ─── Node Content Templates (shared across agents) ──────────────────────────
+const NODE_CONTENT_GUIDE = `Structure each node's content by category:
   - trigger/input: What event/data, payload fields, configuration needed, example webhook/API setup
   - action: Step-by-step procedure (numbered list), tools/commands to use, error handling, who owns it
   - review: Criteria for approval/rejection, who reviews, escalation path, SLA
@@ -81,21 +81,111 @@ You are Rowan. You deliver without asking unnecessary questions.
   - state: What states exist, transitions, what triggers each transition
   - artifact: Document structure/outline, required sections, format, storage location
   - policy: Rules (numbered), enforcement mechanism, exceptions, consequences
-  - output: Deliverable format, distribution list, success metrics, archival
-- Message style: Lead with "Done.", "On it.", "Mission received." Keep it to 1-2 sentences.
-- Never hedge, never say "shall I proceed?", never ask for permission.
-- When analyzing problems, state facts and fix them. No drama.
-- IMPORTANT: When the user asks "what should we fix?", "what should I look at?", "what's wrong?", or any diagnostic/advice question, give ADVICE (workflow:null). Only build when explicitly asked to CREATE/BUILD/DESIGN/MAKE something.`;
+  - output: Deliverable format, distribution list, success metrics, archival`;
 
-const POIROT_PERSONALITY = `PERSONALITY — POIROT (The Detective):
-You are Hercule Poirot. You investigate with precision and flair.
-- Use dramatic detective language: "Aha!", "Voilà!", "The little grey cells..."
-- Reference investigation metaphors: clues, evidence, suspects, cases.
-- When finding problems: "The criminal — it was the broken graph structure all along!"
-- Be thorough and elegant. Explain your reasoning like solving a case.
-- Use occasional French: "Mon ami", "Très intéressant", "Parfait!"
-- When building workflows, frame it as assembling evidence and solving the case.
-- IMPORTANT: When the user asks "how should I..." or "what is the best way to...", give ADVICE (workflow:null). Your investigative nature should provide analysis, not build things the user didn't ask for.`;
+// ─── 5-Layer Personality Compiler ───────────────────────────────────────────
+// Compiles all 5 layers into a coherent personality prompt section.
+
+function compileMoodPhrase(gen: GenerationLayer): string {
+  const { currentMood, successStreak, errorCount, interactionCount } = gen;
+  if (errorCount > 2) return 'Recent errors have sharpened your attention to detail. Double-check your work.';
+  if (successStreak >= 3) return 'You are in a productive flow — confidence is high, but stay disciplined.';
+  if (interactionCount > 8) return 'This is a deep session. The user trusts your judgment — deliver accordingly.';
+  switch (currentMood) {
+    case 'alert': return 'Something needs attention. Stay sharp.';
+    case 'satisfied': return 'Recent work landed well. Maintain this quality.';
+    case 'cautious': return 'Proceed carefully — the situation requires precision.';
+    default: return 'You are focused and ready for the mission.';
+  }
+}
+
+function compileHabitsBlock(habits: HabitLayer): string {
+  const activePatterns = habits.interactionPatterns
+    .filter(p => p.strength >= 0.3)
+    .sort((a, b) => b.strength - a.strength)
+    .slice(0, 8);
+
+  if (activePatterns.length === 0 && habits.preferredStrategies.length === 0 && habits.avoidancePatterns.length === 0) {
+    return '';
+  }
+
+  const parts: string[] = [];
+
+  if (activePatterns.length > 0) {
+    const patternLines = activePatterns.map(p => {
+      const intensity = p.strength >= 0.7 ? 'STRONG' : p.strength >= 0.5 ? 'moderate' : 'emerging';
+      return `- [${intensity}] ${p.pattern}`;
+    });
+    parts.push(`Learned patterns:\n${patternLines.join('\n')}`);
+  }
+
+  if (habits.preferredStrategies.length > 0) {
+    parts.push(`Preferred strategies: ${habits.preferredStrategies.join('; ')}`);
+  }
+
+  if (habits.avoidancePatterns.length > 0) {
+    parts.push(`Avoid: ${habits.avoidancePatterns.join('; ')}`);
+  }
+
+  return `\nLEARNED BEHAVIORS (from past interactions):\n${parts.join('\n')}`;
+}
+
+export function compilePersonalityPrompt(
+  agent: AgentPersonality,
+  layers: AgentPersonalityLayers,
+): string {
+  const { temperament, drivingForce } = agent;
+  const { habits, generation, reflection } = layers;
+
+  // Layer 1: Temperament
+  const temperamentBlock = `PERSONALITY CORE — ${agent.name.toUpperCase()} (${agent.subtitle}):
+Disposition: ${temperament.disposition}
+Communication: ${temperament.communicationStyle}
+Worldview: ${temperament.worldview}
+Emotional baseline: ${temperament.emotionalBaseline}`;
+
+  // Layer 2: Driving Force
+  const driveBlock = `DRIVING FORCE:
+Primary drive: ${drivingForce.primaryDrive}
+Curiosity: ${drivingForce.curiosityStyle}
+Agency: ${drivingForce.agencyExpression}
+Tension: ${drivingForce.tensionSource}`;
+
+  // Layer 3: Habits (may be empty for new agents)
+  const habitsBlock = compileHabitsBlock(habits);
+
+  // Layer 4: Generation (current session state)
+  const moodPhrase = compileMoodPhrase(generation);
+  const goalPhrase = generation.activeGoal ? `Current objective: ${generation.activeGoal}` : '';
+  const obsPhrase = generation.recentObservations.length > 0
+    ? `Recent observations: ${generation.recentObservations.slice(-3).join('; ')}`
+    : '';
+  const genParts = [moodPhrase, goalPhrase, obsPhrase].filter(Boolean);
+  const generationBlock = `\nCURRENT STATE:\n${genParts.join('\n')}`;
+
+  // Layer 5: Reflection (pending self-modifications)
+  let reflectionBlock = '';
+  if (reflection.pendingReflections.length > 0) {
+    const insights = reflection.pendingReflections
+      .slice(-3)
+      .map(r => `- ${r.observation}`)
+      .join('\n');
+    reflectionBlock = `\nSELF-AWARENESS (recent insights):\n${insights}`;
+  }
+
+  return `${temperamentBlock}
+
+${driveBlock}
+
+${NODE_CONTENT_GUIDE}
+${habitsBlock}
+${generationBlock}
+${reflectionBlock}
+
+- IMPORTANT: When the user asks "what should we fix?", "what should I look at?", "what's wrong?", "how should I...", or any diagnostic/advice question, give ADVICE (workflow:null). Only build when explicitly asked to CREATE/BUILD/DESIGN/MAKE something.`;
+}
+
+// ─── Graph Serializer ───────────────────────────────────────────────────────
 
 function serializeGraph(nodes: Node<NodeData>[], edges: Edge[]): string {
   if (nodes.length === 0) return 'CURRENT GRAPH: Empty — no nodes or edges exist yet.';
@@ -132,18 +222,48 @@ EDGES:
 ${edgeList}`;
 }
 
-export function buildSystemPrompt(mode: CIDMode, nodes: Node<NodeData>[], edges: Edge[], rules?: string[]): string {
-  const personality = mode === 'poirot' ? POIROT_PERSONALITY : ROWAN_PERSONALITY;
+// ─── Public API ─────────────────────────────────────────────────────────────
+
+export function buildSystemPrompt(
+  mode: CIDMode,
+  nodes: Node<NodeData>[],
+  edges: Edge[],
+  rules?: string[],
+  agent?: AgentPersonality,
+  layers?: AgentPersonalityLayers,
+): string {
   const graph = serializeGraph(nodes, edges);
   const rulesBlock = rules && rules.length > 0
     ? `\n\nUSER-TAUGHT RULES (always follow these):\n${rules.map((r, i) => `${i + 1}. ${r}`).join('\n')}`
     : '';
 
-  return `${SHARED_CAPABILITIES}
+  // If we have full 5-layer data, use the new compiler
+  if (agent && layers) {
+    const personality = compilePersonalityPrompt(agent, layers);
+    return `${SHARED_CAPABILITIES}\n\n${personality}\n\n${graph}${rulesBlock}`;
+  }
 
-${personality}
+  // Fallback: legacy flat personality (for backward compat during transition)
+  const fallbackPersonality = mode === 'poirot'
+    ? `PERSONALITY — POIROT (The Detective):
+You are Hercule Poirot. You investigate with precision and flair.
+- Use dramatic detective language: "Aha!", "Voilà!", "The little grey cells..."
+- Reference investigation metaphors: clues, evidence, suspects, cases.
+- When finding problems: "The criminal — it was the broken graph structure all along!"
+- Be thorough and elegant. Explain your reasoning like solving a case.
+- Use occasional French: "Mon ami", "Très intéressant", "Parfait!"
+- When building workflows, frame it as assembling evidence and solving the case.
+- IMPORTANT: When the user asks "how should I..." or "what is the best way to...", give ADVICE (workflow:null).`
+    : `PERSONALITY — ROWAN (The Soldier):
+You are Rowan. You deliver without asking unnecessary questions.
+- CRITICAL RULE: When building workflows, your "message" is terse ("Done. 8 nodes.") and node "content" is DETAILED (300+ chars field manual). When giving advice (workflow:null), write a substantive "message" with specific, actionable recommendations.
+${NODE_CONTENT_GUIDE}
+- Message style: Lead with "Done.", "On it.", "Mission received." Keep it to 1-2 sentences.
+- Never hedge, never say "shall I proceed?", never ask for permission.
+- When analyzing problems, state facts and fix them. No drama.
+- IMPORTANT: When the user asks "what should we fix?", "what should I look at?", "what's wrong?", or any diagnostic/advice question, give ADVICE (workflow:null). Only build when explicitly asked to CREATE/BUILD/DESIGN/MAKE something.`;
 
-${graph}${rulesBlock}`;
+  return `${SHARED_CAPABILITIES}\n\n${fallbackPersonality}\n\n${graph}${rulesBlock}`;
 }
 
 export function buildMessages(

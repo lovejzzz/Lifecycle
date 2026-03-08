@@ -1,0 +1,373 @@
+{
+  "timestamp": "2026-03-08T09-14-24",
+  "overall": 93,
+  "testsRun": [
+    "eng-oncall",
+    "hr-hiring",
+    "support-advice",
+    "personality-rowan-empty",
+    "execute-api-design",
+    "eng-advice-architecture"
+  ],
+  "poolSize": 42,
+  "results": [
+    {
+      "id": "eng-oncall",
+      "status": "ok",
+      "elapsed": 192427,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We just got paged at 3am for the third time this week. We need an incident response process. Currently it's just chaos — whoever sees Slack first tries to fix it.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! Another 3am page—the little grey cells are tingling with clues. Mon ami, chaos is the enemy of resolution. Let us design a meticulous incident response workflow to bring order and elegance to your nocturnal emergencies. Voilà, the structured process you need.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Incident Detection",
+              "category": "trigger",
+              "description": "The initial event that triggers the incident response process upon alert or report.",
+              "content": "This node represents the moment an incident is detected, typically through monitoring systems, user reports, or automated alerts. Steps include: 1. Configure monitoring tools like Datadog, Prometheus with Alertmanager, or New Relic to set thresholds for critical metrics such as latency, error rates, or system downtime. 2. Integrate with paging systems such as PagerDuty or Opsgenie to ensure alerts reach the on-call team promptly, with escalation policies for unacknowledged alerts. 3. Define incident severity levels: P1 for critical outages affecting all users, P2 for major issues with partial impact, P3 for minor issues—document these in a runbook. 4. Automate initial logging using tools like Jira, ServiceNow, or FireHydrant to create incident tickets automatically upon alert, capturing timestamp, source, initial context, and assigning unique IDs. 5. Implement deduplication and alert fatigue reduction by tuning thresholds, grouping related alerts, and using AIOps platforms like BigPanda. This sets the foundation for a swift, organized response, ensuring no incident slips through the cracks."
+            },
+            {
+              "label": "Initial Triage and Acknowledgment",
+              "category": "action",
+              "description": "The first response to assess, acknowledge, and gather initial data about the incident.",
+              "content": "Upon receiving an alert, the on-call engineer must immediately triage the incident. Steps: 1. Acknowledge the alert within 5 minutes using tools like PagerDuty to confirm awareness and prevent duplicate pages. 2. Assess impact by checking dashboards such as Grafana or CloudWatch to understand scope—number of users affected, services down, geographic spread. 3. Gather initial data from logs using ELK Stack or Splunk, traces from Jaeger or OpenTelemetry, and error reports from Sentry. 4. Communicate via a dedicated incident channel in Slack or Microsoft Teams, using a template to post incident details (time, severity, symptoms, assigned lead). 5. If severity is high (P1), escalate immediately to the incident commander and update the incident ticket with initial findings. Tools like Blameless can automate this phase. Criteria: If unresolved after 15 minutes, move to investigation; document all actions in a shared log for transparency."
+            },
+            {
+              "label": "Investigation and Diagnosis",
+              "category": "action",
+              "description": "Deep dive to identify the root cause through systematic analysis and teamwork.",
+              "content": "This phase involves a cross-functional team investigating to pinpoint the cause. Steps: 1. Form a team including developers, SREs, database admins, and network engineers, using a war room in Zoom or Teams for collaboration. 2. Use debugging tools: Analyze logs with Splunk or Loggly, examine metrics in Datadog, trace requests with OpenTelemetry, and inspect infrastructure with Kubernetes dashboard. 3. Apply methodologies like the 5 Whys or fishbone diagrams to drill down to root cause, documenting hypotheses in Confluence or Google Docs. 4. Reproduce the issue in a staging environment using Docker or Vagrant to validate findings. 5. Parallel actions: Start brainstorming potential fixes and update stakeholders every 30 minutes. Tools: GitHub for code reviews, Wireshark for network analysis. Criteria: Aim to identify root cause within 30 minutes for P1 incidents; if stuck, escalate per policy."
+            },
+            {
+              "label": "Escalation and Coordination Review",
+              "category": "review",
+              "description": "Human review point to decide on escalation, resource allocation, and communication plans.",
+              "content": "A key decision gate where senior staff review progress and decide on next steps. Steps: 1. Incident commander or manager assesses the situation based on severity, impact, and investigation findings—use a checklist in tools like Jira or Asana. 2. Review if root cause is identified; if not, escalate to higher-tier experts, involve vendor support (e.g., AWS Support), or declare a major incident. 3. Allocate additional resources: Bring in more team members, approve overtime, or mobilize backup systems. 4. Update communication plan: Decide on stakeholder update frequency (e.g., every 30 minutes for internal, hourly for customers), using templates in Statuspage or similar. 5. Document escalation decisions in the incident log and ensure compliance with SLAs. Criteria: Escalate if incident exceeds 1 hour unresolved, or if business-critical functions are impaired; this ensures oversight and prevents bottlenecks."
+            },
+            {
+              "label": "Resolution and Mitigation Implementation",
+              "category": "action",
+              "description": "Executing the solution, whether a fix or workaround, to resolve the incident.",
+              "content": "Once root cause is identified, implement the fix or workaround. Steps: 1. Develop the fix: Code changes via Git branches for hotfixes, configuration updates with Ansible or Terraform, or infrastructure adjustments in cloud consoles. 2. Test locally or in a sandbox environment using Docker Compose or Kubernetes to ensure it addresses the issue without side effects. 3. Deploy the fix: Use CI/CD pipelines like Jenkins, GitLab CI, or Spinnaker for automated deployment, with rollback plans in place. 4. Monitor deployment in real-time with tools like Datadog or New Relic to confirm resolution metrics. 5. If a workaround is applied, document it in the runbook and schedule a permanent fix. Criteria: Aim to deploy within SLAs (e.g., 4 hours for P2); communicate progress via incident channel and update tickets."
+            },
+            {
+              "label": "Fix Validation and Verification",
+              "category": "test",
+              "description": "Rigorous testing to ensure the fix resolves the incident and prevents recurrence.",
+              "content": "After implementation, validate that the incident is fully resolved. Steps: 1. Run automated tests: Unit tests with Jest or pytest, integration tests with Postman or SoapUI, and end-to-end tests with Selenium or Cypress. 2. Perform manual verification: Check user journeys, simulate traffic with load testing tools like Locust or k6, and validate API responses. 3. Monitor systems: Use dashboards to confirm metrics return to normal—error rate drops to zero, latency improves, and uptime is restored. 4. Gather feedback from a subset of users via canary deployments or A/B testing platforms. 5. If tests fail, iterate back to fix implementation; document results in the incident report. Tools: Chaos engineering with Gremlin for resilience testing. Criteria: All critical tests must pass, and monitoring should show stability for at least 15 minutes before closure."
+            },
+            {
+              "label": "Incident Report and Closure",
+              "category": "output",
+              "description": "Final documentation, post-mortem, and closure of the incident with lessons learned.",
+              "content": "This node produces the final output: a comprehensive incident report and closure. Steps: 1. Compile all data into a timeline using tools like Timeline in Confluence or dedicated incident platforms, including root cause analysis, actions taken, and resolution details. 2. Write a blameless post-mortem report using templates from Google's SRE book, with sections for what went well, what didn't, and actionable items for improvement. 3. Store the report in a knowledge base like Notion or Confluence, indexed for future reference and training. 4. Update runbooks and playbooks based on learnings, and assign action items to team members with deadlines in Asana or Jira. 5. Close the incident ticket, communicate closure to stakeholders via email or Statuspage, and archive logs. 6. Schedule a follow-up meeting within a week to review improvements. This ensures continuous learning and process refinement."
+            },
+            {
+              "label": "Incident Response Policies",
+              "category": "policy",
+              "description": "Governance policies that set standards, roles, and guidelines for the entire incident response process.",
+              "content": "These policies provide the framework for incident management. Steps: 1. Define roles and responsibilities: Incident commander (leads response), communications lead (handles updates), technical lead (oversees fixes), with RACI matrices documented. 2. Establish SLAs and SLOs: E.g., acknowledge alerts within 5 minutes, resolve P1 incidents within 1 hour, with metrics tracked in tools like Splunk or custom dashboards. 3. Create communication protocols: Internal updates every 30 minutes during incidents, external comms for customer-facing issues via pre-approved templates. 4. Implement a blameless culture: Encourage open reporting without fear of reprisal, using retrospectives facilitated by tools like Retrium. 5. Regular training and drills: Conduct quarterly incident simulations (Gamedays) with scenarios like server outages or data breaches, using platforms like Gremlin or custom scripts. 6. Review and update policies annually or after major incidents, ensuring compliance with standards like ITIL or ISO 27001. This node monitors the process for adherence and continuous improvement."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "approves"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "validates"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "outputs"
+            },
+            {
+              "from": 5,
+              "to": 4,
+              "label": "refines"
+            },
+            {
+              "from": 7,
+              "to": 1,
+              "label": "monitors"
+            },
+            {
+              "from": 7,
+              "to": 2,
+              "label": "monitors"
+            },
+            {
+              "from": 7,
+              "to": 4,
+              "label": "monitors"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 100,
+        "maxScore": 110,
+        "pct": 91,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 5)",
+          "✓ Node count: 8 ≤ 10",
+          "✓ Has \"trigger\" category",
+          "✓ All 10 edges valid",
+          "✓ Starts with trigger",
+          "✗ Last node is \"policy\", expected output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 943c, no thin nodes",
+          "✓ Architecture covers: alert, triage, communicat, postmortem",
+          "✗ Flow: no path from first node to last node (unreachable)",
+          "✓ Architecture: has feedback loops AND parallel branches (10 edges, 8 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "hr-hiring",
+      "status": "ok",
+      "elapsed": 148519,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We need to hire 5 engineers in the next 2 months. Our current process is just posting on LinkedIn and hoping. Build me a proper hiring pipeline.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building hiring pipeline with feedback loops to hit 5 engineers in 2 months.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Hiring Need Trigger",
+              "category": "trigger",
+              "description": "Initiates the hiring pipeline based on business request for 5 engineers",
+              "content": "Event: Hiring request submitted via HR system (e.g., Workday) or manual form with urgency flag for 2-month deadline. Payload: Role details (backend/frontend/QA), required skills (e.g., Python, React, cloud experience), experience level (mid to senior), budget range, and diversity goals. Config: Set up webhook in ATS (Applicant Tracking System) like Greenhouse to auto-create pipeline; integrate with Slack for notifications. Steps: 1. Validate request with hiring manager—confirm headcount approval and competency matrix. 2. Define KPIs: time-to-hire (target 30 days per role), source efficiency, offer acceptance rate >80%. 3. Assign pipeline owners: Recruiter for execution, Hiring Manager for quality gates. Tools: ATS dashboards, Google Sheets for tracking. Error handling: If data incomplete, trigger automated email to requester with missing fields; escalate to HRBP if unresolved in 24h."
+            },
+            {
+              "label": "Multi-Channel Sourcing",
+              "category": "action",
+              "description": "Execute aggressive sourcing across platforms to generate candidate inflow",
+              "content": "Numbered steps: 1. Job postings: Craft compelling ads with SEO keywords; post on LinkedIn, Indeed, AngelList, and niche boards (e.g., Stack Overflow for engineers). 2. Referral program: Launch with incentives ($3000 per hire); promote via internal comms and track via Lever Referrals. 3. Passive sourcing: Use tools like LinkedIn Recruiter and Gem to message 100+ candidates weekly; filter by skills and location. 4. Events: Sponsor virtual hackathons or meetups; use Bizzabo for event management. Tools: ATS integrations for auto-posting, Calendly for scheduling intro calls. Error handling: Monitor application rates daily; if <10 applications/week, adjust ad copy or channels. Owner: Sourcing Recruiter. Metrics: Source of hire report, cost-per-hire under $5000."
+            },
+            {
+              "label": "Initial Screening Review",
+              "category": "review",
+              "description": "Human-led screening and shortlisting to filter candidates for interviews",
+              "content": "Approval criteria: Resume match >70% on key skills, assessment scores (e.g., HackerRank >80th percentile), cultural fit from phone screen. Who reviews: Recruiter and hiring manager panel; use scorecard with weighted categories. SLA: Review within 48 hours of application; send rejections with templated feedback. Steps: 1. Resume screening: Use ATS filters for experience, education, location. 2. Phone screen: 15-min call to verify interest, salary expectations, visa status. 3. Technical assessment: Deploy Codility test for coding skills; auto-grade and flag top 20%. Escalation: If candidate volume low (<5 qualified/week), trigger refinement of sourcing—edge back to Multi-Channel Sourcing. Tools: Greenhouse scorecards, Zoom for screens. Content must ensure bias mitigation: use structured questions and blind review where possible."
+            },
+            {
+              "label": "Structured Interview Process",
+              "category": "action",
+              "description": "Conduct multi-round interviews to evaluate technical and behavioral fit",
+              "content": "Numbered steps: 1. Round 1: Technical deep-dive—45 min with team engineers using CoderPad for live coding; evaluate problem-solving and code quality. 2. Round 2: Behavioral interview—60 min with hiring manager; use STAR method to assess collaboration, conflict resolution. 3. Round 3: Panel interview—90 min with cross-functional stakeholders (product, design); focus on system design and culture add. Tools: Zoom for video, Trello for interview scheduling, Confluence for question banks. Error handling: If interviewer unavailable, have backup panelists; record sessions (with consent) for review. Owner: Interview Coordinator. Ensure consistency: Provide interview kits with rubrics and calibration sessions weekly to align ratings."
+            },
+            {
+              "label": "Final Evaluation Review",
+              "category": "review",
+              "description": "Consolidate feedback and approve candidate for offer or rejection",
+              "content": "Approval criteria: Average interview score >4/5, reference checks positive, budget alignment within 10% of range. Who reviews: Hiring committee (Hiring Manager, VP Eng, HRBP); require unanimous or majority vote. SLA: Decision within 3 business days post-final interview. Steps: 1. Collate all feedback in ATS; identify discrepancies and discuss in sync meeting. 2. Conduct reference checks via phone; use standardized template for past performance. 3. Compare candidates using decision matrix—weight technical (40%), behavioral (30%), cultural (30%). Escalation: If deadlock, escalate to Head of Engineering for tie-break. Tools: Lever analytics, Google Sheets for scoring. If reject, provide detailed feedback to candidate; if approve, trigger offer process—edge to Output."
+            },
+            {
+              "label": "Offer and Onboarding Output",
+              "category": "output",
+              "description": "Extend offer and onboard new hires to complete the hiring pipeline",
+              "content": "Deliverable format: Signed offer letter PDF, onboarding checklist, equipment setup confirmation. Distribution: Send via DocuSign to candidate, copy to HRIS (e.g., BambooHR), notify IT and facilities. Success metrics: Offer acceptance rate >85%, time-to-start <14 days from acceptance. Steps: 1. Offer extension: Prepare competitive package with base, equity, benefits; negotiate via phone with scripts. 2. Background check: Initiate with Checkr or HireRight; monitor for clearance. 3. Onboarding: Schedule day-1 orientation, assign buddy, provision tools (laptop, access). Tools: DocuSign for e-signature, Slack channels for new hire intro. Owner: HR Operations. Post-hire: Track 30-day retention and satisfaction survey; feed data back to pipeline for continuous improvement."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "approves"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "approves"
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 100,
+        "maxScore": 100,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 6 (min: 5)",
+          "✓ Node count: 6 ≤ 10",
+          "✓ Has \"review\" category",
+          "✓ All 6 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 797c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (6 edges, 6 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "support-advice",
+      "status": "ok",
+      "elapsed": 24667,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Our CSAT score dropped to 3.2 out of 5. Average first response time is 8 hours. What should we fix first?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Prioritize slashing first response time—it's the biggest lever on CSAT. Deploy automated triage with Zendesk's triggers to send immediate acknowledgments, set an SLA of 2 hours, and use Intercom for real-time monitoring. Track response time percentiles (aim for P90 under 4 hours) and correlate with CSAT weekly to validate improvements.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (337 chars)",
+          "✓ Message length: 337 ≥ 250"
+        ]
+      }
+    },
+    {
+      "id": "personality-rowan-empty",
+      "status": "ok",
+      "elapsed": 6039,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Graph is empty. No workflow present. Ready for orders.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (54 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "execute-api-design",
+      "status": "ok",
+      "elapsed": 84250,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Design a REST API for a multi-tenant task management system. Include endpoints for workspaces, projects, tasks, and comments. Show URL patterns, HTTP methods, request/response bodies, auth scheme, pagination, and error codes. Support role-based access (admin, member, viewer).",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "sub": "user_123",
+        "email": "user@example.com",
+        "tenant_id": "tenant_456",
+        "role": "admin|member|viewer",
+        "scope": "workspace:read workspace:write"
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 40,
+        "pct": 63,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✗ Missing message",
+          "✗ Message too short: 0 < 2000"
+        ]
+      }
+    },
+    {
+      "id": "eng-advice-architecture",
+      "status": "ok",
+      "elapsed": 38916,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We have a Django monolith serving 50k users. Page loads are 4-6 seconds, database has 200+ tables, and deployments take 45 minutes. The team wants to add real-time features. Should we refactor, rewrite, or bolt on new services?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Profile your Django monolith with New Relic or Django Debug Toolbar to isolate bottlenecks—focus on database queries and view logic, aiming to reduce page loads to under 2 seconds. Implement database indexing, query optimization, and caching with Redis; then refactor deployment pipelines using Docker and CI/CD tools like Jenkins or GitLab CI to slash deployment times. Bolt on real-time features with Django Channels or a separate Node.js microservice to avoid a full rewrite, unless audits reveal critical tech debt requiring a phased rewrite over 6-12 months.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (563 chars)",
+          "✓ Message length: 563 ≥ 250"
+        ]
+      }
+    }
+  ]
+}

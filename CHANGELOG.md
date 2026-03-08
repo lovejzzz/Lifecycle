@@ -1,5 +1,30 @@
 # Changelog
 
+### 2026-03-08 — Round 80: 5-Layer Living Generative Entity Architecture
+
+**Major architecture redesign: flat personality strings → 5-layer agent system**
+
+The agent personality system has been restructured from simple text constants into a layered cognitive architecture that makes each agent behave like a "living generative entity":
+
+1. **Temperament Layer** (static) — Base disposition, communication style, worldview, emotional baseline. Replaces the old flat `ROWAN_PERSONALITY` / `POIROT_PERSONALITY` strings with structured data.
+
+2. **Driving Force Layer** (static) — Primary motivation, curiosity style, agency expression, and tension source. Defines *why* agents do things, not just *how*.
+
+3. **Habit Layer** (persistent, evolving) — Long-term sedimented behavioral patterns that form organically from interactions. Stored in localStorage, survives sessions. Max 10 habits with strength values (0-1) that strengthen with reinforcement and decay when contradicted.
+
+4. **Generation Layer** (ephemeral, session-scoped) — On-the-spot state: current mood (focused/alert/satisfied/cautious), active goal, recent observations, success streak, error count. Resets each session.
+
+5. **Reflection Layer** (triggered periodically) — Self-assessment that modifies habits. Triggered on: workflow completion, errors, mode switches, session end. Detects patterns in user messages (category preferences, verbosity preference) and creates habit modifications.
+
+**Files changed:**
+- `src/lib/types.ts` — Added 8 new interfaces: TemperamentLayer, DrivingForceLayer, HabitPattern, HabitLayer, GenerationLayer, ReflectionEntry, ReflectionLayer, AgentPersonalityLayers
+- `src/lib/reflection.ts` — NEW: Pure functions for reflection processing, pattern detection, habit formation
+- `src/lib/agents.ts` — Added temperament + driving force data to both Rowan and Poirot definitions
+- `src/lib/prompts.ts` — New `compilePersonalityPrompt()` layer compiler replaces flat strings. Backward-compatible fallback for transition.
+- `src/store/useStore.ts` — Agent layers state management, localStorage persistence for habits/reflection, generation tracking in chatWithCID, reflection triggers on mode switch and workflow completion
+
+**Eval result: 93% (5/6 passed)** — personality-rowan-empty now 100% (was 88%), all workflow and advice tests passing. One execute task (execute-api-design) had a model formatting issue unrelated to personality layers.
+
 ### 2026-03-08 — Round 79: Personality Markers & Eval Pool Expansion (Eval-Driven)
 
 **Eval result: 99% (6/6 passed)** — personality-rowan-empty at 88% (missing personality markers)

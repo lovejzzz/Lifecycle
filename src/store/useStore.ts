@@ -2,10 +2,11 @@
 
 import { create } from 'zustand';
 import type { Node, Edge, Connection } from '@xyflow/react';
-import type { NodeData, LifecycleEvent, CIDMessage, NodeCategory, CIDMode } from '@/lib/types';
+import type { NodeData, LifecycleEvent, CIDMessage, NodeCategory, CIDMode, AgentPersonalityLayers, HabitLayer, GenerationLayer, ReflectionLayer } from '@/lib/types';
 import { registerCustomCategory, EDGE_LABEL_COLORS, BUILT_IN_CATEGORIES } from '@/lib/types';
 import { getAgent, getInterviewQuestions, buildEnrichedPrompt } from '@/lib/agents';
 import { buildSystemPrompt, buildMessages } from '@/lib/prompts';
+import { createDefaultHabits, createDefaultGeneration, createDefaultReflection, processAllReflections, detectPatterns } from '@/lib/reflection';
 import {
   NODE_W, NODE_H, findFreePosition,
   topoSort, ANIMATED_LABELS, createStyledEdge, inferEdgeLabel,
@@ -545,6 +546,92 @@ function saveRules(rules: string[]) {
   try { localStorage.setItem(RULES_KEY, JSON.stringify(rules)); } catch { /* ignore */ }
 }
 
+// ─── 5-Layer Agent Personality State ──────────────────────────────────────────
+const HABITS_KEY = 'lifecycle-agent-habits';
+
+function loadHabits(): Record<CIDMode, HabitLayer> {
+  if (typeof window === 'undefined') return { rowan: createDefaultHabits(), poirot: createDefaultHabits() };
+  try {
+    const raw = localStorage.getItem(HABITS_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch { /* ignore */ }
+  return { rowan: createDefaultHabits(), poirot: createDefaultHabits() };
+}
+
+function saveHabits(habits: Record<CIDMode, HabitLayer>) {
+  if (typeof window === 'undefined') return;
+  try { localStorage.setItem(HABITS_KEY, JSON.stringify(habits)); } catch { /* ignore */ }
+}
+
+// Ephemeral generation state (reset each session)
+const sessionGeneration: Record<CIDMode, GenerationLayer> = {
+  rowan: createDefaultGeneration(),
+  poirot: createDefaultGeneration(),
+};
+
+// Reflection state (persisted until processed)
+const REFLECTION_KEY = 'lifecycle-agent-reflection';
+function loadReflection(): Record<CIDMode, ReflectionLayer> {
+  if (typeof window === 'undefined') return { rowan: createDefaultReflection(), poirot: createDefaultReflection() };
+  try {
+    const raw = localStorage.getItem(REFLECTION_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch { /* ignore */ }
+  return { rowan: createDefaultReflection(), poirot: createDefaultReflection() };
+}
+
+function saveReflection(reflection: Record<CIDMode, ReflectionLayer>) {
+  if (typeof window === 'undefined') return;
+  try { localStorage.setItem(REFLECTION_KEY, JSON.stringify(reflection)); } catch { /* ignore */ }
+}
+
+// Loaded at startup
+const loadedHabits = loadHabits();
+const loadedReflection = loadReflection();
+
+// Process any pending reflections from last session
+for (const mode of ['rowan', 'poirot'] as CIDMode[]) {
+  if (loadedReflection[mode].pendingReflections.length > 0) {
+    loadedHabits[mode] = processAllReflections(loadedHabits[mode], loadedReflection[mode].pendingReflections);
+    loadedReflection[mode] = createDefaultReflection();
+  }
+}
+saveHabits(loadedHabits);
+saveReflection(loadedReflection);
+
+/** Get current personality layers for an agent */
+function getAgentLayers(mode: CIDMode): AgentPersonalityLayers {
+  const agent = getAgent(mode);
+  return {
+    temperament: agent.temperament,
+    drivingForce: agent.drivingForce,
+    habits: loadedHabits[mode],
+    generation: sessionGeneration[mode],
+    reflection: loadedReflection[mode],
+  };
+}
+
+/** Update generation layer (ephemeral, session-scoped) */
+function updateGeneration(mode: CIDMode, update: Partial<GenerationLayer>) {
+  Object.assign(sessionGeneration[mode], update);
+}
+
+/** Add a reflection entry */
+function addReflectionEntry(mode: CIDMode, entry: import('@/lib/types').ReflectionEntry) {
+  loadedReflection[mode].pendingReflections.push(entry);
+  saveReflection(loadedReflection);
+}
+
+/** Process pending reflections into habit modifications */
+function processAgentReflections(mode: CIDMode) {
+  if (loadedReflection[mode].pendingReflections.length === 0) return;
+  loadedHabits[mode] = processAllReflections(loadedHabits[mode], loadedReflection[mode].pendingReflections);
+  loadedReflection[mode] = { pendingReflections: [], lastReflectionAt: Date.now() };
+  saveHabits(loadedHabits);
+  saveReflection(loadedReflection);
+  cidLog('processReflections', { mode, habits: loadedHabits[mode].interactionPatterns.length });
+}
+
 // Context-aware welcome: when returning to a saved workflow, add a summary greeting
 function buildWelcomeBack(nodes: Node<NodeData>[], edges: Edge[], mode: CIDMode): CIDMessage | null {
   if (!nodes || nodes.length === 0) return null;
@@ -595,7 +682,23 @@ export const useLifecycleStore = create<LifecycleStore>((set, get) => ({
   // Agent mode
   cidMode: persistedMode,
   setCIDMode: (mode) => set((s) => {
+    const oldMode = s.cidMode;
     const agent = getAgent(mode);
+
+    // Layer 5: Reflect on mode switch — detect patterns from outgoing agent's session
+    const recentUserMsgs = s.messages
+      .filter(m => m.role === 'user' && m.content)
+      .slice(-10)
+      .map(m => m.content);
+    if (recentUserMsgs.length >= 3) {
+      const detected = detectPatterns(recentUserMsgs, loadedHabits[oldMode].interactionPatterns);
+      for (const entry of detected) addReflectionEntry(oldMode, entry);
+    }
+    // Process reflections for the outgoing agent
+    processAgentReflections(oldMode);
+    // Reset generation state for new agent
+    sessionGeneration[mode] = createDefaultGeneration();
+
     // Keep conversation history, just add a mode-switch message
     const switchMessage: CIDMessage = {
       id: `switch-${Date.now()}`, role: 'cid',
@@ -2033,7 +2136,9 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     set({ isProcessing: true });
 
     try {
-      const systemPrompt = buildSystemPrompt(store.cidMode, store.nodes, store.edges, store.cidRules) + getBuildContext();
+      const agent = getAgent(store.cidMode);
+      const layers = getAgentLayers(store.cidMode);
+      const systemPrompt = buildSystemPrompt(store.cidMode, store.nodes, store.edges, store.cidRules, agent, layers) + getBuildContext();
       const chatHistory = store.messages
         .filter(m => m.content && !m.action)
         .map(m => ({ role: m.role as 'user' | 'cid', content: m.content }));
@@ -2078,6 +2183,17 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       }
 
       set({ aiEnabled: true });
+
+      // Layer 4 update: track interaction success
+      const curMode = store.cidMode;
+      const gen = sessionGeneration[curMode];
+      gen.interactionCount++;
+      gen.successStreak++;
+      gen.activeGoal = prompt.slice(0, 80);
+      if (gen.recentObservations.length >= 5) gen.recentObservations.shift();
+      gen.recentObservations.push(`Responded to: "${prompt.slice(0, 50)}"`);
+      if (gen.successStreak >= 3) gen.currentMood = 'satisfied';
+
       const result = data.result as { message: string; workflow: null | {
         nodes: Array<{ label: string; category: string; description: string; content?: string; sections?: Array<{ title: string; content?: string }> }>;
         edges: Array<{ from: number; to: number; label: string }>;
@@ -2208,6 +2324,14 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
           mode: 'api',
         });
 
+        // Layer 5: Reflect on workflow completion
+        addReflectionEntry(curMode, {
+          trigger: 'workflow_complete',
+          observation: `Built ${newNodes.length}-node workflow for: "${prompt.slice(0, 60)}"`,
+          habitModification: { action: 'add', newPattern: `Experienced building workflows for: ${prompt.slice(0, 40)}` },
+          timestamp: Date.now(),
+        });
+
         // Workflow diff summary for extend mode
         const diffSuffix = isExtending && (newNodes.length > 0 || newEdges.length > 0)
           ? `\n\n📊 **Diff:** +${newNodes.length} node${newNodes.length !== 1 ? 's' : ''}, +${newEdges.length} edge${newEdges.length !== 1 ? 's' : ''} → ${existingNodes.length + newNodes.length} total nodes`
@@ -2231,6 +2355,12 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         });
       }
     } catch (_err) {
+      // Layer 4: Track error in generation state
+      const errMode = store.cidMode;
+      sessionGeneration[errMode].errorCount++;
+      sessionGeneration[errMode].successStreak = 0;
+      sessionGeneration[errMode].currentMood = 'cautious';
+
       // Remove thinking, fallback to template
       set(s => ({
         messages: s.messages.filter(m => m.id !== thinkingId),
@@ -2290,7 +2420,9 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     const tryAPIGeneration = async () => {
       cidLog('tryAPIGeneration', 'attempting API call...');
       try {
-        const systemPrompt = buildSystemPrompt(cidMode, store.nodes, store.edges, store.cidRules);
+        const agentConfig = getAgent(cidMode);
+        const agentLayers = getAgentLayers(cidMode);
+        const systemPrompt = buildSystemPrompt(cidMode, store.nodes, store.edges, store.cidRules, agentConfig, agentLayers);
         const chatHistory = store.messages
           .filter(m => m.content && !m.action)
           .map(m => ({ role: m.role as 'user' | 'cid', content: m.content }));
@@ -4011,7 +4143,9 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     const context = store.nodes.map(n => n.data.label).join(', ');
     const prompt = `Given a workflow with these nodes: ${context}\n\nGenerate concise 1-sentence descriptions for each of these nodes that currently lack descriptions:\n${nodeList}\n\nRespond with JSON: { "descriptions": { "NodeLabel": "description" } }. Only include the nodes listed above.`;
     try {
-      const systemPrompt = buildSystemPrompt(store.cidMode, store.nodes, store.edges, store.cidRules);
+      const descAgent = getAgent(store.cidMode);
+      const descLayers = getAgentLayers(store.cidMode);
+      const systemPrompt = buildSystemPrompt(store.cidMode, store.nodes, store.edges, store.cidRules, descAgent, descLayers);
       const res = await fetch('/api/cid', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
