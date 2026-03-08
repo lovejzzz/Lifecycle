@@ -486,6 +486,229 @@ Each item includes specific files, implementation steps, acceptance criteria, an
 
 ---
 
+### 11. Plan-then-Execute: Preview Before Generation
+**Status:** [ ] Not started
+**Version target:** 1.11.0
+**Inspiration:** v0.dev's agentic plan-then-execute pattern, Lovable's multi-step reasoning
+**Complexity:** Medium (2-3 hours)
+
+**Problem:** When a user says "Build a content pipeline with SEO optimization", CID immediately generates 7-10 nodes and presents the full workflow. If the user wanted something different (e.g. "I meant video content, not blog"), they have to modify or rebuild entirely. v0.dev solves this by showing a plan first ("I'll create 4 components: Schema, API, UI, Wiring") and letting the user approve/tweak before executing. This also reduces wasted LLM calls.
+
+**Implementation:**
+
+1. **File: `src/app/api/cid/route.ts`** — Add a `planMode` option. When `taskType === 'generate'` and plan mode is enabled:
+   - First LLM call returns a lightweight plan (not full nodes):
+     ```json
+     { "message": "Here's my plan...", "plan": {
+       "summary": "Content pipeline with 6 stages",
+       "nodes": ["Content Intake (trigger)", "SEO Analysis (action)", "Editorial Review (review)", ...],
+       "architecture": "Linear with feedback loop from Review → SEO Analysis",
+       "estimated_edges": 8
+     }}
+     ```
+   - Second call (after user approves) generates the full workflow with `planContext` injected
+
+2. **File: `src/store/useStore.ts`** — Add plan state:
+   ```typescript
+   pendingPlan: { summary: string; nodes: string[]; architecture: string } | null;
+   approvePlan: () => Promise<void>;  // sends "approved" and generates full workflow
+   rejectPlan: (feedback: string) => Promise<void>;  // re-plans with user feedback
+   ```
+
+3. **File: `src/components/CIDPanel.tsx`** — Render plan as a styled card with "Approve" / "Modify" / "Reject" buttons. Show node list as chips with category colors.
+
+4. **File: `src/lib/prompts.ts`** — Add `PLAN_SYSTEM_PROMPT` variant that asks for plan JSON instead of full workflow JSON. Keep it short (~50 tokens) to minimize latency.
+
+**Acceptance criteria:**
+- [ ] Build requests show a plan card in chat before generating
+- [ ] User can approve (generates full workflow) or modify (re-plans with feedback)
+- [ ] Plan → Generate round-trip adds <3s latency vs. direct generation
+- [ ] Analyze/execute requests bypass planning (direct response)
+- [ ] Plan cards display node names with category-colored badges
+
+---
+
+### 12. Ambient Context Tracking — Auto-Inject Recent Activity
+**Status:** [ ] Not started
+**Version target:** 1.12.0
+**Inspiration:** Windsurf's "Flows" ambient context tracking, Cursor's real-time edit awareness
+**Complexity:** Medium (2 hours)
+
+**Problem:** When CID generates a workflow and the user then manually edits 3 nodes, CID doesn't know what changed. The user has to explain "I changed the review node to require 2 approvers." Windsurf tracks edits, terminal output, and navigation in real-time, so the AI already knows what happened. Currently, `serializeGraph()` in `src/lib/prompts.ts` sends graph state but not *what changed recently*.
+
+**Implementation:**
+
+1. **File: `src/store/useStore.ts`** — Add an activity ring buffer (last 20 actions):
+   ```typescript
+   recentActivity: Array<{
+     type: 'node-edited' | 'node-added' | 'node-deleted' | 'edge-added' | 'edge-deleted' | 'execution-success' | 'execution-error' | 'mode-switched';
+     label: string;
+     detail?: string;  // e.g. "Changed category from action to review"
+     timestamp: number;
+   }>;
+   ```
+   - Push entries from `updateNodeData()`, `addNode()`, `deleteNode()`, `executeNode()` etc.
+   - Cap at 20 entries, FIFO
+
+2. **File: `src/lib/prompts.ts`** — In `serializeGraph()`, append a `RECENT ACTIVITY` block after the graph:
+   ```typescript
+   const activityBlock = recentActivity.length > 0
+     ? `\nRECENT ACTIVITY (last ${recentActivity.length} actions):\n${recentActivity.slice(-10).map(a => `- ${relativeTime(a.timestamp)}: ${a.type} "${a.label}"${a.detail ? ` — ${a.detail}` : ''}`).join('\n')}`
+     : '';
+   ```
+
+3. **File: `src/lib/prompts.ts`** — Pass `recentActivity` into `buildSystemPrompt()` as a new parameter.
+
+**Acceptance criteria:**
+- [ ] After editing a node, CID's next response references the edit without the user mentioning it
+- [ ] After a failed execution, CID's next response acknowledges the failure and suggests fixes
+- [ ] Activity ring buffer caps at 20 entries (no memory leak)
+- [ ] Activity timestamps shown as relative ("2m ago", "just now")
+- [ ] No performance impact — activity tracking is synchronous state updates only
+
+---
+
+### 13. Per-Node Model Override for Cost Optimization
+**Status:** [ ] Not started
+**Version target:** 1.13.0
+**Inspiration:** Google ADK's per-agent model selection, Dify's pluggable agent strategies
+**Complexity:** Small-Medium (1-2 hours)
+
+**Problem:** `executeWorkflow()` sends every node to the same model (currently deepseek-reasoner via `cidAIModel`). A 9-node disaster-recovery workflow costs the same whether the node is a simple trigger passthrough or a complex policy analysis. Google ADK lets each sub-agent use a different model. For Lifecycle, simple nodes (trigger, input, dependency) should use fast/cheap models, while complex nodes (cid, policy, review) should use the best available.
+
+**Implementation:**
+
+1. **File: `src/lib/types.ts`** — Add `aiModel?: string` to `NodeData` (already exists as field but unused by execution):
+   - The field exists but `executeNode()` always uses the global `cidAIModel`
+
+2. **File: `src/store/useStore.ts`** — In `executeNode()` (line ~1207), use per-node model if set:
+   ```typescript
+   const model = d.aiModel || store.cidAIModel;
+   // Pass model to /api/cid
+   ```
+
+3. **File: `src/components/NodeDetailPanel.tsx`** — Add a model selector dropdown in the node detail view:
+   - Only show for AI-callable categories (action, cid, review, test, policy, artifact)
+   - Dropdown: "Default (project model)" | "deepseek/deepseek-reasoner" | "anthropic/claude-sonnet-4-20250514" | "openrouter/auto"
+   - Store selection in `nodeData.aiModel`
+
+4. **File: `src/app/api/cid/route.ts`** — Already accepts `model` parameter, no changes needed.
+
+**Acceptance criteria:**
+- [ ] Node detail panel shows model selector for AI-callable categories
+- [ ] Setting a per-node model overrides the global model for that node's execution
+- [ ] Nodes without per-node model use the global `cidAIModel` (backward compat)
+- [ ] Model selector shows current selection clearly
+- [ ] Cost savings visible in execution (simple nodes use fast model)
+
+---
+
+### 14. Token Usage and Cost Display
+**Status:** [ ] Not started
+**Version target:** 1.14.0
+**Inspiration:** CrewAI's LLM call observability events, Rivet's live cost estimator
+**Complexity:** Small-Medium (1-2 hours)
+
+**Problem:** Users have no visibility into how many tokens CID consumes or what each request costs. After a 9-node workflow execution, there's no indication that it used 50K tokens at $0.12. CrewAI emits structured events with token counts and latency per call. Rivet shows a running cost estimate. For a tool targeting real teams, cost transparency is essential.
+
+**Implementation:**
+
+1. **File: `src/app/api/cid/route.ts`** — Extract token usage from LLM response and include in API response:
+   ```typescript
+   // DeepSeek and Anthropic both return usage in response
+   const usage = {
+     promptTokens: response.usage?.prompt_tokens || 0,
+     completionTokens: response.usage?.completion_tokens || 0,
+     totalTokens: response.usage?.total_tokens || 0,
+     model: resolvedModel,
+     durationMs: Date.now() - startTime,
+   };
+   return NextResponse.json({ ...parsed, _usage: usage });
+   ```
+
+2. **File: `src/store/useStore.ts`** — Track cumulative session usage:
+   ```typescript
+   sessionTokenUsage: {
+     totalPromptTokens: number;
+     totalCompletionTokens: number;
+     totalCalls: number;
+     totalDurationMs: number;
+   };
+   ```
+   - Update after each `/api/cid` response
+   - Per-node usage stored in `nodeData` for execution results
+
+3. **File: `src/components/CIDPanel.tsx`** — Add a subtle token counter in the footer bar:
+   - Format: "42K tokens · 12 calls · ~$0.08" (estimate based on model pricing)
+   - Click to expand: breakdown by node, per-call latency
+   - Style: `text-[10px] text-white/30` — unobtrusive, information-on-demand
+
+**Acceptance criteria:**
+- [ ] Token count visible in CIDPanel footer after first LLM call
+- [ ] Cumulative count updates with each request
+- [ ] Per-node token usage visible in node detail panel after execution
+- [ ] Cost estimate uses approximate model pricing (configurable)
+- [ ] Counter resets on session clear
+
+---
+
+### 15. Keyboard-Driven Canvas with Command Palette
+**Status:** [ ] Not started
+**Version target:** 1.15.0
+**Inspiration:** Cursor's Cmd+K command palette, VS Code's keyboard-first design, Figma's keyboard shortcuts
+**Complexity:** Medium (2-3 hours)
+
+**Problem:** The canvas requires mouse interaction for everything — selecting nodes, opening panels, executing workflows, switching agents. Power users (and accessibility users) need keyboard shortcuts. Cursor proved that Cmd+K as a universal entry point dramatically speeds up workflows. Figma's keyboard shortcuts (R for rectangle, T for text) show how spatial tools can be keyboard-driven.
+
+**Implementation:**
+
+1. **File: `src/components/Canvas.tsx`** — Add a `useEffect` for global keyboard shortcuts:
+   ```typescript
+   useEffect(() => {
+     const handler = (e: KeyboardEvent) => {
+       // Cmd+K: Focus CID chat input
+       if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); focusCIDInput(); }
+       // Cmd+Enter: Execute workflow
+       if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); executeWorkflow(); }
+       // Cmd+E: Toggle CID panel
+       if ((e.metaKey || e.ctrlKey) && e.key === 'e') { e.preventDefault(); toggleCIDPanel(); }
+       // Delete/Backspace: Delete selected node
+       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedNodeId && !isEditing) { deleteNode(selectedNodeId); }
+       // Tab: Cycle through nodes
+       if (e.key === 'Tab' && !isEditing) { e.preventDefault(); cycleNodeSelection(e.shiftKey ? -1 : 1); }
+       // 1-9: Switch agent (1=Rowan, 2=Poirot)
+       if (e.key === '1' && e.altKey) setCIDMode('rowan');
+       if (e.key === '2' && e.altKey) setCIDMode('poirot');
+       // Escape: Deselect / close panels
+       if (e.key === 'Escape') { deselectAll(); closePanels(); }
+     };
+     window.addEventListener('keydown', handler);
+     return () => window.removeEventListener('keydown', handler);
+   }, [selectedNodeId, isEditing]);
+   ```
+
+2. **File: `src/components/CommandPalette.tsx`** (NEW, ~150 lines):
+   - Triggered by Cmd+P or typing `/` in CID chat
+   - Searchable list of all actions: "Execute Workflow", "Add Review Node", "Switch to Poirot", "Export Workflow", "Run Branch", etc.
+   - Filter as user types, Enter to execute
+   - Style: centered overlay, `bg-zinc-900/95 backdrop-blur-lg`, max-h-80, overflow-y-auto
+   - Framer Motion scale-in animation (0.95→1, 100ms)
+
+3. **File: `src/components/Canvas.tsx`** — Add keyboard shortcut hints in bottom-right corner:
+   - Small hint bar: "⌘K Chat · ⌘↵ Run · Tab Cycle · ⌘P Commands"
+   - `text-[9px] text-white/20` — barely visible, disappears after 10s on first visit
+
+**Acceptance criteria:**
+- [ ] Cmd+K focuses CID chat input from anywhere
+- [ ] Cmd+Enter executes the workflow
+- [ ] Tab cycles through nodes, Shift+Tab reverses
+- [ ] Delete/Backspace removes selected node
+- [ ] Cmd+P opens command palette with searchable actions
+- [ ] All shortcuts work without conflicting with text editing in CIDPanel
+- [ ] Shortcuts hint visible on first visit, then fades
+
+---
+
 ## Completed
 
 _(Move items here after implementation)_
