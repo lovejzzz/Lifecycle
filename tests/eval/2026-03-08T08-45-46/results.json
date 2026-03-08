@@ -1,0 +1,497 @@
+{
+  "timestamp": "2026-03-08T08-45-46",
+  "overall": 99,
+  "testsRun": [
+    "eng-deploy-process",
+    "eng-oncall",
+    "creator-youtube",
+    "execute-incident-postmortem",
+    "edge-question-looks-like-build",
+    "personality-rowan-empty"
+  ],
+  "poolSize": 40,
+  "results": [
+    {
+      "id": "eng-deploy-process",
+      "status": "ok",
+      "elapsed": 115973,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "My team pushes to production by SSH-ing into the server and running git pull. We need a real deployment process. We use React, Node, and PostgreSQL on AWS.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building deployment pipeline for your AWS stack.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Code Push Trigger",
+              "category": "trigger",
+              "description": "Git push to main branch initiates the deployment pipeline via webhook",
+              "content": "Configure a webhook in your GitHub repository to trigger the pipeline on push events to the main branch. Use AWS CodePipeline or GitHub Actions for orchestration. Set up the webhook endpoint with necessary IAM permissions in AWS (e.g., create an API Gateway or use AWS EventBridge). The event payload should include commit hash, branch name, and author details for traceability. Tools: GitHub webhooks, AWS CodePipeline, AWS IAM. Steps: 1. Create an IAM role with permissions for CodeBuild and CodeDeploy. 2. In GitHub, add a webhook pointing to your AWS pipeline endpoint. 3. Test the trigger by making a dummy commit to ensure the event is captured. 4. Configure event filtering to only trigger on main branch pushes to avoid unnecessary runs. Ensure logging is enabled for debugging with CloudWatch Logs."
+            },
+            {
+              "label": "Build Application",
+              "category": "action",
+              "description": "Compile React frontend and Node backend, install dependencies, and package artifacts",
+              "content": "Execute build steps for both frontend (React) and backend (Node.js) in parallel using AWS CodeBuild or a similar CI tool. For React: Run `npm install` and `npm run build` to generate static files, using Webpack or Create React App configuration. For Node: Run `npm install` for dependencies, transpile TypeScript if used, and bundle with tools like Webpack. Include environment variable injection for staging/production. Tools: AWS CodeBuild, npm, Webpack. Steps: 1. Set up CodeBuild project with buildspec.yml defining phases: install, pre_build, build, post_build. 2. Install dependencies with cache optimization to speed up builds. 3. Build frontend to a dist/ folder and backend to a bundle. 4. Run linting and code quality checks (e.g., ESLint). 5. Package artifacts as ZIP files for deployment. Handle errors by failing the build on non-zero exit codes and logging to CloudWatch."
+            },
+            {
+              "label": "Automated Testing",
+              "category": "test",
+              "description": "Run unit and integration tests to validate application functionality before deployment",
+              "content": "Execute comprehensive test suites for both frontend and backend using frameworks like Jest for React and Mocha/Chai for Node. Include integration tests with PostgreSQL using a test database instance. Pass/fail criteria: All tests must pass with a minimum coverage of 80% (configurable). Tools: Jest, React Testing Library, Supertest for API testing, AWS RDS for test DB. Steps: 1. Spin up a temporary PostgreSQL instance on AWS RDS for integration tests. 2. Run frontend unit tests with `npm test` focusing on component rendering and state management. 3. Run backend unit tests for API endpoints and business logic. 4. Execute integration tests simulating user flows and database interactions. 5. On failure, output detailed logs and trigger a rollback or notification. Use CodeBuild test reports integrated with AWS to visualize results."
+            },
+            {
+              "label": "Staging Deployment",
+              "category": "action",
+              "description": "Deploy built artifacts to AWS staging environment for validation",
+              "content": "Deploy the application to a staging environment on AWS using services like EC2 for servers, S3 for static assets, and RDS for database. For React, upload static files to an S3 bucket configured for web hosting. For Node, deploy to EC2 instances or use AWS ECS/Fargate for containerized apps. Handle database migrations with tools like Knex.js or Sequelize. Tools: AWS CodeDeploy, S3, EC2, RDS. Steps: 1. Provision staging infrastructure via CloudFormation or Terraform scripts. 2. Use CodeDeploy to deploy backend code to EC2 instances with blue-green deployment strategy. 3. Sync React build files to S3 and invalidate CloudFront cache if used. 4. Run database migrations with rollback scripts in case of failure. 5. Health check endpoints to ensure services are up. Set up monitoring with CloudWatch alarms for errors."
+            },
+            {
+              "label": "Manual Approval Gate",
+              "category": "review",
+              "description": "Human review of staging deployment before promoting to production",
+              "content": "Require manual approval from designated team members (e.g., lead developer or product manager) before proceeding to production. Approval criteria: Staging environment must be stable with no critical bugs, performance metrics within SLA (e.g., response time <200ms), and user acceptance testing passed. Use AWS CodePipeline manual approval action or a custom Slack/email notification. Steps: 1. After staging deployment, send a notification with a link to staging URL and test results. 2. Reviewers check functionality, logs, and metrics in a checklist (e.g., API endpoints work, UI renders correctly). 3. Approval must be given within a 4-hour SLA; if not, escalate via pager duty. 4. On rejection, provide feedback and trigger a rollback or fix in staging. Integrate with Jira for tracking issues."
+            },
+            {
+              "label": "Production Deployment",
+              "category": "action",
+              "description": "Deploy approved artifacts to AWS production environment with rollback capability",
+              "content": "Deploy the application to production using similar steps as staging but with higher caution and rollback plans. Use AWS CodeDeploy with canary or linear deployment to minimize downtime. For database, apply migrations during low-traffic windows with backups. Tools: AWS CodeDeploy, Route53 for DNS switching, RDS snapshots. Steps: 1. Scale production infrastructure as needed via Auto Scaling Groups. 2. Deploy backend with CodeDeploy, monitoring health checks. 3. Update S3 static files and CloudFront distributions. 4. Execute database migrations with verification steps and immediate rollback script on failure. 5. Post-deployment, run smoke tests to confirm functionality. Set up automatic rollback triggers based on CloudWatch metrics (e.g., error rate >5%). Document the deployment in a changelog."
+            },
+            {
+              "label": "Deployment Complete",
+              "category": "output",
+              "description": "Final state with monitoring, success metrics, and documentation",
+              "content": "Mark deployment as successful and output key metrics for ongoing monitoring. Deliverables: Deployment report with timestamp, commit hash, and performance baselines. Success metrics: Zero downtime, all health checks passing, error rates below 1%. Tools: CloudWatch Dashboards, AWS X-Ray for tracing, Slack notifications. Steps: 1. Update deployment status in a central dashboard (e.g., AWS Health Dashboard). 2. Send success notification to the team with links to production URLs and monitoring tools. 3. Archive logs and artifacts in S3 for audit trails. 4. Schedule post-deployment review meeting to discuss lessons learned. 5. Continuously monitor with CloudWatch alarms for anomalies and set up automated alerts for future issues. Ensure documentation is updated in Confluence or similar."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "validates"
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "validates"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "approves"
+            },
+            {
+              "from": 4,
+              "to": 3,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "outputs"
+            },
+            {
+              "from": 6,
+              "to": 0,
+              "label": "monitors"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 105,
+        "maxScore": 105,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ Has \"test\" category",
+          "✓ Has \"action\" category",
+          "✓ All 9 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 820c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (9 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "eng-oncall",
+      "status": "ok",
+      "elapsed": 147764,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We just got paged at 3am for the third time this week. We need an incident response process. Currently it's just chaos — whoever sees Slack first tries to fix it.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! The case of the chaotic 3am pages—I see the evidence scattered like clues in the dark. Voilà, I have constructed a structured incident response workflow to bring order from chaos, mon ami, ensuring your little grey cells are put to better use.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Incident Alert",
+              "category": "trigger",
+              "description": "Initial notification of an incident via monitoring tools or user reports, triggering the response process.",
+              "content": "Configure alerts using tools like PagerDuty, Datadog, or Prometheus with thresholds for key metrics (e.g., error rates >5%, latency spikes >200ms). Set up escalation policies to ensure on-call engineers are paged via SMS, phone, or Slack integrations. Define criteria: severity levels (P1-P4) based on impact (e.g., user-facing outages, data loss). Automate alert enrichment by pulling in related logs from ELK Stack or cloudwatch logs. Steps: 1) Validate alert source to reduce false positives. 2) Immediately create an incident ticket in Jira or ServiceNow with initial details. 3) Activate war room channel in Slack or Microsoft Teams for collaboration. This ensures a consistent, auditable start to every incident, reducing reaction time."
+            },
+            {
+              "label": "Incident Triage",
+              "category": "action",
+              "description": "Initial assessment and prioritization to determine severity and assign resources.",
+              "content": "Upon alert, the on-call engineer must: 1) Acknowledge the page within 5 minutes using PagerDuty or Opsgenie. 2) Assess impact by checking dashboards (Grafana, New Relic) for affected services, user count, and business criticality. 3) Assign a severity level (P1: full outage, P2: major degradation, P3: minor issue, P4: informational). 4) Activate incident commander role if P1/P2, delegating tasks. 5) Create a dedicated Slack channel with naming convention #incident-YYYYMMDD-service. 6) Document initial observations in a shared Google Doc or Confluence page. Tools: Use checklist in Runbook.io or Splunk On-Call. Criteria: If unsure, escalate to senior SRE. This phase sets the stage for efficient coordination."
+            },
+            {
+              "label": "Root Cause Investigation",
+              "category": "action",
+              "description": "Deep dive to identify the underlying cause using logs, metrics, and traces.",
+              "content": "Gather evidence systematically: 1) Collect logs from ELK Stack, CloudWatch, or Splunk for the last 24 hours. 2) Analyze metrics in Prometheus/Grafana for anomalies in CPU, memory, or network. 3) Use distributed tracing with Jaeger or Zipkin to map request flows. 4) Form hypotheses (e.g., recent deployment, configuration change) and test with A/B comparisons or canary analysis. 5) Involve subject matter experts via war room; document findings in a shared Miro board or Google Slides. Steps: Correlate timestamps, review git commits for recent changes, check database queries with pgBadger. Tools: Debug with kubectl for Kubernetes, AWS Console for infrastructure. Aim to identify root cause within 30 minutes for P1 incidents."
+            },
+            {
+              "label": "Mitigation & Fix",
+              "category": "action",
+              "description": "Implement temporary or permanent solutions to resolve the incident based on investigation findings.",
+              "content": "Execute fixes with caution: 1) For immediate mitigation, consider rollbacks via Kubernetes (kubectl rollout undo) or traffic shifting with load balancers. 2) Apply hotfixes via GitHub pull requests with peer review; use feature flags (LaunchDarkly) for controlled deployment. 3) Scale resources horizontally with Terraform or AWS Auto Scaling. 4) Validate changes in staging if time permits, using Selenium for UI tests. Steps: Document all actions in the incident doc, including commands run and outcomes. Tools: Use CI/CD pipelines (Jenkins, GitLab CI) for automated deployments. Criteria: Ensure no regressions; monitor for 5 minutes post-fix. If complex, break into smaller, reversible changes to minimize risk."
+            },
+            {
+              "label": "Resolution Validation",
+              "category": "test",
+              "description": "Verify that the mitigation has successfully resolved the incident through automated and manual testing.",
+              "content": "Conduct thorough validation: 1) Run automated smoke tests using Postman for APIs or Cypress for web apps, targeting affected endpoints. 2) Check real-time dashboards (Datadog, New Relic) for key metrics returning to baseline (e.g., error rate <0.1%, latency <100ms). 3) Perform manual checks: simulate user workflows, test login flows, verify data integrity. 4) Use synthetic monitoring with tools like Pingdom or UptimeRobot. Steps: If tests fail, log defects and revert to previous step. Criteria: All alerts clear, customer support tickets decline, and monitoring shows stability for 15 minutes. Document results in the incident report for accountability."
+            },
+            {
+              "label": "Stakeholder Communication",
+              "category": "action",
+              "description": "Keep all relevant parties informed throughout the incident lifecycle with timely updates.",
+              "content": "Maintain transparent communication: 1) Set up a status page (Statuspage.io, Atlassian Statuspage) for public updates every 30 minutes. 2) Send internal updates via Slack/Teams with templates: current status, impact, ETA, and actions taken. 3) Escalate to management via email or brief calls for P1/P2 incidents. 4) Use tools like PagerDuty for automated status changes or Twilio for SMS blasts. Steps: Assign a communicator role; document all updates in a shared log. Criteria: Update within 10 minutes of major changes, avoid technical jargon for non-tech stakeholders. Post-incident, send a summary email to all affected teams to close the loop."
+            },
+            {
+              "label": "Post-Incident Review",
+              "category": "review",
+              "description": "Human-led analysis to learn from the incident, identify improvements, and prevent recurrence.",
+              "content": "Schedule a blameless post-mortem within 48 hours: 1) Invite key participants—engineers, SREs, product managers—using Calendly for scheduling. 2) Review timeline from alert to resolution using tools like Incident.io or Jira Service Management. 3) Discuss root cause, contributing factors (e.g., process gaps, tool failures), and action items. 4) Use frameworks like Google's SRE handbook; document lessons in a Confluence template. Steps: Assign owners for follow-ups (e.g., update runbooks, improve monitoring). Criteria: Ensure actionable items with deadlines; share findings company-wide. Tools: Miro for brainstorming, Asana for tracking tasks. Goal: Turn incidents into learning opportunities."
+            },
+            {
+              "label": "Incident Report & Closure",
+              "category": "output",
+              "description": "Final documentation and closure of the incident, compiling insights for future reference.",
+              "content": "Compile a comprehensive report: 1) Aggregate all data: alert details, triage notes, investigation findings, mitigation steps, validation results, communication logs, and review outcomes. 2) Use a standard template in Google Docs or Notion, including sections like timeline, root cause, impact metrics, and action items. 3) Archive in a knowledge base (Guru, Confluence) with tags for searchability. 4) Update runbooks and monitoring rules based on lessons learned. Steps: Close the incident ticket in Jira or ServiceNow, mark as resolved. Criteria: Ensure all stakeholders have access; share report in a monthly review meeting. This output serves as a reference for audits and continuous improvement."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 5,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 3,
+              "label": "refines"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "updates"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "feeds"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "outputs"
+            },
+            {
+              "from": 6,
+              "to": 0,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 110,
+        "maxScore": 110,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 5)",
+          "✓ Node count: 8 ≤ 10",
+          "✓ Has \"trigger\" category",
+          "✓ All 10 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 700c, no thin nodes",
+          "✓ Architecture covers: alert, triage, communicat, postmortem",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (10 edges, 8 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "creator-youtube",
+      "status": "ok",
+      "elapsed": 160997,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "I want to start a YouTube channel. Build me a production workflow for each video — topic research, scripting, filming, editing, thumbnail, SEO, upload, promotion.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! Mon ami, the case of your YouTube channel production is afoot. Voilà, a detective-worthy workflow to clue you in on creating engaging videos, from idea to impact.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Video Concept Trigger",
+              "category": "trigger",
+              "description": "Initial spark or idea entry point for a new video",
+              "content": "Begin by capturing video ideas systematically using tools like Notion, Trello, or a simple spreadsheet. Criteria for a strong concept include aligning with your channel's niche, checking trending topics via Google Trends or YouTube's trending page, and validating audience interest through social media polls or community feedback. Steps: 1) Brainstorm ideas weekly, 2) Score each idea based on potential reach, relevance, and resources needed, 3) Use keyword research tools like Ahrefs or TubeBuddy to gauge search volume, 4) Document the core message and target audience. This phase sets the foundation—ensure each idea has a clear hook and value proposition to engage viewers from the start, avoiding vague topics. Regularly update this list with insights from analytics to refine future concepts."
+            },
+            {
+              "label": "Topic Research & Scripting",
+              "category": "action",
+              "description": "Deep dive into topic validation and script development",
+              "content": "Conduct thorough research using YouTube Studio analytics to identify high-performing content in your niche, analyze competitors with tools like Social Blade, and leverage platforms like Reddit or Quora for audience questions. Scripting involves structuring the video: hook (first 15 seconds to grab attention), body (clear segments with key points, supported by data or stories), and conclusion (call-to-action, e.g., subscribe or visit a link). Tools: Google Docs for collaboration, Celtx for script formatting, or Descript for voiceover scripting. Checklist: ensure script length matches video duration (e.g., 5-10 minutes for tutorials), include primary keywords naturally, and add timestamps for editing. Revise based on peer feedback or readability scores to enhance clarity and engagement."
+            },
+            {
+              "label": "Filming Setup & Recording",
+              "category": "action",
+              "description": "Equipment preparation and video footage capture",
+              "content": "Set up filming environment with a checklist: camera (DSLR, smartphone with 4K capability), lighting (softbox lights or natural light for even illumination), audio (lavalier or shotgun microphone for clarity), and backdrop (clean, branded, or relevant setting). Steps: 1) Test all equipment before recording, 2) Record multiple takes of key scenes, 3) Capture B-roll footage to add variety, 4) Maintain consistent framing and audio levels. Use tools like a teleprompter (e.g., Teleprompter Pro) for script delivery, and monitor with a field monitor for focus. Criteria: ensure audio has no background noise (use Audacity for checks), video is stable (tripod or gimbal), and footage is well-lit with proper exposure. Store files organized in folders for easy editing access."
+            },
+            {
+              "label": "Video Editing & Thumbnail Design",
+              "category": "action",
+              "description": "Post-production editing and thumbnail creation",
+              "content": "Edit footage using software like DaVinci Resolve (free) or Adobe Premiere Pro: steps include importing clips, cutting unnecessary parts, adding transitions, background music (from Epidemic Sound or YouTube Audio Library), text overlays, and color correction. Thumbnail design: use Canva or Photoshop to create eye-catching thumbnails with principles of high contrast, readable text (large font), and human faces showing emotion. Checklist: pacing matches script (avoid drag), audio levels normalized (-6 dB), and thumbnail includes branding (logo) and a curiosity gap. Optimize for CTR by A/B testing thumbnails with tools like Thumbnail Test. Export in recommended formats (e.g., MP4 H.264) and resolutions (1080p or 4K) for YouTube."
+            },
+            {
+              "label": "Quality Review & SEO Check",
+              "category": "review",
+              "description": "Human review for quality assurance and SEO optimization",
+              "content": "Conduct a thorough review by watching the full edited video for flow, errors (audio glitches, visual jumps), and engagement factors (pacing, clarity). SEO check: optimize title (under 60 characters with primary keyword), description (detailed with keywords and links), and tags (use TubeBuddy or VidIQ for suggestions). Steps: 1) Use a checklist covering video length appropriateness, thumbnail appeal, and metadata completeness, 2) Have a second person review for objectivity, 3) Test on different devices for quality. If issues are found (e.g., poor audio or weak SEO), document specific feedback and send back for edits. Approval criteria: video meets channel standards, SEO score is high (≥80 on TubeBuddy), and all elements align with the initial concept."
+            },
+            {
+              "label": "Upload & SEO Finalization",
+              "category": "action",
+              "description": "Upload video to YouTube and finalize SEO elements",
+              "content": "Upload via YouTube Studio: steps include selecting the video file, adding optimized title, description (first two lines crucial for click-through), tags (10-15 relevant ones), category selection, and setting thumbnail. Configure advanced settings: enable end screens (for promotion), cards (for links), and choose visibility (public, private, or scheduled). Use tools like YouTube's built-in analytics preview to check SEO suggestions. Checklist: ensure all metadata is filled, closed captions are added (auto-generated or manual), and playlist inclusion if applicable. Double-check compliance with YouTube policies (no copyright issues) and set monetization options if eligible. Schedule upload for optimal posting times based on audience analytics."
+            },
+            {
+              "label": "Promotion & Analytics Monitoring",
+              "category": "action",
+              "description": "Promote the video and track initial performance",
+              "content": "Execute promotion across channels: share on social media (Twitter, Instagram, Facebook) with tailored posts, engage in relevant communities (Reddit, Discord), and email newsletters to subscribers. Tools: Buffer or Hootsuite for scheduling, Google Analytics for traffic sources. Steps: 1) Create promotional content (short clips, quotes), 2) Interact with comments to boost engagement, 3) Monitor real-time analytics via YouTube Studio for views, watch time, and audience retention. Set up alerts for spikes or drops. Use insights to adjust promotion tactics—e.g., if a platform performs well, increase focus there. Incorporate feedback loops by noting what works for future videos, and consider paid promotion (YouTube Ads) for broader reach if budget allows."
+            },
+            {
+              "label": "Video Published & Performance Output",
+              "category": "output",
+              "description": "Final state with video live and ongoing performance tracking",
+              "content": "Once live, track key metrics over time: views, watch time (aim for high retention rates), engagement (likes, comments, shares), and subscriber growth. Use YouTube Analytics to analyze traffic sources, demographics, and playback locations. Steps: 1) Schedule weekly reviews of performance data, 2) Compare against benchmarks (past videos or industry standards), 3) Adjust content strategy based on trends—e.g., if tutorials outperform vlogs, pivot accordingly. Tools: integrate with dashboards like Google Data Studio for visualization. Long-term, use this data to inform topic research and scripting phases, creating a feedback loop for continuous improvement. Document lessons learned and update workflows to optimize future video production cycles for maximum impact and channel growth."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "outputs"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "approves"
+            },
+            {
+              "from": 4,
+              "to": 3,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "triggers"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "outputs"
+            },
+            {
+              "from": 6,
+              "to": 1,
+              "label": "informs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 95,
+        "maxScore": 95,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 5)",
+          "✓ Node count: 8 ≤ 10",
+          "✓ All 9 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 770c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (9 edges, 8 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "execute-incident-postmortem",
+      "status": "ok",
+      "elapsed": 52887,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Write a blameless post-mortem for a 2-hour production outage caused by a database migration that locked a critical table. 500 customers were affected. Include timeline, root cause, impact, and action items.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Post-Mortem Report: Production Database Outage\n\n**Date:** October 26, 2023  \n**Incident Lead:** Jane Doe, Engineering Manager  \n**Status:** RESOLVED  \n**Severity:** SEV-1 (Critical Service Disruption)\n\n---\n\n### Executive Summary\nOn October 26, 2023, between 14:30 and 16:30 UTC, the primary user-facing application experienced a full outage, rendering it unavailable for approximately 500 customers. The outage was triggered by a scheduled database migration on the `user_sessions` table that inadvertently caused a long-lasting table lock, blocking all read and write operations to the application's core database. This report details a blameless analysis of the incident, focusing on systemic factors and process improvements.\n\n## 1. Impact\n*   **Duration:** 2 hours of complete service unavailability.\n*   **Users Affected:** Approximately 500 active customers were unable to access the application. Customer support received 87 tickets during the incident window.\n*   **Business Impact:** All transactional and reporting functions were halted. Estimated revenue impact is under review.\n*   **Reputational Impact:** Public status page was updated after a 30-minute delay. Social media sentiment saw a temporary negative spike.\n\n## 2. Timeline (All Times UTC)\n*   **14:30:** Scheduled deployment of Release 4.2 begins. A database migration (`ALTER TABLE user_sessions ADD COLUMN session_metadata JSONB`) is executed in the production environment.\n*   **14:31:** The migration command acquires an exclusive lock on the `user_sessions` table. Application error rates spike to 100% as all new queries are queued behind the lock.\n*   **14:35:** Monitoring alerts fire for high database connection counts and 5xx error rates. On-call engineer is paged.\n*   **14:40:** Incident Commander declares a SEV-1. War room is established. Initial investigation points to database latency.\n*   **14:55:** After reviewing deployment logs, team identifies the running migration as the likely cause. The migration is reported as \"still running.\"\n*   **15:15:** Decision is made to terminate the migration process. The `user_sessions` table lock is released.\n*   **15:20:** Application services begin recovering automatically as the database queue clears.\n*   **16:00:** Full service restoration confirmed. All systems return to normal operating parameters.\n*   **16:30:** Incident is formally resolved. Post-mortem process is initiated.\n\n## 3. Root Cause Analysis\nThe direct cause of the outage was a long-running `ALTER TABLE` migration that placed an exclusive lock on the critical `user_sessions` table for the duration of its operation. This lock prevented the application from reading or writing to this table, causing all dependent services to fail.\n\nOur analysis identifies the following key contributing factors:\n\n1.  **Migration Strategy:** The migration was executed using a standard `ALTER TABLE` command, which, on our database version and table size (~50 million rows), requires an exclusive lock that blocks all access for the full operation duration. A non-blocking migration strategy (e.g., using a tool like `pt-online-schema-change` or creating a new table) was not employed.\n2.  **Pre-Production Testing Gap:** The staging database, while structurally similar, contained only ~100k rows. The migration completed in under 2 seconds in this environment, failing to surface the potential locking duration in production. Performance characteristics under full production load were not adequately modeled.\n3.  **Missing Safeguards in Deployment Pipeline:** The deployment pipeline did not include a pre-execution check for long-running DDL (Data Definition Language) operations on critical tables or an automatic lock timeout. The process relied on engineer judgment during the deployment checklist.\n4.  **Delayed Incident Detection Escalation:** While alerts fired promptly, the initial alert taxonomy did not immediately differentiate between \"high database latency\" and \"complete table lock.\" This added approximately 10 minutes to the diagnostic phase.\n\n**Blameless Principle:** This incident was not caused by any individual error. It resulted from a combination of gaps in our technical processes, testing methodologies, and production safeguards. The engineer executing the migration followed the established playbook.\n\n## 4. Action Items & Follow-up\n\n| ID | Action Item | Owner | Target Date | Status |\n| :--- | :--- | :--- | :--- | :--- |\n| **PI-101** | **Adopt Non-Blocking Migration Tooling:** Research, select, and implement a safe, online schema change tool (e.g., Ghost, pt-online-schema-change) for all production database migrations. | Database Engineering | 2023-12-15 | Proposed |\n| **PI-102** | **Enhance Staging Environment Fidelity:** Create a process to periodically anonymize and load a subset of production-scale data into the staging database to better simulate migration performance. | Platform Team | 2024-01-15 | Proposed |\n| **PI-103** | **Implement Deployment Safeguards:** Add a pre-flight check in the CI/CD pipeline that (a) flags DDL operations on critical tables and (b) requires explicit approval or suggests the online migration path. | DevOps | 2023-11-30 | Proposed |\n| **PI-104** | **Refine Alerting & Runbooks:** Create a specific, high-severity alert for \"table lock duration\" and update the on-call runbook with clear diagnostic steps for database lock contention. | SRE | 2023-11-20 | Proposed |\n| **PI-105** | **Customer Communication Review:** Review and update the process for updating the public status page to ensure it occurs within 10 minutes of a SEV-1 declaration. | Support Lead | 2023-11-10 | Proposed |\n\n---\n\n**Signed,**\nIncident Response Team\n\n*This document will be reviewed in 30 days to track the progress of action items.*",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (5783 chars)",
+          "✓ Content length: 5783 ≥ 300"
+        ]
+      }
+    },
+    {
+      "id": "edge-question-looks-like-build",
+      "status": "ok",
+      "elapsed": 17432,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What's the best way to set up a data pipeline?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Mon ami, the best way to set up a data pipeline begins by defining clear data sources and sinks, then selecting orchestration tools like Apache Airflow or Prefect to manage workflows with error handling and retries. Ensure you incorporate monitoring metrics—such as data freshness, quality checks with Great Expectations, and latency SLAs—to catch clues before they become cases. Voilà, this detective's approach ensures your pipeline is both robust and elegant!",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (462 chars)",
+          "✓ Message length: 462 ≥ 50"
+        ]
+      }
+    },
+    {
+      "id": "personality-rowan-empty",
+      "status": "ok",
+      "elapsed": 7575,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Graph is empty, soldier. No active workflow or nodes present. Ready for deployment orders.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 35,
+        "maxScore": 40,
+        "pct": 88,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (90 chars)",
+          "✗ Missing personality markers"
+        ]
+      }
+    }
+  ]
+}

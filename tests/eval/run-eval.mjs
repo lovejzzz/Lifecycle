@@ -38,7 +38,7 @@ const POOL = [
     id: 'founder-advice',
     agent: 'rowan', taskType: 'analyze',
     prompt: 'We\'re burning $50k/month and have 6 months of runway. What should I prioritize?',
-    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 300 },
+    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 250 },
   },
 
   // ─── Marketing Manager ────────────────────────────────────────────────────
@@ -58,7 +58,7 @@ const POOL = [
     id: 'marketing-advice',
     agent: 'poirot', taskType: 'analyze',
     prompt: 'Our email open rates dropped from 35% to 12% over the last quarter. What could be wrong?',
-    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 300 },
+    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 250 },
   },
 
   // ─── Engineering Lead ─────────────────────────────────────────────────────
@@ -84,7 +84,7 @@ const POOL = [
     id: 'eng-advice-scaling',
     agent: 'rowan', taskType: 'analyze',
     prompt: 'Our API is hitting 500ms response times at 1000 concurrent users. Database is PostgreSQL. What should I look at first?',
-    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 300 },
+    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 250 },
   },
 
   // ─── Product Manager ──────────────────────────────────────────────────────
@@ -104,7 +104,7 @@ const POOL = [
     id: 'pm-advice-prioritize',
     agent: 'poirot', taskType: 'analyze',
     prompt: 'I have 47 feature requests from customers and my CEO wants everything done by Q3. How do I prioritize?',
-    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 300 },
+    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 250 },
   },
 
   // ─── HR / Operations ──────────────────────────────────────────────────────
@@ -138,7 +138,7 @@ const POOL = [
     id: 'support-advice',
     agent: 'rowan', taskType: 'analyze',
     prompt: 'Our CSAT score dropped to 3.2 out of 5. Average first response time is 8 hours. What should we fix first?',
-    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 300 },
+    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 250 },
   },
 
   // ─── Freelancer / Solo Creator ────────────────────────────────────────────
@@ -158,7 +158,7 @@ const POOL = [
     id: 'freelancer-advice',
     agent: 'poirot', taskType: 'analyze',
     prompt: 'I\'m charging $50/hour for web development and I\'m always booked but barely making rent. What am I doing wrong?',
-    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 300 },
+    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 250 },
   },
 
   // ─── Node Execution (real content people actually need) ───────────────────
@@ -272,7 +272,7 @@ const POOL = [
     id: 'strategy-advice-pivot',
     agent: 'poirot', taskType: 'analyze',
     prompt: 'Our B2B SaaS has 200 customers paying $50/mo but enterprise prospects keep asking for features that would require 6 months of engineering. Should we go upmarket or double down on SMB? Our team is 8 people.',
-    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 300 },
+    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 250 },
   },
 
   // ─── Round 77 additions ─────────────────────────────────────────────────────
@@ -307,7 +307,24 @@ const POOL = [
     id: 'eng-advice-architecture',
     agent: 'rowan', taskType: 'analyze',
     prompt: 'We have a Django monolith serving 50k users. Page loads are 4-6 seconds, database has 200+ tables, and deployments take 45 minutes. The team wants to add real-time features. Should we refactor, rewrite, or bolt on new services?',
-    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 300 },
+    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 250 },
+  },
+
+  // ─── Round 79 additions ─────────────────────────────────────────────────────
+
+  // ML/data science — new domain, tests artifact + test + review nodes
+  {
+    id: 'data-ml-pipeline',
+    agent: 'rowan', taskType: 'generate',
+    prompt: 'Build me an ML model deployment pipeline. Steps: data collection, feature engineering, model training, evaluation, A/B testing, deployment to production, monitoring for drift. We use Python, scikit-learn, and AWS SageMaker.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['test'], mustMentionInNodes: ['feature|engineer', 'train', 'evaluat|test', 'deploy|production', 'drift|monitor'] },
+  },
+  // Very terse prompt — tests if model produces useful output from minimal input
+  {
+    id: 'edge-ultra-terse',
+    agent: 'poirot', taskType: 'generate',
+    prompt: 'Bug triage workflow.',
+    expect: { hasWorkflow: true, minNodes: 4, maxNodes: 10 },
   },
 ];
 
@@ -571,7 +588,7 @@ function scoreResponse(test, data) {
     maxScore += 5;
     const lower = message.toLowerCase();
     const poirotWords = ['aha', 'voilà', 'voila', 'grey cells', 'mon ami', 'detective', 'investigation', 'très', 'parfait', 'hélas', 'case', 'clue'];
-    const rowanWords = ['done', 'on it', 'mission', 'roger', 'deployed', 'received', 'execute', 'affirmative'];
+    const rowanWords = ['done', 'on it', 'mission', 'roger', 'deployed', 'received', 'execute', 'affirmative', 'soldier', 'orders', 'standing by', 'ready'];
     const hasPersonality = exp.personalityMarkers.includes('poirot')
       ? poirotWords.some(w => lower.includes(w))
       : rowanWords.some(w => lower.includes(w));

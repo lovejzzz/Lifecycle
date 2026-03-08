@@ -1,0 +1,412 @@
+{
+  "timestamp": "2026-03-08T08-57-30",
+  "overall": 97,
+  "testsRun": [
+    "founder-advice",
+    "pm-advice-prioritize",
+    "hr-onboarding",
+    "execute-incident-postmortem",
+    "personality-poirot-empty",
+    "data-ml-pipeline"
+  ],
+  "poolSize": 42,
+  "results": [
+    {
+      "id": "founder-advice",
+      "status": "ok",
+      "elapsed": 28115,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We're burning $50k/month and have 6 months of runway. What should I prioritize?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Prioritize immediate cost reduction and revenue acceleration. Conduct a 30-day cash flow analysis to slash non-essential expenses by at least 30%, using tools like QuickBooks for tracking and focusing sales on high-margin customers with metrics like CAC payback under 6 months.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 35,
+        "maxScore": 40,
+        "pct": 88,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (277 chars)",
+          "✗ Message too short: 277 < 300"
+        ]
+      }
+    },
+    {
+      "id": "pm-advice-prioritize",
+      "status": "ok",
+      "elapsed": 29692,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "I have 47 feature requests from customers and my CEO wants everything done by Q3. How do I prioritize?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Aha! This is a prioritization puzzle, mon ami—très intéressant. Start by applying the RICE framework (Reach, Impact, Confidence, Effort) to score each request, then cross-reference with CEO strategic goals and customer urgency to build a phased roadmap for Q3. Voilà, the clues align!",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 35,
+        "maxScore": 40,
+        "pct": 88,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (284 chars)",
+          "✗ Message too short: 284 < 300"
+        ]
+      }
+    },
+    {
+      "id": "hr-onboarding",
+      "status": "ok",
+      "elapsed": 152474,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "New hires keep saying their first week was confusing and they didn't know what to do. Design an onboarding process that actually works — IT setup, team intros, training, 30-60-90 day goals.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! The case of the bewildered new hire is cracked—let me design an onboarding workflow with parallel paths and feedback loops to ensure clarity from IT setup to 90-day goals. Voilà, a detective's blueprint for seamless integration!",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "New Hire Start Trigger",
+              "category": "trigger",
+              "description": "Event that initiates onboarding upon new hire acceptance and start date confirmation.",
+              "content": "This node triggers the entire onboarding process when a new hire accepts the offer and a start date is set. Key actions include: automated alerts from HRIS (e.g., Workday or BambooHR) to the onboarding coordinator, creation of an onboarding timeline in project management tools like Asana or Monday.com, and assignment of a hiring manager and buddy. Steps: 1. HR confirms offer acceptance and logs details in the system. 2. Generate a personalized onboarding checklist with deadlines for IT, training, and introductions. 3. Send notifications via email or Slack to IT, team leads, and the new hire with a welcome packet. 4. Schedule first-day orientation meetings and send calendar invites. This ensures no delays, sets clear expectations, and prevents the 'day-one confusion' by coordinating all stakeholders upfront. Tools to use: HRIS integrations, automated email templates, and shared calendars for transparency."
+            },
+            {
+              "label": "IT Infrastructure Setup",
+              "category": "action",
+              "description": "Provisioning of equipment, accounts, and software for the new hire.",
+              "content": "Execute IT setup to ensure the new hire has all necessary tools from day one. Steps: 1. Order and deliver hardware (laptop, peripherals) via procurement systems like Coupa or internal IT portals. 2. Create user accounts (email, Slack, project tools) using identity management platforms like Okta or Azure AD. 3. Install required software (e.g., VPN, development environments, office suites) with automated scripts or IT ticketing systems (Jira Service Management). 4. Conduct security training and compliance checks, such as password policies and data access permissions. Criteria for completion: all accounts active, hardware tested, and software licenses assigned. Use checklists in ITIL frameworks to track progress and involve the new hire in setup verification to catch issues early."
+            },
+            {
+              "label": "Social & Team Integration",
+              "category": "action",
+              "description": "Facilitating introductions, buddy pairing, and cultural immersion for the new hire.",
+              "content": "This action focuses on integrating the new hire socially and professionally into the team. Steps: 1. Schedule a welcome meeting with the team and key stakeholders via calendar tools (Google Calendar or Outlook). 2. Assign an onboarding buddy for the first month to answer questions and provide guidance. 3. Organize informal events like virtual coffee chats or lunch sessions to build rapport. 4. Provide access to team channels in Slack or Microsoft Teams and share org charts or team directories. Metrics to track: number of introductory meetings completed, buddy check-in frequency, and new hire feedback via surveys (e.g., using Culture Amp). Tools: employee engagement platforms like Donut for automated introductions and feedback forms to gauge comfort levels."
+            },
+            {
+              "label": "Skills & Policy Training",
+              "category": "action",
+              "description": "Delivering role-specific training, company policies, and compliance education.",
+              "content": "Implement a structured training program to equip the new hire with necessary knowledge and skills. Steps: 1. Use a Learning Management System (LMS) like Cornerstone or Docebo to assign mandatory courses on company policies, security, and role-specific tools. 2. Conduct live training sessions via Zoom or Teams for hands-on practice, with recordings for later reference. 3. Provide access to documentation repositories (Confluence or Notion) for self-paced learning. 4. Assess understanding through quizzes or practical assignments, with passing scores set at 80% or higher. Criteria: completion of all required modules within the first two weeks. Tools: interactive modules, sandbox environments for technical roles, and regular check-ins with trainers to address gaps."
+            },
+            {
+              "label": "30-Day Milestone Assessment",
+              "category": "review",
+              "description": "First formal review to evaluate progress, address gaps, and set short-term goals.",
+              "content": "Conduct a review after 30 days to assess the new hire's adaptation and initial performance. Steps: 1. Manager schedules a one-on-one meeting to discuss achievements against the 30-day goals (e.g., completing training, first tasks). 2. Collect feedback via structured surveys using tools like SurveyMonkey or 15Five, focusing on clarity of role, team dynamics, and IT support. 3. Review checklist items: IT setup confirmed, introductions made, training modules completed. 4. Identify any areas for improvement and create an action plan, such as additional training or mentorship. Metrics: goal completion rate, satisfaction scores, and manager ratings. This review informs refinements to the onboarding process if issues arise."
+            },
+            {
+              "label": "60-Day Performance Review",
+              "category": "review",
+              "description": "Mid-point evaluation of project contributions, skill application, and team integration.",
+              "content": "This review assesses deeper integration and performance after two months. Steps: 1. Evaluate the new hire's contributions to ongoing projects using performance data from tools like Jira or GitHub. 2. Gather peer feedback through 360-degree reviews via platforms like Lattice or Small Improvements. 3. Check progress on 60-day goals, such as independent task completion or collaboration metrics. 4. Discuss career aspirations and align them with team objectives, updating the 90-day plan as needed. Criteria: demonstrated competency in key skills, positive team feedback, and meeting deadlines. Use this to refine training or provide additional resources, ensuring continuous improvement."
+            },
+            {
+              "label": "90-Day Full Integration Review",
+              "category": "review",
+              "description": "Final assessment to confirm full role integration and probation period outcome.",
+              "content": "Conduct a comprehensive review at 90 days to determine if the new hire is fully onboarded. Steps: 1. Review achievement of 90-day goals, such as leading a small project or mastering core tools. 2. Assess cultural fit and team contribution through manager and peer interviews. 3. Document performance metrics: productivity levels, error rates, and feedback scores. 4. Make a formal decision on probation completion, with HR involvement for paperwork and records. Tools: performance management systems, HR documentation platforms. This review outputs a final report and triggers any necessary follow-ups, such as additional training or role adjustments."
+            },
+            {
+              "label": "Onboarding Completion Report",
+              "category": "output",
+              "description": "Final deliverable confirming successful onboarding and archiving results.",
+              "content": "This node produces the official output of the onboarding process, documenting success and lessons learned. Steps: 1. Compile a report summarizing all review outcomes, goal achievements, and feedback scores. 2. Archive the report in the employee's HR file using systems like SAP SuccessFactors or a shared drive. 3. Share the report with key stakeholders: hiring manager, HR, and the new hire for transparency. 4. Use insights to update the onboarding workflow for future hires, incorporating best practices and addressing pain points. Deliverables include a signed-off completion certificate, updated onboarding checklist templates, and a summary of metrics for continuous improvement. Tools: document generation software (e.g., Google Docs with templates) and analytics dashboards to track onboarding effectiveness over time."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 0,
+              "to": 2,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "requires"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "informs"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "validates"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "validates"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "validates"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "outputs"
+            },
+            {
+              "from": 4,
+              "to": 3,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "label": "refines"
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 105,
+        "maxScore": 105,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 5)",
+          "✓ Node count: 8 ≤ 10",
+          "✓ All 11 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 766c, no thin nodes",
+          "✓ Architecture covers: it, training, 30",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (11 edges, 8 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "execute-incident-postmortem",
+      "status": "ok",
+      "elapsed": 67468,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Write a blameless post-mortem for a 2-hour production outage caused by a database migration that locked a critical table. 500 customers were affected. Include timeline, root cause, impact, and action items.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Post-Mortem Report: Production Outage Due to Database Table Lock\n\n**Incident Title:** Production API Outage Following Database Migration  \n**Date of Incident:** October 26, 2023  \n**Start Time (UTC):** 14:07  \n**Resolution Time (UTC):** 16:11  \n**Duration:** 2 hours, 4 minutes  \n**Severity:** SEV-1 (Critical Service Disruption)  \n**Lead Investigator:** Alex Chen, Engineering Manager  \n**Status:** RESOLVED\n\n---\n\n## 1. Incident Summary\nFrom 14:07 to 16:11 UTC, the primary customer-facing API was unavailable, resulting in failed transactions and errors for approximately 500 customers. The outage was triggered by a scheduled database migration that placed an exclusive lock on the `user_sessions` table, which is critical for authentication and session management. The lock prevented all read and write operations to this table, causing a cascade of failures across the application layer.\n\nThis report follows a **blameless** approach, focusing on systemic and process factors that contributed to the incident, rather than individual actions.\n\n---\n\n## 2. Detailed Timeline (UTC)\n\n**Pre-Incident**\n*   **13:30:** Database migration (#4832) is deployed to the staging environment. Automated tests pass.\n*   **13:45:** Change Advisory Board (CAB) approval is granted based on staging results and the migration's estimated runtime of 5 minutes.\n*   **14:00:** Deployment pipeline initiates the migration on the production primary database.\n\n**Incident**\n*   **14:07:** Migration begins execution on the `user_sessions` table. An unanticipated exclusive table lock is acquired.\n*   **14:09:** Application metrics show a sharp spike in database connection timeouts and a drop in successful API requests from 99.8% to 12%.\n*   **14:12:** On-call engineer (SRE) is paged via PagerDuty due to critical alert: \"API Error Rate > 25%\".\n*   **14:15–14:35:** Initial investigation points to database latency. Efforts focus on application restarts and load balancer checks.\n*   **14:40:** Engineer discovers a high number of `LOCK WAIT` events in the database monitoring tool (pt-visualizer).\n*   **14:55:** The long-running migration is identified as the probable root cause. A decision is made to terminate the migration process.\n*   **15:10:** After confirming a safe point, the migration process is killed (`KILL [process_id]`). The table lock is released.\n*   **15:15:** API services begin recovery as database connections are re-established. Error rates start to decline.\n*   **16:11:** All systems are confirmed operational. API success rate returns to baseline (>99.5%). Incident is declared resolved.\n\n**Post-Resolution**\n*   **16:30:** Internal communications sent to Customer Support and Leadership.\n*   **17:00:** Verification confirms no data corruption occurred from the terminated migration.\n\n---\n\n## 3. Root Cause Analysis\n\nThe outage was caused by a confluence of technical and procedural factors.\n\n**Primary Cause (Technical):**\nThe migration script used an `ALTER TABLE ... ADD COLUMN` statement with an `AFTER` clause on a large table (~50M rows). While intended to be a non-blocking operation, the specific combination of the MySQL version (5.7), the InnoDB storage engine, and the presence of a full-text index on the table required a full table rebuild. This operation acquired an **exclusive metadata lock** on the entire `user_sessions` table for the duration of the operation, which was projected to take over 3 hours. All subsequent queries requiring access to that table were blocked.\n\n**Contributing Factors (Process & System):**\n\n1.  **Inadequate Pre-Execution Analysis:** The migration was not tested against a production-sized dataset in a pre-production environment. The staging database had only ~10k rows, causing the migration to complete in milliseconds and masking its true cost.\n2.  **Missing Real-time Lock Monitoring:** While general database health was monitored, there was no real-time alerting for long-held exclusive locks or a dashboard visualizing lock contention.\n3.  **Runbook Gap:** The initial troubleshooting runbook for \"high database latency\" did not include a step to check for active, long-running migrations or database locks, leading to a 30-minute diagnostic delay.\n4.  **Silent Failure Mode:** The application's database connection pool was configured to timeout after 30 seconds and retry indefinitely, creating a thundering herd of queued requests that masked the underlying lock issue with generic timeout alerts.\n\n---\n\n## 4. Impact\n\n*   **Service Degradation:** Core User API was completely unavailable for 124 minutes.\n*   **Customer Impact:** ~500 unique active customers experienced transaction failures, \"Service Unavailable\" errors, and interrupted sessions.\n*   **Business Impact:**\n    *   Estimated 1,850 failed transactions.\n    *   ~75 customer support tickets generated.\n    *   Potential reputational damage, though no significant churn has been observed to date.\n*   **Team Impact:** Complete mobilization of the on-call SRE and platform engineering teams for 4+ hours.\n\n---\n\n## 5. Action Items & Follow-up Plan\n\nThe following action items are designed to address the root and contributing causes to prevent recurrence.\n\n| ID | Action Item | Owner | Target Date | Status |\n| :--- | :--- | :--- | :--- | :--- |\n| **AI-01** | **Implement a Safe Migration Pipeline:** Require all schema migrations to be executed via a tool that supports safe, online operations (e.g., `pt-online-schema-change`, Ghost) or require explicit approval for blocking operations. | Platform Team | Nov 30, 2023 | Not Started |\n| **AI-02** | **Create a Production-like Staging Database:** Develop a process to periodically anonymize and sync a subset of production data to a staging database to enable realistic performance testing for migrations. | Data Eng Team | Dec 15, 2023 | Not Started |\n| **AI-03** | **Enhance Database Monitoring:** Create a dedicated dashboard and alert for long-held metadata locks (>60 seconds) and implement alerting on migration execution time exceeding a threshold. | SRE Team | Nov 15, 2023 | Not Started |\n| **AI-04** | **Update Troubleshooting Runbooks:** Augment the \"Database Latency\" and \"High Error Rate\" runbooks with steps to immediately check for active migrations and database lock status. | SRE Team | Nov 10, 2023 | Not Started |\n| **AI-05** | **Improve Change Communication:** Implement a mandatory field in all change tickets to document the expected database impact (lock time, table size) and require peer review from a DBA for all high-risk migrations. | Eng Manager | Nov 20, 2023 | Not Started |\n| **AI-06** | **Conduct Customer Outreach:** Customer Success to lead a targeted outreach to the 500 affected customers, acknowledging the issue and offering appropriate goodwill gestures. | CS Team | Nov 05, 2023 | Not Started |\n\n---\n\n## 6. Lessons Learned\n\n*   **The performance of a database operation cannot be extrapolated from small datasets.** Testing must reflect production scale.\n*   **Monitoring must align with failure modes.** We were alerting on symptoms (high latency) but not on the direct cause (table locks).\n*   **Blameless culture enabled rapid diagnosis.** Once the team shifted focus from \"who\" to \"what and how,\" the investigation became efficient and focused on resolution.\n*   **Standardized, safe tools for high-risk operations are not optional.** Manual `ALTER TABLE` statements on critical tables pose an unacceptable risk.\n\n---\n\n**Approved by:**  \n*Alex Chen, Engineering Manager*  \n*Date: October 27, 2023*\n\n**Next Review:** This report and the status of action items will be reviewed in the monthly Engineering Operations meeting on November 28, 2023.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (7671 chars)",
+          "✓ Content length: 7671 ≥ 300"
+        ]
+      }
+    },
+    {
+      "id": "personality-poirot-empty",
+      "status": "ok",
+      "elapsed": 9019,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "But of course, mon ami! The case file is, how you say... empty! I find no clues, no suspects, no intricate web of connections. It is a blank canvas awaiting the first stroke of genius. Bring me your mystery—a process to design, a system to untangle—and my little grey cells shall construct the masterpiece!",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (306 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "data-ml-pipeline",
+      "status": "ok",
+      "elapsed": 206166,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Build me an ML model deployment pipeline. Steps: data collection, feature engineering, model training, evaluation, A/B testing, deployment to production, monitoring for drift. We use Python, scikit-learn, and AWS SageMaker.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building ML deployment pipeline with AWS SageMaker integration.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Pipeline Trigger",
+              "category": "trigger",
+              "description": "Initiates the ML pipeline on new data or schedule",
+              "content": "Configure an AWS CloudWatch Event Rule to trigger the pipeline either on a schedule (e.g., daily) or upon new data arrival in an S3 bucket (using S3 Event Notifications). Payload includes metadata such as data source URI, timestamp, and file size. Set up an AWS Lambda function or SageMaker Processing job as the entry point, with error handling for failed triggers—implement retry logic with exponential backoff and log failures to CloudWatch Logs. Use Python scripts with boto3 to manage triggers, and ensure IAM roles have permissions for S3, CloudWatch, and Lambda. Owner: MLOps team. Monitoring: Set up CloudWatch Alarms for trigger failures and send alerts via SNS for immediate attention."
+            },
+            {
+              "label": "Data Collection",
+              "category": "action",
+              "description": "Extract and validate raw data from sources",
+              "content": "Step 1: Identify data sources: databases (e.g., Amazon RDS), APIs, or S3 buckets. Use AWS Glue for ETL or custom Python scripts with pandas and boto3 to extract data. Step 2: Validate data quality—check for missing values, schema consistency using Great Expectations or custom validation functions. Step 3: Store raw data in S3 with partitioning (e.g., by date) for efficiency. Step 4: Log extraction metrics (e.g., row count, errors) to CloudWatch and send alerts via SNS for anomalies. Tools: Python (boto3, pandas), AWS Glue, S3. Error handling: Implement retry mechanisms for failed extractions, with dead-letter queues for unprocessable data. Owner: Data Engineer. Success criteria: Data completeness > 99% and validation passed within SLA."
+            },
+            {
+              "label": "Feature Engineering",
+              "category": "action",
+              "description": "Transform raw data into features for modeling",
+              "content": "Step 1: Load raw data from S3 using SageMaker Processing or Python scripts. Step 2: Apply transformations: handling missing values (imputation), encoding categorical variables (one-hot encoding), scaling numerical features (standardization), and creating derived features (e.g., ratios, aggregates). Use scikit-learn's preprocessing modules. Step 3: Split data into training, validation, and test sets (e.g., 70/15/15). Step 4: Save processed features to S3 with versioning for reproducibility. Tools: Python (scikit-learn, pandas), SageMaker Processing. Error handling: Validate feature distributions and log anomalies; roll back if transformations fail. Owner: Data Scientist. Criteria: Feature correlation < 0.8 to avoid multicollinearity, and no data leakage."
+            },
+            {
+              "label": "Model Training",
+              "category": "action",
+              "description": "Train machine learning model using scikit-learn on SageMaker",
+              "content": "Step 1: Set up a SageMaker Training Job: specify instance type (e.g., ml.m5.xlarge), hyperparameters (e.g., n_estimators for RandomForest), and input data from S3. Use scikit-learn container or bring your own script. Step 2: Implement cross-validation (e.g., 5-fold) to tune hyperparameters with SageMaker Hyperparameter Tuning. Step 3: Train the model, logging metrics (accuracy, loss) to CloudWatch and SageMaker Experiments for tracking. Step 4: Save the trained model artifact to S3 with versioning. Tools: AWS SageMaker, Python (scikit-learn, sagemaker SDK). Error handling: Monitor training for overfitting (validation curve analysis) and timeouts; retry with adjusted parameters. Owner: ML Engineer. Success: Model converges with validation accuracy > baseline."
+            },
+            {
+              "label": "Model Evaluation",
+              "category": "test",
+              "description": "Evaluate model performance on validation set",
+              "content": "Test the trained model on a held-out validation set. Metrics: For classification, compute accuracy, precision, recall, F1-score, AUC-ROC; for regression, use MAE, MSE, R-squared. Pass criteria: Accuracy > 90% or business-defined thresholds (e.g., precision > 0.85). Step 1: Load model and validation data from S3. Step 2: Use scikit-learn's metrics module to compute scores. Step 3: Compare against thresholds; if fail, log detailed report and trigger retraining. Step 4: Generate evaluation report (JSON or CSV) stored in S3. Tools: Python, scikit-learn, SageMaker Evaluation. Coverage: Ensure all classes/features are represented; use confusion matrix for insights. Owner: Data Scientist. SLA: Evaluation completes within 1 hour."
+            },
+            {
+              "label": "A/B Testing",
+              "category": "test",
+              "description": "Test model in production with A/B setup against current version",
+              "content": "Deploy the new model alongside the current model in production with a traffic split (e.g., 10% to new model). Monitor key business metrics: conversion rate, error rate, latency. Step 1: Set up two SageMaker endpoints—one for each model. Step 2: Configure weighted routing using SageMaker's A/B testing features or AWS Lambda with API Gateway. Step 3: Collect metrics over a defined period (e.g., 7 days) using CloudWatch. Step 4: Perform statistical analysis (t-test or chi-squared) to determine if new model shows significant improvement (p-value < 0.05). Tools: AWS SageMaker, Python (statsmodels, scipy). Pass criteria: New model metrics are statistically better. Owner: MLOps. Fallback: Roll back if metrics degrade."
+            },
+            {
+              "label": "Production Deployment",
+              "category": "action",
+              "description": "Deploy approved model to production environment",
+              "content": "Step 1: After A/B test success, deploy the model to a SageMaker endpoint for full traffic. Use blue-green deployment strategy to minimize downtime. Step 2: Configure auto-scaling based on traffic (e.g., with SageMaker's automatic scaling policies). Step 3: Update API Gateway or application clients to point to the new endpoint. Step 4: Run smoke tests to ensure endpoint responds correctly (latency < 100ms, error rate < 1%). Tools: AWS SageMaker, CloudFormation for infrastructure as code, Python for validation scripts. Error handling: Implement rollback procedure to previous version if deployment fails. Owner: DevOps Engineer. Success: Endpoint available with 99.9% uptime."
+            },
+            {
+              "label": "Model Monitoring",
+              "category": "action",
+              "description": "Continuously monitor model for performance and data drift",
+              "content": "Step 1: Set up SageMaker Model Monitor to track metrics: prediction accuracy, latency, and throughput. Configure baseline from training data. Step 2: Implement data drift detection using statistical tests (KL divergence, PSI) on feature distributions; run daily batches. Step 3: Use CloudWatch Alarms to alert on threshold breaches (e.g., accuracy drop > 5%). Step 4: If drift detected, trigger retraining pipeline by invoking the trigger node with new data flags. Tools: SageMaker Model Monitor, CloudWatch, custom Python scripts for analysis. Owner: MLOps team. SLA: Alerts within 15 minutes of anomaly detection."
+            },
+            {
+              "label": "Deployed Model System",
+              "category": "output",
+              "description": "Final production ML system with monitoring and documentation",
+              "content": "Deliverable: A fully operational ML model deployed on AWS SageMaker, with endpoints, monitoring dashboards, and comprehensive documentation. Include: SageMaker endpoint URL for inference, model artifacts stored in S3 with version history, CloudWatch dashboards for real-time metrics, and a report in Confluence or wiki detailing deployment steps and rollback procedures. Distribution: Share endpoint details with application development teams via Slack or email; update API documentation. Success metrics: Model inference latency maintained under 100ms, accuracy drift within 5%, and system uptime > 99.9%. Regular reviews scheduled monthly to assess performance and business impact."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 3,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "feeds"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "feeds"
+            },
+            {
+              "from": 7,
+              "to": 8,
+              "label": "outputs"
+            },
+            {
+              "from": 7,
+              "to": 0,
+              "label": "triggers"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 110,
+        "maxScore": 110,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 9 (min: 5)",
+          "✓ Node count: 9 ≤ 10",
+          "✓ Has \"test\" category",
+          "✓ All 10 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 711c, no thin nodes",
+          "✓ Architecture covers: feature, train, evaluat, deploy, drift",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (10 edges, 9 nodes)"
+        ]
+      }
+    }
+  ]
+}

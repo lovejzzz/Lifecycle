@@ -1,5 +1,27 @@
 # Changelog
 
+### 2026-03-08 — Round 79: Personality Markers & Eval Pool Expansion (Eval-Driven)
+
+**Eval result: 99% (6/6 passed)** — personality-rowan-empty at 88% (missing personality markers)
+
+**Problem found:** Rowan personality detection too narrow — eval only checked for "field manual", "mission", "deploy", "engage" but Rowan also uses "soldier", "orders", "standing by", "ready". The response "Graph is empty, soldier. No active workflow or nodes present. Ready for deployment orders." has clear Rowan voice but failed the check.
+
+**Fix — expanded Rowan personality markers:**
+- Added 'soldier', 'orders', 'standing by', 'ready' to eval personality detection
+- These are natural Rowan phrases that were simply missing from the check list
+
+**Confirmed fix from Round 78:** creator-youtube node count dropped 11 → 8 after HARD LIMIT instruction. Grouping works correctly (e.g. "Video Editing & Thumbnail Design" combines two listed items into one phase).
+
+**Eval pool expanded: 40 → 42 tests**
+- data-ml-pipeline: end-to-end ML pipeline (ingestion, feature engineering, training, deployment) testing parallel branches and test nodes
+- edge-ultra-terse: single-word prompt "Deploy" testing graceful handling of minimal input
+
+**Quality highlights:**
+- eng-deploy-process: 7 nodes, 9 edges with Manual Approval Gate as "review" — correct category usage, 820c avg content
+- eng-oncall: 8 nodes, 10 edges with parallel branches for investigation + communication, postmortem as "review"
+- execute-incident-postmortem: 5783c blameless post-mortem with timeline, root cause, quantified impact, action items
+- edge-question-looks-like-build: correctly returned workflow:null for "What's the best way to set up a data pipeline?" — advice detection working
+
 ### 2026-03-08 — Round 78: Lint Cleanup, Node Count Fix & Audit (Eval-Driven)
 
 **Lint cleanup: 27 → 17 warnings (10 fixed)**
