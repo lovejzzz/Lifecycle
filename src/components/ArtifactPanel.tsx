@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, Eye, Pencil, Save, RotateCcw, Copy, Check,
   ChevronDown, ChevronRight, Sparkles, GitBranch, Loader2, ArrowRight,
+  Maximize2, Minimize2, Search, Replace, Bold, Italic, Code, Heading2,
+  List, ListOrdered, Quote, Columns2, Minus,
 } from 'lucide-react';
 import { useLifecycleStore } from '@/store/useStore';
 import { getNodeColors, CategoryIcon } from '@/lib/types';
@@ -186,6 +188,211 @@ function DownstreamImpact({
   );
 }
 
+// ─── Markdown Toolbar ────────────────────────────────────────────────────────
+
+function MarkdownToolbar({
+  textareaRef,
+  onInsert,
+}: {
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
+  onInsert: (newText: string) => void;
+}) {
+  const wrap = (before: string, after: string) => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const text = ta.value;
+    const selected = text.slice(start, end);
+    const newText = text.slice(0, start) + before + (selected || 'text') + after + text.slice(end);
+    onInsert(newText);
+    // Restore cursor after React re-renders
+    requestAnimationFrame(() => {
+      ta.focus();
+      const newStart = start + before.length;
+      const newEnd = selected ? newStart + selected.length : newStart + 4;
+      ta.setSelectionRange(newStart, newEnd);
+    });
+  };
+
+  const insertLine = (prefix: string) => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const text = ta.value;
+    // Find beginning of current line
+    const lineStart = text.lastIndexOf('\n', start - 1) + 1;
+    const newText = text.slice(0, lineStart) + prefix + text.slice(lineStart);
+    onInsert(newText);
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.setSelectionRange(lineStart + prefix.length, lineStart + prefix.length);
+    });
+  };
+
+  const btn = "p-1 rounded hover:bg-white/[0.08] text-white/30 hover:text-white/60 transition-colors";
+  const sep = "w-px h-3.5 bg-white/[0.06] mx-0.5";
+
+  return (
+    <div className="flex items-center gap-0.5 px-1 py-1 border-b border-white/[0.04] bg-white/[0.02]">
+      <button className={btn} onClick={() => wrap('**', '**')} title="Bold (Ctrl+B)"><Bold size={11} /></button>
+      <button className={btn} onClick={() => wrap('*', '*')} title="Italic (Ctrl+I)"><Italic size={11} /></button>
+      <button className={btn} onClick={() => wrap('`', '`')} title="Inline Code"><Code size={11} /></button>
+      <div className={sep} />
+      <button className={btn} onClick={() => insertLine('## ')} title="Heading"><Heading2 size={11} /></button>
+      <button className={btn} onClick={() => insertLine('- ')} title="Bullet List"><List size={11} /></button>
+      <button className={btn} onClick={() => insertLine('1. ')} title="Numbered List"><ListOrdered size={11} /></button>
+      <button className={btn} onClick={() => insertLine('> ')} title="Blockquote"><Quote size={11} /></button>
+      <div className={sep} />
+      <button className={btn} onClick={() => wrap('\n```\n', '\n```\n')} title="Code Block"><Code size={11} className="text-emerald-400/50" /></button>
+      <button className={btn} onClick={() => insertLine('---\n')} title="Horizontal Rule"><Minus size={11} /></button>
+    </div>
+  );
+}
+
+// ─── Find & Replace ──────────────────────────────────────────────────────────
+
+function FindReplace({
+  text,
+  onReplace,
+  onClose,
+  contentRef,
+}: {
+  text: string;
+  onReplace: (newText: string) => void;
+  onClose: () => void;
+  contentRef: React.RefObject<HTMLDivElement | null>;
+}) {
+  const [query, setQuery] = useState('');
+  const [replaceVal, setReplaceVal] = useState('');
+  const [showReplace, setShowReplace] = useState(false);
+  const [matchIdx, setMatchIdx] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { inputRef.current?.focus(); }, []);
+
+  const matches = query
+    ? [...text.matchAll(new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'))]
+    : [];
+
+  const handleReplaceOne = () => {
+    if (matches.length === 0 || !query) return;
+    const m = matches[matchIdx % matches.length];
+    const newText = text.slice(0, m.index!) + replaceVal + text.slice(m.index! + m[0].length);
+    onReplace(newText);
+  };
+
+  const handleReplaceAll = () => {
+    if (!query) return;
+    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    onReplace(text.replace(new RegExp(escaped, 'gi'), replaceVal));
+  };
+
+  // Highlight matches in preview using CSS custom highlight API fallback
+  useEffect(() => {
+    if (!contentRef.current || !query) return;
+    // Simple approach: use mark-style highlighting
+    const el = contentRef.current;
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    const ranges: Range[] = [];
+    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(escaped, 'gi');
+    let node: Text | null;
+    while ((node = walker.nextNode() as Text | null)) {
+      let match: RegExpExecArray | null;
+      while ((match = regex.exec(node.textContent || '')) !== null) {
+        const range = document.createRange();
+        range.setStart(node, match.index);
+        range.setEnd(node, match.index + match[0].length);
+        ranges.push(range);
+      }
+    }
+    // Use CSS Highlight API if available
+    if ('Highlight' in window && CSS.highlights) {
+      const highlight = new Highlight(...ranges);
+      CSS.highlights.set('artifact-search', highlight);
+      return () => { CSS.highlights?.delete('artifact-search'); };
+    }
+  }, [query, text, contentRef]);
+
+  return (
+    <motion.div
+      initial={{ height: 0, opacity: 0 }}
+      animate={{ height: 'auto', opacity: 1 }}
+      exit={{ height: 0, opacity: 0 }}
+      transition={{ duration: 0.12 }}
+      className="border-b border-white/[0.04] px-3 py-2 bg-white/[0.02] space-y-1.5 overflow-hidden"
+    >
+      <div className="flex items-center gap-1.5">
+        <Search size={11} className="text-white/30 flex-shrink-0" />
+        <input
+          ref={inputRef}
+          value={query}
+          onChange={(e) => { setQuery(e.target.value); setMatchIdx(0); }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') onClose();
+            if (e.key === 'Enter') setMatchIdx(i => (i + 1) % Math.max(1, matches.length));
+          }}
+          placeholder="Find..."
+          className="bg-transparent text-[11px] text-white/70 placeholder:text-white/20 outline-none flex-1"
+        />
+        <span className="text-[9px] text-white/25 tabular-nums w-12 text-right">
+          {query ? `${matches.length > 0 ? (matchIdx % matches.length) + 1 : 0}/${matches.length}` : ''}
+        </span>
+        <button onClick={() => setShowReplace(!showReplace)} className="p-0.5 rounded hover:bg-white/[0.06] text-white/25 hover:text-white/50 transition-colors" title="Toggle Replace">
+          <Replace size={11} />
+        </button>
+        <button onClick={onClose} className="p-0.5 rounded hover:bg-white/[0.06] text-white/25 hover:text-white/50 transition-colors">
+          <X size={11} />
+        </button>
+      </div>
+      <AnimatePresence>
+        {showReplace && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="flex items-center gap-1.5 overflow-hidden"
+          >
+            <Replace size={11} className="text-white/30 flex-shrink-0" />
+            <input
+              value={replaceVal}
+              onChange={(e) => setReplaceVal(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleReplaceOne(); }}
+              placeholder="Replace..."
+              className="bg-transparent text-[11px] text-white/70 placeholder:text-white/20 outline-none flex-1"
+            />
+            <button onClick={handleReplaceOne} className="text-[9px] px-1.5 py-0.5 rounded bg-white/[0.06] text-white/40 hover:text-white/60 transition-colors">
+              One
+            </button>
+            <button onClick={handleReplaceAll} className="text-[9px] px-1.5 py-0.5 rounded bg-white/[0.06] text-white/40 hover:text-white/60 transition-colors">
+              All
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+// ─── Editor Stats Bar ────────────────────────────────────────────────────────
+
+function EditorStats({ text }: { text: string }) {
+  const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+  const lines = text ? text.split('\n').length : 0;
+  const chars = text.length;
+  const readingMin = Math.max(1, Math.ceil(words / 200));
+
+  return (
+    <div className="flex items-center gap-3 text-[9px] text-white/20 tabular-nums">
+      <span>{words.toLocaleString()} words</span>
+      <span>{lines} lines</span>
+      <span>{chars.toLocaleString()} chars</span>
+      <span>~{readingMin} min read</span>
+    </div>
+  );
+}
+
 // ─── Main Artifact Panel ─────────────────────────────────────────────────────
 
 export default function ArtifactPanel() {
@@ -202,8 +409,12 @@ export default function ArtifactPanel() {
   const [copied, setCopied] = useState(false);
   const [selectionToolbar, setSelectionToolbar] = useState<{ x: number; y: number; text: string } | null>(null);
   const [isRewriting, setIsRewriting] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [isSplitView, setIsSplitView] = useState(false);
+  const [showFindReplace, setShowFindReplace] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Sync edit draft when node/tab/mode changes
   const currentText = node
@@ -211,6 +422,43 @@ export default function ArtifactPanel() {
     : '';
   // eslint-disable-next-line react-hooks/set-state-in-effect -- sync draft with source content on mode/tab/node change
   useEffect(() => { setEditDraft(currentText); }, [currentText, artifactPanelMode, artifactPanelTab]);
+
+  // Keyboard shortcuts: Ctrl+F (find), Ctrl+B/I (format), Escape (close fullscreen)
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (!activeArtifactNodeId) return;
+      // Ctrl/Cmd+F: Toggle find/replace
+      if ((e.metaKey || e.ctrlKey) && e.key === 'f' && panelRef.current?.contains(document.activeElement as Node | null)) {
+        e.preventDefault();
+        setShowFindReplace(v => !v);
+      }
+      // Escape: close fullscreen first, then find, then panel
+      if (e.key === 'Escape') {
+        if (showFindReplace) { setShowFindReplace(false); return; }
+        if (isFullScreen) { setIsFullScreen(false); return; }
+      }
+      // Ctrl+B: Bold (in edit mode)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'b' && artifactPanelMode === 'edit' && textareaRef.current === document.activeElement) {
+        e.preventDefault();
+        const ta = textareaRef.current!;
+        const s = ta.selectionStart, end = ta.selectionEnd;
+        const sel = editDraft.slice(s, end);
+        const newText = editDraft.slice(0, s) + '**' + (sel || 'bold') + '**' + editDraft.slice(end);
+        setEditDraft(newText);
+      }
+      // Ctrl+I: Italic (in edit mode)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'i' && artifactPanelMode === 'edit' && textareaRef.current === document.activeElement) {
+        e.preventDefault();
+        const ta = textareaRef.current!;
+        const s = ta.selectionStart, end = ta.selectionEnd;
+        const sel = editDraft.slice(s, end);
+        const newText = editDraft.slice(0, s) + '*' + (sel || 'italic') + '*' + editDraft.slice(end);
+        setEditDraft(newText);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [activeArtifactNodeId, showFindReplace, isFullScreen, artifactPanelMode, editDraft]);
 
   // Handle text selection for AI rewrite
   const handleMouseUp = useCallback(() => {
@@ -308,7 +556,11 @@ export default function ArtifactPanel() {
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: 500, opacity: 0 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      className="fixed right-0 top-0 bottom-0 w-[500px] bg-[#0c0c14]/95 backdrop-blur-xl border-l border-white/[0.06] z-40 flex flex-col"
+      className={`fixed bg-[#0c0c14]/95 backdrop-blur-xl border-l border-white/[0.06] z-40 flex flex-col transition-all duration-200 ${
+        isFullScreen
+          ? 'inset-0 w-full border-l-0'
+          : 'right-0 top-0 bottom-0 w-[500px]'
+      }`}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
@@ -328,10 +580,22 @@ export default function ArtifactPanel() {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-0.5">
+          {/* Find */}
+          <button onClick={() => setShowFindReplace(v => !v)} className={`p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors ${showFindReplace ? 'text-cyan-400/60' : 'text-white/30 hover:text-white/60'}`} title="Find & Replace (⌘F)">
+            <Search size={12} />
+          </button>
+          {/* Split View */}
+          <button onClick={() => { setIsSplitView(v => !v); if (!isSplitView) setArtifactMode('edit'); }} className={`p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors ${isSplitView ? 'text-cyan-400/60' : 'text-white/30 hover:text-white/60'}`} title="Split View">
+            <Columns2 size={12} />
+          </button>
           {/* Copy */}
-          <button onClick={handleCopy} className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/30 hover:text-white/60 transition-colors">
+          <button onClick={handleCopy} className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/30 hover:text-white/60 transition-colors" title="Copy">
             {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+          </button>
+          {/* Full Screen */}
+          <button onClick={() => setIsFullScreen(v => !v)} className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/30 hover:text-white/60 transition-colors" title={isFullScreen ? 'Exit Full Screen' : 'Full Screen'}>
+            {isFullScreen ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
           </button>
           {/* Close */}
           <button onClick={closeArtifactPanel} className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/30 hover:text-white/60 transition-colors">
@@ -366,64 +630,112 @@ export default function ArtifactPanel() {
             </button>
           )}
         </div>
-        <div className="flex gap-0.5 bg-white/[0.04] rounded-lg p-0.5">
-          <button
-            onClick={() => setArtifactMode('preview')}
-            className={`p-1 rounded-md transition-colors ${
-              artifactPanelMode === 'preview'
-                ? 'bg-white/[0.1] text-white/70'
-                : 'text-white/25 hover:text-white/50'
-            }`}
-          >
-            <Eye size={12} />
-          </button>
-          <button
-            onClick={() => setArtifactMode('edit')}
-            className={`p-1 rounded-md transition-colors ${
-              artifactPanelMode === 'edit'
-                ? 'bg-white/[0.1] text-white/70'
-                : 'text-white/25 hover:text-white/50'
-            }`}
-          >
-            <Pencil size={12} />
-          </button>
-        </div>
+        {/* Hide mode toggle when in split view — both show simultaneously */}
+        {!isSplitView && (
+          <div className="flex gap-0.5 bg-white/[0.04] rounded-lg p-0.5">
+            <button
+              onClick={() => setArtifactMode('preview')}
+              className={`p-1 rounded-md transition-colors ${
+                artifactPanelMode === 'preview'
+                  ? 'bg-white/[0.1] text-white/70'
+                  : 'text-white/25 hover:text-white/50'
+              }`}
+            >
+              <Eye size={12} />
+            </button>
+            <button
+              onClick={() => setArtifactMode('edit')}
+              className={`p-1 rounded-md transition-colors ${
+                artifactPanelMode === 'edit'
+                  ? 'bg-white/[0.1] text-white/70'
+                  : 'text-white/25 hover:text-white/50'
+              }`}
+            >
+              <Pencil size={12} />
+            </button>
+          </div>
+        )}
       </div>
 
+      {/* Find & Replace Bar */}
+      <AnimatePresence>
+        {showFindReplace && (
+          <FindReplace
+            text={artifactPanelMode === 'edit' ? editDraft : activeText}
+            onReplace={(newText) => setEditDraft(newText)}
+            onClose={() => setShowFindReplace(false)}
+            contentRef={contentRef}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Content Area */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 relative" ref={contentRef}>
-        {artifactPanelMode === 'preview' ? (
-          <div
-            className="text-[11px] text-white/60 leading-relaxed select-text"
-            onMouseUp={handleMouseUp}
-          >
-            {activeText ? (
-              renderMarkdown(activeText)
-            ) : (
-              <div className="text-white/20 italic text-center mt-12">
-                No {artifactPanelTab === 'result' ? 'execution result' : 'content'} yet.
-                {artifactPanelTab === 'content' && (
-                  <button
-                    onClick={() => setArtifactMode('edit')}
-                    className="block mx-auto mt-2 text-cyan-400/50 hover:text-cyan-400/80 transition-colors"
-                  >
-                    Start writing
-                  </button>
+      <div className={`flex-1 overflow-hidden relative ${isSplitView ? 'flex' : 'flex flex-col'}`}>
+        {isSplitView ? (
+          <>
+            {/* Split: Editor Left */}
+            <div className="flex-1 flex flex-col border-r border-white/[0.06] overflow-hidden">
+              <MarkdownToolbar textareaRef={textareaRef} onInsert={setEditDraft} />
+              <textarea
+                ref={textareaRef}
+                value={editDraft}
+                onChange={(e) => setEditDraft(e.target.value)}
+                className="flex-1 bg-black/20 p-3 text-[11px] text-white/70 font-mono leading-relaxed resize-none outline-none scrollbar-thin"
+                placeholder={`Write ${artifactPanelTab === 'result' ? 'execution result' : 'content'} here... (Markdown supported)`}
+                spellCheck={false}
+              />
+            </div>
+            {/* Split: Preview Right */}
+            <div className="flex-1 overflow-y-auto px-4 py-3" ref={contentRef}>
+              <div
+                className="text-[11px] text-white/60 leading-relaxed select-text"
+                onMouseUp={handleMouseUp}
+              >
+                {editDraft ? renderMarkdown(editDraft) : (
+                  <div className="text-white/20 italic text-center mt-12">Preview will appear here</div>
                 )}
               </div>
-            )}
+            </div>
+          </>
+        ) : artifactPanelMode === 'preview' ? (
+          <div
+            className="flex-1 overflow-y-auto px-4 py-3"
+            ref={contentRef}
+          >
+            <div
+              className="text-[11px] text-white/60 leading-relaxed select-text"
+              onMouseUp={handleMouseUp}
+            >
+              {activeText ? (
+                renderMarkdown(activeText)
+              ) : (
+                <div className="text-white/20 italic text-center mt-12">
+                  No {artifactPanelTab === 'result' ? 'execution result' : 'content'} yet.
+                  {artifactPanelTab === 'content' && (
+                    <button
+                      onClick={() => setArtifactMode('edit')}
+                      className="block mx-auto mt-2 text-cyan-400/50 hover:text-cyan-400/80 transition-colors"
+                    >
+                      Start writing
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         ) : (
-          <div className="flex flex-col h-full gap-2">
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <MarkdownToolbar textareaRef={textareaRef} onInsert={setEditDraft} />
             <textarea
+              ref={textareaRef}
               value={editDraft}
               onChange={(e) => setEditDraft(e.target.value)}
-              className="flex-1 bg-black/20 border border-white/[0.06] rounded-lg p-3 text-[11px] text-white/70 font-mono leading-relaxed resize-none outline-none focus:border-white/[0.12] transition-colors scrollbar-thin"
+              className="flex-1 bg-black/20 mx-4 mt-2 mb-1 border border-white/[0.06] rounded-lg p-3 text-[11px] text-white/70 font-mono leading-relaxed resize-none outline-none focus:border-white/[0.12] transition-colors scrollbar-thin"
               placeholder={`Write ${artifactPanelTab === 'result' ? 'execution result' : 'content'} here... (Markdown supported)`}
               spellCheck={false}
             />
-            <div className="flex items-center justify-between">
-              <span className="text-[9px] text-white/20">{editDraft.length} chars • Markdown supported</span>
+            <div className="flex items-center justify-between px-4 py-2">
+              <EditorStats text={editDraft} />
               <div className="flex gap-1.5">
                 <button
                   onClick={() => setArtifactMode('preview')}
@@ -458,8 +770,20 @@ export default function ArtifactPanel() {
         </AnimatePresence>
       </div>
 
-      {/* Footer: Versions + Downstream */}
+      {/* Footer: Versions + Downstream + Stats */}
       <div className="px-4 py-2 space-y-2 border-t border-white/[0.04]">
+        {isSplitView && (
+          <div className="flex items-center justify-between">
+            <EditorStats text={editDraft} />
+            <button
+              onClick={handleSave}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-medium bg-emerald-500/15 border border-emerald-500/20 text-emerald-400/80 hover:bg-emerald-500/25 transition-colors"
+            >
+              <Save size={10} />
+              Save
+            </button>
+          </div>
+        )}
         <VersionHistory
           versions={versions}
           onRestore={(idx) => restoreArtifactVersion(activeArtifactNodeId, idx)}

@@ -1,5 +1,15 @@
 # Changelog
 
+### 2026-03-08 — ArtifactPanel: 5 Editor Improvements
+
+Transformed the preview window into a strong editor tool:
+
+1. **Markdown Toolbar** — Bold, Italic, Code, Heading, Lists, Quote, Code Block, HR buttons above textarea in edit mode. Keyboard shortcuts: Ctrl+B (bold), Ctrl+I (italic).
+2. **Split View** — Side-by-side editor + live preview, toggled from header. Auto-enters edit mode. Save button and stats in footer.
+3. **Find & Replace** — CSS Highlight API search highlighting, match counter with navigation, replace one/all. Toggle with Ctrl/Cmd+F.
+4. **Word/Line/Reading Time Stats** — EditorStats bar shows word count, line count, character count, and estimated reading time in edit and split modes.
+5. **Full-Screen Mode** — Expand panel to fill viewport, toggle from header. Escape cascading close: find → fullscreen → panel.
+
 ### 2026-03-08 — Living Generative Entity: 5-Layer Agent Overhaul
 
 **The agent is now a genuinely living system.** Each layer actively shapes behavior in real-time, not just at prompt compilation.
