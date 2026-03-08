@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 import type { Node, Edge, Connection } from '@xyflow/react';
-import type { NodeData, LifecycleEvent, CIDMessage, NodeCategory, CIDMode, AgentPersonalityLayers, HabitLayer, GenerationLayer, ReflectionLayer } from '@/lib/types';
+import type { NodeData, LifecycleEvent, CIDMessage, NodeCategory, CIDMode, AgentPersonalityLayers, HabitLayer, GenerationLayer, ReflectionLayer, DrivingForceLayer } from '@/lib/types';
 import { registerCustomCategory, EDGE_LABEL_COLORS, BUILT_IN_CATEGORIES } from '@/lib/types';
 import { getAgent, getInterviewQuestions, buildEnrichedPrompt } from '@/lib/agents';
 import { buildSystemPrompt, buildMessages } from '@/lib/prompts';
@@ -10,6 +10,8 @@ import {
   createDefaultHabits, createDefaultGeneration, createDefaultReflection,
   migrateHabitsV1toV2, migrateReflectionV1toV2,
   computeGenerationContext, reflectOnInteraction, applyReflectionActions, updateGrowthEdges,
+  computeCuriositySpikes, applyTemperamentReframing, generateSpontaneousDirectives,
+  resolveDriverTensions,
 } from '@/lib/reflection';
 import {
   NODE_W, NODE_H, findFreePosition,
@@ -680,8 +682,12 @@ function saveRules(rules: string[]) {
 }
 
 // ─── 5-Layer Living Generative Entity State ─────────────────────────────────
+// Temperament → Driving Force → Habit → Generation → Reflection
+// Layers 1-2 (static) live in agents.ts. Layers 3-5 (evolving) live here.
+// Drive evolution (Layer 2 mutations) are also persisted here.
 const HABITS_KEY = 'lifecycle-agent-habits';
 const REFLECTION_KEY = 'lifecycle-agent-reflection';
+const DRIVES_KEY = 'lifecycle-agent-drives';
 
 function loadHabits(): Record<CIDMode, HabitLayer> {
   if (typeof window === 'undefined') return { rowan: createDefaultHabits('rowan'), poirot: createDefaultHabits('poirot') };
@@ -724,6 +730,21 @@ function saveReflection(reflection: Record<CIDMode, ReflectionLayer>) {
   try { localStorage.setItem(REFLECTION_KEY, JSON.stringify(reflection)); } catch { /* ignore */ }
 }
 
+// Drive evolution — persisted separately from static agent config
+function loadDriveEvolution(): Record<CIDMode, Record<string, number>> {
+  if (typeof window === 'undefined') return { rowan: {}, poirot: {} };
+  try {
+    const raw = localStorage.getItem(DRIVES_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch { /* ignore */ }
+  return { rowan: {}, poirot: {} };
+}
+
+function saveDriveEvolution(drives: Record<CIDMode, Record<string, number>>) {
+  if (typeof window === 'undefined') return;
+  try { localStorage.setItem(DRIVES_KEY, JSON.stringify(drives)); } catch { /* ignore */ }
+}
+
 // Ephemeral generation state (reset each session)
 const sessionGeneration: Record<CIDMode, GenerationLayer> = {
   rowan: createDefaultGeneration(),
@@ -733,45 +754,93 @@ const sessionGeneration: Record<CIDMode, GenerationLayer> = {
 // Loaded at startup with migration
 const loadedHabits = loadHabits();
 const loadedReflection = loadReflection();
+const loadedDriveEvolution = loadDriveEvolution();
 saveHabits(loadedHabits);
 saveReflection(loadedReflection);
 
-/** Get current personality layers for an agent */
+/** Get current personality layers for an agent — assembles all 5 layers into a living entity */
 function getAgentLayers(mode: CIDMode): AgentPersonalityLayers {
   const agent = getAgent(mode);
+  // Merge evolved drive weights into the driving force layer
+  const drivingForce: DrivingForceLayer = {
+    ...agent.drivingForce,
+    evolvedWeights: loadedDriveEvolution[mode],
+  };
   return {
     temperament: agent.temperament,
-    drivingForce: agent.drivingForce,
+    drivingForce,
     habits: loadedHabits[mode],
     generation: sessionGeneration[mode],
     reflection: loadedReflection[mode],
   };
 }
 
-/** Update generation context from current interaction signals */
+/** Update generation context from current interaction signals — the LIVING part */
 function refreshGenerationContext(mode: CIDMode, userMessage: string, nodeCount: number, recentMessages: string[]) {
+  const agent = getAgent(mode);
   const ctx = computeGenerationContext(userMessage, nodeCount, recentMessages, sessionGeneration[mode].sessionStartedAt);
   sessionGeneration[mode].context = ctx;
+
+  // Layer 1: Temperament reframing — how the agent PERCEIVES this input
+  const learnedRules = loadedReflection[mode].learnedReframingRules || [];
+  const reframed = applyTemperamentReframing(agent.temperament, learnedRules, userMessage);
+  sessionGeneration[mode].reframedInput = reframed;
+
+  // Layer 2: Curiosity spikes — drives that are triggered by this input
+  const spikedForce = computeCuriositySpikes(agent.drivingForce, userMessage);
+  // Store spikes transiently on the agent's drives for prompt compilation
+  for (let i = 0; i < agent.drivingForce.drives.length; i++) {
+    agent.drivingForce.drives[i].currentSpike = spikedForce.drives[i]?.currentSpike ?? 0;
+  }
+
+  // Layer 4: Spontaneous directives — novel, on-the-spot guidance
+  const { dominant } = resolveDriverTensions(
+    { ...agent.drivingForce, evolvedWeights: loadedDriveEvolution[mode] },
+    ctx,
+  );
+  const directives = generateSpontaneousDirectives(userMessage, ctx, loadedHabits[mode], dominant);
+  sessionGeneration[mode].spontaneousDirectives = directives;
 }
 
-/** Run reflection on an interaction and apply results */
+/** Run reflection on an interaction and apply results — the METACOGNITION engine */
 function runReflection(mode: CIDMode, userMessage: string, agentResponse: string) {
   const agent = getAgent(mode);
-  const actions = reflectOnInteraction(userMessage, agentResponse, loadedHabits[mode], sessionGeneration[mode].context);
+  // Pass drives so reflection can detect curiosity spike patterns and trigger drive reorganization
+  const effectiveForce: DrivingForceLayer = {
+    ...agent.drivingForce,
+    evolvedWeights: loadedDriveEvolution[mode],
+  };
+  const actions = reflectOnInteraction(userMessage, agentResponse, loadedHabits[mode], sessionGeneration[mode].context, effectiveForce);
   if (actions.length === 0) return;
 
-  const { habits, drives } = applyReflectionActions(actions, loadedHabits[mode], agent.drivingForce);
+  const { habits, drives } = applyReflectionActions(actions, loadedHabits[mode], effectiveForce);
   loadedHabits[mode] = habits;
-  // Drive adjustments are logged but don't modify the static agent config at runtime
-  // (they'd need to be persisted separately for true drive evolution — future enhancement)
-  void drives;
 
-  // Update growth edges
+  // DRIVE EVOLUTION — persist evolved weights (no longer void'd!)
+  if (drives.evolvedWeights) {
+    loadedDriveEvolution[mode] = { ...loadedDriveEvolution[mode], ...drives.evolvedWeights };
+    saveDriveEvolution(loadedDriveEvolution);
+  }
+
+  // Update growth edges, learned reframing rules, and drive evolution log
   loadedReflection[mode] = updateGrowthEdges(loadedReflection[mode], actions);
 
   saveHabits(loadedHabits);
   saveReflection(loadedReflection);
-  cidLog('reflection', { mode, actions: actions.length, domains: loadedHabits[mode].domainExpertise.length, depth: loadedHabits[mode].relationshipDepth.toFixed(2) });
+
+  // Log reflection with sedimentation info
+  const topSedimented = loadedHabits[mode].domainExpertise
+    .filter(d => (d.sedimentation ?? 0) > 0.2)
+    .map(d => d.domain);
+  cidLog('reflection', {
+    mode,
+    actions: actions.length,
+    domains: loadedHabits[mode].domainExpertise.length,
+    depth: loadedHabits[mode].relationshipDepth.toFixed(2),
+    sedimented: topSedimented.length,
+    driveShifts: Object.keys(loadedDriveEvolution[mode]).length,
+    learnedRules: (loadedReflection[mode].learnedReframingRules || []).length,
+  });
 }
 
 // Context-aware welcome: when returning to a saved workflow, add a summary greeting

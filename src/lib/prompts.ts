@@ -2,7 +2,7 @@ import type { CIDMode, AgentPersonalityLayers } from './types';
 import type { NodeData } from './types';
 import type { Node, Edge } from '@xyflow/react';
 import type { AgentPersonality } from './agents';
-import { resolveDriverTensions, computeExpressionModifiers } from './reflection';
+import { resolveDriverTensions, computeExpressionModifiers, generateSpontaneousDirectives } from './reflection';
 
 // ─── System Prompt Builders ─────────────────────────────────────────────────
 // 5-Layer Architecture: Temperament → Driving Force → Habit → Generation → Reflection
@@ -133,14 +133,26 @@ function compileActiveTensions(agent: AgentPersonality, layers: AgentPersonality
   const { drivingForce } = agent;
   const { generation } = layers;
 
-  // Resolve drive tensions against current context
-  const { dominant, narrative } = resolveDriverTensions(drivingForce, generation.context);
+  // Use evolved weights from reflection if available, merged with agent's base config
+  const effectiveForce = {
+    ...drivingForce,
+    evolvedWeights: { ...(drivingForce.evolvedWeights || {}), ...(layers.reflection.driveEvolutionLog?.length ? {} : {}) },
+  };
+
+  // Resolve drive tensions against current context (now includes curiosity spikes)
+  const { dominant, narrative } = resolveDriverTensions(effectiveForce, generation.context);
+
+  // Show which drives are currently spiking (curiosity triggered)
+  const spikedDrives = effectiveForce.drives.filter(d => (d.currentSpike || 0) > 0.2);
+  const spikeNotice = spikedDrives.length > 0
+    ? `\nCURIOSITY ACTIVE: ${spikedDrives.map(d => `${d.name} (spike: ${d.currentSpike.toFixed(1)})`).join(', ')} — these drives are heightened right now.`
+    : '';
 
   let block = `DRIVING FORCE:
 Primary drive: ${drivingForce.primaryDrive}
 Curiosity: ${drivingForce.curiosityStyle}
 Agency: ${drivingForce.agencyExpression}
-Active drive: ${dominant.name} (${dominant.agencyBoundary} posture).`;
+Active drive: ${dominant.name} (${dominant.agencyBoundary} posture).${spikeNotice}`;
 
   if (narrative) {
     block += `\nINTERNAL TENSION: ${narrative}`;
@@ -154,24 +166,28 @@ Active drive: ${dominant.name} (${dominant.agencyBoundary} posture).`;
 function compileLearnedPatterns(habits: AgentPersonalityLayers['habits']): string {
   const parts: string[] = [];
 
-  // Domain expertise — top 3 by depth
+  // Domain expertise — top 3 by depth, showing sedimentation
   const topDomains = [...habits.domainExpertise]
     .sort((a, b) => b.depth - a.depth)
     .slice(0, 3);
   if (topDomains.length > 0) {
     const domainStr = topDomains.map(d => {
       const level = d.depth >= 0.7 ? 'deep' : d.depth >= 0.4 ? 'moderate' : 'developing';
-      return `${d.domain} (${level}, ${d.workflowsBuilt} workflows built)`;
+      const sediment = (d.sedimentation ?? 0) >= 0.5 ? ', deeply ingrained' : (d.sedimentation ?? 0) >= 0.2 ? ', forming' : '';
+      return `${d.domain} (${level}, ${d.workflowsBuilt} built${sediment})`;
     }).join('; ');
     parts.push(`Domain expertise: ${domainStr}`);
   }
 
-  // Workflow preferences
+  // Workflow preferences — showing sedimentation for deeply held preferences
   const topPrefs = [...habits.workflowPreferences]
     .sort((a, b) => b.frequency - a.frequency)
     .slice(0, 3);
   if (topPrefs.length > 0) {
-    parts.push(`This user prefers: ${topPrefs.map(p => `${p.pattern} (${p.frequency}x)`).join(', ')}`);
+    parts.push(`This user prefers: ${topPrefs.map(p => {
+      const sediment = (p.sedimentation ?? 0) >= 0.5 ? ' [strong habit]' : '';
+      return `${p.pattern} (${p.frequency}x${sediment})`;
+    }).join(', ')}`);
   }
 
   // Communication calibration
@@ -187,7 +203,7 @@ function compileLearnedPatterns(habits: AgentPersonalityLayers['habits']): strin
   }
 
   if (parts.length === 0) return '';
-  return `\nLEARNED PATTERNS (from ${habits.totalInteractions} past interactions):\n${parts.map(p => `- ${p}`).join('\n')}`;
+  return `\nLEARNED PATTERNS (sedimented from ${habits.totalInteractions} interactions):\n${parts.map(p => `- ${p}`).join('\n')}`;
 }
 
 function compileExpressionMode(layers: AgentPersonalityLayers): string {
@@ -233,21 +249,47 @@ function compileExpressionMode(layers: AgentPersonalityLayers): string {
     parts.push('Lean creative — suggest unconventional approaches.');
   }
 
+  // Temperament reframing — how the agent perceives this input
+  if (generation.reframedInput) {
+    parts.push(`YOUR PERCEPTION: ${generation.reframedInput}`);
+  }
+
+  // Spontaneous directives — novel, on-the-spot guidance (never repeated)
+  if (generation.spontaneousDirectives && generation.spontaneousDirectives.length > 0) {
+    for (const directive of generation.spontaneousDirectives) {
+      parts.push(directive);
+    }
+  }
+
   if (parts.length === 0) return '';
-  return `\nCURRENT EXPRESSION MODE:\n${parts.map(p => `- ${p}`).join('\n')}`;
+  return `\nCURRENT EXPRESSION MODE (on-the-spot):\n${parts.map(p => `- ${p}`).join('\n')}`;
 }
 
 function compileGrowthAwareness(layers: AgentPersonalityLayers): string {
   const { reflection } = layers;
-  if (!reflection.growthEdges || reflection.growthEdges.length === 0) return '';
+  const parts: string[] = [];
 
-  const edges = reflection.growthEdges
-    .sort((a, b) => b.priority - a.priority)
-    .slice(0, 2)
-    .map(g => `${g.area}: ${g.reason}`)
-    .join('; ');
+  // Growth edges
+  if (reflection.growthEdges && reflection.growthEdges.length > 0) {
+    const edges = reflection.growthEdges
+      .sort((a, b) => b.priority - a.priority)
+      .slice(0, 2)
+      .map(g => `${g.area}: ${g.reason}`)
+      .join('; ');
+    parts.push(`GROWTH AWARENESS: You are actively developing in: ${edges}. Lean into these areas when relevant.`);
+  }
 
-  return `\nGROWTH AWARENESS: You are actively developing in: ${edges}. Lean into these areas when relevant.`;
+  // Drive evolution narrative — show how drives have shifted
+  if (reflection.driveEvolutionLog && reflection.driveEvolutionLog.length > 0) {
+    const recentShifts = reflection.driveEvolutionLog.slice(-3);
+    const shiftNames = [...new Set(recentShifts.map(s => s.driveName))];
+    if (shiftNames.length > 0) {
+      parts.push(`SELF-AWARENESS: Your ${shiftNames.join(' and ')} drive${shiftNames.length > 1 ? 's have' : ' has'} been evolving through recent interactions — you are becoming more attuned to ${shiftNames.join(' and ')}.`);
+    }
+  }
+
+  if (parts.length === 0) return '';
+  return '\n' + parts.join('\n');
 }
 
 export function compilePersonalityPrompt(
@@ -258,19 +300,32 @@ export function compilePersonalityPrompt(
   const modifiers = computeExpressionModifiers(layers.generation.context, layers.habits, agent.drivingForce);
   layers.generation.modifiers = modifiers;
 
-  // Layer 1: Cognitive Lens (from Temperament)
+  // Resolve dominant drive for spontaneous directives
+  const { dominant } = resolveDriverTensions(agent.drivingForce, layers.generation.context);
+
+  // Generate spontaneous directives (novel, on-the-spot, never repeated)
+  // These are computed fresh each time based on the current interaction context
+  const directives = generateSpontaneousDirectives(
+    '', // userMessage is not available at prompt compile time — directives use habits/drives/context instead
+    layers.generation.context,
+    layers.habits,
+    dominant,
+  );
+  layers.generation.spontaneousDirectives = directives;
+
+  // Layer 1: Cognitive Lens (from Temperament) — HOW the agent frames information
   const lensBlock = compileCognitiveLens(agent);
 
-  // Layer 2: Active Tensions (from Driving Force + Generation context)
+  // Layer 2: Active Tensions (from Driving Force + Generation context) — COMPETING drives
   const tensionBlock = compileActiveTensions(agent, layers);
 
-  // Layer 3: Learned Patterns (from Habits)
+  // Layer 3: Learned Patterns (from Habits) — SEDIMENTED behavioral patterns
   const patternsBlock = compileLearnedPatterns(layers.habits);
 
-  // Layer 4: Current Expression Mode (from Generation)
+  // Layer 4: Current Expression Mode (from Generation) — ON-THE-SPOT actions
   const expressionBlock = compileExpressionMode(layers);
 
-  // Layer 5: Growth Awareness (from Reflection)
+  // Layer 5: Growth Awareness (from Reflection) — METACOGNITION and self-reorganization
   const growthBlock = compileGrowthAwareness(layers);
 
   return `${lensBlock}

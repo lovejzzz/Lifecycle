@@ -56,12 +56,15 @@ export interface Drive {
   tensionPairs: string[];           // names of drives this conflicts with
   curiosityTriggers: string[];      // patterns that make this drive spike
   agencyBoundary: 'act' | 'suggest' | 'ask'; // default posture
+  currentSpike: number;             // 0-1, transient spike from curiosity trigger match (reset per interaction)
 }
 
 export interface DrivingForceLayer {
   drives: Drive[];
   resolutionStrategy: 'dominant-wins' | 'negotiate' | 'alternate';
   currentTensionNarrative?: string; // populated by reflection, injected into prompt
+  // Evolved weights — persisted separately from static agent config
+  evolvedWeights?: Record<string, number>; // drive name → adjusted weight (from reflection)
   // Legacy compat
   primaryDrive: string;
   curiosityStyle: string;
@@ -77,12 +80,14 @@ export interface DomainExpertise {
   depth: number;                    // 0-1, increases with exposure
   lastSeen: number;
   workflowsBuilt: number;          // how many workflows in this domain
+  sedimentation: number;            // 0-1, how deeply ingrained (high = hard to change/prune)
 }
 
 export interface WorkflowPreference {
   pattern: string;                  // e.g. 'parallel-branches', 'feedback-loops', 'minimal'
   frequency: number;                // how often the user builds this way
   agentAffinity: number;            // how well this agent handles it (learned)
+  sedimentation: number;            // 0-1, how ingrained this preference is
 }
 
 export interface CommunicationStyle {
@@ -137,12 +142,15 @@ export interface GenerationLayer {
   successStreak: number;
   errorCount: number;
   sessionStartedAt: number;
+  // Novel expression fragments — generated on-the-spot, never repeated
+  spontaneousDirectives: string[];   // 0-3 short directives injected into prompt (e.g. "Reference the user's earlier mention of 'tight deadline'")
+  reframedInput?: string;            // The user's message as perceived through the temperament lens
 }
 
 // ── Layer 5: Reflection — Genuine metacognition and self-reorganization ─────
 
 export interface ReflectionAction {
-  type: 'strengthen-domain' | 'add-domain' | 'adjust-drive' | 'update-comm-style' | 'add-preference' | 'prune-stale' | 'grow-edge';
+  type: 'strengthen-domain' | 'add-domain' | 'adjust-drive' | 'update-comm-style' | 'add-preference' | 'prune-stale' | 'grow-edge' | 'add-reframing-rule' | 'reorganize-drives' | 'sediment-habit';
   description: string;
   confidence: number;           // 0-1
   data: Record<string, unknown>; // action-specific payload
@@ -164,6 +172,10 @@ export interface ReflectionLayer {
     recentSuccessRate: number;   // 0-1
     driveBalanceScore: number;   // 0-1, how well drives are serving
   };
+  // Structural reorganization — learned reframing rules added by reflection
+  learnedReframingRules: ReframingRule[];  // max 5, supplements temperament's static rules
+  // Drive evolution log — tracks HOW drives have shifted over time
+  driveEvolutionLog: Array<{ driveName: string; oldWeight: number; newWeight: number; reason: string; timestamp: number }>;
 }
 
 // Legacy compat

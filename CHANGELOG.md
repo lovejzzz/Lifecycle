@@ -1,5 +1,53 @@
 # Changelog
 
+### 2026-03-08 — Living Generative Entity: 5-Layer Agent Overhaul
+
+**The agent is now a genuinely living system.** Each layer actively shapes behavior in real-time, not just at prompt compilation.
+
+**Layer 1 — Temperament (Initial Information Placement):**
+- Reframing rules now **actually fire** against user input via `applyTemperamentReframing()`
+- Matched reframes are injected as "YOUR PERCEPTION" into the generation layer
+- Learned reframing rules accumulate through reflection (max 5, persisted)
+
+**Layer 2 — Driving Force (Curiosity, Agency, Tension):**
+- **Curiosity spikes**: `computeCuriositySpikes()` scans user messages against drive triggers (e.g. "deadline" spikes Rowan's `speed` drive, "architecture" spikes Poirot's `elegance`)
+- Spikes boost effective drive weights by up to 0.4, creating genuine dynamic tension
+- **Drive evolution persisted**: The `void drives` hack is removed — drive weight adjustments from reflection are now saved to `localStorage` and loaded on startup
+- When two spiked drives conflict (e.g. speed vs thoroughness both triggered), the prompt explicitly says "ACTIVE TENSION" and demands the agent name the tradeoff
+
+**Layer 3 — Habit (Long-term Sedimented Patterns):**
+- **Sedimentation system**: Every domain expertise and workflow preference now has a `sedimentation` score (0-1)
+- Reinforcement increases sedimentation — deeply sedimented habits resist pruning
+- Prune threshold scales with sedimentation: unsedimented domains prune after 50 interactions, fully sedimented ones resist for 150+
+- Decay factor scales with sedimentation: low → 50% decay, high → 85% decay (almost no loss)
+- Sedimentation visible in compiled prompt: "deeply ingrained" / "forming"
+
+**Layer 4 — Generation (On-the-Spot Actions):**
+- **Spontaneous directives**: `generateSpontaneousDirectives()` produces 0-3 novel prompt fragments per interaction
+- Directives are context-specific, never repeated, and reference: user's domain history, drive spikes, conversation momentum, session depth
+- `reframedInput` field carries temperament's perception of the input
+- Both injected into "CURRENT EXPRESSION MODE (on-the-spot)" prompt block
+
+**Layer 5 — Reflection (Habit Modification, Structure Reorganization):**
+- **Three new reflection action types**: `add-reframing-rule`, `reorganize-drives`, `sediment-habit`
+- Reflection now detects repeated curiosity spike patterns → triggers drive weight evolution
+- Reflection identifies deeply sedimented domains → adds learned reframing rules to temperament
+- Drive evolution log tracks HOW drives shifted over time (max 20 entries, persisted)
+- Growth awareness block now includes "SELF-AWARENESS" narrative about drive evolution
+
+**Files changed:** `src/lib/types.ts`, `src/lib/reflection.ts`, `src/lib/agents.ts`, `src/lib/prompts.ts`, `src/store/useStore.ts`
+
+**Build:** Clean — 0 lint warnings, typecheck passes, production build succeeds.
+
+### 2026-03-08 — Roadmap: 5 New Items from Competitor Research (6→10)
+
+New items added to `docs/NEXT-VERSION-ROADMAP.md`:
+- **6. Partial Branch Execution** (ComfyUI) — Execute only upstream dependencies of a single node
+- **7. Context-Aware Edge Label Validation** (LangGraph/Dify) — Post-generation edge label semantic check
+- **8. Interview Answers Feed Into Habit Layer** (CrewAI/AutoGen) — Interview signals persist into habits
+- **9. Edge Hover Data Inspection Tooltip** (Rivet) — Wire-hover shows source/target context
+- **10. Execution Progress Timeline Panel** (Rivet/ComfyUI) — Gantt-style execution visualization
+
 ### 2026-03-08 — Round 109: 99% Reasoner-Only + Pool 94→96
 
 **Eval results: 99% (6/6 passed) — DeepSeek Reasoner only**
