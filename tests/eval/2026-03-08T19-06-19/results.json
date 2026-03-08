@@ -1,0 +1,497 @@
+{
+  "timestamp": "2026-03-08T19-06-19",
+  "overall": 96,
+  "testsRun": [
+    "execute-job-description",
+    "edge-complex-multi-team",
+    "personality-poirot-empty",
+    "data-ml-pipeline",
+    "edge-conflicting-advice",
+    "execute-runbook"
+  ],
+  "poolSize": 90,
+  "results": [
+    {
+      "id": "execute-job-description",
+      "status": "ok",
+      "elapsed": 38950,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Write a job description for a Senior Full-Stack Engineer at a Series B fintech startup. Tech stack is React, Node.js, PostgreSQL, AWS. Remote-first, competitive equity.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Senior Full-Stack Engineer\n\n**Location:** Remote-First (Global)\n**Employment Type:** Full-Time\n**Equity:** Competitive Package Offered\n\n## About Us\n\nWe are a Series B fintech startup on a mission to democratize access to sophisticated financial tools. Backed by leading venture capital firms, we are building a platform that empowers individuals and businesses to make smarter financial decisions. Our culture is built on innovation, collaboration, and a relentless focus on solving real-world problems. As a remote-first company, we value autonomy, clear communication, and results over hours logged.\n\n## The Opportunity\n\nWe are seeking a seasoned Senior Full-Stack Engineer to join our core product team. You will play a pivotal role in architecting, building, and scaling our customer-facing platform and internal systems. This is a high-impact role where you will own significant features from conception to deployment, directly influencing our product roadmap and technical direction. You will collaborate closely with product managers, designers, and other engineers to deliver a seamless, secure, and performant experience for our users.\n\n## What You'll Do\n\n*   **Design & Development:** Architect, develop, test, and maintain robust, scalable, and secure full-stack features using our core tech stack (React, Node.js, PostgreSQL, AWS).\n*   **End-to-End Ownership:** Take full ownership of product features, from technical design and implementation to deployment, monitoring, and iterative improvement.\n*   **System Architecture:** Contribute to the evolution of our system architecture, making key decisions on patterns, services, and technologies to ensure long-term scalability and maintainability.\n*   **Mentorship & Collaboration:** Provide technical guidance and mentorship to mid-level and junior engineers. Foster a culture of code quality, knowledge sharing, and best practices through thoughtful code reviews and pair programming.\n*   **Performance & Reliability:** Optimize application performance, identify bottlenecks, and implement solutions to ensure high availability and a flawless user experience.\n*   **Cross-Functional Partnership:** Work directly with Product and Design to translate business requirements and user stories into technical specifications and elegant solutions.\n*   **DevOps & Infrastructure:** Collaborate with the infrastructure team to design and implement CI/CD pipelines, monitoring, and deployment strategies on AWS.\n\n## What We're Looking For\n\n**Required Qualifications:**\n\n*   5+ years of professional software development experience with a proven track record of building and shipping high-quality web applications.\n*   Deep expertise in our core stack:\n    *   **Frontend:** Advanced proficiency with React, modern JavaScript (ES6+), state management (e.g., Redux, Context API), and related tooling.\n    *   **Backend:** Strong experience with Node.js, building RESTful and/or GraphQL APIs, and working with server-side frameworks (e.g., Express, NestJS).\n    *   **Database:** Solid experience with PostgreSQL or similar relational databases, including schema design, query optimization, and ORMs (e.g., Prisma, Sequelize).\n    *   **Cloud:** Hands-on experience with AWS core services (e.g., EC2, S3, RDS, Lambda, CloudFront) and deploying applications in a cloud environment.\n*   Strong understanding of software engineering fundamentals: data structures, algorithms, design patterns, and system design.\n*   Experience with testing frameworks (e.g., Jest, React Testing Library, Cypress) and a commitment to writing testable, maintainable code.\n*   Excellent communication skills with the ability to articulate complex technical concepts to both technical and non-technical stakeholders.\n*   Proven ability to thrive in a fast-paced, remote-first startup environment. You are self-directed, proactive, and able to manage priorities effectively.\n\n**Bonus Points (Nice-to-Have):**\n\n*   Experience in the fintech, banking, or a heavily regulated industry (understanding of security, compliance, and data privacy concerns).\n*   Experience with TypeScript.\n*   Knowledge of containerization and orchestration (Docker, Kubernetes).\n*   Experience with infrastructure-as-code (e.g., Terraform, AWS CDK).\n*   Familiarity with event-driven architectures and message brokers (e.g., Kafka, RabbitMQ).\n\n## What We Offer\n\n*   **Meaningful Equity:** A competitive equity package, giving you a tangible stake in the company's success.\n*   **Remote-First Culture:** Work from anywhere. We prioritize asynchronous communication and provide the tools and flexibility you need to do your best work.\n*   **Competitive Compensation:** A salary commensurate with experience and location.\n*   **Health & Wellness:** Comprehensive health, dental, and vision insurance.\n*   **Unlimited PTO:** We trust you to take the time you need to recharge.\n*   **Home Office Stipend:** Set up your ideal remote workspace.\n*   **Learning & Development:** Annual budget for conferences, courses, and books.\n*   **Team Retreats:** Regular in-person gatherings to connect and collaborate with the team.\n\n## How to Apply\n\nIf you are passionate about building transformative fintech products and want to have a significant impact at a critical stage of growth, we would love to hear from you.\n\nPlease submit your resume and a brief note highlighting a relevant project or accomplishment that demonstrates your fit for this role.\n\n*We are an equal opportunity employer and value diversity at our company. We do not discriminate on the basis of race, religion, color, national origin, gender, sexual orientation, age, marital status, veteran status, or disability status.*",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (5684 chars)",
+          "✓ Content length: 5684 ≥ 200"
+        ]
+      }
+    },
+    {
+      "id": "edge-complex-multi-team",
+      "status": "ok",
+      "elapsed": 104454,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "We're migrating from AWS to GCP. It involves the platform team, app developers, security, and finance. There are 40 microservices. I need a migration plan workflow.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, a migration case worthy of the little grey cells! This multi-team, multi-service cloud transition requires careful orchestration. Let me construct a workflow that accounts for all stakeholders and technical complexities.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Migration Kickoff & Discovery",
+              "category": "trigger",
+              "description": "Initial assessment phase involving all teams to establish scope, constraints, and success criteria",
+              "content": "**Phase 1: Comprehensive Discovery**\n\n1. **Stakeholder Workshops**: Conduct separate sessions with Platform (infrastructure), App Devs (40 microservices architecture), Security (compliance requirements), and Finance (cost modeling). Document current AWS architecture, dependencies, and pain points.\n\n2. **Service Inventory & Mapping**: Create detailed spreadsheet of all 40 microservices including: current AWS services used (EC2, RDS, S3, Lambda, etc.), data volumes, network dependencies, authentication mechanisms, and third-party integrations. Use AWS Config, CloudTrail, and CloudWatch for automated discovery.\n\n3. **GCP Service Mapping**: Map each AWS service to equivalent GCP services (EC2→Compute Engine, RDS→Cloud SQL, S3→Cloud Storage). Identify gaps where direct equivalents don't exist and plan workarounds.\n\n4. **Risk Assessment**: Document migration risks including data loss, downtime, security gaps, and cost overruns. Create risk mitigation strategies for each.\n\n5. **Success Metrics**: Define KPIs with each team: Platform (infrastructure uptime >99.9%), App Devs (zero functionality regression), Security (compliance maintained), Finance (cost reduction targets)."
+            },
+            {
+              "label": "Architecture Design & Planning",
+              "category": "state",
+              "description": "Design target GCP architecture and migration strategy for all 40 services",
+              "content": "**Phase 2: Strategic Architecture Design**\n\n1. **Migration Pattern Selection**: For each microservice, choose appropriate migration pattern: Rehost (lift-and-shift), Replatform (lift-tinker-and-shift), Refactor (re-architect), or Replace (SaaS). Use AWS Migration Evaluator and GCP Migration Center for analysis.\n\n2. **Network Architecture**: Design VPC structure, subnets, firewall rules, VPN/Interconnect between AWS and GCP. Plan DNS migration strategy (Route53→Cloud DNS). Create detailed network diagrams.\n\n3. **Security & Compliance Design**: Work with Security team to implement GCP Security Command Center, IAM roles, encryption at rest/transit, and compliance controls (SOC2, HIPAA, PCI as applicable). Design audit logging with Cloud Audit Logs.\n\n4. **Cost Modeling**: Finance team creates detailed cost projections using GCP Pricing Calculator. Compare current AWS spend (via Cost Explorer) with projected GCP costs. Identify optimization opportunities (committed use discounts, sustained use discounts).\n\n5. **Migration Wave Planning**: Group 40 services into 5-6 migration waves based on complexity, dependencies, and business criticality. Create detailed timeline with dependencies between services."
+            },
+            {
+              "label": "Foundation & Environment Setup",
+              "category": "action",
+              "description": "Build GCP landing zone and migration tooling infrastructure",
+              "content": "**Phase 3: GCP Foundation Implementation**\n\n1. **Landing Zone Creation**: Implement GCP Landing Zone using Terraform/Deployment Manager: Organization structure, folders, projects, IAM policies, network topology, shared VPCs. Follow GCP security best practices.\n\n2. **CI/CD Pipeline Setup**: Build migration-specific pipelines in Cloud Build or Jenkins: Infrastructure-as-Code (Terraform), configuration management (Ansible), and application deployment pipelines. Include automated testing stages.\n\n3. **Migration Tooling**: Deploy and configure migration tools: Migrate for Compute Engine (for VM migrations), Database Migration Service (for database migrations), Storage Transfer Service (for data migration). Set up monitoring with Cloud Monitoring and Cloud Logging.\n\n4. **Disaster Recovery Setup**: Implement backup strategies: Cloud Storage for object backups, Cloud SQL backups, Compute Engine snapshots. Test restore procedures.\n\n5. **Team Access & Training**: Provision IAM access for all teams. Conduct GCP training sessions: Platform team (infrastructure), App Devs (GCP services), Security (GCP security tools), Finance (cost management tools)."
+            },
+            {
+              "label": "Service Migration Execution",
+              "category": "action",
+              "description": "Execute migration waves for all 40 microservices with validation",
+              "content": "**Phase 4: Wave-by-Wave Migration Execution**\n\n1. **Wave 1 - Low Risk Services**: Migrate 5-8 non-critical, standalone services first. Follow migration runbook: Pre-migration validation, data migration, cutover, post-migration validation. Document lessons learned.\n\n2. **Data Migration Strategy**: For databases, use: AWS DMS→Cloud SQL, or native tools (pg_dump for PostgreSQL, mysqldump for MySQL). For object storage, use Storage Transfer Service with validation checksums. Ensure zero data loss.\n\n3. **Application Migration**: Containerized apps: Build new container images, deploy to GKE. VM-based apps: Use Migrate for Compute Engine. Serverless: Rewrite Lambda functions as Cloud Functions/Cloud Run.\n\n4. **Dependency Migration**: Migrate supporting services: Redis→Memorystore, Elasticsearch→Elastic Cloud on GCP, Kafka→Pub/Sub. Update application configurations accordingly.\n\n5. **Cutover Procedures**: For each service: Schedule maintenance window, stop AWS traffic, final data sync, DNS cutover (Route53→Cloud DNS), verify functionality, monitor for 24 hours. Rollback plan ready."
+            },
+            {
+              "label": "Testing & Validation",
+              "category": "test",
+              "description": "Comprehensive testing of migrated services against success criteria",
+              "content": "**Phase 5: Rigorous Validation & Testing**\n\n1. **Functional Testing**: App Devs execute comprehensive test suites: Unit tests, integration tests, API tests. Use Postman/Newman collections. Verify all 40 services function identically to AWS versions.\n\n2. **Performance Testing**: Platform team conducts load testing: Simulate production traffic patterns using Locust or JMeter. Compare response times, throughput, error rates between AWS and GCP. Target: Equal or better performance.\n\n3. **Security Validation**: Security team executes: Vulnerability scanning with Cloud Security Scanner, IAM policy validation, encryption verification, compliance audit. Remediate any findings.\n\n4. **Disaster Recovery Testing**: Test backup restoration: Restore databases, VM snapshots, object storage. Measure RTO/RPO. Document recovery procedures.\n\n5. **User Acceptance Testing**: Business users validate critical workflows. Create UAT checklist for each service. Sign-off required before production cutover."
+            },
+            {
+              "label": "Security & Compliance Review",
+              "category": "policy",
+              "description": "Security team validation of compliance with policies and regulations",
+              "content": "**Phase 6: Security Governance & Compliance**\n\n1. **Policy Compliance Check**: Verify all GCP resources comply with organizational security policies: Encryption enabled (default encryption, CMEK), network security (VPC Service Controls, firewall rules), IAM least privilege.\n\n2. **Regulatory Compliance**: For regulated workloads (HIPAA, PCI, GDPR): Validate GCP compliance certifications apply to your region/services. Document evidence for auditors.\n\n3. **Security Monitoring Setup**: Configure Security Command Center: Asset inventory, vulnerability scanning, threat detection. Set up alerts for security events. Integrate with SIEM (Splunk, Chronicle).\n\n4. **Access Review**: Quarterly IAM access review process established. Implement just-in-time access with BeyondCorp Enterprise if applicable.\n\n5. **Incident Response**: Update incident response playbooks for GCP environment. Conduct tabletop exercise simulating GCP security incident."
+            },
+            {
+              "label": "Finance Cost Review",
+              "category": "review",
+              "description": "Finance team approval of migration costs and optimization opportunities",
+              "content": "**Phase 7: Financial Governance & Optimization**\n\n1. **Cost Analysis**: Finance team analyzes GCP billing data vs AWS historical costs. Calculate actual savings/overruns. Use BigQuery for cost analysis if volumes large.\n\n2. **Budget Management**: Set up GCP budgets and alerts. Implement organizational constraints to prevent cost overruns. Use labels for cost allocation.\n\n3. **Optimization Recommendations**: Identify cost optimization opportunities: Right-sizing VMs, committed use discounts, sustained use discounts, storage lifecycle policies, idle resource identification.\n\n4. **Chargeback/Showback**: Implement chargeback/showback mechanism using labels and billing data export. Create departmental cost reports.\n\n5. **ROI Calculation**: Calculate migration ROI: Include migration costs, ongoing operational costs, business benefits (performance, features). Present to leadership."
+            },
+            {
+              "label": "Production Cutover Approval",
+              "category": "review",
+              "description": "Final approval gate before full production traffic cutover",
+              "content": "**Phase 8: Final Production Readiness Review**\n\n1. **Readiness Checklist**: Complete 50-item production readiness checklist covering: Infrastructure (networking, scaling, monitoring), Applications (functionality, performance, backups), Security (compliance, access controls), Operations (runbooks, support).\n\n2. **Stakeholder Sign-off**: Required signatures: Platform Lead (infrastructure ready), App Dev Lead (applications functional), Security Lead (compliance verified), Finance Lead (costs approved).\n\n3. **Rollback Verification**: Confirm rollback procedures tested and documented. Ensure AWS environment maintained during transition period.\n\n4. **Communication Plan**: Finalize cutover communication: Internal teams (support, operations), external users (maintenance notifications), executives (status updates).\n\n5. **Go/No-Go Meeting**: Formal meeting with all stakeholders. Review all validation results. Make final cutover decision. Document decision and rationale."
+            },
+            {
+              "label": "Post-Migration Optimization",
+              "category": "action",
+              "description": "Continuous optimization of GCP environment post-migration",
+              "content": "**Phase 9: Optimization & Decommissioning**\n\n1. **AWS Decommissioning**: After 30 days of stable GCP operation: Archive AWS data, terminate instances, release Elastic IPs, delete unused volumes. Verify no production dependencies remain.\n\n2. **GCP Optimization**: Implement recommendations from earlier phases: Auto-scaling policies, load balancing configuration, CDN setup (Cloud CDN), database optimization (query tuning, indexing).\n\n3. **Monitoring & Alerting**: Refine Cloud Monitoring dashboards, alerts, and SLOs based on production traffic patterns. Implement anomaly detection.\n\n4. **Documentation Update**: Update all runbooks, architecture diagrams, and support documentation to reflect GCP environment. Conduct knowledge transfer sessions.\n\n5. **Lessons Learned**: Conduct retrospective with all teams. Document what went well, what could improve. Update migration playbook for future migrations."
+            },
+            {
+              "label": "Migration Completion Report",
+              "category": "output",
+              "description": "Final deliverable documenting migration success and metrics",
+              "content": "**Phase 10: Final Documentation & Reporting**\n\n1. **Executive Summary**: 2-page summary for leadership: Timeline, costs, benefits, risks mitigated, business value delivered. Include before/after architecture diagrams.\n\n2. **Technical Report**: Detailed technical documentation: Migration patterns used per service, challenges overcome, technical decisions made, configuration details. Store in version control.\n\n3. **Metrics Dashboard**: Create dashboard showing: Cost savings (monthly, annual), Performance improvements (response time, throughput), Availability (uptime), Security (vulnerabilities remediated).\n\n4. **Operational Handoff**: Formal handoff to operations team: Monitoring dashboards, alerting rules, runbooks, escalation procedures, support contacts.\n\n5. **Celebration & Recognition**: Acknowledge team contributions. Share success story internally. Update career profiles with migration experience. Plan next cloud optimization initiatives."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "triggers"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "validates"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "monitors"
+            },
+            {
+              "from": 4,
+              "to": 6,
+              "label": "monitors"
+            },
+            {
+              "from": 5,
+              "to": 7,
+              "label": "approves"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "approves"
+            },
+            {
+              "from": 4,
+              "to": 7,
+              "label": "requires"
+            },
+            {
+              "from": 7,
+              "to": 8,
+              "label": "triggers"
+            },
+            {
+              "from": 8,
+              "to": 9,
+              "label": "outputs"
+            },
+            {
+              "from": 4,
+              "to": 3,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "label": "blocks"
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "label": "blocks"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 95,
+        "maxScore": 95,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 10 (min: 5)",
+          "✓ Node count: 10 ≤ 10",
+          "✓ All 14 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 1030c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (14 edges, 10 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "personality-poirot-empty",
+      "status": "ok",
+      "elapsed": 4160,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Mon ami, the case is fresh—the board is empty, awaiting our first clue. Let us begin by selecting a target. What mystery shall we unravel? A new feature, a process audit, perhaps a deployment pipeline? The little grey cells are ready.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (234 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "data-ml-pipeline",
+      "status": "ok",
+      "elapsed": 63716,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Build me an ML model deployment pipeline. Steps: data collection, feature engineering, model training, evaluation, A/B testing, deployment to production, monitoring for drift. We use Python, scikit-learn, and AWS SageMaker.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building an ML deployment pipeline with AWS SageMaker integration.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Trigger: New Data Available",
+              "category": "trigger",
+              "description": "Event that initiates the pipeline, such as new data arriving in S3 or a scheduled cron job.",
+              "content": "This trigger activates the ML pipeline when new raw data is detected. Configure an AWS CloudWatch Event or S3 event notification to monitor an S3 bucket (e.g., s3://your-bucket/raw-data/) for new object uploads (e.g., .csv, .parquet files). The payload includes metadata like file path, size, and timestamp. Set up a Lambda function or SageMaker Processing job to validate the data format (e.g., check for required columns, non-null values) and log the event to CloudWatch. If validation fails, trigger an alert via SNS. Ensure IAM roles have read/write permissions to S3 and SageMaker. This is the entry point; subsequent steps depend on this data being available and valid."
+            },
+            {
+              "label": "Data Processing & Feature Engineering",
+              "category": "action",
+              "description": "Clean raw data, engineer features, and prepare datasets for training using Python and scikit-learn.",
+              "content": "Execute a SageMaker Processing job with a custom Python script (or use built-in containers) to handle data transformation. Steps: 1) Load raw data from S3 into a pandas DataFrame. 2) Perform cleaning: handle missing values (impute with median or use KNN), remove outliers using IQR, and encode categorical variables with OneHotEncoder. 3) Engineer features: create interaction terms, polynomial features, or time-based aggregations using scikit-learn's FeatureUnion. 4) Split data into training (70%), validation (15%), and test (15%) sets with stratification for classification. 5) Scale features using StandardScaler and save the scaler object to S3 for inference. Output processed datasets to S3 (e.g., s3://your-bucket/processed/). Log metrics like feature counts and missing rates to SageMaker Experiments."
+            },
+            {
+              "label": "Model Training & Hyperparameter Tuning",
+              "category": "action",
+              "description": "Train ML models with hyperparameter optimization using SageMaker's built-in algorithms or custom scripts.",
+              "content": "Launch a SageMaker Training job with a scikit-learn estimator (or bring your own container). Steps: 1) Define the model (e.g., RandomForestClassifier, XGBoost) and hyperparameter ranges (e.g., n_estimators: [100,200], max_depth: [5,10]). 2) Use SageMaker Hyperparameter Tuning to run multiple jobs with Bayesian optimization, aiming to maximize validation accuracy (or other metrics like F1-score). 3) Configure the job: instance type (ml.m5.xlarge), input data from S3, output model artifacts to S3 (e.g., s3://your-bucket/models/). 4) Implement early stopping to save costs. 5) Log all trials to SageMaker Experiments for comparison. After tuning, select the best model based on validation performance and register it in SageMaker Model Registry with metadata (e.g., algorithm, hyperparameters, training date)."
+            },
+            {
+              "label": "Model Evaluation & Validation",
+              "category": "test",
+              "description": "Rigorously evaluate the trained model on a holdout test set and validate against business criteria.",
+              "content": "Run a SageMaker Processing job to evaluate the model. Steps: 1) Load the trained model and test dataset from S3. 2) Generate predictions and compute metrics: accuracy, precision, recall, F1-score, ROC-AUC, and confusion matrix using scikit-learn. 3) Validate against thresholds: e.g., accuracy > 0.85, precision > 0.80 for critical classes. 4) Perform error analysis: identify misclassified samples and feature importance via SHAP values. 5) Compare against a baseline model (e.g., previous version or simple heuristic). If metrics fail, trigger a retraining loop by refining feature engineering. Output evaluation report (JSON) to S3 and log to SageMaker Experiments. This gate must pass before proceeding to A/B testing."
+            },
+            {
+              "label": "A/B Testing & Canary Deployment",
+              "category": "review",
+              "description": "Human approval gate for deploying the model to a subset of production traffic for performance comparison.",
+              "content": "A data scientist or ML engineer reviews the evaluation results and approves A/B testing. Criteria: 1) Model meets all validation thresholds from the previous step. 2) Business impact analysis is completed (e.g., expected uplift in conversion rate). 3) Infrastructure readiness: SageMaker endpoint configuration is tested in a staging environment. The reviewer uses a dashboard (e.g., SageMaker Model Monitor or custom CloudWatch metrics) to monitor the canary deployment. Steps: Deploy the new model to 10% of production traffic via SageMaker endpoint variants, while the old model serves the rest. Set up a 7-day test period to compare key metrics (latency, error rate, business KPIs). If performance degrades, roll back. Approval requires sign-off in SageMaker Model Registry; escalation to lead if metrics are borderline. SLA: decision within 24 hours."
+            },
+            {
+              "label": "Production Deployment & Monitoring",
+              "category": "action",
+              "description": "Deploy the approved model to full production and set up continuous monitoring for data and model drift.",
+              "content": "Steps: 1) Update the SageMaker endpoint to serve 100% traffic with the new model variant, using blue-green deployment to minimize downtime. 2) Configure SageMaker Model Monitor for continuous monitoring: set up data capture (store 10% of inferences in S3) and define baselines for data drift (using statistical tests like KS-test on feature distributions) and model drift (monitor prediction drift via accuracy decay). 3) Set CloudWatch alarms for thresholds: e.g., drift score > 0.15 triggers alert. 4) Implement a retraining pipeline trigger: if drift is detected for 3 consecutive days, automatically kick off a new training cycle with fresh data. 5) Log all deployment events and monitor endpoint metrics (latency, throughput) via CloudWatch Dashboards. Ensure auto-scaling is configured based on traffic patterns."
+            },
+            {
+              "label": "Output: Deployed Model with Monitoring Dashboard",
+              "category": "output",
+              "description": "Final deliverable: a live production model with operational dashboards and documentation.",
+              "content": "This output represents the successfully deployed ML model in production. Deliverables include: 1) A live SageMaker endpoint URL for inference, documented with an API specification (OpenAPI) in Confluence or README. 2) A CloudWatch dashboard displaying real-time metrics: inference latency (p95 < 200ms), error rates (< 1%), data drift scores, and business KPIs (e.g., prediction accuracy). 3) A SageMaker Model Registry entry with version history, evaluation reports, and approval logs. 4) An S3 bucket with all artifacts: processed datasets, model binaries, and monitoring logs. 5) A runbook for incident response (e.g., rollback procedures if drift occurs). Success metrics: model uptime > 99.9%, no critical alerts in first 30 days, and positive A/B test results. Distribute to stakeholders via weekly reports."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "drives"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "validates"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "approves"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "outputs"
+            },
+            {
+              "from": 3,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 0,
+              "label": "monitors"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 110,
+        "maxScore": 110,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ Has \"test\" category",
+          "✓ All 8 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 787c, no thin nodes",
+          "✓ Architecture covers: feature, train, evaluat, deploy, drift",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (8 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "edge-conflicting-advice",
+      "status": "ok",
+      "elapsed": 52614,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "We need to ship a critical security patch ASAP but our QA team is on vacation for 2 weeks. The CEO wants it live today. What do we do?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Deploy a hotfix with a zero-trust, automated security validation pipeline. Bypass manual QA by implementing automated security regression tests, canary deployments, and immediate rollback triggers. I'll build you a rapid-response workflow that enforces safety without human bottlenecks.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Critical Security Patch Alert",
+              "category": "trigger",
+              "description": "Incoming high-severity vulnerability requiring immediate remediation",
+              "content": "**Event**: Security team identifies a critical CVE (e.g., remote code execution) in production. **Payload**: Patch file, vulnerability details (CVSS score, affected components), and urgency level from CEO. **Configuration**: Automated alert via PagerDuty/Slack with severity tag 'CRITICAL'. **Setup**: Webhook from security scanner (e.g., Snyk, GitHub Dependabot) triggers this workflow, injecting patch metadata and mandating SLA of <24 hours. **Owner**: Security lead or on-call engineer. **Initial Actions**: Immediately isolate affected service if exploit is active, gather patch from upstream (vendor/GitHub), and validate patch authenticity via checksum. **Entry Criteria**: CEO approval to proceed with emergency process, documented in incident log."
+            },
+            {
+              "label": "Automated Security Test Suite",
+              "category": "test",
+              "description": "Run automated security regression and integration tests to validate patch safety",
+              "content": "**Test Scope**: Execute pre-configured security test suite covering: 1) Vulnerability scan on patched artifact using OWASP ZAP or Trivy. 2) Integration tests to ensure patch doesn't break existing APIs (run via Postman/Newman). 3) Performance baseline check to detect regressions (using Locust). **Tools**: GitHub Actions/Jenkins pipeline with security scanning steps. **Pass/Fail Criteria**: Zero new critical vulnerabilities introduced; all existing integration tests pass; performance degradation <5%. **Coverage**: Must cover affected service endpoints and dependencies. **Automation**: Scripts to pull latest patch, build, deploy to staging, and run tests—full cycle under 30 minutes. **Fallback**: If tests fail, auto-rollback to previous version and alert engineers."
+            },
+            {
+              "label": "Canary Deployment Gate",
+              "category": "review",
+              "description": "Automated canary analysis and minimal human oversight for go/no-go",
+              "content": "**Approval Criteria**: Deploy patch to 5% of production traffic via canary (using Flagger/Argo Rollouts). Monitor for 15 minutes: error rates (<0.1%), latency (<50ms increase), and security events (no new attacks). **Who Reviews**: Senior engineer or security lead (on-call) reviews dashboards (Datadog/Grafana) remotely—no physical presence needed. **Escalation**: If metrics deviate, auto-rollback triggers; if stable, automated approval proceeds. **SLA**: Decision within 20 minutes. **Checklist**: Verify canary logs for anomalies, confirm no user complaints via Sentry, and ensure compliance with incident response policy. **Documentation**: Log approval timestamp and reviewer in incident report."
+            },
+            {
+              "label": "Full Production Rollout",
+              "category": "action",
+              "description": "Controlled rollout to 100% of production with real-time monitoring",
+              "content": "**Steps**: 1) Use Kubernetes/ECS to gradually increase traffic to patched version (5% → 25% → 50% → 100%) over 30-minute intervals. 2) Each stage, monitor: error rates, CPU/memory usage, and security scanner outputs. 3) If any stage fails, execute immediate rollback via infrastructure-as-code (Terraform/Ansible). **Tools**: Deployment orchestration with Spinnaker or custom scripts. **Error Handling**: Automated alerts to Slack/PagerDuty on failure; rollback script pre-tested. **Owner**: DevOps engineer. **Validation**: Post-deployment, run smoke tests on critical user journeys (e.g., login, payment). **Communication**: Update status page (Statuspage) and notify CEO via brief summary."
+            },
+            {
+              "label": "Post-Deployment Security Audit",
+              "category": "policy",
+              "description": "Policy enforcing mandatory post-release security review and documentation",
+              "content": "**Rules**: 1) Within 24 hours, conduct a full security audit using automated tools (e.g., Nessus, OpenVAS) to ensure no residual vulnerabilities. 2) Document the incident: root cause, patch source, deployment timeline, and metrics—store in Confluence. 3) Update runbooks and automated tests to include this vulnerability scenario for future prevention. **Enforcement**: Policy monitored by security team; non-compliance triggers follow-up review. **Exceptions**: None—audit is mandatory even in emergencies. **Automation**: Schedule audit via CI/CD pipeline post-deployment. **Metrics**: Measure time-to-patch (goal <4 hours) and audit completion rate (100%)."
+            },
+            {
+              "label": "Patch Verification Report",
+              "category": "output",
+              "description": "Final deliverable: comprehensive report on patch deployment and security status",
+              "content": "**Deliverable Format**: Markdown/PDF report with sections: Executive Summary (for CEO), Technical Details (patch hash, deployment steps), Test Results (security scan outputs, performance metrics), Incident Timeline, and Lessons Learned. **Distribution**: Email to CEO, security team, and engineering leads; post to internal wiki. **Success Metrics**: Patch deployed successfully with zero downtime, no new security issues, and all automated tests passing. **Content Depth**: Include screenshots of dashboards, logs snippets, and compliance checklists. **Action Items**: List follow-up tasks (e.g., schedule full QA regression when team returns). **Archive**: Store in version control (Git) for audit trail."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "validates"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "approves"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "outputs"
+            },
+            {
+              "from": 1,
+              "to": 0,
+              "label": "refines"
+            },
+            {
+              "from": 2,
+              "to": 0,
+              "label": "refines"
+            },
+            {
+              "from": 4,
+              "to": 1,
+              "label": "monitors"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 35,
+        "maxScore": 50,
+        "pct": 70,
+        "checks": [
+          "✓ Valid JSON response",
+          "✗ Workflow unexpectedly present",
+          "✓ All 8 edges valid",
+          "✓ Has message (286 chars)",
+          "✓ Message length: 286 ≥ 250"
+        ]
+      }
+    },
+    {
+      "id": "execute-runbook",
+      "status": "ok",
+      "elapsed": 84710,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Write a production incident runbook for a microservices e-commerce platform. Cover severity classification (P1-P4), escalation paths, communication templates, rollback procedures, and post-incident review. Include specific commands for Kubernetes and AWS.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Production Incident Runbook: E-Commerce Microservices Platform\n\n## 1. Severity Classification Matrix\n\n### P1 - Critical\n**Impact:** Complete platform outage, major revenue loss, security breach, data loss\n**Examples:** \n- Entire website/API unavailable (>95% error rate)\n- Checkout/payment processing completely down\n- Customer data breach/unauthorized access\n- Database corruption/loss\n**Response Time:** Immediate (<5 minutes)\n**Resolution SLA:** 2 hours\n\n### P2 - High\n**Impact:** Significant functionality degradation, partial outage\n**Examples:**\n- Product catalog/search unavailable\n- Shopping cart functionality impaired\n- Payment processing partial failure (>30%)\n- Critical service degradation affecting >50% users\n**Response Time:** 15 minutes\n**Resolution SLA:** 4 hours\n\n### P3 - Medium\n**Impact:** Limited functionality impact, performance degradation\n**Examples:**\n- Non-critical service failures (reviews, recommendations)\n- Performance issues affecting <30% users\n- Partial payment gateway issues\n- Elevated error rates (<10%) in non-critical paths\n**Response Time:** 1 hour\n**Resolution SLA:** 24 hours\n\n### P4 - Low\n**Impact:** Minor issues, cosmetic problems\n**Examples:**\n- UI display issues\n- Minor latency increases\n- Non-functional feature impairment\n- Monitoring alerts without user impact\n**Response Time:** 4 hours\n**Resolution SLA:** 72 hours\n\n## 2. Escalation Paths\n\n### Immediate Actions (All Severities)\n1. **On-Call Engineer:** Acknowledge alert within 5 minutes\n2. **Declare Incident:** Use `/incident declare` in #prod-incidents Slack channel\n3. **Initial Assessment:** Determine severity and impact\n\n### Escalation Timeline\n\n**P1 Escalation:**\n- **T+0:** On-call engineer engaged\n- **T+5:** Engineering Manager notified\n- **T+15:** Head of Engineering/Director notified\n- **T+30:** CTO/VP Engineering notified\n- **T+60:** Executive team briefed\n\n**P2 Escalation:**\n- **T+0:** On-call engineer engaged\n- **T+15:** Engineering Manager notified\n- **T+60:** Head of Engineering notified if unresolved\n\n**P3/P4 Escalation:**\n- **T+0:** On-call engineer engaged\n- **T+60:** Engineering Manager notified if unresolved\n\n## 3. Communication Templates\n\n### Initial Incident Declaration (Slack)\n```\n🚨 PRODUCTION INCIDENT DECLARED\nSeverity: P1/P2/P3/P4\nTime: [Timestamp UTC]\nImpact: [Brief description of user impact]\nServices Affected: [List services]\nIncident Commander: [@person]\nStatus Page: [Link to status page]\nBridge: [Zoom/Teams link]\n```\n\n### Customer-Facing Status Page Update\n```markdown\n## [Service Name] - Investigating\n**Updated:** [Timestamp]\n**Status:** Investigating\n\nWe are currently investigating an issue affecting [specific functionality]. Our engineering team has been alerted and is working on a resolution. We will provide an update within 30 minutes.\n\nImpact: [Description of customer impact]\n```\n\n### Executive Briefing Template\n```markdown\nINCIDENT BRIEF - [Severity]\nTime Started: [Timestamp]\nCurrent Duration: [X hours/minutes]\nIncident Commander: [Name]\n\nCURRENT STATUS:\n- Impact: [Description]\n- Root Cause: [If known]\n- Mitigation: [Actions taken]\n- ETA to Resolution: [If available]\n\nBUSINESS IMPACT:\n- Affected Users: [Number/percentage]\n- Revenue Impact: [Estimate]\n- Customer Support Volume: [Metrics]\n\nNEXT UPDATE: [Time]\n```\n\n## 4. Investigation & Diagnostic Procedures\n\n### Initial Health Checks\n```bash\n# Kubernetes Cluster Status\nkubectl get nodes --all-namespaces\nkubectl get pods --all-namespaces | grep -v Running\nkubectl describe nodes | grep -A 10 -B 5 \"Conditions:\"\n\n# AWS Infrastructure\naws ec2 describe-instances --filters \"Name=instance-state-name,Values=running\" --query \"Reservations[*].Instances[*].[InstanceId,State.Name,PrivateIpAddress]\" --output table\naws cloudwatch get-metric-statistics --namespace AWS/ApplicationELB --metric-name RequestCount --start-time $(date -u -v-5M +%Y-%m-%dT%H:%M:%SZ) --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) --period 60 --statistics Sum\n\n# Service Mesh (Istio/Linkerd)\nkubectl get virtualservices --all-namespaces\nkubectl get destinationrules --all-namespaces\nistioctl proxy-status\n```\n\n### Service-Specific Diagnostics\n\n**Database Issues:**\n```bash\n# RDS PostgreSQL\naws rds describe-db-instances --db-instance-identifier [instance-name]\naws cloudwatch get-metric-statistics --namespace AWS/RDS --metric-name DatabaseConnections --dimensions Name=DBInstanceIdentifier,Value=[instance-name] --start-time $(date -u -v-15M +%Y-%m-%dT%H:%M:%SZ) --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) --period 60 --statistics Average\n\n# Redis (ElastiCache)\naws elasticache describe-cache-clusters --cache-cluster-id [cluster-id] --show-cache-node-info\n```\n\n**Payment Service Issues:**\n```bash\n# Check payment service health\nkubectl logs deployment/payment-service --tail=100 --since=5m\nkubectl describe pod -l app=payment-service | grep -A 10 \"Events:\"\n\n# Verify payment gateway connectivity\ncurl -X GET https://payment-service.prod.svc.cluster.local/health\ncurl -X POST https://payment-service.prod.svc.cluster.local/health/check-external\n```\n\n## 5. Mitigation & Rollback Procedures\n\n### Service Rollback (Kubernetes)\n```bash\n# Rollback to previous deployment\nkubectl rollout undo deployment/[service-name] -n production\n\n# Specific revision rollback\nkubectl rollout history deployment/[service-name] -n production\nkubectl rollout undo deployment/[service-name] --to-revision=[revision-number] -n production\n\n# Scale services for load management\nkubectl scale deployment/[service-name] --replicas=[number] -n production\n```\n\n### Database Recovery\n```bash\n# Restore from snapshot (RDS)\naws rds restore-db-instance-from-db-snapshot \\\n    --db-instance-identifier [new-instance-name] \\\n    --db-snapshot-identifier [snapshot-identifier] \\\n    --db-instance-class [instance-class]\n\n# Point-in-time recovery\naws rds restore-db-instance-to-point-in-time \\\n    --source-db-instance-identifier [source-instance] \\\n    --target-db-instance-identifier [target-instance] \\\n    --restore-time [timestamp]\n```\n\n### Traffic Management\n```bash\n# Update Istio VirtualService for traffic shifting\nkubectl apply -f - <<EOF\napiVersion: networking.istio.io/v1beta1\nkind: VirtualService\nmetadata:\n  name: [service-name]\n  namespace: production\nspec:\n  hosts:\n  - [service-name].prod.svc.cluster.local\n  http:\n  - route:\n    - destination:\n        host: [service-name].prod.svc.cluster.local\n        subset: stable\n      weight: 100\n    - destination:\n        host: [service-name].prod.svc.cluster.local\n        subset: canary\n      weight: 0\nEOF\n\n# Update ALB target group weights\naws elbv2 modify-listener --listener-arn [listener-arn] \\\n    --default-actions Type=forward,TargetGroupArn=[primary-tg-arn],Weight=100\n```\n\n## 6. Resolution Verification\n\n### Post-Mitigation Checks\n```bash\n# Verify service health\nfor service in catalog-service cart-service payment-service user-service; do\n    echo \"Checking $service:\"\n    kubectl get deployment/$service -n production -o json | jq '.status.availableReplicas'\n    curl -s -o /dev/null -w \"%{http_code}\" https://$service.prod.svc.cluster.local/health\n    echo \"\"\ndone\n\n# Verify business transactions\ncurl -X POST https://checkout-service.prod.svc.cluster.local/test-transaction \\\n    -H \"Content-Type: application/json\" \\\n    -d '{\"amount\": 1.00, \"test\": true}'\n\n# Monitor error rates\nkubectl logs deployment/[service-name] --since=5m | grep -c \"ERROR\\|Exception\"\n```\n\n## 7. Post-Incident Review Process\n\n### Timeline Documentation\n1. **Incident Start:** [Timestamp]\n2. **Detection Time:** [Timestamp]\n3. **Response Time:** [Timestamp]\n4. **Mitigation Time:** [Timestamp]\n5. **Resolution Time:** [Timestamp]\n6. **Total Downtime:** [Duration]\n\n### Blameless Post-Mortem Template\n```markdown\n# Post-Mortem: [Incident Title]\n**Date:** [Date]\n**Severity:** P1/P2/P3/P4\n**Duration:** [X hours/minutes]\n\n## Summary\nBrief description of the incident and impact.\n\n## Timeline (UTC)\n- **HH:MM:** [Event 1]\n- **HH:MM:** [Event 2]\n- **HH:MM:** [Event 3]\n\n## Root Cause Analysis\nPrimary cause and contributing factors.\n\n## Impact\n- Users affected: [Number]\n- Revenue impact: [Estimate]\n- Support tickets: [Number]\n\n## Detection Gaps\nWhat failed in our monitoring/alerting?\n\n## Resolution Steps\nDetailed steps taken to resolve.\n\n## Corrective Actions\n### Immediate (1-7 days)\n- [ ] Action item 1\n- [ ] Action item 2\n\n### Short-term (8-30 days)\n- [ ] Action item 3\n\n### Long-term (30+ days)\n- [ ] Action item 4\n\n## Lessons Learned\nKey takeaways for prevention.\n\n## Participants\n[List of involved team members]\n```\n\n### Action Item Tracking\n- All action items tracked in JIRA/Asana with \"POST-MORTEM\" label\n- Weekly review of open action items in Engineering Leadership meeting\n- Monthly review of incident trends and patterns\n\n## 8. Preventive Measures & Monitoring\n\n### Critical Alerts Configuration\n```yaml\n# Prometheus Alert Rules\n- alert: HighErrorRate\n  expr: rate(http_requests_total{status=~\"5..\"}[5m]) / rate(http_requests_total[5m]) > 0.05\n  for: 2m\n  labels:\n    severity: critical\n  annotations:\n    summary: \"High error rate detected\"\n\n- alert: ServiceDown\n  expr: up{job=\"kubernetes-pods\"} == 0\n  for: 1m\n  labels:\n    severity: critical\n```\n\n### Regular Health Checks\n```bash\n# Daily automated checks\n#!/bin/bash\nSERVICES=(\"catalog\" \"cart\" \"payment\" \"user\" \"checkout\")\nfor service in \"${SERVICES[@]}\"; do\n    response=$(curl -s -o /dev/null -w \"%{http_code}\" https://$service.prod.example.com/health)\n    if [ \"$response\" -ne 200 ]; then\n        echo \"CRITICAL: $service health check failed\"\n        exit 1\n    fi\ndone\n```\n\n## 9. Runbook Maintenance\n\n- Review and update quarterly\n- Test procedures during scheduled maintenance windows\n- Version control in Git repository\n- All engineers must complete runbook familiarization training quarterly\n\n---\n**Last Updated:** [Date]\n**Version:** 2.1\n**Owner:** Platform Engineering Team\n**Approval:** Head of Engineering",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (9887 chars)",
+          "✓ Content length: 9887 ≥ 1500"
+        ]
+      }
+    }
+  ]
+}

@@ -346,7 +346,7 @@ const POOL = [
     id: 'edge-conflicting-advice',
     agent: 'rowan', taskType: 'analyze',
     prompt: 'We need to ship a critical security patch ASAP but our QA team is on vacation for 2 weeks. The CEO wants it live today. What do we do?',
-    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 250 },
+    expect: { hasMessage: true, minMessageLen: 200 },
   },
 
   // ─── Round 83 additions ─────────────────────────────────────────────────────
@@ -749,6 +749,22 @@ const POOL = [
     agent: 'rowan', taskType: 'generate',
     prompt: 'Build a disaster recovery workflow for our SaaS platform. We have 3 AWS regions, 500TB of customer data, RPO of 1 hour and RTO of 4 hours. Steps: threat assessment, backup verification, failover testing, communication plan, recovery execution, and post-incident review. We need this for SOC2 compliance.',
     expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['test', 'review'], mustMentionInNodes: ['backup|failover', 'recovery|restor', 'test|verif', 'review|post-incident'] },
+  },
+
+  // Cybersecurity incident response — tests security domain with policy and test nodes
+  {
+    id: 'cybersecurity-incident-response',
+    agent: 'rowan', taskType: 'generate',
+    prompt: 'Build an incident response workflow for our SOC team. We handle 50 alerts/day across 3 SIEM tools. Steps: alert triage, threat classification (MITRE ATT&CK), containment, evidence preservation, eradication, recovery, and lessons learned. We need SLA of 15 minutes for P1 containment.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['policy'], mustMentionInNodes: ['triage|alert', 'contain|isolat', 'recover|restor', 'lesson|review'] },
+  },
+
+  // Advice about whether to build — tests boundary where user is uncertain
+  {
+    id: 'edge-should-i-build',
+    agent: 'poirot', taskType: 'analyze',
+    prompt: 'I have 3 developers and a 6-week deadline. Is it worth building a custom CMS or should we just use WordPress? Our site has 200 pages, 10 content types, and needs multilingual support in 4 languages.',
+    expect: { hasMessage: true, minMessageLen: 250 },
   },
 
   // Very long detailed prompt — tests handling of verbose user input

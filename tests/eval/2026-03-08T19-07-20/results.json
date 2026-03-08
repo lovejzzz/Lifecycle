@@ -1,0 +1,36 @@
+{
+  "timestamp": "2026-03-08T19-07-20",
+  "overall": 100,
+  "testsRun": [
+    "edge-conflicting-advice"
+  ],
+  "poolSize": 90,
+  "results": [
+    {
+      "id": "edge-conflicting-advice",
+      "status": "ok",
+      "elapsed": 3603,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "We need to ship a critical security patch ASAP but our QA team is on vacation for 2 weeks. The CEO wants it live today. What do we do?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Deploy with a war room protocol: isolate the patch to a single service, implement automated canary analysis with 5% traffic, and have senior engineers on-call for immediate rollback. Use feature flags to disable the patch if anomalies exceed baseline by 2%. This balances speed with risk containment.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has message (300 chars)",
+          "✓ Message length: 300 ≥ 200"
+        ]
+      }
+    }
+  ]
+}
