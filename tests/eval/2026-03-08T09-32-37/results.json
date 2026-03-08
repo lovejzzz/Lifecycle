@@ -1,0 +1,437 @@
+{
+  "timestamp": "2026-03-08T09-32-37",
+  "overall": 100,
+  "testsRun": [
+    "eng-deploy-process",
+    "hr-hiring",
+    "support-advice",
+    "execute-incident-postmortem",
+    "personality-poirot-empty",
+    "edge-ultra-terse"
+  ],
+  "poolSize": 44,
+  "results": [
+    {
+      "id": "eng-deploy-process",
+      "status": "ok",
+      "elapsed": 162440,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "My team pushes to production by SSH-ing into the server and running git pull. We need a real deployment process. We use React, Node, and PostgreSQL on AWS.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building a CI/CD pipeline to automate your React, Node, and PostgreSQL deployments on AWS.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Code Commit Trigger",
+              "category": "trigger",
+              "description": "Code push to the main branch initiates the deployment pipeline.",
+              "content": "This node represents the event that starts the CI/CD process. Configure a webhook in your Git repository (e.g., GitHub, AWS CodeCommit) to send a POST request to your CI/CD tool upon pushes to the main branch. Use AWS CloudWatch Events or directly integrate with AWS CodePipeline to monitor the repository. Payload includes commit hash, branch name, and author details. Set up environment variables for authentication and specify the pipeline source. Tools: AWS CodePipeline with GitHub webhooks, or Jenkins with Git plugins. Ensure the trigger is scoped to production-ready branches only, and implement rate limiting to prevent accidental triggers. Include logging for audit trails and error handling for failed webhook deliveries."
+            },
+            {
+              "label": "Build and Test Phase",
+              "category": "action",
+              "description": "Automated building and testing of React frontend and Node backend applications.",
+              "content": "Execute this phase using AWS CodeBuild or a similar CI tool. Steps: 1. Checkout the latest code from the repository using git commands. 2. Install dependencies: For Node backend, run 'npm install' in the root directory; for React frontend, navigate to the frontend folder and run 'npm install'. 3. Build artifacts: For React, run 'npm run build' to generate static files; for Node, compile if using TypeScript with 'npm run build' or similar. 4. Run tests: Execute unit tests for both frontend and backend using Jest or Mocha, with commands like 'npm test'. Include integration tests if applicable. 5. Generate reports: Output test coverage and results to files (e.g., coverage/lcov.info). Tools: AWS CodeBuild with buildspec.yml configuration, specifying phases for install, build, and test. Error handling: If any step fails, halt the pipeline and send alerts via SNS or Slack. Owner: DevOps team. Ensure environment variables for test databases are set up in AWS Secrets Manager."
+            },
+            {
+              "label": "Database Migration",
+              "category": "action",
+              "description": "Apply schema changes to PostgreSQL database on AWS RDS.",
+              "content": "Handle database updates safely to avoid production issues. Steps: 1. Check for migration scripts in the codebase, typically in a 'migrations' folder using tools like Sequelize or Knex.js. 2. Run migrations in order: Use CLI commands such as 'npx sequelize-cli db:migrate' or custom Node scripts. 3. Verify migrations: Query the database to confirm schema updates and data integrity. 4. Rollback plan: Prepare scripts to revert changes if migration fails; test in a staging environment first. 5. Security: Use IAM roles for database access, store credentials in AWS Secrets Manager, and ensure connections are over SSL. Tools: AWS Database Migration Service for large changes, or embedded scripts in CI/CD. Include health checks post-migration, such as verifying table structures and running sanity queries. Owner: Database administrator or backend team."
+            },
+            {
+              "label": "Production Approval Gate",
+              "category": "review",
+              "description": "Manual review and approval before proceeding to production deployment.",
+              "content": "This node requires human intervention to ensure deployment readiness. Approval criteria: All tests from the Build and Test Phase must pass with at least 80% coverage, database migrations completed successfully with no errors, and no critical bugs reported in the last review cycle. Who reviews: Designated lead developer, product manager, or ops team member. Escalation: If approval is not given within a 2-hour SLA, notify higher-ups via email or Slack. Tools: Integrate with AWS CodePipeline manual approval action, or use JIRA/Slack for approval workflows. Provide a checklist in the approval interface: verify changelog, confirm environment variables, and check monitoring dashboards. Store approval logs for compliance and audit purposes."
+            },
+            {
+              "label": "Deploy to AWS Production",
+              "category": "action",
+              "description": "Deploy the built applications to AWS production infrastructure.",
+              "content": "Execute deployment with minimal downtime using AWS services. Steps: 1. For React frontend: Upload static build files to an S3 bucket, configure CloudFront distribution for CDN, and invalidate caches. 2. For Node backend: Deploy to EC2 instances using AWS CodeDeploy for blue-green deployments—spin up new instances, run health checks, and switch load balancer traffic. Alternatively, use Elastic Beanstalk or containerize with ECS/EKS. 3. Update environment: Set environment variables via AWS Systems Manager Parameter Store, adjust security groups, and configure auto-scaling policies. 4. Validation: After deployment, verify services are running by checking EC2 instance status or ECS task health. Tools: AWS CodeDeploy with appspec.yml, CloudFormation for infrastructure as code. Error handling: If deployment fails, automatically rollback to previous version and alert the team. Owner: Deployment engineer."
+            },
+            {
+              "label": "Post-Deployment Validation",
+              "category": "test",
+              "description": "Run smoke tests and monitor the production environment after deployment.",
+              "content": "Ensure the deployment is successful and stable. What to test: 1. API endpoints from Node backend—send HTTP requests to key endpoints (e.g., /health, /api/users) and validate responses. 2. Frontend UI—use Selenium or Cypress to test critical user flows like login and data display. 3. Database connectivity—verify PostgreSQL connections and query performance. Pass/fail criteria: Response times under 200ms, HTTP status codes 200 for success endpoints, no errors in CloudWatch logs. Tools: Postman for API tests, AWS Lambda for automated smoke test scripts, and CloudWatch Alarms for real-time monitoring. If tests fail, trigger an automatic rollback by connecting back to the Build and Test Phase. Coverage: Aim for 100% smoke test pass rate before considering deployment complete."
+            },
+            {
+              "label": "Deployment Completion Report",
+              "category": "output",
+              "description": "Final deliverable summarizing the deployment process and outcomes.",
+              "content": "Produce a comprehensive report for stakeholders and auditing. Deliverable format: Send an email summary via Amazon SES, post a message in Slack channel, and update a dashboard like AWS QuickSight. Include success metrics: total deployment time, test coverage percentage, uptime SLA compliance, and any incidents encountered. Sections: Executive summary, detailed logs from each phase, error reports if any, and recommendations for improvement. Distribution: Automate report generation using AWS Lambda triggered by pipeline completion, and archive artifacts in S3 with versioning. Success criteria: Deployment completed without rollback, all validation tests passed, and stakeholder acknowledgment received within 1 hour."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "validates"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "approves"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "outputs"
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 105,
+        "maxScore": 105,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ Has \"test\" category",
+          "✓ Has \"action\" category",
+          "✓ All 8 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 817c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (8 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "hr-hiring",
+      "status": "ok",
+      "elapsed": 125553,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We need to hire 5 engineers in the next 2 months. Our current process is just posting on LinkedIn and hoping. Build me a proper hiring pipeline.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building a structured hiring pipeline with multi-channel sourcing and feedback loops to hit 5 engineers in 2 months.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Hiring Need Trigger",
+              "category": "trigger",
+              "description": "Event initiating the hiring process for 5 engineers within 2 months",
+              "content": "This node captures the formal triggering of the hiring initiative. Steps: 1. Department heads submit a hiring request detailing role requirements, budget, and timeline via HRMS (e.g., BambooHR or Workday). 2. Conduct a kickoff meeting with stakeholders to align on priorities, success metrics (e.g., time-to-fill, quality-of-hire), and urgency levels. 3. Document the business case, including projected impact on team capacity and project deliverables. 4. Set up automated alerts or webhooks in project management tools (e.g., Asana or Jira) to notify recruiters once approved. Configuration includes payload data: role titles, required skills (e.g., Python, AWS), experience levels, salary bands, and reporting structure. Tools: Use Calendly for scheduling syncs, Slack for communication, and Google Sheets for tracking initial requests. Ensure all data is logged for audit and compliance purposes."
+            },
+            {
+              "label": "Job Role Definition",
+              "category": "action",
+              "description": "Design and finalize detailed job descriptions and hiring criteria",
+              "content": "Actionable steps to create compelling and accurate job artifacts. 1. Collaborate with hiring managers to draft job descriptions using templates from platforms like Greenhouse or Lever, ensuring inclusion of key responsibilities, must-have skills, and cultural fit indicators. 2. Define assessment criteria: technical skills (e.g., coding tests via HackerRank), behavioral competencies (using STAR method), and role-specific metrics. 3. Secure approvals from legal and compliance teams to avoid bias and ensure ADA compliance. 4. Publish JDs to internal repositories and ATS (Applicant Tracking System) with version control. Tools: Grammarly for clarity, Figma for visual role maps, and Notion for collaborative editing. Include error handling: regular reviews to update JDs based on market feedback, with a weekly cadence for adjustments. Owner: Recruiting lead with input from engineering managers."
+            },
+            {
+              "label": "Multi-Channel Sourcing",
+              "category": "action",
+              "description": "Execute sourcing strategy across diverse platforms to attract candidates",
+              "content": "Detailed plan to broaden candidate pool beyond LinkedIn. Steps: 1. Primary channels: LinkedIn Recruiter for active searches, supplemented with Boolean strings for precision. 2. Secondary channels: Post on niche job boards (e.g., Stack Overflow, GitHub Jobs), leverage employee referral programs with incentives (e.g., $2,000 bonuses), and attend virtual career fairs or meetups. 3. Use sourcing tools like SeekOut or Entelo for passive candidate outreach, with personalized messaging templates. 4. Monitor sourcing metrics: application rate, source-of-hire effectiveness, and cost-per-hire using analytics dashboards in ATS. Tools: Outreach.io for email automation, Calendly for scheduling intro calls, and Google Analytics for tracking campaign performance. Include weekly sourcing syncs to adjust strategies based on response rates, targeting specific demographics or geographies if needed."
+            },
+            {
+              "label": "Candidate Screening",
+              "category": "test",
+              "description": "Initial assessment and filtering of applicants based on predefined criteria",
+              "content": "Structured testing phase to evaluate candidate fit. Steps: 1. Resume screening using ATS filters (e.g., Lever or Greenhouse) for keywords like 'Python' or 'Agile', with manual review by recruiters to catch nuances. 2. Conduct phone screens (15-20 minutes) using a standardized questionnaire covering basic skills, salary expectations, and availability. 3. Administer technical assessments via platforms like Codility or HackerRank, with pass/fail criteria: e.g., score >70% on coding challenges, completion within 48 hours. 4. Log all interactions and scores in ATS for consistency. Tools: Zoom for video calls, Google Forms for feedback collection, and bias-checkers like Textio. Error handling: If rejection rates exceed 50%, revisit screening criteria in weekly calibration meetings. Define escalation paths for borderline candidates to hiring managers."
+            },
+            {
+              "label": "Structured Interviews",
+              "category": "action",
+              "description": "Coordinate and conduct in-depth technical and cultural interviews",
+              "content": "Actionable steps for a robust interview process. 1. Schedule interview rounds: technical deep-dive (60 mins with engineering leads), system design (45 mins), and behavioral session (30 mins with team members). 2. Use interview kits with predefined questions and scoring rubrics (1-5 scale) to ensure consistency; tools include Interviewing.io for practice and Google Sheets for score aggregation. 3. Brief interviewers on bias avoidance and legal guidelines prior to sessions. 4. Collect feedback within 24 hours via ATS, with automated reminders for delinquent responses. Tools: Calendly for scheduling, Miro for whiteboarding during technical interviews, and Slack for real-time coordination. Include error handling: if interviewer no-shows occur, have backup interviewers on standby. Owner: Recruitment coordinator with support from interview panel."
+            },
+            {
+              "label": "Hiring Committee Review",
+              "category": "review",
+              "description": "Human-led evaluation and decision-making on candidate progression",
+              "content": "Review gate for finalizing hiring decisions. Steps: 1. Form a committee with hiring manager, recruiter, and senior engineers to review candidate portfolios, interview scores, and reference checks. 2. Approval criteria: consensus on technical competency, cultural alignment, and diversity metrics; use a checklist in ATS like Greenhouse with mandatory fields. 3. Escalation process: if deadlock occurs, involve department head for tie-breaking within 48 hours SLA. 4. Document decisions with rationale for compliance audits. Tools: Google Meet for committee discussions, Notion for minute-taking, and Docusign for approval signatures. Include metrics: review completion rate and time-to-decision tracked weekly. If candidates are rejected, provide actionable feedback to refine sourcing or screening, with a feedback loop edge back to earlier nodes."
+            },
+            {
+              "label": "Candidate Hire Finalization",
+              "category": "output",
+              "description": "Execute offer, onboarding, and close the hiring loop",
+              "content": "Final deliverable: successfully hired engineers integrated into the team. Steps: 1. Generate offer letters using templates in ATS, including salary, benefits, and start date, with legal review for compliance. 2. Conduct background checks via services like Checkr, with contingency plans for delays. 3. Coordinate onboarding: pre-boarding emails, equipment provisioning, and first-week schedule using tools like BambooHR or Rippling. 4. Measure success metrics: offer acceptance rate (>80%), time-to-start (within 2 weeks of offer), and 90-day retention rate. Tools: Docusign for e-signatures, Slack for new hire channels, and LMS (Learning Management System) for training modules. Distribution: notify all stakeholders via automated reports, and archive hiring data for future analysis. Ensure a smooth handoff to people ops for ongoing support."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "validates"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "approves"
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 3,
+              "to": 2,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 100,
+        "maxScore": 100,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ Has \"review\" category",
+          "✓ All 8 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 870c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (8 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "support-advice",
+      "status": "ok",
+      "elapsed": 41110,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Our CSAT score dropped to 3.2 out of 5. Average first response time is 8 hours. What should we fix first?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Mission analysis: Your CSAT cratered to 3.2 because that 8-hour response delay is burning customer trust—fix that breach first. Deploy SLA enforcement in your ticketing tool (e.g., Zendesk with Escalation Rules) to cap first response at 1 hour, automate acknowledgments via chatbots like Intercom, and triage backlog with a swat team. Track impact with daily CSAT pulse checks using Delighted and drill into root causes with ticket sentiment analysis via Khoros to ensure quality doesn't slip.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (493 chars)",
+          "✓ Message length: 493 ≥ 250"
+        ]
+      }
+    },
+    {
+      "id": "execute-incident-postmortem",
+      "status": "ok",
+      "elapsed": 57212,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Write a blameless post-mortem for a 2-hour production outage caused by a database migration that locked a critical table. 500 customers were affected. Include timeline, root cause, impact, and action items.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Post-Mortem Report: Production Outage Caused by Database Migration\n\n**Incident Title:** Production Service Outage Due to Table Locking During Database Migration  \n**Date:** October 26, 2023  \n**Severity:** SEV-1 (Critical)  \n**Duration:** 2 hours (14:00 - 16:00 UTC)  \n**Affected Customers:** Approximately 500 active users  \n**Status:** Resolved\n\n---\n\n## Executive Summary\nOn October 26, 2023, from 14:00 to 16:00 UTC, our primary application experienced a complete service outage affecting approximately 500 active customers. The outage was triggered by a scheduled database migration that placed an exclusive lock on a critical customer transaction table, blocking all read and write operations to dependent services. This report documents the incident timeline, root cause analysis, business impact, and corrective actions with a blameless focus on improving our systems and processes.\n\n## Incident Timeline (All Times UTC)\n- **13:45**: Database migration script deployment begins in production environment.\n- **13:58**: Migration script initiates schema alteration on `customer_transactions` table.\n- **14:00**: Monitoring alerts trigger for elevated API error rates (5xx responses at 95%).\n- **14:05**: On-call engineer acknowledges alerts and begins investigation.\n- **14:15**: Database monitoring shows `customer_transactions` table with exclusive lock; all dependent services failing.\n- **14:20**: Incident commander declared; bridge opened.\n- **14:30**: Decision made to kill migration process after assessing rollback complexity.\n- **14:45**: Migration process terminated; table lock released.\n- **14:50**: Services begin recovering as database connections restore.\n- **15:15**: Full service functionality confirmed for majority of users.\n- **15:30**: Remaining customer sessions validated as healthy.\n- **16:00**: Incident resolved; all systems operational.\n\n## Root Cause Analysis\n### Primary Cause\nThe database migration script executed an `ALTER TABLE` statement on the `customer_transactions` table without using `ALGORITHM=INPLACE` or `LOCK=NONE` parameters (where supported). This caused the database to place an exclusive metadata lock on the table for the entire duration of the migration (estimated 2+ hours for full data copy). All application queries requiring access to this table were queued behind this lock, resulting in cascading failures across services.\n\n### Contributing Factors\n1. **Pre-production Testing Gap**: The migration was tested on a staging database with 0.1% of production data volume, which completed in under 2 minutes, failing to reveal the locking behavior under production-scale data.\n2. **Migration Tool Configuration**: The automated migration tool was configured with default locking behavior rather than explicit lock minimization settings.\n3. **Circuit Breaker Absence**: Dependent services lacked circuit-breaking patterns for database latency, causing thread pool exhaustion rather than graceful degradation.\n4. **Communication Delay**: The migration was documented as \"low-risk\" in the change ticket, leading to reduced scrutiny during the change approval process.\n\n## Impact Assessment\n### Customer Impact\n- **500 active customers** experienced complete service unavailability for the duration of the outage.\n- **~1,200 session timeouts** recorded during the incident.\n- Customer Support received **45 tickets** during the outage window.\n- **No data loss or corruption** occurred; all transactions were preserved.\n\n### Business Impact\n- **Service Availability**: 99.95% monthly availability affected (downgraded to 99.85% for October).\n- **Financial**: Estimated $8,500 in potential lost transaction revenue.\n- **Reputational**: Social media sentiment analysis showed a temporary increase in negative mentions.\n\n### Internal Impact\n- **25 engineering person-hours** spent on incident response and recovery.\n- **8 teams** experienced disrupted workflows due to service dependencies.\n\n## Action Items\n### Immediate (Completed)\n| Item | Owner | Status |\n|------|-------|--------|\n| Restore full service functionality | Platform Team | ✅ Completed |\n| Communicate incident to affected customers via status page and email | Customer Support | ✅ Completed |\n| Review and revert migration in version control | Database Team | ✅ Completed |\n\n### Short-term (Next 30 Days)\n| Item | Owner | Due Date |\n|------|-------|----------|\n| Implement database migration checklist requiring lock impact assessment for all production schema changes | Database Team | Nov 10, 2023 |\n| Enhance staging environment to include production-scale data subsets for performance testing | Infrastructure Team | Nov 17, 2023 |\n| Configure database monitoring with alerting for long-running locks (>5 minutes) | SRE Team | Nov 15, 2023 |\n| Conduct blameless incident review workshop with all engineering teams | Engineering Leadership | Nov 3, 2023 |\n\n### Long-term (Next 90 Days)\n| Item | Owner | Due Date |\n|------|-------|----------|\n| Implement circuit breakers for all critical database dependencies in service mesh | Platform Engineering | Jan 15, 2024 |\n| Develop database migration automation with pre-flight checks for locking behavior | Database Team | Dec 20, 2023 |\n| Establish progressive delivery mechanism for database changes (canary migrations) | SRE Team | Jan 30, 2024 |\n| Create comprehensive runbooks for database migration rollback procedures | Database Team | Dec 10, 2023 |\n\n## Lessons Learned\n1. **Scale Testing is Critical**: Database operations that perform acceptably on small datasets can behave catastrophically at production scale. Our testing strategy must account for data volume.\n2. **Default Configurations Carry Risk**: Relying on default behaviors of infrastructure tools without understanding implications in our specific context creates hidden risks.\n3. **Degradation Beats Failure**: Services should be designed to degrade gracefully when dependencies fail, rather than cascading into complete failure.\n4. **Risk Communication Matters**: Labeling changes as \"low-risk\" without rigorous validation can lead to inadequate preparedness for potential failures.\n\n## Appreciation\nWe extend our thanks to the on-call engineers who responded quickly, the incident commander who maintained clear communication, and all team members who contributed to the resolution. This incident has provided valuable insights that will strengthen our systems and processes moving forward.\n\n**Documented By:** [Name/Team]  \n**Last Updated:** October 27, 2023  \n**Review Date:** November 26, 2023 (30-day follow-up)",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (6556 chars)",
+          "✓ Content length: 6556 ≥ 300"
+        ]
+      }
+    },
+    {
+      "id": "personality-poirot-empty",
+      "status": "ok",
+      "elapsed": 19691,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Mon ami, as I survey the scene, I find no clues—our visual workflow is entirely empty, a pristine canvas awaiting our first case. Voilà, we must decide whether to investigate a problem or construct a solution; the little grey cells are eager for direction!",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (256 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "edge-ultra-terse",
+      "status": "ok",
+      "elapsed": 100469,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Bug triage workflow.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! The case of the bug report has arrived, mon ami. Let us design a meticulous triage workflow to sort these clues with Herculean precision, ensuring no pesky insect escapes our attention.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Bug Report Submission",
+              "category": "trigger",
+              "description": "Initial trigger when a bug is reported through any channel",
+              "content": "This node represents the entry point for all bug reports, whether from users, automated tests, or monitoring systems. Implement using tools like JIRA, GitHub Issues, or Sentry to capture bug details such as title, description, steps to reproduce, environment (OS, browser, version), and attachments (screenshots, logs). Establish clear submission guidelines: require a minimum set of information (e.g., expected vs. actual behavior, severity self-assessment) to avoid incomplete reports. Set up webhooks or integrations to automatically trigger this workflow upon submission. Include validation rules to filter out duplicates or spam using fuzzy matching algorithms. Document the process in a wiki or onboarding guide to train reporters, ensuring consistency and reducing noise in the triage pipeline. Monitor submission rates and sources to identify trends and improve reporting quality over time."
+            },
+            {
+              "label": "Initial Triage Assessment",
+              "category": "action",
+              "description": "First-level analysis to categorize and filter bugs",
+              "content": "Upon triggering, execute an automated or manual assessment to categorize bugs by type (e.g., functional, performance, security), component (e.g., frontend, backend, database), and initial severity (use a scale like P0-P4 based on impact and urgency). Leverage tools like AI classifiers (e.g., with NLP to parse descriptions) or rule-based systems to assign tags. Perform deduplication by comparing against existing issues using hashing or similarity scores. Create a checklist: verify reproducibility, check for recent changes in the codebase, and assess user impact (e.g., number of affected users, revenue loss). Document findings in a triage log with timestamps and assign a temporary priority. Use metrics like mean time to triage (MTTT) to optimize this step. If critical bugs are detected, escalate immediately via alerts to on-call teams."
+            },
+            {
+              "label": "Priority and Severity Review",
+              "category": "review",
+              "description": "Human review gate to validate and finalize bug prioritization",
+              "content": "This node involves a human reviewer (e.g., product manager, lead developer) examining the initial assessment to confirm or adjust priority and severity. Use a structured review process: cross-reference with business goals (e.g., upcoming releases, customer commitments), historical data (e.g., similar past bugs), and resource availability. Apply frameworks like MoSCoW (Must have, Should have, Could have, Won't have) or RICE (Reach, Impact, Confidence, Effort) for objective scoring. Set approval criteria: for example, all P0-P1 bugs require sign-off from a senior engineer, while P2-P3 can be handled by team leads. Document decisions in the bug ticket with rationale, and update status to 'reviewed'. If discrepancies arise, hold a brief sync meeting or use collaborative tools like Slack threads. Track review accuracy with periodic audits to reduce bias and improve consistency."
+            },
+            {
+              "label": "Assignment and Routing",
+              "category": "action",
+              "description": "Assigning the validated bug to the appropriate team or developer",
+              "content": "Based on the reviewed priority and category, route the bug to the relevant team or individual. Use project management tools like JIRA assignees, GitHub labels, or Asana tasks to automate assignments based on rules (e.g., security bugs to security team, UI bugs to frontend squad). Consider factors such as developer expertise (match with component ownership), current workload (balance using capacity planning tools), and sprint timelines. Implement a rotation system for fair distribution. Update the bug ticket with assignment details, expected resolution time (SLA), and any dependencies. Notify assignees via email, Slack, or in-app notifications with context from previous steps. Maintain a dashboard to monitor assignment efficiency, such as time-to-assign metrics, and adjust routing logic based on team feedback or performance data to prevent bottlenecks."
+            },
+            {
+              "label": "Triaged Bug Ready for Development",
+              "category": "output",
+              "description": "Final output where the bug is prepared for development work",
+              "content": "This node marks the completion of triage, producing a fully processed bug ticket ready for the development phase. Ensure the ticket includes all necessary information: clear description, reproducible steps, priority/severity labels, assignment details, and links to related issues or PRs. Generate a summary report for stakeholders, highlighting key metrics like triage backlog size, average handling time, and distribution by category. Integrate with development workflows by syncing to tools like CI/CD pipelines or sprint boards. Set up automated reminders for follow-ups if bugs remain unaddressed beyond SLA. Document the entire triage journey in a knowledge base for future reference and continuous improvement. Use this output to feed into downstream processes, such as bug fixing or regression testing, and monitor outcome metrics to refine the triage workflow over time."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "approves"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "outputs"
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 95,
+        "maxScore": 95,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 5 (min: 4)",
+          "✓ Node count: 5 ≤ 10",
+          "✓ All 5 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 874c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (5 edges, 5 nodes)"
+        ]
+      }
+    }
+  ]
+}

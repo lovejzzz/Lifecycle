@@ -326,6 +326,22 @@ const POOL = [
     prompt: 'Bug triage workflow.',
     expect: { hasWorkflow: true, minNodes: 4, maxNodes: 10 },
   },
+
+  // ─── Education & Learning ─────────────────────────────────────────────────
+  {
+    id: 'education-course-creation',
+    agent: 'poirot', taskType: 'generate',
+    prompt: 'I\'m creating an online course on machine learning. I need a full production workflow: curriculum design, lesson scripting, video recording, editing, quiz creation, platform upload, beta testing with students, and launch. Build me the pipeline.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustMentionInNodes: ['curriculum|design|script', 'record|video|edit', 'test|beta|quiz', 'launch|publish|output'] },
+  },
+
+  // ─── Edge: Conflicting requirements (advice) ─────────────────────────────
+  {
+    id: 'edge-conflicting-advice',
+    agent: 'rowan', taskType: 'analyze',
+    prompt: 'We need to ship a critical security patch ASAP but our QA team is on vacation for 2 weeks. The CEO wants it live today. What do we do?',
+    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 250 },
+  },
 ];
 
 // ─── Agent System Prompts (synced with src/lib/prompts.ts) ─────────────────

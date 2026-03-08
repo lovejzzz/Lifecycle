@@ -1,0 +1,366 @@
+{
+  "timestamp": "2026-03-08T09-22-42",
+  "overall": 100,
+  "testsRun": [
+    "pm-feature-ship",
+    "execute-incident-postmortem",
+    "execute-job-description",
+    "personality-rowan-empty",
+    "eng-advice-architecture",
+    "edge-ultra-terse"
+  ],
+  "poolSize": 42,
+  "results": [
+    {
+      "id": "pm-feature-ship",
+      "status": "ok",
+      "elapsed": 158160,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "I need to ship a new payments feature. It touches billing, the API, the frontend, and we need legal to review the T&C changes. Give me a workflow that makes sure nothing falls through the cracks.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Workflow built with parallel dev tracks and legal gate to secure the payments feature launch.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Payments Feature Request",
+              "category": "trigger",
+              "description": "Initial trigger for shipping new payments feature from product management.",
+              "content": "This node activates when a product manager submits a formal feature request via Jira or similar project management tool, with payload including detailed specifications (user stories, acceptance criteria, success metrics like transaction volume targets), stakeholder contacts (engineering, legal, billing teams), and priority level (e.g., P0 for critical). Configuration involves setting up a webhook in the tool to auto-create this node upon ticket creation with label 'payments-feature', initializing a Slack channel #payments-launch for real-time communication, and scheduling a mandatory kickoff meeting within 24 hours. The trigger also logs the request in a central dashboard (e.g., Grafana) for tracking, ensuring all inputs are validated against a checklist: complete PRD, budget approval, and risk assessment documented. Failure to meet criteria triggers an alert to the product lead for refinement before proceeding."
+            },
+            {
+              "label": "Design & Planning",
+              "category": "action",
+              "description": "Define scope, requirements, and architecture for billing, API, frontend, and legal aspects.",
+              "content": "Step 1: Conduct a stakeholder workshop with product, engineering (billing, API, frontend leads), and legal teams to map out requirements—document using Confluence with sections for functional specs (e.g., payment methods, error handling), non-functional specs (performance, security), and compliance needs (GDPR, PCI DSS). Step 2: Create technical design documents (TDDs) for each component: billing system updates (database schemas, gateway integrations), API endpoints (RESTful design with OpenAPI), frontend UI mockups (Figma prototypes). Step 3: Establish timelines using Jira with milestones (dev complete, legal sign-off, testing) and assign owners. Tools: Miro for brainstorming, Lucidchart for architecture diagrams. Criteria: Signed-off PRD and TDDs within 3 days, with escalation to project sponsor if delays occur. Include a risk log for dependencies like third-party APIs."
+            },
+            {
+              "label": "Billing Development",
+              "category": "action",
+              "description": "Implement changes to billing systems, including subscriptions, payment gateways, and invoicing.",
+              "content": "Step 1: Update database models (e.g., PostgreSQL) for new subscription tiers and payment records, using migration tools like Alembic with rollback scripts. Step 2: Integrate with payment gateways (Stripe, PayPal) by implementing API calls for charges, refunds, and webhook listeners for event handling—code in Node.js or Django with error logging to Sentry. Step 3: Add invoicing logic for tax calculations (using TaxJar) and automated email notifications via SendGrid. Tools: Git for version control, unit tests with Jest achieving 90% coverage. Owner: Billing engineering team. Error handling: Implement circuit breakers for gateway failures, with fallback to queue systems (RabbitMQ) for retries. Weekly syncs with API and frontend teams to align on data contracts."
+            },
+            {
+              "label": "API Development",
+              "category": "action",
+              "description": "Build or update RESTful APIs for payment processing, authentication, and data exchange.",
+              "content": "Step 1: Design API endpoints (e.g., POST /payments, GET /transactions) using OpenAPI 3.0 spec, hosted on SwaggerHub for collaboration. Step 2: Implement core logic in Python/Flask or Express.js, including JWT-based authentication, rate limiting via Redis, and encryption for sensitive data. Step 3: Add comprehensive logging with ELK stack (Elasticsearch, Logstash, Kibana) and monitoring with Prometheus for metrics like latency and error rates. Tools: Postman for manual testing, automated integration tests with pytest. Owner: Backend engineering team. Criteria: All endpoints must pass security scans (OWASP ZAP) and have documentation in ReadMe.io. Error handling: Return standardized error codes and retry mechanisms for dependent services."
+            },
+            {
+              "label": "Frontend Development",
+              "category": "action",
+              "description": "Develop user interface components for payment flows, integrating with backend APIs.",
+              "content": "Step 1: Create responsive UI components (payment forms, checkout pages) using React or Vue.js with Storybook for design consistency. Step 2: Integrate with APIs using Axios or Fetch, handling states (loading, success, error) with Redux or Context API. Step 3: Ensure accessibility (WCAG 2.1 compliance) and cross-browser testing via BrowserStack. Tools: CSS frameworks (Tailwind), unit tests with Jest and React Testing Library. Owner: Frontend engineering team. Criteria: Code review via GitHub PRs with mandatory linting (ESLint) and performance audits (Lighthouse scores >90). Error handling: Display user-friendly messages and fallback UI for API failures. Coordinate with design team for pixel-perfect implementation."
+            },
+            {
+              "label": "Legal Review",
+              "category": "review",
+              "description": "Legal team reviews and approves Terms & Conditions changes for compliance.",
+              "content": "Approval criteria: Terms must comply with GDPR (data privacy), PCI DSS (payment security), and local regulations (e.g., CCPA). Review includes assessing liability clauses, refund policies, and user consent mechanisms. Who reviews: Designated legal counsel with expertise in fintech; SLA of 3 business days for initial feedback. Process: Submit draft T&C documents via a secure portal (e.g., Box), with tracked changes and comments. Escalation path: If issues arise, escalate to head of legal within 24 hours. Tools: Legal.io for workflow management. Output: Signed-off document stored in Confluence, with version control. Failure triggers a refinement loop back to planning—document reasons and required amendments."
+            },
+            {
+              "label": "Integration & Testing",
+              "category": "test",
+              "description": "Integrate all components and conduct end-to-end, performance, and security testing.",
+              "content": "What to test: Full payment flow from frontend to billing system, including edge cases (failed transactions, network timeouts), API contract validation, and load testing for 1000 concurrent users. Pass/fail criteria: Zero critical bugs, 95% code coverage, performance benchmarks (<2s response time), and security clearance from penetration tests (using Burp Suite). Tools: Selenium for E2E, Jest for unit tests, k6 for load testing, and OWASP ZAP for security scans. Process: Run automated test suites in CI/CD pipeline (Jenkins or GitHub Actions), with manual QA for UX. Owner: QA team. Results logged in TestRail; failures trigger bug tickets assigned to respective dev teams with SLA of 24 hours for fixes."
+            },
+            {
+              "label": "Deployment & Launch",
+              "category": "output",
+              "description": "Ship the payments feature to production with monitoring and documentation.",
+              "content": "Deliverable format: Deployed code in production environment (AWS or GCP), release notes in changelog.md, updated API documentation on ReadMe, and user guides for support teams. Distribution: Execute rollout via canary deployment—initially to 5% of users using feature flags (LaunchDarkly), monitor metrics (transaction success rate, error rates) with Datadog, and scale to 100% over 48 hours if stable. Success metrics: Target 99.9% uptime, <0.1% error rate, and positive user feedback via surveys. Tools: Kubernetes for orchestration, Slack alerts for incidents. Post-launch: Conduct a retrospective meeting to document lessons and update runbooks for ongoing maintenance."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 5,
+              "label": "requires"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "approves"
+            },
+            {
+              "from": 2,
+              "to": 6,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 6,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 6,
+              "label": "feeds"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "outputs"
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 6,
+              "to": 1,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 110,
+        "maxScore": 110,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 5)",
+          "✓ Node count: 8 ≤ 10",
+          "✓ Has \"review\" category",
+          "✓ All 12 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 768c, no thin nodes",
+          "✓ Architecture covers: billing, api, frontend, legal",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (12 edges, 8 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "execute-incident-postmortem",
+      "status": "ok",
+      "elapsed": 61307,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Write a blameless post-mortem for a 2-hour production outage caused by a database migration that locked a critical table. 500 customers were affected. Include timeline, root cause, impact, and action items.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Post-Mortem Report: Production Database Outage\n\n**Date of Incident:** October 26, 2023  \n**Report Date:** October 27, 2023  \n**Author:** Incident Response Team  \n**Status:** Resolved  \n\n## Summary\nOn October 26, 2023, from 10:15 AM to 12:25 PM UTC, the primary customer-facing application experienced a complete outage, rendering services unavailable for approximately 2 hours and 10 minutes. The incident affected approximately 500 active users, preventing them from accessing core application functionality. The root cause was an automated database migration script that placed an exclusive lock on a critical `user_sessions` table, blocking all subsequent read and write operations.\n\nThis report follows a blameless philosophy, focusing on systemic and process factors rather than individual actions.\n\n## Impact\n- **Duration:** 2 hours 10 minutes of full service degradation.\n- **Affected Users:** ~500 active customers during the incident window.\n- **Business Impact:**\n    - Failed transaction attempts: ~1,200.\n    - Customer support tickets generated: 85.\n    - Degraded trust in service availability.\n- **System Impact:** The primary application database was unresponsive for all services dependent on the `user_sessions` table, which included authentication, user preference loading, and real-time data updates.\n\n## Timeline (All Times UTC)\n- **10:15 AM:** Automated deployment pipeline initiates a scheduled database migration (Version 4.2.1).\n- **10:17 AM:** Migration script begins execution on the production database. The first step is an `ALTER TABLE` statement on `user_sessions` intended to add a new index.\n- **10:18 AM:** Monitoring alerts fire for high database latency and a spike in failed application connections.\n- **10:20 AM:** On-call engineer (SRE) is paged. Initial investigation points to database health degradation.\n- **10:30 AM:** Incident is declared. War room convened. Application health dashboard shows 100% error rate for services querying the `user_sessions` table.\n- **10:45 AM:** Database administrator (DBA) confirms an exclusive lock is held on `user_sessions` by the migration transaction. Attempts to kill the migration process are made but time out due to lock rollback.\n- **11:00 AM:** Decision is made to not force a restart of the database host to avoid data corruption, given the state of the long-running transaction.\n- **11:45 AM:** After manual analysis, the migration script completes its operation and releases the lock.\n- **11:50 AM:** Database load begins to normalize. Application services are monitored as they automatically reconnect.\n- **12:10 PM:** All application health checks pass. Service is fully restored.\n- **12:25 PM:** Incident is formally resolved. Monitoring shifts to a watchful recovery period for the next 2 hours.\n\n## Root Cause Analysis\nThe direct cause of the outage was a database migration that required an exclusive lock on the `user_sessions` table for its entire duration. The migration was designed to add a new composite index to improve query performance for a forthcoming feature.\n\nThe underlying systemic causes were:\n\n1.  **Migration Strategy Gap:** The migration used a blocking `ALTER TABLE ... ADD INDEX` statement. On this large, high-traffic table, the operation took significantly longer in production than in any test environment, holding the lock for over 90 minutes. The process did not use an online schema change tool or a non-blocking method.\n2.  **Inadequate Pre-Production Testing:** The staging database contained only a fraction of the production data volume and had no simulated production-level load. The migration completed in seconds during testing, failing to reveal the potential for a long-running lock.\n3.  **Silent Failure of Safeguards:** The deployment pipeline had a \"lock timeout\" guardrail set to 30 seconds, but it was configured to warn, not halt, the deployment. The warning was lost in the deployment logs and did not escalate.\n4.  **Execution Timing:** The migration was scheduled during a period of peak user activity for a key customer segment, maximizing user impact.\n\n## Action Items\nTo prevent recurrence and improve our response, the following action items have been identified:\n\n| ID | Action Item | Owner | Target Date |\n| :--- | :--- | :--- | :--- |\n| **PM-001** | **Adopt Online Schema Change (OSC) Tools:** Evaluate and implement a framework (e.g., pt-online-schema-change, gh-ost) for all future production schema migrations to avoid long-held exclusive locks. | Platform Engineering | Nov 30, 2023 |\n| **PM-002** | **Enhance Staging Environment Fidelity:** Create a process to regularly anonymize and clone a subset of production data to staging. Implement load testing that simulates production traffic patterns for all database migration tests. | SRE / QA | Dec 15, 2023 |\n| **PM-003** | **Harden Deployment Safeguards:** Modify the deployment pipeline to **fail and rollback** automatically if any database operation exceeds a defined lock timeout threshold (e.g., 10 seconds). Ensure these failures are high-visibility alerts. | DevOps | Nov 15, 2023 |\n| **PM-004** | **Establish a Formal Change Window Process:** Define and enforce a maintenance window for high-risk operations (like schema changes on critical tables). This window must be during documented periods of historically lowest traffic. | Release Manager | Nov 10, 2023 |\n| **PM-005** | **Improve Database Lock Monitoring:** Enhance real-time dashboards and alerts to specifically track long-held locks on critical tables, providing faster detection and clearer diagnostic data for responders. | SRE | Nov 20, 2023 |\n| **PM-006** | **Customer Communication Review:** Review and update the process for issuing service disruption communications to ensure timely, transparent, and proactive outreach to affected users. | Product / Support | Nov 10, 2023 |\n\n## Conclusion\nThis outage was a result of several process and tooling gaps converging, not the action of any individual. It highlighted critical weaknesses in our database change management and testing procedures. The action items above are focused on strengthening our systems, improving our testing rigor, and ensuring our safeguards are actionable. By implementing these changes, we will significantly reduce the risk and potential impact of similar incidents in the future.\n\n**Key Learning:** The speed of a migration in a non-representative test environment provides zero guarantee of its safety in production. We must test under conditions that mimic scale and load, and we must use tools designed for zero-downtime changes.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (6589 chars)",
+          "✓ Content length: 6589 ≥ 300"
+        ]
+      }
+    },
+    {
+      "id": "execute-job-description",
+      "status": "ok",
+      "elapsed": 39372,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Write a job description for a Senior Full-Stack Engineer at a Series B fintech startup. Tech stack is React, Node.js, PostgreSQL, AWS. Remote-first, competitive equity.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "## 🚀 Senior Full-Stack Engineer\n### Shape the Future of Finance | Remote-First | Competitive Salary + Meaningful Equity\n\n**About Us**\nWe are a Series B fintech startup on a mission to democratize access to sophisticated financial tools. With significant funding and rapid customer growth, we're building a platform that transforms how businesses and individuals manage their financial futures. Our culture is built on ownership, collaboration, and a relentless focus on creating elegant solutions to complex problems. As a remote-first company, we empower our team to do their best work from anywhere.\n\n**The Opportunity**\nAs a Senior Full-Stack Engineer, you will be a cornerstone of our product development team. You'll architect, build, and scale critical features across our entire stack, directly impacting our core product and user experience. This is a high-impact role for someone who thrives in a fast-paced environment, enjoys turning ambiguity into clarity, and wants to see their code ship to production rapidly. You'll collaborate closely with product, design, and other engineers to deliver a seamless, secure, and scalable fintech application.\n\n**What You'll Do**\n*   **Design & Development:** Lead the end-to-end development of new product features and enhancements using React on the frontend and Node.js on the backend.\n*   **System Architecture:** Contribute to technical design and architectural decisions to ensure our systems are robust, scalable, and maintainable.\n*   **Full-Stack Ownership:** Build and maintain services, APIs, and user interfaces, taking features from concept to deployment and monitoring.\n*   **Data & Performance:** Design efficient database schemas and queries in PostgreSQL. Optimize application performance and ensure system reliability.\n*   **Cloud Infrastructure:** Build, deploy, and manage services within our AWS ecosystem, utilizing modern DevOps practices (CI/CD, IaC, containerization).\n*   **Collaboration & Mentorship:** Work in cross-functional squads, provide thoughtful code reviews, and mentor junior engineers to elevate the entire team.\n*   **Quality & Security:** Champion code quality, testing (unit, integration), and security best practices, which are paramount in a fintech environment.\n\n**What We're Looking For**\n*   **5+ years** of professional software development experience with a proven track record as a Full-Stack Engineer.\n*   **Deep proficiency** in our core stack: **React, Node.js, PostgreSQL, and AWS.**\n*   Experience designing, building, and maintaining RESTful or GraphQL APIs.\n*   Strong understanding of system design, data structures, and architectural patterns.\n*   Solid experience with cloud services (AWS preferred: e.g., EC2, Lambda, RDS, S3) and infrastructure-as-code (e.g., CDK, Terraform).\n*   A product-minded engineer who cares about the \"why\" and the user impact, not just the code.\n*   Excellent communication skills and the ability to thrive in a fully remote, asynchronous environment.\n*   A passion for fintech, financial systems, or a strong desire to learn the domain.\n\n**Nice to Have**\n*   Experience in the fintech, banking, or a heavily regulated industry (e.g., PCI DSS, SOC 2).\n*   Knowledge of TypeScript, Docker, Kubernetes, or event-driven architectures.\n*   Previous experience in a growth-stage (Series A/B/C) startup environment.\n\n**What We Offer**\n*   **Competitive Compensation:** A competitive salary and a meaningful equity package, giving you true ownership in our success.\n*   **Remote-First Culture:** Work from anywhere. We prioritize async work and provide the tools and flexibility you need.\n*   **Health & Wellness:** Comprehensive medical, dental, and vision insurance.\n*   **Unlimited PTO:** We encourage you to take time off to recharge.\n*   **Home Office Stipend:** Set up your perfect remote workspace.\n*   **Learning & Development:** Annual stipend for conferences, courses, and books.\n*   **Team Events:** Regular virtual and optional in-person gatherings to connect with your colleagues.\n\n**Ready to Build With Us?**\nIf you're a passionate engineer who wants to tackle challenging problems and build something that matters, we'd love to hear from you. Please apply with your resume and a note about what excites you about this role and our mission.\n\n*We are an equal opportunity employer and value diversity at our company. We do not discriminate on the basis of race, religion, color, national origin, gender, sexual orientation, age, marital status, veteran status, or disability status.*",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (4528 chars)",
+          "✓ Content length: 4528 ≥ 200"
+        ]
+      }
+    },
+    {
+      "id": "personality-rowan-empty",
+      "status": "ok",
+      "elapsed": 5632,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Graph is empty. Ready for mission parameters—state your objective.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (66 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "eng-advice-architecture",
+      "status": "ok",
+      "elapsed": 31664,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We have a Django monolith serving 50k users. Page loads are 4-6 seconds, database has 200+ tables, and deployments take 45 minutes. The team wants to add real-time features. Should we refactor, rewrite, or bolt on new services?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Stand down on a full rewrite—it's a resource-intensive gamble. First, refactor the monolith: use Django Debug Toolbar to profile slow endpoints, implement database indexing on the 200+ tables with tools like pg_stat_statements, and add Redis caching for frequent queries to cut page loads below 2 seconds. Then, bolt on real-time features using Django Channels for WebSockets, deployed as separate services to avoid compounding latency, and optimize deployments with Docker and CI/CD pipelines to slash the 45-minute time.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (522 chars)",
+          "✓ Message length: 522 ≥ 250"
+        ]
+      }
+    },
+    {
+      "id": "edge-ultra-terse",
+      "status": "ok",
+      "elapsed": 143497,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Bug triage workflow.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, mon ami, the case of the elusive bug! Let us construct a meticulous triage workflow to track down each defect and assign it to the proper hands. Voilà, a blueprint for order amidst chaos.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Bug Report Trigger",
+              "category": "trigger",
+              "description": "Initial submission of a bug report",
+              "content": "This node represents the entry point when a bug is reported. Detailed steps: 1. Ensure the bug report includes essential elements: title, description, steps to reproduce, expected vs. actual behavior, environment details (OS, browser, app version), and attachments (screenshots, logs). 2. Use automated tools like webhooks from error monitoring services (e.g., Sentry, Rollbar) to capture crashes or exceptions directly, integrating with issue trackers such as Jira or GitHub Issues. 3. Implement validation rules: check for duplicates using fuzzy matching algorithms or AI tools like DeepCode to scan similar issues. 4. If information is incomplete, trigger an automated response via email or chat bots to request missing details from reporters. Checklist: Is the bug reproducible? Does it have a clear impact statement? Is it a security vulnerability? Tools: Set up alerts from CI/CD pipelines to link bugs to recent code changes, ensuring context is captured. This initial step is critical for filtering noise and setting the stage for effective investigation."
+            },
+            {
+              "label": "Categorize & Validate",
+              "category": "action",
+              "description": "Classify the bug and verify its validity",
+              "content": "In this phase, analyze the bug to determine its type and legitimacy with thorough investigation. Steps: 1. Categorize by component: use tags like frontend, backend, database, API, or security, based on code modules or affected services. 2. Validate the bug: attempt reproduction in a staging environment using tools like Selenium for UI issues or Postman for API calls; if not reproducible, mark as 'needs more info' and prepare to loop back. 3. Check for duplicates: search existing issues with similar symptoms, error messages, or stack traces using advanced search in Jira or custom scripts. 4. Assess initial impact: evaluate how many users are affected, potential data loss, or compliance breaches (e.g., GDPR). Tools: Leverage AI-powered tools like CodeScene or SonarQube to correlate bugs with recent code commits or complexity hotspots. Checklist: Is the bug actually a feature request in disguise? Is it environment-specific (e.g., only on mobile)? This ensures only genuine, actionable issues proceed, saving precious resources."
+            },
+            {
+              "label": "Priority Review",
+              "category": "review",
+              "description": "Human assessment of bug priority and severity",
+              "content": "A human reviewer evaluates the bug's urgency and importance with careful deliberation. Steps: 1. Use a priority matrix: combine severity (e.g., critical, major, minor) and urgency (e.g., immediate, high, low) to assign levels like P0 to P3, referencing industry standards or internal SLAs. 2. Consider multiple factors: number of users impacted, business revenue at risk, regulatory compliance requirements (like HIPAA or PCI-DSS), and security implications (e.g., CVSS scores for vulnerabilities). 3. Consult with product managers, stakeholders, or team leads to align on priorities, using meetings or async tools like Slack threads. 4. Document the rationale for each priority decision in the issue tracker, including any mitigations or workarounds identified. Tools: Set up dashboards in Jira or Trello with color-coded labels for visualization, and use metrics like MTTR (Mean Time to Resolve) for context. Checklist: Does this bug block other development work? Is there a customer escalation? This gate ensures that resources are allocated efficiently, much like piecing together clues in a detective's case."
+            },
+            {
+              "label": "Assign & Schedule",
+              "category": "action",
+              "description": "Assign bug to team or developer and set timeline",
+              "content": "Based on priority, assign the bug to the appropriate person or team with precision. Steps: 1. Match the bug component with team expertise: for example, UI bugs to frontend developers using React or Vue, API issues to backend engineers familiar with the microservices architecture. 2. Use load balancing techniques: consider current sprint capacity, individual workloads from tools like Asana or Monday.com, and skill sets to avoid bottlenecks. 3. Set realistic deadlines: for critical P0 bugs, aim for immediate fixes within hours; for lower priorities, schedule in upcoming sprints using agile planning tools like Jira Sprints or GitHub Projects. 4. Notify assignees automatically via email integrations, Slack bots, or MS Teams alerts, including all relevant context and links. Tools: Automate assignment rules in Jira with plugins like Automation for Jira or custom scripts that factor in historical fix rates. Checklist: Are dependencies (e.g., other bugs or features) identified and linked? Is the assignee available and notified? This step drives action towards resolution, ensuring no bug is left unattended."
+            },
+            {
+              "label": "Triage Output",
+              "category": "output",
+              "description": "Final documentation and handoff of triaged bugs",
+              "content": "This node produces the final output of the triage process, delivering clarity and accountability. Steps: 1. Generate a comprehensive triage report: compile lists of bugs with their categories, priorities, assignees, due dates, and statuses, using tools like Google Sheets or Confluence for documentation. 2. Update the issue tracker with all decisions, adding comments, labels, and transitions (e.g., from 'Open' to 'In Progress') to reflect the workflow state. 3. Communicate to stakeholders: send weekly summaries via email newsletters or post updates in dedicated Slack channels, highlighting high-priority items and resolved bugs. 4. Archive or close invalid bugs with detailed explanations to prevent recurrence, and set up monitoring alerts for similar future issues. Tools: Use reporting features in issue trackers or BI tools like Tableau or Power BI for analytics on triage efficiency and bug trends. Checklist: Are all bugs accounted for in the backlog? Is there a follow-up plan for monitoring fix progress and validation? This ensures transparency and drives continuous improvement in the development lifecycle."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "validates"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "approves"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "outputs"
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 95,
+        "maxScore": 95,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 5 (min: 4)",
+          "✓ Node count: 5 ≤ 10",
+          "✓ All 5 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 1090c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (5 edges, 5 nodes)"
+        ]
+      }
+    }
+  ]
+}

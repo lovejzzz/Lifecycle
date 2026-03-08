@@ -1,5 +1,22 @@
 # Changelog
 
+### 2026-03-08 — Round 81: Post-5-Layer Eval — Quality Validation (Eval-Driven)
+
+**Eval result: 100% (6/6 passed) — two consecutive runs at 100%**
+
+First full eval cycle after the 5-layer personality architecture landed. Deep quality evaluation of all outputs confirms the layered system produces better, more natural personality expression without degrading content quality.
+
+**Quality highlights (deepseek-reasoner with 5-layer personality):**
+- pm-feature-ship: 8 nodes, **12 edges** — 3 parallel dev tracks (Billing/API/Frontend) + Legal review gate, all converging at Integration & Testing. Two feedback loops. 768c avg content with specific tools (Stripe, Sentry, SendGrid, k6).
+- execute-incident-postmortem: 6589c production-quality blameless post-mortem with minute-by-minute timeline, 4 systemic root causes, action items table with IDs/owners/dates. Would submit to stakeholders as-is.
+- execute-job-description: 4528c ready-to-post JD with complete structure, fintech-specific compliance (PCI DSS, SOC 2), EEO statement.
+- eng-advice-architecture: 522c decisive Rowan advice with named tools (Django Debug Toolbar, pg_stat_statements, Redis, Django Channels), specific targets ("below 2 seconds"). "Stand down on a full rewrite" — natural Rowan voice.
+- edge-ultra-terse: 5 nodes from 3-word prompt "Bug triage workflow." — 1090c avg content, natural Poirot voice.
+
+**Eval pool expanded: 42 → 44 tests**
+- education-course-creation: online ML course production pipeline — tests grouping 8+ items into phases, content/education domain
+- edge-conflicting-advice: security patch vs QA team on vacation — tests handling conflicting constraints, urgency + tradeoff advice
+
 ### 2026-03-08 — Round 80: 5-Layer Living Generative Entity Architecture
 
 **Major architecture redesign: flat personality strings → 5-layer agent system**
