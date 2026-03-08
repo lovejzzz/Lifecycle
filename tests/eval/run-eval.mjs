@@ -38,7 +38,7 @@ const POOL = [
     id: 'founder-advice',
     agent: 'rowan', taskType: 'analyze',
     prompt: 'We\'re burning $50k/month and have 6 months of runway. What should I prioritize?',
-    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 80 },
+    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 300 },
   },
 
   // ─── Marketing Manager ────────────────────────────────────────────────────
@@ -58,7 +58,7 @@ const POOL = [
     id: 'marketing-advice',
     agent: 'poirot', taskType: 'analyze',
     prompt: 'Our email open rates dropped from 35% to 12% over the last quarter. What could be wrong?',
-    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 80 },
+    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 300 },
   },
 
   // ─── Engineering Lead ─────────────────────────────────────────────────────
@@ -84,7 +84,7 @@ const POOL = [
     id: 'eng-advice-scaling',
     agent: 'rowan', taskType: 'analyze',
     prompt: 'Our API is hitting 500ms response times at 1000 concurrent users. Database is PostgreSQL. What should I look at first?',
-    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 80 },
+    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 300 },
   },
 
   // ─── Product Manager ──────────────────────────────────────────────────────
@@ -104,7 +104,7 @@ const POOL = [
     id: 'pm-advice-prioritize',
     agent: 'poirot', taskType: 'analyze',
     prompt: 'I have 47 feature requests from customers and my CEO wants everything done by Q3. How do I prioritize?',
-    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 80 },
+    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 300 },
   },
 
   // ─── HR / Operations ──────────────────────────────────────────────────────
@@ -138,7 +138,7 @@ const POOL = [
     id: 'support-advice',
     agent: 'rowan', taskType: 'analyze',
     prompt: 'Our CSAT score dropped to 3.2 out of 5. Average first response time is 8 hours. What should we fix first?',
-    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 80 },
+    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 300 },
   },
 
   // ─── Freelancer / Solo Creator ────────────────────────────────────────────
@@ -158,7 +158,7 @@ const POOL = [
     id: 'freelancer-advice',
     agent: 'poirot', taskType: 'analyze',
     prompt: 'I\'m charging $50/hour for web development and I\'m always booked but barely making rent. What am I doing wrong?',
-    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 80 },
+    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 300 },
   },
 
   // ─── Node Execution (real content people actually need) ───────────────────
@@ -257,6 +257,58 @@ const POOL = [
     prompt: 'Tell me what\'s wrong with my deployment process. We deploy once a month, it takes 3 days, and something always breaks.',
     expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 100 },
   },
+
+  // ─── Round 76 additions ─────────────────────────────────────────────────────
+
+  // Multi-team coordination — tests complex architecture with parallel branches
+  {
+    id: 'ops-product-launch',
+    agent: 'rowan', taskType: 'generate',
+    prompt: 'We\'re launching a new product in 6 weeks. Engineering needs to finish the API, design needs to finalize the landing page, marketing needs press kit and launch emails, legal needs to review terms. All teams work in parallel but we need a single launch gate. Build me a cross-team launch workflow.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['review'], mustMentionInNodes: ['api|engineering', 'design|landing', 'marketing|press|email', 'legal|terms'] },
+  },
+  // Complex advice — tests reasoning depth on nuanced strategy question
+  {
+    id: 'strategy-advice-pivot',
+    agent: 'poirot', taskType: 'analyze',
+    prompt: 'Our B2B SaaS has 200 customers paying $50/mo but enterprise prospects keep asking for features that would require 6 months of engineering. Should we go upmarket or double down on SMB? Our team is 8 people.',
+    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 300 },
+  },
+
+  // ─── Round 77 additions ─────────────────────────────────────────────────────
+
+  // Finance/compliance — tests policy nodes as parallel monitors, not sequential steps
+  {
+    id: 'finance-audit-readiness',
+    agent: 'rowan', taskType: 'generate',
+    prompt: 'We have a SOC 2 audit in 90 days. Build me a workflow to get audit-ready: evidence collection, access reviews, policy documentation, vulnerability scanning, and vendor risk assessment. We have never done this before.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['policy', 'review'], mustMentionInNodes: ['evidence|collect', 'access|review', 'policy|document', 'vulnerab|scan'] },
+  },
+  // Execute task — tests content generation for a highly specific technical artifact
+  {
+    id: 'execute-api-design',
+    agent: 'rowan', taskType: 'execute',
+    systemPromptOverride: 'You are a content generator for a workflow node called "API Design Document" (category: artifact). Write detailed, professional technical content. Return ONLY the content as markdown text. Do not wrap in JSON or code blocks.',
+    prompt: 'Design a REST API for a multi-tenant task management system. Include endpoints for workspaces, projects, tasks, and comments. Show URL patterns, HTTP methods, request/response bodies, auth scheme, pagination, and error codes. Support role-based access (admin, member, viewer).',
+    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 2000 },
+  },
+
+  // ─── Round 78 additions ─────────────────────────────────────────────────────
+
+  // Healthcare — new industry, tests policy + review for regulated domain
+  {
+    id: 'healthcare-patient-intake',
+    agent: 'poirot', taskType: 'generate',
+    prompt: 'Design a patient intake workflow for a telehealth clinic. Steps include appointment scheduling, insurance verification, medical history form, consent collection, provider assignment, and video call setup. Must be HIPAA compliant.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['policy'], mustMentionInNodes: ['insurance|verif', 'consent', 'hipaa|complian|privacy'] },
+  },
+  // Rowan advice on technical architecture — tests domain-specific recommendation depth
+  {
+    id: 'eng-advice-architecture',
+    agent: 'rowan', taskType: 'analyze',
+    prompt: 'We have a Django monolith serving 50k users. Page loads are 4-6 seconds, database has 200+ tables, and deployments take 45 minutes. The team wants to add real-time features. Should we refactor, rewrite, or bolt on new services?',
+    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 300 },
+  },
 ];
 
 // ─── Agent System Prompts (synced with src/lib/prompts.ts) ─────────────────
@@ -273,13 +325,13 @@ You must respond with valid JSON only:
 }
 
 CRITICAL RULES:
-- BUILD/CREATE/GENERATE/MAKE/DESIGN requests → return workflow with nodes and edges. Questions/advice/analysis → return workflow: null with message only.
+- BUILD/CREATE/GENERATE/MAKE/DESIGN requests → return workflow with nodes and edges. Questions/advice/analysis → return workflow: null with message only. ADVICE examples (workflow:null): "Should we X or Y?" = advice. "What's wrong with X?" = advice. "How do I prioritize?" = advice. BUILD examples (workflow:{...}): "Build me a X" = build. "Create a workflow for X" = build. Questions with "should", "what", "how", "why" = advice. Imperative "build", "create", "design", "make" = build.
 - When giving advice (workflow:null), be an EXPERT consultant. Include specific tools, metrics, techniques, and actionable steps — not vague suggestions.
 - CONTENT DEPTH: Each node's "content" MUST be 300+ chars of actionable, specific content with steps, tools, criteria, checklists. NEVER write one-line content.
-- CATEGORIES: Use "review" (not "action") for human approve/reject/merge gates. Code workflows need "test" nodes. Compliance workflows need "policy" nodes. Match categories to purpose.
+- CATEGORIES: Use "review" (not "action") for human approve/reject/merge gates. Code workflows need "test" nodes. Compliance workflows need "policy" nodes. Policy nodes are parallel constraints — connect them with "monitors" or "blocks" edges, not as sequential steps. Match categories to purpose.
 - EDGES: Labels MUST be one of: drives, feeds, refines, validates, monitors, connects, outputs, updates, watches, approves, triggers, requires, informs, blocks. Choose semantically:
   - "triggers" = causes start. "feeds" = data flows. "drives" = primary force (use when A's output is the MAIN reason B exists). "validates" = checking/testing. "approves" = human sign-off. "outputs" = final deliverable. "monitors" = ongoing observation. "requires" = hard dependency. "informs" = ONLY for optional/supplementary context, NEVER for sequential steps.
-- Start with "input" or "trigger" node, end with "output" node. The LAST node MUST have category "output" — even if it produces a document or report. 5-10 nodes. Group related items.
+- Start with "input" or "trigger" node, end with "output" node. The LAST node MUST have category "output" — even if it produces a document or report. HARD LIMIT: 5-10 nodes, never exceed 10. Group related items into single nodes representing PHASES, not individual tasks.
 - ARCHITECTURE: Do NOT build purely linear chains. Use:
   1. FEEDBACK LOOPS: When review/test can fail, add edge back to previous step (use "refines" label). E.g. Review --[refines]--> Implementation.
   2. PARALLEL BRANCHES: Independent steps share a parent node (multiple edges from one node). E.g. after Design, both Frontend and Backend start.
@@ -545,7 +597,7 @@ async function runTest(test) {
         messages: [{ role: 'user', content: test.prompt }],
         taskType: test.taskType,
       }),
-      signal: AbortSignal.timeout(120000),
+      signal: AbortSignal.timeout(300000),
     });
 
     const elapsed = Date.now() - start;

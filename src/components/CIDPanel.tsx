@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import {
   Bot, Send, Sparkles, X, Loader2, Zap, RefreshCw, Lightbulb, Wrench,
   Search, ChevronRight, Wifi, WifiOff, Trash2, Download,
-  ArrowLeftRight, Square, Pencil, Pin, ChevronDown, Check,
+  ArrowLeftRight, Square, Pencil, Pin, Check,
 } from 'lucide-react';
 import { useLifecycleStore, findNodeByName, getNextHint, getSmartSuggestions } from '@/store/useStore';
 import { getAgent } from '@/lib/agents';
@@ -100,7 +100,7 @@ const COMMAND_HINTS_BY_SECTION: { section: string; hints: { trigger: string; lab
 ];
 
 // Flat list for autocomplete matching
-const COMMAND_HINTS = COMMAND_HINTS_BY_SECTION.flatMap(s => s.hints);
+const _COMMAND_HINTS = COMMAND_HINTS_BY_SECTION.flatMap(s => s.hints);
 
 const QUICK_ACTIONS = [
   { label: 'Solve problems', icon: Wrench, prompt: 'Analyze the workflow and solve any problems you find' },
@@ -319,7 +319,7 @@ export default function CIDPanel() {
     newProject, loadTemplate, addToast, exportWorkflow,
     whyNode, relabelAllEdges,
     addCIDRule, removeCIDRule, listCIDRules, getWorkflowProgress,
-    diffSnapshot, batchWhere, generatePlan, searchMessages, checkPostMutation,
+    diffSnapshot, batchWhere, generatePlan, searchMessages,
     saveAsTemplate, loadCustomTemplate, listCustomTemplates,
     exportChatMarkdown, autoDescribe,
     compressWorkflow, findBottlenecks,
@@ -327,7 +327,7 @@ export default function CIDPanel() {
     retryFailed, clearExecutionResults, getPreFlightSummary, diffLastRun,
   } = useLifecycleStore();
   const [input, setInput] = useState('');
-  const [editingMsgId, setEditingMsgId] = useState<string | null>(null);
+  const [_editingMsgId, _setEditingMsgId] = useState<string | null>(null);
   const [showScrollDown, setShowScrollDown] = useState(false);
   const [showModelPicker, setShowModelPicker] = useState(false);
   const [inputHistory, setInputHistory] = useState<string[]>([]);

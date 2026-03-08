@@ -7,11 +7,11 @@ import { registerCustomCategory, EDGE_LABEL_COLORS, BUILT_IN_CATEGORIES } from '
 import { getAgent, getInterviewQuestions, buildEnrichedPrompt } from '@/lib/agents';
 import { buildSystemPrompt, buildMessages } from '@/lib/prompts';
 import {
-  NODE_W, NODE_H, nodesOverlap, findFreePosition, resolveOverlap,
+  NODE_W, NODE_H, findFreePosition,
   topoSort, ANIMATED_LABELS, createStyledEdge, inferEdgeLabel,
   findNodeByName, CATEGORY_LABELS, markdownToHTML,
 } from '@/lib/graph';
-import { analyzeIntent, buildNodesFromPrompt } from '@/lib/intent';
+import { buildNodesFromPrompt } from '@/lib/intent';
 
 type Snapshot = { nodes: Node<NodeData>[]; edges: Edge[] };
 
@@ -548,7 +548,7 @@ function saveRules(rules: string[]) {
 // Context-aware welcome: when returning to a saved workflow, add a summary greeting
 function buildWelcomeBack(nodes: Node<NodeData>[], edges: Edge[], mode: CIDMode): CIDMessage | null {
   if (!nodes || nodes.length === 0) return null;
-  const agent = getAgent(mode);
+  const _agent = getAgent(mode);
   const stale = nodes.filter(n => n.data.status === 'stale').length;
   const reviewing = nodes.filter(n => n.data.status === 'reviewing').length;
   const parts: string[] = [];
@@ -847,7 +847,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         store.updateNodeData(nodeId, { executionResult: content, executionStatus: 'success' });
         store.addToast(`Downloaded ${d.outputFormatLabel || d.outputFormat.toUpperCase()} file`, 'success');
         return;
-      } catch (err) {
+      } catch (_err) {
         store.updateNodeData(nodeId, { executionStatus: 'error', executionError: 'Failed to export file.' });
         return;
       }
@@ -1307,7 +1307,6 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       const otherNodes = store.nodes.filter(n => n.id !== id);
       // Score each potential connection and pick the best
       let bestTarget: Node<NodeData> | null = null;
-      let bestLabel = 'connects';
       let bestScore = 0;
       for (const other of otherNodes) {
         // Try both directions and pick the one with a non-generic label
@@ -1321,13 +1320,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         const score = Math.max(fwdScore, revScore) + leafBonus;
         if (score > bestScore) {
           bestScore = score;
-          if (revScore > fwdScore) {
-            bestTarget = other;
-            bestLabel = revLabel;
-          } else {
-            bestTarget = other;
-            bestLabel = fwdLabel;
-          }
+          bestTarget = other;
         }
       }
       if (bestTarget && bestScore > 0) {
@@ -2237,7 +2230,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
           set({ isProcessing: false });
         });
       }
-    } catch (err) {
+    } catch (_err) {
       // Remove thinking, fallback to template
       set(s => ({
         messages: s.messages.filter(m => m.id !== thinkingId),

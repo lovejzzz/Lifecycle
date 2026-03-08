@@ -1,0 +1,667 @@
+{
+  "timestamp": "2026-03-08T08-26-56",
+  "overall": 99,
+  "testsRun": [
+    "founder-fundraising",
+    "eng-oncall",
+    "hr-hiring",
+    "creator-youtube",
+    "execute-incident-postmortem",
+    "personality-poirot-empty"
+  ],
+  "poolSize": 38,
+  "results": [
+    {
+      "id": "founder-fundraising",
+      "status": "ok",
+      "elapsed": 87262,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We're raising our Series A. I need to manage the whole fundraising process — investor outreach, pitch deck prep, due diligence, term sheet negotiation. Build me a workflow for this.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mon ami, let us examine the clues of this grand affair. Building a Series A fundraising workflow is like assembling evidence for a jury of investors—every detail must be impeccable. Voilà, I present the case file.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Fundraising Trigger",
+              "category": "trigger",
+              "description": "Decision to pursue Series A financing with key milestones and runway defined",
+              "content": "This is the formal initiation of the Series A process. Begin by establishing internal alignment: confirm board approval, set a target raise amount ($5-15M typical), define use of funds (e.g., 18-24 month runway, 70% for growth, 30% for operations), and set a timeline (3-6 months). Assemble core team: CEO as lead, CFO/controller for financials, legal counsel for terms. Create a data room skeleton using tools like Dropbox, Google Drive, or dedicated platforms like DocSend. Document key metrics: MoM growth rate (target >20%), burn rate, LTV:CAC ratio (>3x), gross margin (>70% for SaaS). Define your ideal investor profile: top-tier VCs (e.g., a16z, Sequoia), sector specialists, or strategic angels. Set a weekly cadence for fundraising meetings (aim for 15-20 first meetings)."
+            },
+            {
+              "label": "Investor Materials & Narrative",
+              "category": "artifact",
+              "description": "Craft compelling pitch deck, financial model, and company narrative",
+              "content": "Develop the master narrative and supporting artifacts. The pitch deck (10-12 slides) must include: Problem (paint the pain), Solution (your product magic), Market Size (TAM >$1B), Business Model (how you make money), Traction (graphs showing hockey-stick growth), Team (why you're the ones to win), Competition (positioning map), Financials (projections 3-5 years), and The Ask (use of funds). Use design tools like Pitch, Beautiful.ai, or custom PowerPoint. Parallelly, build a detailed financial model in Excel or Google Sheets: P&L, cash flow, balance sheet, unit economics, sensitivity analysis. Create a one-pager executive summary. Develop a due diligence checklist anticipating investor questions. Record a demo video (3-5 mins) showcasing product. All materials must tell a consistent story of massive market capture and exceptional execution."
+            },
+            {
+              "label": "Targeted Investor Outreach",
+              "category": "action",
+              "description": "Systematic identification, warm introduction procurement, and initial meeting scheduling",
+              "content": "Execute a structured outreach campaign. First, build a target list of 40-50 investors using Crunchbase, PitchBook, or Affinity. Categorize them into Tier 1 (dream partners), Tier 2 (strong fits), Tier 3 (backups). For each, research recent investments, check portfolio conflicts, and note partner expertise. Secure warm introductions through existing investors, advisors, or founders in your network—cold emails have <5% response. Craft a tailored introductory email: 3 sentences max, include key metrics (revenue growth, magic number), attach one-pager. Use tools like Mixmax or Outreach for sequencing. Schedule first meetings as 30-minute 'chemistry checks'—goal is to gauge interest and secure next meeting. Track all interactions in a CRM (HubSpot, Airtable). Aim for 3-5 new outreaches daily, with follow-ups every 7-10 days."
+            },
+            {
+              "label": "Pitch Meeting & Follow-up",
+              "category": "review",
+              "description": "Conduct investor pitch presentations and manage post-meeting engagement",
+              "content": "Convert meetings into concrete interest. For pitch meetings: rehearse rigorously, assign roles (CEO narrates, CFO handles numbers), anticipate tough questions. Use the 'problem-solution-impact' flow, not just slide reading. Share the deck beforehand via DocSend (tracks views). Post-meeting, within 24 hours, send a thank-you email summarizing key points, attaching requested data, and proposing next steps. If interest is high, immediately share the data room access and schedule a partner meeting. If lukewarm, ask for specific feedback to refine pitch. Use a grading system for each investor: Hot (moving to due diligence), Warm (needs nurturing), Cold (archive). For hot leads, schedule bi-weekly updates to maintain momentum. Key metric: conversion rate from first meeting to partner meeting (target >30%)."
+            },
+            {
+              "label": "Due Diligence Deep Dive",
+              "category": "test",
+              "description": "Comprehensive examination of company by interested investors",
+              "content": "Navigate the intensive diligence phase. Organize your data room into clear sections: Corporate (cap table, incorporation docs), Financial (audited statements, model assumptions), Legal (IP assignments, contracts), Product (roadmap, tech stack), Team (biographies, option grants), Market (research reports). Assign point persons for each category. Expect 100+ investor questions; respond within 48 hours with precise answers. Conduct customer reference calls—prepare your customers with talking points. Facilitate technical diligence: architecture review, security audit (SOC2 readiness), code sampling. Run background checks on founders. Use a diligence tracker (Airtable or spreadsheet) to monitor open items. Aim to complete investor diligence within 2-3 weeks. Simultaneously, run reference checks on the investors—talk to their portfolio founders about behavior during tough times."
+            },
+            {
+              "label": "Term Sheet Negotiation & Selection",
+              "category": "action",
+              "description": "Evaluate, negotiate, and select the winning term sheet",
+              "content": "Secure and negotiate term sheets to optimal outcome. When a term sheet arrives, analyze key terms: valuation (pre-money), option pool (target 10% post-money), liquidation preference (1x non-participating), board composition (2 founders, 2 investors, 1 independent), protective provisions, pro-rata rights. Use legal counsel (Wilson Sonsini, Cooley) for review. Create a competitive dynamic by informing other hot leads—'We have a term sheet, deadline 7 days.' Negotiate strategically: prioritize valuation, but don't sacrifice unfavorable terms. Prepare a counter-term sheet. Conduct partner meetings with competing firms to pressure terms. Evaluate beyond money: partner expertise, firm brand, value-add (recruiting, biz dev). Once signed, notify other investors gracefully—keep relationships for future rounds. Finalize with a signed term sheet and announce internally."
+            },
+            {
+              "label": "Series A Closed & Integration",
+              "category": "output",
+              "description": "Final legal closing, funds transferred, and investor onboarding",
+              "content": "Execute final closing and integrate new investors. Work with lawyers to complete definitive agreements: Stock Purchase Agreement, Investors' Rights Agreement, Voting Agreement. Coordinate signatures via DocuSign. Ensure all conditions are met: closing certificates, secretary certificates, good standing certificates. Confirm wire instructions—funds typically hit account 3-5 business days post-signing. Once closed, announce internally to team with new roadmap. Schedule a formal board meeting within 30 days, presenting detailed Q1 plan. Add investors to cap table in Carta or Pulley. Update corporate documents. Plan investor update cadence: monthly email updates, quarterly board decks. Introduce investors to key team members. Celebrate—then immediately execute on the plan you promised. Document lessons learned for the Series B playbook. The output is a funded company with strong investor alignment ready for scaled execution."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "drives"
+            },
+            {
+              "from": 0,
+              "to": 2,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "validates"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "validates"
+            },
+            {
+              "from": 3,
+              "to": 5,
+              "label": "triggers"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "informs"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "outputs"
+            },
+            {
+              "from": 4,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 3,
+              "to": 2,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 100,
+        "maxScore": 100,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ Has \"review\" category",
+          "✓ All 10 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 852c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (10 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "eng-oncall",
+      "status": "ok",
+      "elapsed": 131983,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We just got paged at 3am for the third time this week. We need an incident response process. Currently it's just chaos — whoever sees Slack first tries to fix it.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! The midnight pages are leaving clues scattered like breadcrumbs, mon ami. Let us reconstruct the scene with a meticulous incident response workflow — order from chaos, très intéressant!",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Incident Alert Trigger",
+              "category": "trigger",
+              "description": "Initial detection and alerting of the incident",
+              "content": "This node represents the moment an incident is detected, typically via monitoring tools like PagerDuty, Datadog, or custom scripts. Steps to configure: 1. Set up alert thresholds based on SLOs (Service Level Objectives), e.g., latency exceeding 200ms or error rates over 1%. 2. Implement on-call rotations using tools like Opsgenie or VictorOps to ensure responsible parties are paged immediately. 3. Define severity levels (P1-P4) with clear criteria: P1 for system-down scenarios requiring <15 min response, P2 for major degradation (<30 min), etc. Checklist: Upon alert, verify it's not a false positive by cross-referencing dashboards (e.g., Grafana), check correlated logs in ELK Stack, and acknowledge in the incident management system to prevent duplicate efforts. This structured trigger eliminates the chaos of ad-hoc Slack notifications and ensures a prompt, organized start."
+            },
+            {
+              "label": "Triage and Acknowledge",
+              "category": "action",
+              "description": "Assess incident severity and assign roles",
+              "content": "In this step, the incident responder triages the alert to determine impact and priority. Actionable steps: 1. Gather initial data: Review error logs (via Splunk or Loggly), check system metrics (Prometheus), and assess user reports. 2. Use a triage matrix: Map symptoms to known issues or runbooks in Confluence. 3. Assign roles: Designate an Incident Commander (IC) for coordination, a Communications Lead for updates, and technical responders. Tools: Jira for tracking, Slack dedicated channels (#incident-response) for real-time chat. Criteria: If multiple services affected, escalate to P1; if isolated, may be P2. Checklist: Document time of detection, initial hypothesis, and notify stakeholders via pre-defined templates. This ensures clarity and prevents the 'whoever sees Slack first' problem."
+            },
+            {
+              "label": "Root Cause Investigation",
+              "category": "action",
+              "description": "Deep dive to identify the underlying cause",
+              "content": "Here, responders investigate the root cause using systematic techniques. Steps: 1. Collect evidence: Pull recent deployment logs from Git, analyze APM traces (e.g., New Relic), and examine infrastructure changes via Terraform or Kubernetes. 2. Apply root cause analysis methods: 5 Whys or Fishbone diagrams to drill down from symptoms to causes. 3. Tools: Use debugging tools like pprof for performance issues, or network analyzers (Wireshark) for connectivity problems. Checklist: Isolate variables by checking dependencies (databases, APIs), review recent code commits, and correlate with monitoring alerts. Document findings in a shared doc (Google Docs) with timestamps and evidence links. This methodical approach replaces guesswork with data-driven insights."
+            },
+            {
+              "label": "Stakeholder Communication",
+              "category": "action",
+              "description": "Keep internal and external stakeholders informed",
+              "content": "This node handles communication to ensure transparency and manage expectations. Actionable plan: 1. Set up communication channels: Internal updates via Slack/Teams every 30 minutes, external status pages (Statuspage.io) for customers. 2. Use templates: Pre-drafted messages for different severity levels, including impact statements, ETA, and next steps. 3. Assign a Communications Lead to coordinate: Update executives via email, provide technical details to engineering teams. Tools: Incident.io for automated updates, Calendly for scheduling follow-ups. Checklist: At each update, confirm accuracy of information, avoid jargon, and log all communications in a central log. This prevents misinformation and reduces panic during critical incidents."
+            },
+            {
+              "label": "Mitigation Implementation",
+              "category": "action",
+              "description": "Apply fixes or workarounds to resolve the incident",
+              "content": "In this phase, responders implement solutions to mitigate the incident. Detailed steps: 1. Develop a mitigation plan: Based on investigation, decide on a hotfix, rollback, or configuration change. 2. Execute safely: Use deployment pipelines (Jenkins, GitLab CI) with canary releases, and have rollback scripts ready. 3. Tools: Version control (Git) for code changes, infrastructure as code (Ansible, Chef) for config updates. Checklist: Test changes in a staging environment first, coordinate with team via video call (Zoom), and document every change in a change log. Criteria for success: Reduction in error rates or restoration of service metrics. This ensures controlled, reversible actions to minimize risk."
+            },
+            {
+              "label": "Resolution Validation",
+              "category": "test",
+              "description": "Test and confirm that the incident is fully resolved",
+              "content": "This node validates that mitigations are effective and the incident is closed. Steps: 1. Run automated tests: Integration tests via Selenium or API tests (Postman) to verify functionality. 2. Monitor key metrics: Use dashboards (Grafana) to check that SLOs are met, e.g., latency back to normal, error rates <0.1%. 3. Perform smoke tests: Manual checks on critical user journeys. Tools: Synthetic monitoring (Pingdom) for uptime, alerting systems to ensure no new triggers. Checklist: Wait for a stabilization period (e.g., 15 minutes), gather feedback from canary users, and update the status page to 'resolved'. If issues persist, log defects and iterate. This prevents premature closure and recurrence."
+            },
+            {
+              "label": "Post-Incident Review",
+              "category": "review",
+              "description": "Conduct a blameless analysis to learn and improve",
+              "content": "After resolution, this review node facilitates learning and process improvement. Actionable steps: 1. Schedule a post-mortem meeting within 24-48 hours, inviting all involved parties. 2. Use a blameless framework: Focus on system failures, not individual errors, with techniques like the 'Five Whys'. 3. Tools: Collaborative docs (Confluence) for notes, timeline reconstruction using incident timelines (Jira Service Management). Checklist: Document root cause, contributing factors, action items (e.g., update runbooks, improve monitoring), and assign owners with deadlines. Metrics to track: MTTR (Mean Time to Resolve), incident frequency. This turns chaos into continuous improvement, ensuring fewer 3am pages in the future."
+            },
+            {
+              "label": "Incident Report Output",
+              "category": "output",
+              "description": "Final documentation and distribution of the incident report",
+              "content": "This node produces the official incident report as a deliverable. Detailed content: 1. Compile a comprehensive report using a template: Sections include executive summary, timeline, root cause, impact metrics (downtime, affected users), lessons learned, and action items. 2. Tools: Google Docs or dedicated platforms (Blameless, Jeli) for report generation. 3. Distribution: Share with stakeholders via email, store in a knowledge base (Notion) for future reference, and present in team meetings. Checklist: Ensure all data is anonymized for blameless culture, include visual aids (graphs, charts), and set follow-up dates for action item completion. This output institutionalizes learning and provides evidence for audits or compliance needs."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "validates"
+            },
+            {
+              "from": 5,
+              "to": 4,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "triggers"
+            },
+            {
+              "from": 3,
+              "to": 6,
+              "label": "informs"
+            },
+            {
+              "from": 2,
+              "to": 5,
+              "label": "monitors"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "outputs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 110,
+        "maxScore": 110,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 5)",
+          "✓ Node count: 8 ≤ 10",
+          "✓ Has \"trigger\" category",
+          "✓ All 10 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 761c, no thin nodes",
+          "✓ Architecture covers: alert, triage, communicat, postmortem",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (10 edges, 8 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "hr-hiring",
+      "status": "ok",
+      "elapsed": 128563,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We need to hire 5 engineers in the next 2 months. Our current process is just posting on LinkedIn and hoping. Build me a proper hiring pipeline.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building structured hiring pipeline with multi-channel sourcing and rigorous vetting.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Hiring Initiative Kickoff",
+              "category": "trigger",
+              "description": "Event triggering the hiring process for 5 engineers within 2 months",
+              "content": "This node represents the formal start of the hiring initiative, triggered by business needs such as project expansion or team scaling. Key elements include: 1. **Event Identification**: Management approval based on capacity planning, with a clear mandate to hire 5 engineers (e.g., backend, frontend, full-stack) within a 60-day timeline. 2. **Payload**: Documented hiring request including roles, budget allocation (e.g., salary bands, recruitment tools budget), and success metrics (e.g., time-to-hire, quality-of-hire). 3. **Configuration**: Set up a hiring committee or point person (e.g., HR lead or hiring manager), define communication channels (Slack, email), and schedule kickoff meeting to align stakeholders. 4. **Webhook/Setup**: Integrate with project management tools like Jira or Asana to create tracking tasks, and set up alerts for milestone deadlines. Ensure all parties acknowledge the urgency and constraints to avoid delays."
+            },
+            {
+              "label": "Job Requirements Definition",
+              "category": "input",
+              "description": "Detailed specifications for each engineering role to guide sourcing and assessment",
+              "content": "This node involves crafting precise job descriptions and requirements to attract suitable candidates. Steps: 1. **Role Analysis**: Collaborate with tech leads to list must-have skills (e.g., Python, React, AWS), nice-to-have skills, and experience levels (junior/mid/senior). Use tools like Whimsical or Miro for mind mapping. 2. **Criteria Definition**: Define key responsibilities, project expectations, and team fit criteria. Include diversity goals (e.g., gender, ethnicity) to broaden talent pools. 3. **Documentation**: Write job postings in markdown or Google Docs, ensuring clarity on remote/hybrid options, benefits, and growth opportunities. 4. **Validation**: Review with legal team for compliance (e.g., non-discriminatory language) and with current engineers for accuracy. 5. **Distribution Prep**: Format for ATS (Applicant Tracking System) like Greenhouse or Lever, and prepare for multi-platform posting."
+            },
+            {
+              "label": "Multi-Channel Sourcing Strategy",
+              "category": "action",
+              "description": "Active candidate outreach beyond LinkedIn to maximize pipeline",
+              "content": "Execute a diversified sourcing plan to attract top talent. Numbered steps: 1. **Platform Expansion**: Post on job boards like Indeed, Glassdoor, and niche sites (e.g., Stack Overflow, GitHub Jobs). 2. **Networking**: Engage in tech communities (e.g., local meetups, Discord servers) and leverage employee referrals with incentivized programs (e.g., bonuses for successful hires). 3. **Outreach Campaigns**: Use tools like Hunter or Apollo to source passive candidates via personalized LinkedIn messages or emails, focusing on relevance and cultural fit. 4. **Agency/Recruiter Engagement**: If budget allows, partner with specialized recruiting agencies for hard-to-fill roles, with clear SLAs on candidate quality. 5. **Metrics Tracking**: Monitor sourcing effectiveness through dashboards in tools like Gem or Ashby, tracking application rates, source diversity, and cost-per-hire. Adjust strategies weekly based on data."
+            },
+            {
+              "label": "Resume Screening & Initial Assessment",
+              "category": "action",
+              "description": "First-round filtering of candidates based on resumes and basic evaluations",
+              "content": "Systematically review applications to identify promising candidates. Steps: 1. **Screening Criteria**: Use a checklist with must-haves (e.g., years of experience, key technologies) and red flags (e.g., job-hopping without reason). 2. **Tool Utilization**: Leverage ATS features for keyword filtering and bias reduction (e.g., blind screening options). 3. **Initial Contact**: Schedule 15-minute phone screens via Calendly to assess communication skills and interest; use standardized questions. 4. **Assessment**: Administer brief coding quizzes or personality assessments (e.g., via HackerRank or Culture Amp) for early technical and cultural fit. 5. **Feedback Loop**: Document reviews in a shared spreadsheet or ATS, with notes for consistency. 6. **Escalation**: Forward top 20-30% of candidates to next stage, with clear rejection emails for others to maintain candidate experience."
+            },
+            {
+              "label": "Technical Skill Assessment",
+              "category": "test",
+              "description": "Structured testing of coding abilities and problem-solving skills",
+              "content": "Conduct in-depth technical evaluations to gauge engineering proficiency. What to test: 1. **Coding Challenges**: Use platforms like Codility or LeetCode for live or take-home tests tailored to role (e.g., algorithms for backend, UI tasks for frontend). 2. **Pass/Fail Criteria**: Define scoring rubrics (e.g., code efficiency, readability, edge-case handling) with a minimum threshold (e.g., 80% score). 3. **Tools & Environment**: Set up secure, timed sessions with screen sharing via Zoom, and provide clear instructions. 4. **Coverage**: Include multiple question types (debugging, system design) to assess breadth; involve senior engineers as graders. 5. **Feedback Integration**: If candidates fail, provide constructive feedback and log patterns to refine screening criteria or test difficulty. 6. **SLA**: Complete assessments within 3 days of screening to maintain momentum."
+            },
+            {
+              "label": "Panel Interview Rounds",
+              "category": "review",
+              "description": "Multi-stakeholder interviews to evaluate fit and collaboration potential",
+              "content": "Structured interviews involving team members for comprehensive evaluation. Approval criteria: 1. **Round Design**: Schedule behavioral interviews (focus on soft skills), technical deep-dives, and cultural fit sessions, each 45-60 minutes. 2. **Who Reviews**: Include hiring manager, peers, and cross-functional partners (e.g., product managers); use interview kits with predefined questions. 3. **Scoring System**: Implement a 1-5 scale for each dimension (technical ability, communication, teamwork), with consensus required for progression. 4. **Escalation Process**: If disagreements arise, hold calibration meetings with HR to resolve; for borderline cases, add an extra round or reference checks. 5. **SLA**: Aim to complete all rounds within 2 weeks per candidate, with feedback submitted within 24 hours post-interview via tools like Interviewing.io or Google Forms."
+            },
+            {
+              "label": "Hiring Compliance & Diversity Policy",
+              "category": "policy",
+              "description": "Enforcement of legal standards and diversity initiatives throughout the pipeline",
+              "content": "Parallel constraints to ensure fair and lawful hiring practices. Numbered rules: 1. **Legal Compliance**: Adhere to EEOC guidelines and local labor laws; document all decisions to avoid bias, using tools like Textio for inclusive language audits. 2. **Diversity Metrics**: Set targets (e.g., 40% underrepresented groups in pipeline) and monitor via dashboards; require justification for deviations. 3. **Enforcement**: Block offers if policy violations are detected (e.g., discriminatory questions during interviews); escalate to legal team. 4. **Exceptions**: Allow for visa sponsorships or accommodations with proper documentation. 5. **Training**: Mandate unconscious bias training for all interviewers, with refreshers quarterly. 6. **Reporting**: Generate weekly reports on diversity stats and compliance checks, reviewed by HR leadership."
+            },
+            {
+              "label": "Final Approval & Offer Management",
+              "category": "review",
+              "description": "Human sign-off on candidate selection and negotiation of employment terms",
+              "content": "Last gate before extending offers, ensuring alignment and budget adherence. Approval criteria: 1. **Compensation Review**: Benchmark salaries using data from Levels.fyi or Radford; prepare offer letters with equity, benefits, and start dates. 2. **Who Reviews**: Hiring manager and HR director must approve based on candidate scores, reference checks (via platforms like Checkster), and budget fit. 3. **Negotiation Protocol**: Define negotiation ranges (e.g., ±10% of base salary) and escalation paths for exceptions. 4. **SLA**: Make decisions within 48 hours of final interview, with offer delivery within 3 days. 5. **Documentation**: Securely store signed offers and counter-offers in HRIS like BambooHR, and update candidate status in ATS. 6. **Contingency Plan**: Have backup candidates ready in case of declines, with quick reactivation procedures."
+            },
+            {
+              "label": "Offer Extension & Onboarding Setup",
+              "category": "output",
+              "description": "Final deliverable of hired engineers integrated into the team",
+              "content": "Successful completion of the hiring pipeline with engineers onboarded. Deliverable format: 1. **Offer Execution**: Send formal offer emails with e-signature via DocuSign, including all terms and next steps. 2. **Distribution**: Notify all stakeholders (team, IT, facilities) of hire confirmations; schedule onboarding sessions. 3. **Onboarding Plan**: Create 30-60-90 day plans in Notion or Confluence, covering orientation, tool access (Slack, GitHub), and mentorship assignments. 4. **Success Metrics**: Track metrics such as offer acceptance rate (target >80%), time-to-fill (under 60 days), and early retention (90-day check-ins). 5. **Handoff**: Transition new hires to managers with documented goals, and set up feedback loops for continuous improvement of the hiring process. 6. **Archive**: Close recruitment tasks and update hiring pipeline analytics for future iterations."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "drives"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 5,
+              "to": 7,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 3,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 4,
+              "label": "refines"
+            },
+            {
+              "from": 6,
+              "to": 2,
+              "label": "monitors"
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "label": "monitors"
+            },
+            {
+              "from": 6,
+              "to": 5,
+              "label": "monitors"
+            },
+            {
+              "from": 7,
+              "to": 8,
+              "label": "outputs"
+            },
+            {
+              "from": 1,
+              "to": 6,
+              "label": "informs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 100,
+        "maxScore": 100,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 9 (min: 5)",
+          "✓ Node count: 9 ≤ 10",
+          "✓ Has \"review\" category",
+          "✓ All 13 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 890c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (13 edges, 9 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "creator-youtube",
+      "status": "ok",
+      "elapsed": 187830,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "I want to start a YouTube channel. Build me a production workflow for each video — topic research, scripting, filming, editing, thumbnail, SEO, upload, promotion.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! Mon ami, I have constructed a meticulous workflow for your YouTube channel—each node is a clue in the case, from inception to promotion. Let the little grey cells examine every detail with precision!",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Idea Conception & Trigger",
+              "category": "trigger",
+              "description": "Initial spark and validation for video topics based on trends and audience insights.",
+              "content": "Begin by systematically gathering ideas from multiple sources: use Google Trends to spot rising topics, YouTube Analytics to identify high-performing content in your niche, and social media platforms like Twitter or Reddit for community discussions. Engage directly with your audience through comments, polls in Community Tab, or email newsletters to solicit suggestions. Hold structured brainstorming sessions—perhaps weekly—using tools like Miro or a simple whiteboard to visualize concepts. Validate each idea against key criteria: estimated search volume (via Google Keyword Planner or TubeBuddy), competition analysis (check top videos for production quality and engagement), alignment with your channel's long-term goals, and resource feasibility (time, budget, equipment). Document the selected idea in a project management tool like Trello or Notion, including a brief summary, target keywords, and success metrics. This disciplined approach ensures you start with a solid, data-backed foundation, reducing wasted effort later."
+            },
+            {
+              "label": "Research & Ideation",
+              "category": "action",
+              "description": "Deep dive into topic validation, audience analysis, and content structuring.",
+              "content": "Conduct thorough research to flesh out the video concept. First, analyze audience demographics and interests using YouTube Studio's analytics and tools like Social Blade. Research competitor videos on the topic—note their structure, length, and engagement points (comments, likes) to identify gaps or opportunities. Use keyword research tools such as Ahrefs or VidIQ to find long-tail keywords and phrases with high traffic potential. Outline the video's narrative arc: hook introduction, main points with supporting evidence, and a clear call-to-action. Gather credible sources, statistics, or examples to bolster content; cite tools like Statista or industry reports. Create a mind map or outline in apps like XMind or Google Docs, ensuring logical flow. Set specific goals for viewer retention and engagement based on past performance data. This step transforms a vague idea into a actionable blueprint, critical for scripting and SEO later."
+            },
+            {
+              "label": "Script Development",
+              "category": "action",
+              "description": "Writing the video script with engaging dialogue, timing, and visual cues.",
+              "content": "Draft a detailed script that balances entertainment and information. Start with a compelling hook—pose a question, share a surprising fact, or tease the value—to capture attention within the first 15 seconds. Structure the body into clear sections with headings, using bullet points or timestamps for easy reference. Write conversational dialogue, avoiding jargon; tools like Hemingway Editor can improve readability. Include visual cues (e.g., [B-roll of X], [screen share]) and sound effects notes. Aim for a target duration based on topic complexity—typically 8-12 minutes for tutorials, longer for deep dives. Integrate SEO elements: naturally embed primary keywords in the first 100 words, and use secondary keywords throughout. Review for pacing: vary sentence length, add pauses, and incorporate calls-to-action for likes, comments, and subscriptions. Save the script in a collaborative platform like Google Docs for easy sharing and revisions."
+            },
+            {
+              "label": "Script Approval Gate",
+              "category": "review",
+              "description": "Human review and refinement of the script before production.",
+              "content": "This is a critical quality control step where a reviewer (or yourself) assesses the script for clarity, engagement, and alignment with goals. Checklist: Does the hook grab attention? Is the narrative logical and free of inconsistencies? Are all facts verified with sources? Is the tone consistent with your brand voice? Are SEO keywords naturally integrated without stuffing? Is the call-to-action clear and compelling? Use a rubric or scoring system (e.g., 1-5 on engagement, accuracy) to standardize feedback. Tools like Frame.io or Google Docs comments can facilitate collaborative editing. Provide specific, actionable feedback—e.g., 'Shorten this section to under 2 minutes,' or 'Add a statistic here for credibility.' Approve only when all criteria are met; if not, send back for revisions with detailed notes. This gate prevents production delays and ensures the final video meets audience expectations."
+            },
+            {
+              "label": "Production Filming",
+              "category": "action",
+              "description": "Setting up and recording video footage based on the approved script.",
+              "content": "Execute filming with technical precision. First, prepare equipment: camera (DSLR or smartphone with good resolution), lighting (softbox or ring lights for even illumination), microphone (lavalier or shotgun for clear audio), and backdrop (clean, relevant to topic). Set up according to the script's visual cues—storyboard if necessary using apps like Storyboarder. Record multiple takes for key segments to ensure quality; use a clapper or verbal slate for synchronization. Monitor audio levels with headphones to avoid noise. Follow best practices: maintain eye contact with the camera, use natural gestures, and adhere to the script's timing. Capture B-roll footage separately to enrich edits—e.g., close-ups, establishing shots. Log all files with clear naming conventions (e.g., Scene1_Take2) and back up immediately to cloud storage like Google Drive or an external hard drive. This phase demands attention to detail to minimize post-production work."
+            },
+            {
+              "label": "Editing Suite",
+              "category": "action",
+              "description": "Post-production editing including cutting, effects, and audio mixing.",
+              "content": "Edit the raw footage into a polished video using software like Adobe Premiere Pro, Final Cut Pro, or DaVinci Resolve. Start by importing all media and organizing clips into bins. Follow the script to sequence main shots, trimming dead air and mistakes. Add B-roll to enhance visual interest and cover jumps. Adjust color grading for consistency—use presets or manually tweak exposure and saturation. Enhance audio: normalize levels, reduce background noise with tools like Audacity or built-in filters, and add music or sound effects from royalty-free libraries like Epidemic Sound. Incorporate text overlays, lower thirds for key points, and end screens with links. Aim for a tight edit that maintains pacing—review viewer retention data from previous videos to guide cuts. Export in YouTube-recommended formats (e.g., MP4, H.264) at optimal resolution (1080p or 4K). This step transforms raw footage into engaging content ready for review."
+            },
+            {
+              "label": "Quality Assurance Review",
+              "category": "review",
+              "description": "Final check for errors, coherence, and overall quality before publishing.",
+              "content": "Conduct a thorough review of the edited video to ensure it meets production standards. Watch the video multiple times: first for overall flow and engagement, second for technical issues (audio sync, visual glitches), and third for content accuracy against the script. Use a checklist: Are there any spelling errors in text overlays? Is audio balanced (dialogue clear, music not overpowering)? Does the video length align with goals (not too long or short)? Is the call-to-action prominently placed? Check compliance with YouTube policies (no copyright infringement, appropriate content). Involve a second pair of eyes if possible—peer review can catch overlooked issues. Document feedback in a tool like Frame.io or a shared spreadsheet. If issues are found, provide timestamped notes for refinements; approve only when all criteria are satisfied. This gate ensures a professional final product that upholds channel reputation."
+            },
+            {
+              "label": "Thumbnail & SEO Crafting",
+              "category": "action",
+              "description": "Designing eye-catching thumbnails and optimizing metadata for search.",
+              "content": "Create a thumbnail that maximizes click-through rates. Use design tools like Canva or Photoshop: incorporate high-contrast colors, readable text (large, bold fonts), and expressive faces or intriguing visuals. Follow best practices—avoid clutter, use the rule of thirds, and test different versions with tools like Thumbnail Test. Simultaneously, optimize SEO metadata: craft a title under 60 characters with primary keyword at the front; write a description of 200-300 words using keywords naturally, including links to resources and timestamps. Research tags via YouTube's autocomplete or TubeBuddy, adding 10-15 relevant ones. Update the video file with these elements before upload. This step is crucial for discoverability—analyze past performance to refine strategies, such as A/B testing thumbnails or tweaking titles based on CTR data."
+            },
+            {
+              "label": "Upload & Metadata Finalization",
+              "category": "action",
+              "description": "Uploading video to YouTube and setting up all platform-specific details.",
+              "content": "Upload the final video file to YouTube Studio, ensuring a stable internet connection to avoid interruptions. During upload, input the pre-crafted title, description, and tags. Set video visibility to 'Unlisted' initially for a final preview. Configure advanced settings: select category (e.g., Education, Entertainment), add end screens and cards to promote other videos or websites, enable subtitles (upload an SRT file or use auto-generate and edit for accuracy). Schedule the publish time based on audience analytics—peak viewing hours from YouTube Insights. Add a custom thumbnail from the designed options. Double-check all metadata for errors, and use the 'Checks' feature in Studio to ensure compliance. Once verified, switch to 'Public' or confirm the schedule. This step ensures the video is primed for launch with all elements in place."
+            },
+            {
+              "label": "Promotion Launch",
+              "category": "action",
+              "description": "Executing post-publish promotion across various channels to drive views.",
+              "content": "Actively promote the video to maximize initial traction. Share on social media platforms (Twitter, Instagram, Facebook) with tailored posts—use snippets, behind-the-scenes clips, or key takeaways. Engage with your community: pin a comment on the video to spark discussion, respond to early comments to boost engagement. Send an email newsletter to subscribers highlighting the new content. Collaborate with other creators by tagging them or sharing in relevant forums (Reddit, Discord) without spamming. Utilize YouTube features: add the video to playlists, use Community Tab for announcements, and consider paid promotion via YouTube Ads for targeted reach. Monitor real-time analytics in YouTube Studio to gauge performance and adjust strategies—e.g., if retention dips, promote more aggressively. This ongoing effort drives sustained viewership and channel growth."
+            },
+            {
+              "label": "Live Content & Analytics",
+              "category": "output",
+              "description": "Published video with ongoing performance tracking and insights.",
+              "content": "The final output is the live video on YouTube, accompanied by continuous monitoring and analysis. Use YouTube Analytics to track key metrics: watch time, audience retention graphs, click-through rate from thumbnails, and traffic sources (search, suggested videos). Set up dashboards in tools like Google Data Studio or export data for weekly reviews. Analyze comments and engagement to gather feedback for future videos—identify common questions or praises. Compare performance against goals set in the ideation phase; if metrics fall short, investigate reasons (e.g., poor thumbnail, weak hook) and document lessons learned. Update the video's metadata or description based on performance insights, such as adding more relevant tags or clarifying points. This node represents the culmination of the workflow, providing actionable data to refine future productions and sustain channel success."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "approves"
+            },
+            {
+              "from": 3,
+              "to": 7,
+              "label": "informs"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "feeds"
+            },
+            {
+              "from": 6,
+              "to": 5,
+              "label": "refines"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "approves"
+            },
+            {
+              "from": 7,
+              "to": 8,
+              "label": "drives"
+            },
+            {
+              "from": 8,
+              "to": 9,
+              "label": "triggers"
+            },
+            {
+              "from": 9,
+              "to": 10,
+              "label": "outputs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 90,
+        "maxScore": 95,
+        "pct": 95,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 11 (min: 5)",
+          "✗ Node count: 11 > 10",
+          "✓ All 12 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 919c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (12 edges, 11 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "execute-incident-postmortem",
+      "status": "ok",
+      "elapsed": 52911,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Write a blameless post-mortem for a 2-hour production outage caused by a database migration that locked a critical table. 500 customers were affected. Include timeline, root cause, impact, and action items.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Post-Mortem Report: Production Database Outage\n**Date:** October 26, 2023\n**Status:** Resolved\n**Outage Duration:** 2 hours, 14 minutes\n**Affected Users:** Approximately 500 active customers\n**Primary Artifact:** This blameless report focuses on understanding systemic causes and improving our processes, not on individual performance.\n\n## Executive Summary\nOn October 26, 2023, at 09:47 UTC, the primary user database for the \"AccountService\" entered a locked state during a scheduled schema migration, rendering the core application unusable for approximately 500 active customers. The incident was resolved by 12:01 UTC after rolling back the migration. This report details the timeline, contributing factors, impact, and preventative actions identified through our blameless analysis.\n\n## Timeline (All Times UTC)\n*   **09:30:** Scheduled maintenance window begins. A database migration (script `V47_alter_customer_table.sql`) is initiated via the automated deployment pipeline to add a new non-nullable column to the `customer_profiles` table.\n*   **09:47:** Monitoring alerts trigger for elevated error rates (5xx) on the AccountService API. The migration is still running. On-call engineer is paged.\n*   **09:52:** On-call engineer acknowledges the page, begins investigation, and identifies database connection pool exhaustion and long-running queries.\n*   **10:15:** Engineer escalates to the Database Reliability Engineering (DBRE) team after confirming the `customer_profiles` table is locked by an `ALTER TABLE` operation. Decision is made to abort the migration.\n*   **10:45:** After consultation, the team initiates a rollback of the migration script. The rollback process itself encounters delays due to the locked state requiring a controlled database restart.\n*   **11:55:** Rollback is confirmed complete. Database locks are cleared.\n*   **12:01:** Application health checks pass. Full service is restored. Monitoring shows error rates return to baseline.\n\n## Root Cause Analysis\nThe outage was caused by a confluence of factors that allowed a high-risk operation to proceed in production without adequate safeguards.\n\n**1. Direct Cause:** The `ALTER TABLE ADD COLUMN ... NOT NULL` migration on the `customer_profiles` table (containing ~15 million rows) required an exclusive lock on the table for the full duration of the operation. This locked all read and write operations against this critical, high-traffic table.\n\n**2. Contributing Factors:**\n*   **Testing Gap:** The migration was tested on a staging database with a significantly smaller dataset (~50k rows), where it completed in seconds. This did not accurately reflect the time and locking impact on the production dataset.\n*   **Procedural Gap:** The deployment playbook for high-risk database changes did not require an explicit check for long-running lock implications or a step to perform the migration in a non-blocking way (e.g., using a multi-step process to add a nullable column, backfilling data, then applying the `NOT NULL` constraint).\n*   **Monitoring/Alerting Gap:** While database health was monitored, there was no specific, high-severity alert for long-held exclusive locks on mission-critical tables. The first alert was based on application errors, which increased the time to detection and diagnosis.\n\n## Impact\n*   **User Impact:** ~500 active customers were unable to log in, view profiles, or update account information for the duration of the outage.\n*   **Business Impact:** Estimated 25 failed customer transactions. A significant increase in customer support ticket volume.\n*   **Service Impact:** 100% error rate for all AccountService endpoints for 2 hours and 14 minutes.\n*   **Team Impact:** 8 engineer-hours were spent on diagnosis, communication, and resolution, diverting resources from planned work.\n\n## Action Items\nThe following action items have been created to address the gaps identified and prevent recurrence.\n\n| ID | Action Item | Owner | Target Date | Status |\n| :--- | :--- | :--- | :--- | :--- |\n| PM-2023-014-01 | **Update Database Change Policy:** Mandate that any `ALTER TABLE` statement on tables >1M rows must be reviewed by a DBRE and employ non-blocking migration strategies (e.g., using tools like `pt-online-schema-change` or a multi-step NULLable column process). | DBRE Lead | Nov 10, 2023 | In Progress |\n| PM-2023-014-02 | **Enhance Staging Environment:** Create a staging database subset that uses a 10% anonymized production snapshot to better simulate production load and data volume for performance testing. | Platform Team | Dec 1, 2023 | Backlog |\n| PM-2023-014-03 | **Implement Lock Monitoring:** Create and deploy a dedicated alert for long-held exclusive locks (>60 seconds) on critical tables identified in the service catalog. | SRE Team | Nov 17, 2023 | In Progress |\n| PM-2023-014-04 | **Revise Deployment Playbook:** Add a required pre-flight checklist for database migrations, including: 1) Estimated runtime on production-scale data, 2) Locking behavior analysis, and 3) Explicit rollback procedure and timing estimate. | Lead DevOps Eng | Nov 3, 2023 | In Progress |\n| PM-2023-014-05 | **Conduct Process Review:** Schedule a 1-hour workshop with the engineering team to walk through the updated database change policy and revised playbook. | Engineering Manager | Nov 20, 2023 | Backlog |\n\n## Conclusion\nThis incident underscores the critical need for production-aware testing and robust safeguards for database schema changes. By implementing the action items above, we will improve our resilience against similar outages. The teams involved responded quickly and collaboratively to resolve the issue, and we thank them for their efforts. This report will be reviewed in one month to track the progress of the action items.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (5783 chars)",
+          "✓ Content length: 5783 ≥ 300"
+        ]
+      }
+    },
+    {
+      "id": "personality-poirot-empty",
+      "status": "ok",
+      "elapsed": 13516,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Mon ami, the canvas is bare—the case is yet unopened, and we have no clues or evidence laid out. Shall we begin our investigation by building a workflow to solve your mystery?",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (175 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    }
+  ]
+}

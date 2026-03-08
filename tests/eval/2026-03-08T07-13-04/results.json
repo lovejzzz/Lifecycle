@@ -1,0 +1,505 @@
+{
+  "timestamp": "2026-03-08T07-13-04",
+  "overall": 100,
+  "testsRun": [
+    "marketing-advice",
+    "pm-user-research",
+    "hr-hiring",
+    "hr-onboarding",
+    "execute-sow",
+    "personality-poirot-empty"
+  ],
+  "poolSize": 34,
+  "results": [
+    {
+      "id": "marketing-advice",
+      "status": "ok",
+      "elapsed": 4151,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Our email open rates dropped from 35% to 12% over the last quarter. What could be wrong?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, a most curious case of vanishing opens! The little grey cells suggest we must investigate the evidence—subject lines, deliverability, audience fatigue, and timing. Let us examine the clues systematically, mon ami.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (217 chars)",
+          "✓ Message length: 217 ≥ 80"
+        ]
+      }
+    },
+    {
+      "id": "pm-user-research",
+      "status": "ok",
+      "elapsed": 75980,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "We're redesigning our onboarding flow. I want to do proper user research — recruit users, run interviews, analyze findings, create recommendations, test prototypes. Build this for me.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, mon ami! A redesign case worthy of the little grey cells. Let us investigate this onboarding mystery with proper detective work — we shall gather evidence from users, analyze the clues, and build a solution that fits like a glove. Voilà, your research workflow!",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Research Recruitment Plan",
+              "category": "input",
+              "description": "Define target users and recruitment strategy for onboarding research",
+              "content": "First, we must identify exactly who holds the clues to our onboarding mystery. Create a recruitment screener with specific criteria: 1) New users who signed up in last 30 days, 2) Users who abandoned onboarding midway, 3) Power users who completed onboarding successfully. Use tools like UserInterviews.com or Respondent.io with screening questions about demographics, tech familiarity, and onboarding experience. Budget for 8-12 participants (statistical saturation point). Offer $50-75 incentives. Schedule 60-minute sessions with buffer days between for analysis. Create a recruitment tracker spreadsheet with columns for participant ID, status, scheduled time, and compensation status. Include diversity quotas: aim for 40% mobile-first users, 30% desktop-primary, and representation across age groups 18-45. The recruitment brief should specify we need users willing to share screen and think aloud during prototype testing later."
+            },
+            {
+              "label": "User Interview Protocol",
+              "category": "action",
+              "description": "Structured interview guide with questions and observation framework",
+              "content": "Develop a semi-structured interview protocol with three sections: 1) Background (5 mins): 'Walk me through your first experience with our product. What were you hoping to accomplish?' 2) Current Onboarding Experience (25 mins): Use the 'critical incident technique' — ask about specific moments of confusion, delight, or frustration. Have them screen-share while recreating their signup. 3) Ideal State (15 mins): 'If you could redesign this flow with magic, what would change?' Include specific metrics to capture: Time to First Value (TTFV), confusion points (count 'hmm' moments), and emotional valence (rate 1-5 scale). Create an observation template with columns for timestamp, quote, behavior, and inferred need. Pilot test with one internal user first. Record sessions with OBS Studio (with participant consent) and use Rev.com for transcription. The protocol should have branching logic — if user mentions specific pain point X, probe deeper with follow-up questions Y and Z."
+            },
+            {
+              "label": "Interview Synthesis & Analysis",
+              "category": "artifact",
+              "description": "Affinity mapping, journey mapping, and insight extraction from interviews",
+              "content": "Now we examine the evidence! Process: 1) Transcript analysis: Use Dovetail or EnjoyHQ to tag quotes with codes like 'confusion', 'delight', 'missing_feature'. 2) Affinity mapping: Print key quotes on sticky notes (physical or Miro board). Group into themes through collaborative sorting with team. 3) Create journey map: Horizontal axis = onboarding steps (awareness → signup → first action → habit formation). Vertical axis = emotional journey. Plot pain points (red) and moments of delight (green). 4) Extract insights: For each theme, write 'How might we...' statements. Example: 'How might we reduce cognitive load during profile setup?' 5) Quantify findings: Calculate frequency of each pain point across participants. Use rainbow spreadsheet method — color-code severity (red = critical, yellow = moderate, green = minor). This should produce 5-8 key insights with supporting quotes and behavioral evidence."
+            },
+            {
+              "label": "Design Recommendations Report",
+              "category": "artifact",
+              "description": "Prioritized recommendations with evidence-based rationale and mockups",
+              "content": "Transform insights into actionable recommendations. Structure: 1) Executive summary (one page max). 2) Key findings recap with data visualization (bar charts showing pain point frequency). 3) Prioritized recommendations using RICE framework (Reach × Impact × Confidence ÷ Effort). Score each. 4) For each top 3-5 recommendations: a) Problem statement with user quotes, b) Proposed solution with low-fidelity mockups (Figma frames), c) Success metrics (e.g., 'Reduce drop-off at step 3 by 30%'), d) Technical considerations. 5) Appendix with full journey maps and raw data. Create interactive prototype in Figma showing before/after flows. Include specific copywriting recommendations — exact button text, error messages, tooltip content. The report should be shareable as PDF and interactive Figma file. Use data to justify every design decision: 'Because 7/10 users struggled with X, we recommend Y which addresses these pain points by...'"
+            },
+            {
+              "label": "Prototype Testing Plan",
+              "category": "test",
+              "description": "Usability testing of new designs with recruited users",
+              "content": "Validate our hypotheses! Create test plan: 1) Recruit 5-8 users from original pool (if available) plus 3-5 new users. 2) Build high-fidelity prototype in Figma with realistic interactions (form validation, error states, success messages). 3) Write test tasks: 'Sign up for an account and complete your profile' (primary), 'Find where to change notification settings' (secondary). 4) Success criteria: Task completion rate (aim >85%), System Usability Scale (SUS) score (benchmark against industry standard of 68), time-on-task reduction (measure against current flow). 5) Methodology: Remote moderated testing via Zoom with screen sharing. Use 'think aloud' protocol. Record sessions. 6) Data collection: Use Maze.co for unmoderated quantitative data (click heatmaps, misclick rates) OR UserTesting.com for moderated sessions. Create test observation spreadsheet with columns: participant, task, success (Y/N), time, errors, quotes. Include post-test questionnaire: 'How confident did you feel completing these tasks?' (1-7 scale). Run pilot with colleague first."
+            },
+            {
+              "label": "Findings Review & Iteration",
+              "category": "review",
+              "description": "Stakeholder review of test results and decision on implementation",
+              "content": "The moment of truth! Present findings to product team, engineering, and stakeholders. Prepare: 1) Test results dashboard showing completion rates, SUS scores, before/after comparison. 2) Video clips of key moments (successes and failures). 3) Revised recommendations based on test learnings. 4) Implementation roadmap with phases: Phase 1 (quick wins, <2 weeks dev), Phase 2 (medium effort, 2-4 weeks), Phase 3 (larger redesign, 1-2 months). Facilitate decision meeting with structured format: 15min results overview, 20min Q&A, 25min prioritization voting using dot voting on Miro board. Criteria for go/no-go: If SUS score improved by ≥10 points AND completion rate >85%, proceed to implementation. If not, identify specific failure points and plan one more rapid iteration cycle (1-week design sprint). Document decisions in Confluence with clear next steps, owners, and deadlines. Get formal sign-off from product lead and engineering manager on final designs before handoff."
+            },
+            {
+              "label": "Implementation Handoff Package",
+              "category": "output",
+              "description": "Final deliverable with specs, assets, and success measurement plan",
+              "content": "The case file is complete! Deliver: 1) Final Figma files with developer handoff specs (using Figma's inspect panel) including spacing, colors, components, and responsive breakpoints. 2) Copy deck with all microcopy (button labels, tooltips, error messages, success states). 3) Interaction specifications document detailing animations (duration, easing curves), form validation logic, and edge cases. 4) Success measurement plan: Define exact metrics to track post-launch (A/B test setup instructions, analytics events to implement in Mixpanel/Amplitude). Example: Track 'onboarding_completion_rate', 'time_to_first_value', and 'day_7_retention' for new cohort. 5) Quality assurance checklist for engineering: cross-browser testing requirements, accessibility standards (WCAG 2.1 AA), mobile responsiveness thresholds. 6) Rollout plan: phased release strategy (10% → 50% → 100% over 2 weeks) with rollback criteria. Package everything in a shared Google Drive folder with clear README. Schedule handoff meeting with engineering to walk through files and answer questions. The final output should enable engineering to build exactly what was validated with users."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "feeds"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "triggers"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "validates"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "approves"
+            },
+            {
+              "from": 4,
+              "to": 3,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 4,
+              "label": "requires"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "informs"
+            },
+            {
+              "from": 3,
+              "to": 5,
+              "label": "informs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 95,
+        "maxScore": 95,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ All 10 edges valid",
+          "✓ Starts with input",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 996c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (10 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "hr-hiring",
+      "status": "ok",
+      "elapsed": 73914,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "We need to hire 5 engineers in the next 2 months. Our current process is just posting on LinkedIn and hoping. Build me a proper hiring pipeline.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building a structured hiring pipeline to secure 5 engineers in 60 days.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Hiring Trigger",
+              "category": "trigger",
+              "description": "Initiates the hiring pipeline based on business need",
+              "content": "**Event:** Business approval for 5 engineering hires within 2 months. **Payload:** Job requisitions with roles (e.g., Backend, Frontend, DevOps), budget, and start dates. **Configuration:** Set up in ATS (e.g., Greenhouse, Lever) or project management tool (e.g., Jira). **Webhook/Alert:** Automatically triggers pipeline start via Slack/email notification to hiring manager and recruiter. **Metrics to track:** Time-to-fill target (60 days), open positions count, initial approval timestamp. **Owner:** Head of Engineering/HR. **Steps:** 1. Formalize requisition documents with role specifics (skills, experience level, team fit). 2. Input into ATS to create candidate pipeline. 3. Schedule kickoff meeting with hiring team to align on process and timelines. 4. Activate sourcing channels (LinkedIn Recruiter, referrals, job boards)."
+            },
+            {
+              "label": "Sourcing & Outreach",
+              "category": "action",
+              "description": "Proactive candidate identification and engagement",
+              "content": "**Steps:** 1. Use LinkedIn Recruiter with boolean searches (e.g., 'Java AND Spring Boot AND 5+ years'). 2. Set up automated sourcing via tools like SeekOut or Gem to scrape profiles from GitHub, Stack Overflow. 3. Launch referral program with incentives ($3k-$5k per hire). 4. Post on niche boards (Stack Overflow Jobs, AngelList for startups). 5. Craft personalized outreach templates (3 variants: referral, cold inbound, re-engagement). **Tools:** LinkedIn Recruiter, SeekOut, Gem, ATS integrations. **Error handling:** Monitor response rates (<15% triggers template revision). **Owner:** Recruiter/Sourcer. **Metrics:** Sourcing funnel size (target: 200+ candidates), response rate (aim >20%), time per sourced candidate. **Weekly cadence:** Review pipeline health, adjust sourcing keywords based on role fit."
+            },
+            {
+              "label": "Screening & Assessment",
+              "category": "action",
+              "description": "Initial vetting and technical evaluation",
+              "content": "**Steps:** 1. Recruiter phone screen (30 mins) using structured scorecard (communication, salary alignment, visa status). 2. Technical assessment via HackerRank or Codility (45-60 min coding test tailored to role). 3. Review GitHub portfolios for open-source contributions. 4. Asynchronous video screen via platforms like Vervoe for culture fit. **Tools:** ATS scorecards, HackerRank, Vervoe, Calendly for scheduling. **Error handling:** If assessment completion rate <50%, simplify test or adjust time limit. **Owner:** Recruiter and hiring manager. **Criteria:** Pass threshold: 80% on technical test, positive screen on motivation. **Output:** Shortlist for onsite (target: 3-5 candidates per role)."
+            },
+            {
+              "label": "Onsite Interview Loop",
+              "category": "action",
+              "description": "Comprehensive in-person/virtual interviews with team",
+              "content": "**Steps:** 1. Schedule 4-5 interviews: coding (live pair programming), system design, behavioral, and culture fit. 2. Use standardized questions and rubrics in ATS (score 1-5 per competency). 3. Include 'bar raiser' interviewer for consistency. 4. Provide candidates with prep material and team overview. **Tools:** Zoom, CoderPad for live coding, ATS for feedback collection. **Error handling:** If interviewer no-show, have backup interviewer list. **Owner:** Hiring coordinator. **Duration:** 3-4 hours total. **Debrief:** Schedule within 24 hours post-interview to discuss scores and decide."
+            },
+            {
+              "label": "Hiring Committee Review",
+              "category": "review",
+              "description": "Cross-functional approval of candidate before offer",
+              "content": "**Approval criteria:** 1. Average interview score ≥4.0/5. 2. No strong vetoes from interviewers. 3. Alignment with role requirements and team diversity goals. 4. Reference checks completed (2-3 professional references). **Who reviews:** Hiring manager, senior engineer, HRBP. **Escalation:** If disagreement, escalate to VP Engineering within 48 hours. **SLA:** Review meeting within 2 days of debrief. **Process:** Collate feedback in ATS, present summary slide with scores, red flags, and comp expectations. **Output:** Approve, reject, or additional interview. **Documentation:** Meeting notes and final decision in ATS."
+            },
+            {
+              "label": "Offer & Negotiation",
+              "category": "action",
+              "description": "Extending offer and closing candidate",
+              "content": "**Steps:** 1. Craft offer letter with comp (base, bonus, equity), benefits, start date. 2. Verbal offer call by hiring manager emphasizing role impact. 3. Follow with written offer via DocuSign within 24 hours. 4. Negotiation handle: pre-approve flexibility bands (±10% salary, signing bonus). **Tools:** ATS offer module, DocuSign, comp benchmarking data (Radford, Levels.fyi). **Error handling:** If candidate declines, conduct exit interview to improve process. **Owner:** HR/Compensation specialist. **Timeline:** Aim to close within 5 days of approval. **Metrics:** Offer acceptance rate (target >80%), time from approval to signature."
+            },
+            {
+              "label": "Onboarding Prep",
+              "category": "action",
+              "description": "Pre-start logistics and integration planning",
+              "content": "**Steps:** 1. Send welcome package with swag and equipment list (laptop, accessories). 2. Set up IT accounts (email, Slack, GitHub) pre-day-1. 3. Assign buddy/mentor from team. 4. Schedule first-week agenda: intro meetings, training sessions, project onboarding. 5. Legal: complete background check and employment paperwork via platform like Checkr. **Tools:** BambooHR for onboarding workflows, Slack for pre-join channels, IT ticketing system. **Error handling:** If background check delay, have contingency start date. **Owner:** HR and hiring manager. **Checklist:** 20-item pre-boarding list tracked in Asana. **Goal:** Ensure candidate is productive within first week."
+            },
+            {
+              "label": "Pipeline Analytics & Optimization",
+              "category": "state",
+              "description": "Monitor metrics and adjust process for continuous improvement",
+              "content": "**States:** Active (hiring ongoing), Paused (budget freeze), Closed (positions filled). **Transitions:** Move to Closed when 5 hires onboarded and pass probation. **Triggers:** Weekly review of metrics: time-to-fill (target <60 days), candidate satisfaction (survey scores >4/5), source quality (referral vs. inbound). **Tools:** ATS analytics (Greenhouse Analytics), custom dashboards in Looker. **Actions per state:** Active: adjust sourcing based on conversion rates; Paused: nurture pipeline candidates; Closed: conduct retrospective to document learnings. **Owner:** Hiring operations manager. **Feedback loops:** Use data to refine screening criteria or interview length if drop-off occurs at specific stages."
+            },
+            {
+              "label": "Hiring Pipeline Report",
+              "category": "output",
+              "description": "Final deliverable summarizing hiring outcomes and insights",
+              "content": "**Deliverable format:** PDF/Google Slides report with sections: Executive Summary (hires made, time-to-fill, diversity stats), Pipeline Metrics (sourcing channels effectiveness, conversion rates per stage), Cost Analysis (recruiting spend, referral payouts), Candidate Feedback (survey results), Lessons Learned and Recommendations for next cycle. **Distribution:** Share with leadership (CEO, VP Eng, HR), hiring team, and finance. **Success metrics:** 5 engineers hired within 2 months, acceptance rate >80%, candidate NPS >50. **Actionable insights:** Include specific changes for next hire batch (e.g., increase referral bonus, shorten interview loop). **Tools:** Data pulled from ATS, survey tools (SurveyMonkey), compiled in Canva/Google Docs. **Timing:** Published within 1 week of pipeline closure."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "drives"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "requires"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "approves"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "drives"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "updates"
+            },
+            {
+              "from": 7,
+              "to": 8,
+              "label": "outputs"
+            },
+            {
+              "from": 4,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 7,
+              "to": 1,
+              "label": "monitors"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 100,
+        "maxScore": 100,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 9 (min: 5)",
+          "✓ Node count: 9 ≤ 10",
+          "✓ Has \"review\" category",
+          "✓ All 10 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 711c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (10 edges, 9 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "hr-onboarding",
+      "status": "ok",
+      "elapsed": 65764,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "New hires keep saying their first week was confusing and they didn't know what to do. Design an onboarding process that actually works — IT setup, team intros, training, 30-60-90 day goals.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, a classic case of organizational disorientation! The clues are clear — new hires wandering like lost souls in their first week. Let us construct an elegant onboarding investigation that transforms confusion into competence, mon ami.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Pre-Arrival Welcome Kit",
+              "category": "input",
+              "description": "Digital welcome package sent 5 days before start date",
+              "content": "This comprehensive digital package includes: 1) Company culture deck with mission, values, and history (use Canva or Pitch for visual storytelling), 2) First-week schedule with 30-minute buffer blocks between meetings, 3) Team directory with photos, roles, and fun facts about each member, 4) Required reading list (3-5 essential documents max), 5) IT checklist with step-by-step setup instructions for laptop, VPN, and software. Include a personalized welcome video from the hiring manager (record via Loom). Metrics: Track open rates (target: 95%) and completion of pre-work (target: 80%). Tools: Greenhouse or Lever for automated delivery, Notion for interactive checklist. Critical: Include 'what to expect' FAQ addressing common anxieties about dress code, parking, lunch options, and first-day logistics."
+            },
+            {
+              "label": "Day 1 IT & Workspace Setup",
+              "category": "action",
+              "description": "Physical/digital workspace configuration with dedicated support",
+              "content": "Assign an IT buddy who meets the new hire at reception. Process: 1) Immediate laptop issuance with pre-configured accounts (Okta/SSO setup complete), 2) 30-minute guided tour of physical workspace highlighting bathrooms, kitchens, emergency exits, and quiet zones, 3) Digital workspace walkthrough: Slack/Teams channels (which to join immediately vs. later), project management tools (Jira/Asana access), document repositories (Google Drive/SharePoint permissions), 4) Security briefing (password manager setup, 2FA enrollment, acceptable use policy). Tools: JAMF for Mac provisioning, NinjaOne for Windows. Checklist criteria: All accounts accessible within first 2 hours, emergency contact information recorded, ergonomic assessment completed. Include 'escape valve' — a designated person to ask 'stupid questions' without judgment."
+            },
+            {
+              "label": "Structured Team Introductions",
+              "category": "action",
+              "description": "Purposeful relationship-building with key stakeholders",
+              "content": "Schedule 25-minute 'coffee chats' (not meetings) with: 1) Manager (first-day lunch), 2) Team members (2-3 peers with similar roles), 3) Cross-functional partners (product, design, marketing contacts), 4) Leadership (skip-level with director within first week). Provide conversation starters: 'What's one thing you wish you knew when you started?' 'What does success look like in our team?' Use Donut or CoffeeChat for scheduling. Track: Number of connections made (target: 8-10 in week 1). Critical: Each introducer shares ONE specific way they can help the new hire (e.g., 'I'm your go-to for expense reports'). Avoid overwhelming group introductions — individual connections build psychological safety faster. Document relationships in 360-degree feedback tool like Culture Amp."
+            },
+            {
+              "label": "Role-Specific Training Modules",
+              "category": "action",
+              "description": "Competency-based learning paths with practical application",
+              "content": "Create 3-tier training: 1) Foundational (company systems, compliance — use Lessonly or WorkRamp), 2) Role-specific (technical skills — use Pluralsight or Coursera), 3) Practical (shadowing and small tasks). Structure: Monday-Wednesday: 2 hours/day of structured learning. Thursday: 'Apply what you learned' assignment (e.g., draft a mock PR, analyze a dataset). Friday: Review with mentor. Metrics: Completion rates (target: 90%), knowledge checks (80% passing), time-to-productivity reduction. Include 'learning journal' template in Notion to document questions and insights. Critical: Training must be interactive — no death-by-PowerPoint. Use scenario-based learning with branching decisions. Assign a 'training buddy' from same role who completed onboarding 3-6 months prior."
+            },
+            {
+              "label": "30-60-90 Day Goal Framework",
+              "category": "artifact",
+              "description": "Progressive milestone document co-created with manager",
+              "content": "Collaborative session in week 1 to establish: 30-day goals (learning & observation): Complete all required training, map team processes, deliver first small task (e.g., fix minor bug, update documentation). Success criteria: Can navigate systems independently, knows who to ask for what. 60-day goals (contribution & integration): Own a small feature/ project, participate in team meetings with contributions, build cross-functional relationships. Success criteria: Delivers work with minimal supervision, receives positive peer feedback. 90-day goals (ownership & impact): Lead a initiative, suggest process improvements, mentor newer team members. Success criteria: Metrics show tangible impact (e.g., reduced ticket resolution time, improved documentation). Tools: Google Docs template with SMART criteria. Review cadence: Weekly 1:1s check progress, formal review at each milestone. Include 'stretch goals' for high performers."
+            },
+            {
+              "label": "Onboarding Feedback Loop",
+              "category": "review",
+              "description": "Structured feedback collection at 7, 30, and 90 days",
+              "content": "Three-pulse survey system: Day 7: Net Promoter Score for onboarding experience (0-10 scale), qualitative questions about clarity, support, and initial impressions. Day 30: Competency assessment (self-rated and manager-rated on 5-point scale across role-specific skills), psychological safety measurement (adapted from Google's Project Aristotle). Day 90: Full effectiveness review — 'Can this person work independently?' 'Have they contributed meaningfully?' Tools: SurveyMonkey or Culture Amp for distribution, Tableau for dashboard visualization. Action steps: 1) Assign onboarding program manager to review feedback weekly, 2) Monthly calibration meeting with hiring managers to identify patterns, 3) Quarterly update to onboarding materials based on feedback. Critical: Close the loop — share aggregated findings and changes made with new hires to show their input matters."
+            },
+            {
+              "label": "Graduation & Integration Ceremony",
+              "category": "output",
+              "description": "Formal transition from 'new hire' to full team member",
+              "content": "At 90-day mark, host a 30-minute team ceremony: 1) New hire presents key learnings and one process improvement suggestion, 2) Manager shares specific contributions and impact metrics, 3) Team shares appreciations (use Kudos or Bonusly for digital recognition), 4) Symbolic 'graduation' gift (company swag or book related to their role). Document: Create 'onboarding completion certificate' in BambooHR or Workday. Metrics: Retention at 6 months (target: 95%), time-to-full-productivity (benchmarked against industry standards). Follow-up: Schedule 6-month check-in to assess long-term integration success. Critical: This isn't just celebration — it's a ritual marking psychological transition. Include explicit statement: 'You are no longer a new hire; you are now expected to help onboard the next person.' This creates culture of pay-it-forward onboarding ownership."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "informs"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "monitors"
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 0,
+              "label": "refines"
+            },
+            {
+              "from": 4,
+              "to": 6,
+              "label": "outputs"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "validates"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 105,
+        "maxScore": 105,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ All 10 edges valid",
+          "✓ Starts with input",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 840c, no thin nodes",
+          "✓ Architecture covers: it, training, 30",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (10 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "execute-sow",
+      "status": "ok",
+      "elapsed": 49148,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Write a statement of work for a 3-month web application redesign project. Client is a mid-size e-commerce company. Budget is $85,000. Include scope, deliverables, timeline, and payment terms.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Statement of Work: E-Commerce Web Application Redesign\n\n**Project Title:** E-Commerce Platform Redesign & User Experience Enhancement\n**Client:** [Client Company Name], a mid-size e-commerce company\n**Vendor/Service Provider:** [Your Company/Agency Name]\n**Effective Date:** [Date]\n**Project Duration:** 3 Months (Approximately 12-13 weeks)\n**Total Project Budget:** $85,000 (USD)\n\n---\n\n## 1. Project Overview & Objectives\n\nThis Statement of Work (SOW) outlines the agreement between [Client Company Name] (the \"Client\") and [Your Company/Agency Name] (the \"Vendor\") for the comprehensive redesign of the Client's existing e-commerce web application. The primary objectives are to modernize the platform's visual design, significantly improve the user experience (UX) and user interface (UI), enhance site performance and mobile responsiveness, and streamline the checkout process to directly increase conversion rates and customer satisfaction.\n\n## 2. Scope of Work\n\nThe Vendor will provide the following services and activities:\n\n**2.1 Discovery & Strategy (Weeks 1-2)**\n*   Conduct stakeholder interviews to understand business goals and user needs.\n*   Perform a comprehensive heuristic evaluation and competitive analysis of the current platform.\n*   Analyze existing user analytics and sales funnel data.\n*   Develop user personas and customer journey maps.\n*   Define a revised information architecture (IA) and site map.\n*   Create a detailed UX strategy and project plan document.\n\n**2.2 User Experience (UX) & User Interface (UI) Design (Weeks 3-7)**\n*   Develop low-fidelity wireframes for key user flows (e.g., homepage, product listing pages, product detail pages, cart, and checkout).\n*   Create interactive, high-fidelity prototypes for core user journeys for client review and user testing.\n*   Establish a new, modern visual design system including:\n    *   Color palette, typography, iconography, and UI component library.\n    *   Responsive design templates for desktop, tablet, and mobile breakpoints.\n*   Design all critical page templates and states (error, empty, success).\n\n**2.3 Front-End Development Preparation & Handoff (Weeks 8-10)**\n*   Prepare and annotate all final design assets for development.\n*   Create a comprehensive style guide and design system documentation for Client's internal or external development team.\n*   Conduct a formal handoff meeting with the Client's development team, providing all assets, specifications, and answering technical questions.\n\n**2.4 User Testing & Iteration (Integrated throughout Weeks 5-11)**\n*   Facilitate two rounds of moderated usability testing with the target audience using the interactive prototypes.\n*   Synthesize test findings and provide a detailed report with actionable recommendations.\n*   Implement agreed-upon design revisions based on test results.\n\n**2.5 Project Management & Communication**\n*   Weekly status meetings and progress reports.\n*   Use of a shared project management tool (e.g., Asana, Jira) for task tracking.\n*   Centralized repository for all assets, documents, and feedback (e.g., Figma, SharePoint).\n\n## 3. Deliverables\n\nAll deliverables will be provided in digital format.\n\n*   **D1:** Discovery & Strategy Report (Including personas, journey maps, IA)\n*   **D2:** Complete set of Low-Fidelity & High-Fidelity Wireframes\n*   **D3:** Interactive Prototype(s) for core user flows\n*   **D4:** Final Visual Design System & UI Component Library\n*   **D5:** Complete set of Responsive Design Mockups for all key page templates\n*   **D6:** Usability Testing Findings & Recommendations Report\n*   **D7:** Annotated Design Specifications & Developer Handoff Package\n*   **D8:** Final Project Summary & Recommendations for Next Steps\n\n## 4. Project Timeline & Milestones\n\nThe project will commence on **[Start Date]** and is scheduled for completion by **[End Date, approximately 3 months later]**.\n\n*   **Milestone 1: Project Kick-off & Discovery Completion** - Week 2\n*   **Milestone 2: Approval of Wireframes & IA** - Week 4\n*   **Milestone 3: Approval of Visual Design Direction** - Week 6\n*   **Milestone 4: Completion of Usability Testing Round 1** - Week 8\n*   **Milestone 5: Delivery of Final Designs & Handoff Package** - Week 12\n*   **Milestone 6: Project Closure & Final Report** - Week 13\n\n## 5. Assumptions & Exclusions\n\n**5.1 Assumptions:**\n*   Client will provide timely feedback (within 3 business days) at each review stage.\n*   Client will provide necessary access to analytics, brand assets, and stakeholders for interviews.\n*   Client will appoint a single point of contact for approvals and communication.\n*   This SOW covers design, prototyping, and testing only. Front-end or back-end development, content migration, copywriting, photography, or ongoing hosting/maintenance are **excluded**.\n\n**5.2 Explicit Exclusions (Out of Scope):**\n*   Any coding, development, or implementation of the designs.\n*   Content creation, copywriting, or product photography.\n*   Search Engine Optimization (SEO) strategy or implementation.\n*   Third-party software or platform licensing fees.\n*   Post-launch support or maintenance.\n*   Significant changes to the project's core features or objectives after the Discovery phase (\"Scope Creep\"). Such changes will be handled via a formal Change Order process.\n\n## 6. Payment Terms\n\nThe total fixed project fee is **$85,000**.\n\nPayments are tied to project milestones as follows:\n\n*   **Payment 1 (25%): $21,250** - Due upon signing this SOW to initiate the project.\n*   **Payment 2 (25%): $21,250** - Due upon Client approval of Milestone 2 (Wireframes & IA).\n*   **Payment 3 (25%): $21,250** - Due upon Client approval of Milestone 3 (Visual Design Direction).\n*   **Payment 4 (25%): $21,250** - Due upon delivery and acceptance of the final Handoff Package (Milestone 5).\n\nAll invoices are payable within **15 net days** of receipt. Late payments may be subject to a fee of 1.5% per month.\n\n## 7. Acceptance\n\nThis Statement of Work, when signed by authorized representatives of both parties, constitutes a binding agreement.\n\n**For [Client Company Name]:**\n\nSignature: _________________________\nPrint Name: _________________________\nTitle: _________________________\nDate: _________________________\n\n**For [Your Company/Agency Name]:**\n\nSignature: _________________________\nPrint Name: _________________________\nTitle: _________________________\nDate: _________________________",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (6437 chars)",
+          "✓ Content length: 6437 ≥ 300"
+        ]
+      }
+    },
+    {
+      "id": "personality-poirot-empty",
+      "status": "ok",
+      "elapsed": 4275,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, mon ami, the case is fresh and the board is empty—no clues, no leads, no suspects. But do not fret! The little grey cells are ready to piece together a workflow from the evidence you provide. What mystery shall we solve today?",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (230 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    }
+  ]
+}

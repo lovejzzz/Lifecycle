@@ -1,0 +1,273 @@
+{
+  "timestamp": "2026-03-08T07-46-07",
+  "overall": 100,
+  "testsRun": [
+    "founder-mvp-launch",
+    "founder-advice",
+    "marketing-advice",
+    "hr-onboarding",
+    "execute-sow",
+    "personality-poirot-empty"
+  ],
+  "poolSize": 36,
+  "results": [
+    {
+      "id": "founder-mvp-launch",
+      "status": "error",
+      "elapsed": 180063,
+      "error": "api_error: The operation was aborted due to timeout",
+      "request": {
+        "prompt": "I'm launching my SaaS app in 2 weeks. I have the code ready but no deployment process, no monitoring, nothing. Help me set up everything I need to go live safely.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "error": "api_error",
+        "message": "The operation was aborted due to timeout"
+      },
+      "scoring": {
+        "score": 0,
+        "maxScore": 1,
+        "pct": 0,
+        "checks": [
+          "✗ API error: api_error"
+        ]
+      }
+    },
+    {
+      "id": "founder-advice",
+      "status": "ok",
+      "elapsed": 26565,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We're burning $50k/month and have 6 months of runway. What should I prioritize?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "With a $50k monthly burn and 6 months of runway, prioritize immediate revenue generation and cost-cutting: analyze expenses with tools like ProfitWell to slash non-essentials, focus on high-ROI customer acquisition channels (e.g., targeted paid ads or referral programs), and validate product-market fit through rapid A/B testing to extend your timeline. If metrics don't improve within 3 months, prepare a fundraising deck or consider pivoting to a more sustainable niche.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (473 chars)",
+          "✓ Message length: 473 ≥ 300"
+        ]
+      }
+    },
+    {
+      "id": "marketing-advice",
+      "status": "ok",
+      "elapsed": 14550,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Our email open rates dropped from 35% to 12% over the last quarter. What could be wrong?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, a most troubling case, mon ami! A drop from 35% to 12% is no mere fluctuation—it is a clue shouting for attention. Let us engage the little grey cells and examine the evidence: first, inspect your deliverability and sender reputation, then dissect your content and timing, for the culprit often hides in these shadows.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (322 chars)",
+          "✓ Message length: 322 ≥ 300"
+        ]
+      }
+    },
+    {
+      "id": "hr-onboarding",
+      "status": "ok",
+      "elapsed": 149805,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "New hires keep saying their first week was confusing and they didn't know what to do. Design an onboarding process that actually works — IT setup, team intros, training, 30-60-90 day goals.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! The mystery of the muddled first week is one I relish, mon ami. I've constructed an onboarding workflow that will transform confusion into clarity, with each step meticulously planned to ensure new hires hit the ground running. Très intéressant, non?",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "New Hire Start Notification",
+              "category": "trigger",
+              "description": "Initiation of onboarding process upon confirmation of new hire's start date",
+              "content": "This trigger is activated when the HR system (e.g., BambooHR, Workday) sends an automated notification upon finalizing the hire, including the start date and basic details. Steps: 1. Configure automation rules in the HR platform to send alerts to the onboarding team and manager via email or Slack. 2. Pre-onboarding checklist initiated: send welcome packet with paperwork (e.g., contracts, tax forms) via DocuSign, and schedule a pre-start call. 3. Criteria: verification of signed offer letter and background check completion. Tools: Use Zapier or native integrations to connect HR software with project management tools like Asana for task creation. Checklist: Ensure all pre-arrival communications are sent within 48 hours of trigger, with follow-up reminders to the hire."
+            },
+            {
+              "label": "IT Infrastructure Setup",
+              "category": "action",
+              "description": "Provisioning of necessary technology, accounts, and access for the new hire",
+              "content": "Execute a detailed IT setup plan: 1. Use IT asset management software (e.g., ServiceNow, JAMF for Mac, PDQ Deploy for Windows) to order, configure, and ship hardware like laptops and peripherals. 2. Implement Single Sign-On (SSO) via Okta or Azure AD for seamless account creation: set up email (Google Workspace or Microsoft 365), Slack, and project tools (Jira, Trello). 3. Grant role-based access to critical systems: CRM (Salesforce), code repositories (GitHub), and internal databases, using least-privilege principles. 4. Schedule a mandatory IT orientation session on day one, covering security protocols and support channels. Tools: Checklist in Airtable to track completion, with automated alerts for any delays."
+            },
+            {
+              "label": "Team Introduction Framework",
+              "category": "action",
+              "description": "Structured sessions to integrate the new hire with team members and company culture",
+              "content": "Design and implement introduction activities: 1. Create a scheduled series of one-on-one meetings using Calendly, spanning the first week, with key stakeholders (manager, peers, cross-functional partners). 2. Organize a team welcome event (virtual or in-person lunch) to foster informal connections, with icebreaker activities. 3. Provide curated resources: org chart via Lucidchart, team bios on Confluence, and cultural norms document. 4. Assign a buddy or mentor for ongoing guidance, with weekly check-ins documented in 15Five. Steps: Use Notion templates to track introductions and gather feedback, ensuring inclusivity and reducing overwhelm."
+            },
+            {
+              "label": "Onboarding Training Program",
+              "category": "action",
+              "description": "Curated learning modules to equip the new hire with role-specific and company knowledge",
+              "content": "Develop and deliver a comprehensive training plan: 1. Leverage an LMS like Coursera for Business or internal platforms (e.g., Trainual) to host modules on company history, products, and compliance (e.g., security training). 2. Include interactive elements: live sessions with subject matter experts, product demos, and scenario-based exercises. 3. Set up a 30-day training schedule with milestones, using tools like Asana for tracking completion. 4. Implement assessments (quizzes via Google Forms) to gauge understanding and identify gaps. Checklist: Ensure training is role-specific, with feedback loops for continuous improvement, and provide resources for self-paced learning."
+            },
+            {
+              "label": "30-60-90 Day Goal Setting Workshop",
+              "category": "action",
+              "description": "Collaborative session to define clear, measurable objectives for the first three months",
+              "content": "Facilitate a goal-setting workshop within the first week: 1. Prepare a SMART goal template in Google Docs or Lattice, aligning with company OKRs. 2. Conduct a meeting with the new hire and manager to discuss expectations, key responsibilities, and success metrics. 3. Document goals in the performance management system (e.g., 15Five or Betterworks), with specific milestones at 30, 60, and 90 days. 4. Use collaborative tools like Miro for brainstorming and prioritization exercises. Steps: Schedule follow-up reminders, provide examples of past successful goals, and ensure goals are challenging yet achievable, with regular touchpoints for adjustment."
+            },
+            {
+              "label": "30-Day Progress Review",
+              "category": "review",
+              "description": "Human-led evaluation of onboarding progress, with adjustments based on feedback",
+              "content": "Conduct a formal review at the 30-day mark: 1. Schedule a meeting involving the new hire, manager, and HR representative, using Doodle for coordination. 2. Assess completion of IT setup, training modules, and goal adherence through pre-submitted feedback forms (via SurveyMonkey or Typeform). 3. Evaluate cultural fit and team integration via qualitative discussions and peer feedback. 4. Decide on actions: approve progression, extend training, refine goals, or address issues. Tools: Use a scoring rubric with criteria (e.g., confidence level, task completion), and document outcomes in a shared report for transparency and accountability."
+            },
+            {
+              "label": "Onboarding Completion Artifact",
+              "category": "output",
+              "description": "Final report or certificate indicating successful onboarding and next steps",
+              "content": "Generate a comprehensive onboarding completion artifact: 1. Compile a report in Google Docs summarizing achievements, feedback scores, and areas for continued development, with inputs from all previous steps. 2. Issue a digital completion certificate via DocuSign or Canva, signed by the manager and HR. 3. Update the employee's record in the HR system (e.g., Workday) to reflect onboarding status and trigger next phases (e.g., probation review). 4. Share the artifact with stakeholders via email or Slack, and archive it for compliance. Checklist: Ensure all documentation is complete, schedule a 60-day follow-up, and provide the hire with a copy for their records."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "validates"
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 4,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "outputs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 105,
+        "maxScore": 105,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ All 9 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 684c, no thin nodes",
+          "✓ Architecture covers: it, training, 30",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (9 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "execute-sow",
+      "status": "ok",
+      "elapsed": 59613,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Write a statement of work for a 3-month web application redesign project. Client is a mid-size e-commerce company. Budget is $85,000. Include scope, deliverables, timeline, and payment terms.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Statement of Work: E-Commerce Web Application Redesign\n\n**Project Title:** E-Commerce Platform Modernization & Redesign\n**Client:** [Client Company Name]\n**Vendor:** [Your Agency/Consultancy Name]\n**Effective Date:** [Date]\n**Project Duration:** 3 Months (12 Weeks)\n**Total Project Budget:** $85,000 USD\n\n---\n\n## 1. Project Overview & Objectives\n\nThis Statement of Work (SOW) outlines the agreement for a comprehensive redesign and modernization of [Client Company Name]'s primary customer-facing web application. The project aims to enhance user experience (UX), improve site performance and conversion rates, refresh the visual identity to align with modern e-commerce standards, and implement a more maintainable and scalable technical architecture.\n\n**Primary Objectives:**\n*   **Increase Conversion Rate:** Streamline the purchase funnel (browse → cart → checkout) to reduce abandonment.\n*   **Enhance User Experience (UX/UI):** Deliver a modern, intuitive, and brand-consistent interface across all device types.\n*   **Improve Site Performance:** Achieve Core Web Vitals targets for better SEO and user satisfaction.\n*   **Establish Scalable Foundation:** Implement a component-based design system and clean code architecture for future updates.\n\n## 2. Scope of Work\n\nThe project will be executed in four (4) sequential phases.\n\n### Phase 1: Discovery & Strategy (Weeks 1-3)\n*   **Stakeholder Workshops:** Conduct collaborative sessions to define business goals, user personas, and key success metrics (KPIs).\n*   **Competitive & Heuristic Analysis:** Review 3-5 competitor sites and perform a UX audit of the current application.\n*   **Technical Audit:** Assess current site performance, codebase health, and identify integration points (e.g., Payment Gateway, CRM, OMS).\n*   **Deliverable:** A comprehensive **Strategy & Requirements Document**.\n\n### Phase 2: User Experience & Visual Design (Weeks 4-7)\n*   **Information Architecture (IA):** Develop updated site maps and user flow diagrams for key journeys (e.g., product discovery, checkout).\n*   **Wireframing:** Create low-fidelity and high-fidelity interactive wireframes for all core templates (Homepage, PLP, PDP, Cart, Checkout, Account Dashboard).\n*   **Visual Design & Design System:**\n    *   Develop a modern visual language (color, typography, iconography).\n    *   Design full, pixel-perfect mockups for all core templates.\n    *   Build a foundational **UI Component Library/Design System** in Figma for consistent future use.\n*   **User Testing:** Conduct one round of moderated usability testing on key flows using high-fidelity prototypes.\n\n### Phase 3: Development & Implementation (Weeks 8-11)\n*   **Front-End Development:**\n    *   Convert approved designs into responsive, semantic HTML/CSS/JavaScript.\n    *   Ensure WCAG 2.1 AA accessibility compliance.\n    *   Optimize all assets and code for performance.\n*   **Back-End Integration & Development:**\n    *   Integrate front-end templates with the client's chosen e-commerce platform/CMS.\n    *   Implement enhanced functionality (e.g., improved filtering, dynamic recommendations if in scope).\n    *   Ensure all existing data and user accounts are seamlessly migrated.\n*   **Quality Assurance (QA):**\n    *   Perform cross-browser and cross-device testing.\n    *   Conduct functional, user acceptance, and performance testing.\n    *   Address all bugs and issues identified.\n\n### Phase 4: Launch & Transition (Week 12)\n*   **Staging Deployment & Final Review:** Deploy the fully functional site to a staging environment for final client approval.\n*   **Production Launch:** Coordinate and execute the go-live launch during a pre-agreed maintenance window.\n*   **Post-Launch Support:** Provide 15 business days of post-launch monitoring and critical bug-fixing support.\n*   **Knowledge Transfer:** Deliver final assets, code documentation, and a training session for the client's internal team on using the new design system and CMS.\n\n## 3. Deliverables\n\n*   **Strategy & Requirements Document**\n*   **Site Maps & User Flow Diagrams**\n*   **Interactive Wireframes (Figma/Adobe XD)**\n*   **High-Fidelity Visual Design Mockups** for all core pages\n*   **Functional UI Component Library / Design System (Figma)**\n*   **Fully Functional, Responsive Front-End Code**\n*   **Integrated Web Application** on staging and production environments\n*   **Technical Documentation & Style Guide**\n*   **QA Test Reports**\n*   **Training Session & Materials**\n\n## 4. Project Timeline & Milestones\n\n*   **Kick-off:** Week 1\n*   **Milestone 1 – Strategy Approval:** End of Week 3\n*   **Milestone 2 – Design Approval:** End of Week 7\n*   **Milestone 3 – Development Complete / Staging Review:** End of Week 11\n*   **Milestone 4 – Project Launch:** End of Week 12\n*   **Project Closure & Final Invoice:** Week 13 (following launch support)\n\n## 5. Payment Terms\n\nThe total fixed project fee is **$85,000 USD**. Payments are tied to project milestones and are due within 14 days of invoice receipt.\n\n*   **Payment 1 (20%): $17,000** – Due upon SOW signing to initiate project.\n*   **Payment 2 (30%): $25,500** – Due upon approval of **Milestone 1 (Strategy Document)**.\n*   **Payment 3 (30%): $25,500** – Due upon approval of **Milestone 2 (Designs)**.\n*   **Payment 4 (20%): $17,000** – Due upon **Project Launch (Milestone 4)**.\n\n## 6. Assumptions\n\n*   Client will provide timely access to necessary stakeholders, brand assets, and existing platform credentials.\n*   Client will provide timely feedback and approvals at each milestone (within 5 business days).\n*   The scope is based on redesigning core user flows and templates. A detailed page inventory will be confirmed in Phase 1.\n*   Third-party platform licenses (e.g., e-commerce platform, hosting) are the responsibility of the client unless otherwise stated.\n*   Copywriting and professional product photography are not included unless specifically added via a change order.\n\n## 7. Exclusions\n\nThe following items are **not included** in the $85,000 project scope:\n*   Ongoing hosting, maintenance, or support beyond the 15-day post-launch period.\n*   Major changes to the initially agreed-upon project requirements or scope.\n*   Development of new, complex backend features not part of the core redesign (e.g., custom loyalty program engine).\n*   Content migration beyond standard product, user, and order data.\n*   Paid advertising campaigns or SEO strategy work outside of on-page technical SEO.\n\n## 8. Acceptance\n\nBy signing below, the parties acknowledge acceptance of the terms of this Statement of Work.\n\n**For [Client Company Name]:**\n___________________________\nPrint Name & Title\nSignature\nDate\n\n**For [Your Agency/Consultancy Name]:**\n___________________________\nPrint Name & Title\nSignature\nDate",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (6783 chars)",
+          "✓ Content length: 6783 ≥ 300"
+        ]
+      }
+    },
+    {
+      "id": "personality-poirot-empty",
+      "status": "ok",
+      "elapsed": 15052,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Aha! Mon ami, we have a pristine slate before us – no clues gathered, no evidence mapped, and no case yet to unravel in our visual workflow. Let us engage the little grey cells and craft an elegant investigation, shall we?",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (222 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    }
+  ]
+}

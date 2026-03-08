@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     } else if (deepseekKey) {
       provider = 'deepseek';
       apiKey = deepseekKey;
-      model = 'deepseek-chat';
+      model = 'deepseek-reasoner';
       endpoint = 'https://api.deepseek.com/chat/completions';
     } else if (anthropicKey) {
       provider = 'anthropic';
@@ -69,7 +69,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Temperature varies by task type: creative generation higher, analysis lower
-    const temperature = taskType === 'generate' ? 0.8 : taskType === 'analyze' ? 0.4 : 0.7;
+    // deepseek-reasoner (R1) does not support temperature — omit it
+    const isReasonerModel = model.includes('reasoner');
+    const temperature = isReasonerModel ? undefined : (taskType === 'generate' ? 0.8 : taskType === 'analyze' ? 0.4 : 0.7);
 
     const msgCount = messages.length;
     const promptLen = systemPrompt.length;
@@ -101,20 +103,25 @@ export async function POST(req: NextRequest) {
         headers['HTTP-Referer'] = 'https://lifecycle-agent.app';
         headers['X-Title'] = 'Lifecycle Agent';
       }
+      // deepseek-reasoner uses reasoning tokens from the max_tokens budget,
+      // so we need a larger budget to avoid truncated JSON responses
+      const maxTokens = isReasonerModel ? 16384 : 4096;
       return {
         headers,
         body: JSON.stringify({
           model,
           messages: [{ role: 'system', content: systemPrompt }, ...messages],
-          max_tokens: 4096,
-          temperature,
+          max_tokens: maxTokens,
+          ...(temperature !== undefined ? { temperature } : {}),
         }),
       };
     };
 
     // Retry up to 3 times on rate limit (429) with exponential backoff
     // Generate/execute tasks need more time — LLMs produce larger payloads
-    const timeoutMs = taskType === 'analyze' ? 45000 : 120000;
+    // deepseek-reasoner is significantly slower due to chain-of-thought
+    const baseTimeout = taskType === 'analyze' ? 45000 : 120000;
+    const timeoutMs = isReasonerModel ? Math.max(baseTimeout, 240000) : baseTimeout;
     let response: Response | null = null;
     const reqConfig = buildPayloadAndHeaders();
     for (let attempt = 0; attempt < 4; attempt++) {
@@ -142,13 +149,28 @@ export async function POST(req: NextRequest) {
 
     const data = await response.json();
     // Anthropic returns content[0].text, OpenAI-compatible returns choices[0].message.content
+    // deepseek-reasoner returns reasoning_content + content in message
     const text = provider === 'anthropic'
       ? (data.content?.[0]?.text || '')
-      : (data.choices?.[0]?.message?.content || '');
+      : (data.choices?.[0]?.message?.content || data.choices?.[0]?.message?.reasoning_content || '');
 
     // Try to parse as JSON (our expected format)
-    // The LLM might wrap JSON in markdown code blocks — strip them
-    const cleaned = text.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+    // The LLM might wrap JSON in markdown code blocks or add preamble text
+    let cleaned = text.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+    // deepseek-reasoner sometimes adds text before JSON — extract the JSON object
+    if (cleaned.length > 0 && !cleaned.startsWith('{')) {
+      const jsonStart = cleaned.indexOf('{');
+      if (jsonStart > 0) {
+        // Find the matching closing brace by counting nesting
+        let depth = 0;
+        let jsonEnd = -1;
+        for (let i = jsonStart; i < cleaned.length; i++) {
+          if (cleaned[i] === '{') depth++;
+          else if (cleaned[i] === '}') { depth--; if (depth === 0) { jsonEnd = i + 1; break; } }
+        }
+        if (jsonEnd > 0) cleaned = cleaned.slice(jsonStart, jsonEnd);
+      }
+    }
     try {
       const parsed = JSON.parse(cleaned);
 

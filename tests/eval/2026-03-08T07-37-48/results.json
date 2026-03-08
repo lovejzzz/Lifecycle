@@ -1,0 +1,296 @@
+{
+  "timestamp": "2026-03-08T07-37-48",
+  "overall": 78,
+  "testsRun": [
+    "hr-hiring",
+    "freelancer-client",
+    "execute-sow",
+    "edge-question-looks-like-build",
+    "personality-poirot-empty",
+    "legal-gdpr-compliance"
+  ],
+  "poolSize": 36,
+  "results": [
+    {
+      "id": "hr-hiring",
+      "status": "ok",
+      "elapsed": 149757,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We need to hire 5 engineers in the next 2 months. Our current process is just posting on LinkedIn and hoping. Build me a proper hiring pipeline.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "{\n  \"message\": \"Mission received. Building engineered hiring pipeline.\",\n  \"workflow\": {\n    \"nodes\": [\n      {\n        \"label\": \"Hiring Demand Triggered\",\n        \"category\": \"trigger\",\n        \"description\": \"Business need initiates hiring for 5 engineers within 2 months\",\n        \"content\": \"Trigger event: Formal hiring request submitted via HRIS (e.g., Workday, BambooHR) by department head with executive approval. Payload includes role titles (e.g., Senior Backend Engineer), budget allocation, timeline constraints (start date within 60 days), and headcount justification. Configuration: Set up automated webhook to capture request ID, requester email, and attached documents (business case, org chart). Steps: 1) Verify request against quarterly planning in Notion or Jira; 2) Log trigger in ATS (Greenhouse or Lever) with priority flag; 3) Notify recruiting lead via Slack/Email with SLA of 24-hour response. Tools: Integrate Zapier or custom API to sync with calendar for milestone tracking. Ensure data includes compliance checks (EEO, budget codes) and kick off workflow only after all signatures are digitally captured in DocuSign.\"\n      },\n      {\n        \"label\": \"Define Job Requirements and Strategy\",\n        \"category\": \"action\",\n        \"description\": \"Create detailed job descriptions and hiring plan aligned with goals\",\n        \"content\": \"Action steps: 1) Schedule kickoff meeting with hiring manager and team leads within 48 hours using Calendly; 2) Draft job descriptions using templates in Google Docs, including must-have skills (e.g., Python, AWS), nice-to-haves, and cultural fit criteria; 3) Define KPIs: target response rate (≥50 applications per role), diversity goals (e.g., 30% underrepresented groups), and sourcing channels mix (40% referrals, 30% LinkedIn, 20% niche boards, 10% agencies). Tools: Use ATS integrations to auto-populate fields; benchmark salaries with Levels.fyi or Compaas. Output: Approved JD stored in shared drive with version control; create project plan in Asana with milestones (sourcing complete by day 15, first interviews by day 20). Assign owner: Recruiting Coordinator; include checklist for legal review and budget alignment.\"\n      },\n      {\n        \"label\": \"Execute Multi-Channel Sourcing\",\n        \"category\": \"action\",\n        \"description\": \"Proactively source candidates beyond LinkedIn using targeted outreach\",\n        \"content\": \"Numbered steps: 1) Activate LinkedIn Recruiter seats with Boolean searches (e.g., 'site:github.com Java AND spring boot') and InMail campaigns (template: personalized value prop); 2) Launch referral program via Teamable or Gr8People with bonuses ($3k per hire); 3) Post on niche boards (Stack Overflow, AngelList) and attend virtual events (Meetup, conferences); 4) Run targeted ads on Google/Facebook with tracking UTM codes. Tools: Use HireEZ or SeekOut for diversity sourcing; set up drip campaigns in Outreach.io for passive candidates. Error handling: Monitor response rates daily; if <20% InMail acceptance, A/B test subject lines. Owner: Sourcer; weekly report on pipeline health (candidates per role ≥10). Include criteria: prioritize candidates with active GitHub projects or published tech talks.\"\n      },\n      {\n        \"label\": \"Screen Resumes and Initial Contact\",\n        \"category\": \"action\",\n        \"description\": \"Filter applications and conduct phone screens to qualify candidates\",\n        \"content\": \"Steps: 1) Use ATS (Greenhouse) to parse resumes with keyword scoring (weights for skills, experience); 2) Recruiter performs 15-minute phone screens using structured script (questions on motivation, relocation); 3) Score candidates on rubric (1-5 scale for technical fit, communication); 4) Schedule Calendly links for next step if score ≥4. Tools: Integrate with CodeSignal for quick tech assessments; log notes in ATS with tags. Error handling: If pass-through rate <30%, refine rubric or retrain recruiters. Owner: Recruiter; SLA of 72 hours from application to contact. Include checklist: verify work authorization, salary expectations, and availability. Output: Qualified candidate list with summaries for interview panel; if insufficient volume (<5 per role), trigger feedback loop to adjust sourcing.\"\n      },\n      {\n        \"label\": \"Schedule and Coordinate Interviews\",\n        \"category\": \"review\",\n        \"description\": \"Human approval on interview plan and panel assignments\",\n        \"content\": \"Approval criteria: 1) Interview panel must include hiring manager, tech lead, and culture add representative; 2) Schedule within 5 business days of screening, using tools like GoodTime or Calendly to avoid conflicts; 3) Set interview duration (45 min tech, 30 min behavioral) and format (virtual via Zoom with recorded consent). Who reviews: Recruiting manager approves panel composition and timeline; escalate to VP if delays >2 days. SLA: 24-hour turnaround for scheduling. Steps: Send calendar invites with prep materials (JD, scoring guide); confirm room/tech setup. Escalation path: If panelists unavailable, use backup list or adjust dates. Include policy: No interviews without pre-briefing on bias training. Output: Calendarized interview slots with candidate confirmations.\"\n      },\n      {\n        \"label\": \"Conduct Structured Interviews\",\n        \"category\": \"action\",\n        \"description\": \"Execute technical and behavioral interviews with consistent evaluation\",\n        \"content\": \"Numbered steps: 1) Panelists use standardized question bank (e.g., from Karat for coding, STAR for behavioral) in centralized doc; 2) Technical round: Live coding on CoderPad or HackerRank, assessing problem-solving (30 min); 3) Cultural fit round: Values alignment using scorecard (e.g., 'Ownership', 'Curiosity'); 4) Collect feedback immediately via ATS form (scale 1-10 with comments). Tools: Record sessions (with permission) for calibration; use BrightHire for note-taking. Error handling: If inter-rater reliability <80%, hold calibration meeting. Owner: Interview panel; debrief within 24 hours. Include criteria: Pass requires average score ≥7 and no red flags (e.g., poor collaboration). Output: Compiled feedback report for decision node; if inconsistencies, loop back for re-interview.\"\n      },\n      {\n        \"label\": \"Final Candidate Selection and Approval\",\n        \"category\": \"review\",\n        \"description\": \"Hiring committee reviews feedback and approves offers\",\n        \"content\": \"Approval criteria: 1) Consensus from panel (≥80% agreement); 2) Reference checks via Checkster or manual calls (3 references min); 3) Budget alignment with compensation band (data from Radford). Who reviews: Hiring committee (manager, director, HRBP); escalate to CFO for offers above band. SLA: Decision within 48 hours post-interviews. Steps: Compile scorecards in ATS; hold roundtable to debate ties; use rubric: technical (40%), cultural (30%), experience (30%). Escalation: If no candidate meets bar, pause and refine requirements. Include policy: No offer without background check initiation. Output: Approved candidate list with offer details; if rejections, document reasons to refine screening process. Tools: Lever analytics for decision tracking.\"\n      },\n      {\n        \"label\": \"Extend Offer and Initiate Onboarding\",\n        \"category\": \"output\",\n        \"description\": \"Deliver offers and kick off pre-boarding for new hires\",\n        \"content\": \"Deliverable format: Formal offer letter via Docusign with components: salary, equity, benefits, start date. Distribution: Sent by recruiting lead with follow-up call within 24 hours. Success metrics: Target acceptance rate ≥85%, time-to-offer ≤5 days from approval. Steps: 1) Negotiate using scripted ranges (10% flexibility); 2) Upon acceptance, trigger onboarding in BambooHR: IT setup (laptop request via ServiceNow), access grants (Slack, GitHub), and orientation schedule; 3) Send welcome package and assign buddy. Tools: Integrate with ADP for payroll; use Trello for pre-boarding checklist. Monitor: Track decline reasons (e.g., counteroffer) to adjust future offers. Output: Signed offers stored digitally; onboarding timeline shared with manager; report hiring completion to stakeholders with KPIs (e.g., diversity met, cost-per-hire).\"\n      }\n    ],\n    \"edges\": [\n      { \"from\": 0, \"to\": 1, \"label\": \"triggers\" },\n      { \"from\": 1, \"to\": 2, \"label\": \"drives\" },\n      { \"from\": 1, \"to\": 3, \"label\": \"drives",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 15,
+        "maxScore": 45,
+        "pct": 33,
+        "checks": [
+          "✓ Valid JSON response",
+          "✗ Workflow missing when expected",
+          "✗ Node count: 0 < 5",
+          "✓ Node count: 0 ≤ 10",
+          "✗ Missing \"review\" category (found: )"
+        ]
+      }
+    },
+    {
+      "id": "freelancer-client",
+      "status": "ok",
+      "elapsed": 135982,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "I'm a freelance designer. I need a workflow for managing client projects — from initial inquiry to final delivery and getting paid. I keep forgetting to send invoices.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building your client project management workflow with invoice automation to prevent missed payments.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Client Inquiry Received",
+              "category": "trigger",
+              "description": "Initial contact from potential client via email, form, or call",
+              "content": "Capture inquiry details immediately: client name, contact info, project type, budget range, and timeline. Use a CRM tool like HoneyBook or Dubsado to log entries automatically from webhooks. Set up email parsing with tools like Zapier to forward inquiries to your system. Define qualification criteria: minimum budget, project scope alignment, and client responsiveness. Store all data in a centralized database (e.g., Airtable or Notion) for tracking. Include a checklist: 1) Acknowledge receipt within 4 hours, 2) Schedule a discovery call, 3) Send a brief questionnaire to gather specifics. Configure alerts for new inquiries to ensure prompt follow-up and avoid missed opportunities."
+            },
+            {
+              "label": "Qualify & Schedule Discovery",
+              "category": "action",
+              "description": "Assess client fit and book a kickoff meeting",
+              "content": "Step 1: Review inquiry against qualification criteria—reject if outside scope with a templated response. Step 2: For qualified leads, send a Calendly link or similar scheduling tool (e.g., Calendly integrated with Google Calendar) to book a 30-minute discovery call. Step 3: Prepare for the call: research client background, draft initial questions about goals, brand guidelines, and deliverables. Use a script template in tools like Loom or Notion. Step 4: During the call, take detailed notes using Otter.ai for transcription, focusing on pain points and success metrics. Step 5: Post-call, send a summary email confirming key points and next steps, and update the CRM status to 'Discovery Complete'. Assign an owner (you) and set a reminder for 24-hour follow-up."
+            },
+            {
+              "label": "Draft Project Proposal & Contract",
+              "category": "artifact",
+              "description": "Create a detailed proposal outlining scope, timeline, and payment terms",
+              "content": "Use a template in tools like PandaDoc or Bonsai to draft the proposal. Include sections: 1) Executive summary of client needs, 2) Detailed scope of work with deliverables (e.g., logo design, 3 revisions), 3) Timeline with milestones (e.g., wireframes in 2 weeks), 4) Pricing breakdown (fixed fee or hourly), 5) Payment schedule (e.g., 50% upfront, 50% on delivery), 6) Terms and conditions (IP transfer, revision limits). Incorporate invoice reminders by setting automatic triggers in the contract—e.g., invoice sent upon milestone completion via integration with QuickBooks or FreshBooks. Add a clause for late fees to incentivize timely payment. Review proposal with a checklist: clarity, legal compliance, and alignment with discussed goals. Save as PDF and share via secure link."
+            },
+            {
+              "label": "Client Review & Contract Sign-off",
+              "category": "review",
+              "description": "Client evaluates and approves the proposal",
+              "content": "Send the proposal via email with a tracking link using tools like DocuSign for electronic signatures. Define approval criteria: client agrees to all terms, no scope changes, and signed contract returned within 3 business days. Set up automated reminders for follow-up: day 1, day 3, and day 5 post-send. If revisions are requested, document changes in a change log and update the proposal accordingly—escalate to a call for major changes. Upon approval, notify yourself via Slack or email, and move the project to 'Active' status in the CRM. If rejected, analyze reasons (e.g., budget mismatch) and refine the qualification process, logging insights for future leads. Store signed contract in a cloud folder (Google Drive or Dropbox) with access controls."
+            },
+            {
+              "label": "Execute Design Work",
+              "category": "action",
+              "description": "Carry out design tasks based on approved scope",
+              "content": "Break down the project into phases: 1) Research and mood boards using tools like Miro or Figma Jam, 2) Initial drafts (2-3 concepts) in design software (Figma, Adobe Creative Cloud), 3) Internal review with a checklist for brand consistency and usability. Set up a project management tool like Asana or Trello with tasks, deadlines, and dependencies. Use time-tracking apps like Toggl to log hours for billing accuracy. Communicate progress weekly via status updates in a shared Slack channel or email. Implement version control for files using GitHub for designers or Figma versions. Handle feedback iteratively: document all client inputs in a centralized feedback log to avoid scope creep. If blockers arise, escalate immediately with proposed solutions."
+            },
+            {
+              "label": "Design Review & Feedback Cycle",
+              "category": "review",
+              "description": "Client provides feedback on design drafts",
+              "content": "Share design drafts via a collaborative platform like Figma Comments or InVision for real-time feedback. Define review criteria: alignment with brand guidelines, functionality, and aesthetic appeal. Set a feedback window (e.g., 48 hours) and send reminders using automated emails from your CRM. Categorize feedback as major (requiring rework) or minor (tweaks). For major changes, assess if they're within scope; if out-of-scope, trigger a change request process with updated pricing. Use a feedback template to capture specific comments and action items. After incorporating feedback, send revised drafts and request final approval. If multiple rounds are needed, limit to 3 as per contract to prevent endless revisions. Log all feedback in the project management tool for audit trails."
+            },
+            {
+              "label": "Finalize & Deliver Assets",
+              "category": "artifact",
+              "description": "Prepare and hand over final design files",
+              "content": "Upon final approval, compile deliverables: source files (e.g., .fig, .ai), exported assets (PNGs, PDFs), style guides, and usage instructions. Use a checklist: 1) Verify all file formats are correct, 2) Optimize images for web and print, 3) Add metadata and copyright info. Package files in a zip folder and upload to a secure delivery platform like WeTransfer or Google Drive with password protection if needed. Send a delivery email with download links, a summary of work completed, and a request for confirmation of receipt. Include a satisfaction survey link (e.g., Typeform) to gather testimonials. Update the CRM to 'Delivered' status and trigger the next step for invoicing automatically via integration with your accounting software."
+            },
+            {
+              "label": "Generate & Send Invoice with Reminders",
+              "category": "action",
+              "description": "Create and dispatch invoice to ensure timely payment",
+              "content": "Step 1: Use accounting software like QuickBooks or Wave to generate invoice based on the contract—include details: project name, date, items (e.g., design hours, deliverables), payment terms (net 15 days), and late fee policy. Step 2: Automate invoice creation upon project delivery by setting up a Zapier zap that triggers when CRM status changes to 'Delivered'. Step 3: Send invoice via email with a clear subject line and payment link (e.g., PayPal, Stripe). Step 4: Set up automated reminders: send a thank-you email after 3 days, a gentle reminder at 7 days, and a final notice at 14 days if unpaid. Use tools like Invoice2go for scheduling. Step 5: Track payment status in a dashboard and follow up manually if overdue. Log all communications to avoid disputes."
+            },
+            {
+              "label": "Payment Received & Project Closure",
+              "category": "output",
+              "description": "Confirm payment, archive project, and measure success",
+              "content": "Monitor payment notifications from your banking or payment processor (e.g., Stripe webhooks). Upon receipt, send a thank-you email with a receipt and request for a review on platforms like LinkedIn or Clutch. Update financial records: mark invoice as paid in QuickBooks, reconcile accounts, and calculate profit margin. Archive project files in a designated folder (e.g., 'Completed Projects_2024') with a standardized naming convention. Conduct a post-mortem analysis: review timeline adherence, client satisfaction scores, and lessons learned. Document metrics: hours spent vs. budget, revenue generated, and client retention potential. Close the project in the CRM, setting it to 'Archived' status. Optionally, schedule a follow-up in 6 months for potential repeat business or referrals."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "validates"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "approves"
+            },
+            {
+              "from": 3,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 5,
+              "to": 4,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "approves"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "outputs"
+            },
+            {
+              "from": 7,
+              "to": 8,
+              "label": "outputs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 95,
+        "maxScore": 95,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 9 (min: 5)",
+          "✓ Node count: 9 ≤ 10",
+          "✓ All 10 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 759c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (10 edges, 9 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "execute-sow",
+      "status": "ok",
+      "elapsed": 74582,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Write a statement of work for a 3-month web application redesign project. Client is a mid-size e-commerce company. Budget is $85,000. Include scope, deliverables, timeline, and payment terms.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Statement of Work: E-Commerce Web Application Redesign\n\n**Project Title:** E-Commerce Platform Redesign & User Experience Enhancement\n**Client:** [Client Company Name]\n**Vendor:** [Your Agency Name]\n**Effective Date:** [Date]\n**Project Duration:** 3 Months (Approximately 12 Weeks)\n**Total Project Budget:** $85,000.00\n\n---\n\n### **1.0 Project Overview & Objectives**\n\nThis Statement of Work (SOW) outlines the agreement between [Client Company Name] (\"Client\") and [Your Agency Name] (\"Vendor\") for the comprehensive redesign of the Client's existing e-commerce web application. The primary goal is to modernize the platform's user interface (UI), significantly improve the user experience (UX), enhance site performance, and implement updated front-end technologies to drive increased customer engagement, conversion rates, and average order value (AOV).\n\nKey business objectives include:\n*   Increase overall site conversion rate by a target of 15%.\n*   Improve mobile conversion rates and reduce bounce rates.\n*   Streamline the checkout process to reduce cart abandonment.\n*   Create a modern, brand-consistent visual identity that builds trust.\n*   Improve site core web vitals and overall performance metrics.\n*   Establish a scalable, maintainable front-end architecture.\n\n### **2.0 Scope of Work**\n\nThe Vendor will execute the following phases and tasks:\n\n**Phase 1: Discovery & Strategy (Weeks 1-2)**\n*   **Stakeholder Workshops:** Conduct collaborative sessions to understand business goals, brand voice, and target audience.\n*   **Competitive & Heuristic Analysis:** Review 3-5 competitor sites and perform a UX audit of the current application.\n*   **Analytics Review:** Analyze current Google Analytics/Adobe Analytics data to identify pain points and opportunities.\n*   **Technical Assessment:** Review current tech stack, identify constraints, and confirm hosting environment compatibility.\n*   **Deliverable:** A comprehensive Strategy & Requirements Document.\n\n**Phase 2: User Experience (UX) & Information Architecture (IA) (Weeks 3-5)**\n*   **User Personas & Journey Mapping:** Develop detailed personas and map key user flows (browsing, searching, checkout).\n*   **Site Mapping:** Redesign the application's information hierarchy and navigation structure.\n*   **Wireframing:** Create low-fidelity and high-fidelity interactive wireframes for all key templates, including:\n    *   Homepage\n    *   Product Listing Pages (PLPs) & Category Pages\n    *   Product Detail Pages (PDPs)\n    *   Shopping Cart & Checkout Process (including guest checkout)\n    *   User Account Dashboard\n    *   Content Pages (About, Contact, FAQ)\n*   **Usability Testing Plan:** Develop a plan for prototype testing.\n\n**Phase 3: User Interface (UI) Design & Prototyping (Weeks 6-8)**\n*   **Visual Design System:** Create a cohesive UI design system including color palette, typography, iconography, button styles, and component library.\n*   **High-Fidelity Mockups:** Apply the visual design to all wireframed templates, providing desktop, tablet, and mobile views.\n*   **Interactive Prototype:** Develop a clickable prototype (using Figma or similar) of primary user flows for stakeholder review and user testing.\n*   **Design Handoff:** Prepare all design assets, specifications, and style guides for development.\n\n**Phase 4: Front-End Development (Weeks 9-11)**\n*   **Component Development:** Build responsive, accessible HTML/CSS/JavaScript components based on the approved design system.\n*   **Template Integration:** Integrate developed front-end components into the Client's chosen CMS/E-commerce platform (e.g., Shopify Plus, BigCommerce, custom framework). *[Note: Assumes templates are built; back-end data integration is defined by the platform's capabilities.]*\n*   **Cross-Browser & Device Testing:** Ensure consistent rendering and functionality across specified browsers and devices.\n*   **Performance Optimization:** Optimize images, code, and assets to meet agreed-upon performance benchmarks (e.g., Lighthouse scores).\n\n**Phase 5: Quality Assurance, Launch & Transition (Week 12)**\n*   **Functional & User Acceptance Testing (UAT):** Execute a testing plan. Support a 1-week Client UAT period to identify and fix bugs.\n*   **Pre-Launch Checklist & Deployment:** Final review, SEO meta-tag population, analytics tag implementation, and staging-to-production deployment.\n*   **Post-Launch Support:** Provide 2 weeks of post-launch monitoring and critical bug-fix support.\n*   **Knowledge Transfer:** Deliver final documentation and conduct a handoff session with the Client's team.\n\n### **3.0 Deliverables**\n\n1.  Strategy & Requirements Document\n2.  User Personas & Journey Maps\n3.  Site Map and Updated IA\n4.  Complete set of High-Fidelity Wireframes\n5.  UI Design System & Component Library\n6.  High-Fidelity Mockups for all key page templates (responsive)\n7.  Interactive Prototype\n8.  Fully developed, responsive front-end templates integrated into the staging environment.\n9.  Quality Assurance Test Report\n10. Final Project Documentation & Source Files\n11. Post-Launch Report (summary of launch and initial observations)\n\n### **4.0 Project Timeline & Milestones**\n\n*   **Kick-off:** Week 1\n*   **Milestone 1 – Strategy Sign-off:** End of Week 2\n*   **Milestone 2 – UX/IA & Wireframe Sign-off:** End of Week 5\n*   **Milestone 3 – UI Design & Prototype Sign-off:** End of Week 8\n*   **Milestone 4 – Development Completion & Staging Review:** End of Week 11\n*   **Client UAT Period:** Week 12\n*   **Launch & Project Closeout:** End of Week 12\n\n*A detailed project schedule with weekly checkpoints will be maintained in Asana/Monday.com and reviewed in weekly status meetings.*\n\n### **5.0 Payment Terms**\n\nThe total fixed project fee is **$85,000.00**.\n\nPayments are tied to project milestones and deliverables:\n*   **Payment 1 (20% - $17,000):** Due upon SOW execution to initiate project.\n*   **Payment 2 (25% - $21,250):** Due upon Client sign-off of the Strategy & Requirements Document (Milestone 1).\n*   **Payment 3 (25% - $21,250):** Due upon Client sign-off of UI Designs & Interactive Prototype (Milestone 3).\n*   **Payment 4 (30% - $25,500):** Due upon successful launch and project closeout.\n\nAll invoices are payable within **15 days** of receipt. Work on subsequent phases is contingent upon timely approval of deliverables and payment of preceding invoices.\n\n### **6.0 Assumptions & Exclusions**\n\n**Assumptions:**\n*   Client will assign a single point of contact for approvals and feedback with a 48-hour standard turnaround time for submitted deliverables.\n*   Client will provide all necessary brand assets, style guides (if they exist), and logins for current analytics, hosting, and e-commerce platforms in a timely manner.\n*   Client will be responsible for providing all final, approved website content (text, images, video) by the start of Development (Week 9).\n*   The project scope covers front-end redesign and standard e-commerce template development. Complex new back-end functionality (e.g., custom ERP integration, advanced search algorithms) is out of scope.\n*   Ongoing hosting, platform licensing fees, third-party plugin costs, and post-launch content updates are not included.\n\n**Exclusions (Out of Scope):**\n*   Copywriting and content creation services.\n*   Professional photography or videography.\n*   Major back-end development or database architecture.\n*   Marketing campaigns or SEO strategy beyond on-page technical implementation.\n*   Support beyond the 2-week post-launch period (available under a separate retainer agreement).",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (7584 chars)",
+          "✓ Content length: 7584 ≥ 300"
+        ]
+      }
+    },
+    {
+      "id": "edge-question-looks-like-build",
+      "status": "ok",
+      "elapsed": 24269,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What's the best way to set up a data pipeline?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Voilà! For setting up a data pipeline, mon ami, begin by thoroughly investigating your data sources and business requirements—tools like Apache Airflow or Prefect for orchestration, coupled with data validation frameworks like Great Expectations, will ensure quality and reliability. Monitor key metrics such as data latency, throughput, and error rates using dashboards in Grafana or Datadog, and adopt incremental loading techniques to handle large datasets efficiently. Très intéressant! Always iterate with feedback loops to refine the pipeline, much like solving a complex case with careful clues.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (602 chars)",
+          "✓ Message length: 602 ≥ 50"
+        ]
+      }
+    },
+    {
+      "id": "personality-poirot-empty",
+      "status": "ok",
+      "elapsed": 8444,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Mon ami, we have a blank canvas—the case file is empty, awaiting our first clue. My little grey cells are ready to build a masterpiece of logic and flow. Shall we begin?",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (169 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "legal-gdpr-compliance",
+      "status": "ok",
+      "elapsed": 143557,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We just got our first EU customer and we have zero GDPR compliance. Build me a workflow to get compliant — data audit, privacy policy, consent management, breach notification process, DPO appointment.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "{\n  \"message\": \"Aha! The case of GDPR compliance is upon us, mon ami. Let me craft a meticulous workflow to uncover the clues and establish order in your data practices, ensuring every step is scrutinized with the precision of a detective's magnifying glass.\",\n  \"workflow\": {\n    \"nodes\": [\n      {\n        \"label\": \"EU Customer Trigger\",\n        \"category\": \"trigger\",\n        \"description\": \"The event of acquiring the first EU customer, initiating GDPR compliance efforts.\",\n        \"content\": \"This trigger node marks the starting point of your GDPR compliance journey. Upon onboarding the first EU customer, immediately log this event in your compliance tracking system (e.g., Jira, Asana) with details like customer name, region, and data processing scope. Steps: 1. Document the customer's EU country and applicable GDPR variants (e.g., Germany's BDSG). 2. Notify key stakeholders (legal, IT, sales) via automated alerts or Slack channels. 3. Initiate a compliance clock, as GDPR requirements must be met before data processing begins. 4. Set up a project timeline with milestones for audit, policy creation, and implementation. 5. Assign a project owner to oversee the workflow. Use tools like Trello for task management to ensure accountability. This trigger ensures no delay, as GDPR non-compliance can lead to fines up to 4% of global revenue. Expected output: a formal initiation report with timelines and responsibilities.\"\n      },\n      {\n        \"label\": \"Data Audit and Mapping\",\n        \"category\": \"action\",\n        \"description\": \"Conduct a comprehensive audit of all personal data processed, including sources, storage, and flows.\",\n        \"content\": \"Begin by mapping all data flows within the organization to identify personal data under GDPR. Use a structured approach: 1. Inventory data collection points (e.g., website forms, CRM systems, mobile apps) using tools like DataGrail or manual spreadsheets. 2. Categorize data types: PII (names, emails), sensitive data (health, biometrics), and special categories per GDPR Article 9. 3. Document storage locations: cloud services (AWS S3, Google Cloud), on-prem servers, and third-party processors. 4. Identify data processors and sub-processors with data processing agreements (DPAs) in place. 5. Assess data retention periods and deletion policies against GDPR's 'storage limitation' principle. 6. Review security measures: encryption, access controls, and breach detection tools. Involve cross-functional teams (IT, legal, marketing) for accuracy. Expected output: a detailed data map and risk assessment report, formatted in a shareable PDF or Confluence page, with gaps highlighted for remediation.\"\n      },\n      {\n        \"label\": \"Draft Privacy Policy\",\n        \"category\": \"policy\",\n        \"description\": \"Create a GDPR-compliant privacy policy based on audit findings.\",\n        \"content\": \"Draft a privacy policy that aligns with GDPR Articles 12-14, ensuring transparency and user rights. Steps: 1. Use the data audit output to list all data processing activities, purposes, and legal bases (consent, contract, legitimate interest). 2. Include mandatory sections: data controller details, data types collected, processing purposes, retention periods, user rights (access, rectification, erasure), and contact information for DPO. 3. Incorporate clear language accessible to average users, avoiding legal jargon. 4. Reference tools like Iubenda or Termly for template generation, but customize based on audit specifics. 5. Integrate mechanisms for policy updates and user notification. 6. Ensure alignment with other policies (e.g., cookie policy). Draft in a collaborative tool like Google Docs with version control. Expected output: a v1.0 privacy policy document, ready for review, in Markdown or Word format, with comments for stakeholder input.\"\n      },\n      {\n        \"label\": \"Privacy Policy Review\",\n        \"category\": \"review\",\n        \"description\": \"Human review and approval of the drafted privacy policy by legal or compliance team.\",\n        \"content\": \"This review node involves a meticulous human check to ensure the privacy policy meets GDPR standards. Steps: 1. Assign reviewers: legal counsel, compliance officer, and possibly external GDPR consultant. 2. Use a checklist: verify all required GDPR elements are present (e.g., lawful basis, data subject rights, breach notification timelines). 3. Assess clarity and usability: test with sample users or tools like Hemingway App for readability. 4. Cross-reference with data audit to ensure accuracy of data flows and purposes. 5. Document feedback in a review log (e.g., via GitHub issues or Notion) with specific change requests. 6. Schedule a review meeting to discuss discrepancies and approvals. If changes are needed, route back to drafting; if approved, move to implementation. Expected output: a signed-off privacy policy version with approval stamps and a summary of changes made.\"\n      },\n      {\n        \"label\": \"Consent Management Setup\",\n        \"category\": \"action\",\n        \"description\": \"Implement systems for obtaining, managing, and documenting user consent.\",\n        \"content\": \"Deploy consent mechanisms per GDPR Article 7, ensuring explicit, informed, and revocable consent. Steps: 1. Choose consent management platforms (CMPs) like OneTrust, Cookiebot, or open-source solutions for website consent banners. 2. Configure consent types: opt-in for data collection, with clear 'accept' and 'reject' options, no pre-ticked boxes. 3. Integrate with data systems (CRM, analytics) to log consent timestamps, purposes, and user IDs. 4. Implement backend APIs to track consent changes and automate data processing halts upon withdrawal. 5. Design user interfaces for consent dashboards where users can manage preferences. 6. Test consent flows across devices and browsers for compliance. Use tools like Postman for API testing and browser dev tools for UI checks. Expected output: a live consent management system with documentation on configuration and user guides for ongoing maintenance.\"\n      },\n      {\n        \"label\": \"Breach Response Plan\",\n        \"category\": \"policy\",\n        \"description\": \"Develop and document procedures for detecting, reporting, and responding to data breaches.\",\n        \"content\": \"Create a breach notification plan as per GDPR Articles 33-34, detailing steps for incident response. Steps: 1. Define breach detection: monitor logs with SIEM tools like Splunk or ELK stack for anomalies. 2. Establish an incident response team with roles (incident commander, IT, legal, communications). 3. Document escalation procedures: internal notification within 24 hours, assessment of risk to data subjects. 4. Outline reporting requirements: notify supervisory authority within 72 hours using templates from authorities like ICO. 5. Plan communication strategies for affected individuals, including draft messages and channels (email, website notices). 6. Incorporate post-breach actions: root cause analysis, remediation steps, and updates to security policies. Use frameworks like NIST SP 800-61 for guidance. Expected output: a comprehensive",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 15,
+        "maxScore": 50,
+        "pct": 30,
+        "checks": [
+          "✓ Valid JSON response",
+          "✗ Workflow missing when expected",
+          "✗ Node count: 0 < 5",
+          "✓ Node count: 0 ≤ 10",
+          "✗ Missing \"policy\" category (found: )",
+          "✗ Missing \"review\" category (found: )"
+        ]
+      }
+    }
+  ]
+}

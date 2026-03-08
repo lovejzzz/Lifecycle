@@ -1,0 +1,501 @@
+{
+  "timestamp": "2026-03-08T08-06-00",
+  "overall": 100,
+  "testsRun": [
+    "eng-code-review",
+    "creator-youtube",
+    "execute-incident-postmortem",
+    "edge-question-looks-like-build",
+    "edge-build-looks-like-question",
+    "personality-poirot-empty"
+  ],
+  "poolSize": 36,
+  "results": [
+    {
+      "id": "eng-code-review",
+      "status": "ok",
+      "elapsed": 149487,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "PRs sit for days because nobody reviews them. I want an automated workflow: PR opened → assign reviewer → review deadline → merge or request changes → deploy.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building automated PR review workflow.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "GitHub PR Opened Webhook",
+              "category": "trigger",
+              "description": "Event trigger when a new pull request is created in the repository.",
+              "content": "Configure a webhook in your GitHub repository settings to fire on the 'pull_request' event with action 'opened'. Use a payload URL pointing to your CI/CD system (e.g., Jenkins, GitHub Actions webhook endpoint). Ensure the payload includes PR metadata: PR number, title, author, branch names, diff URL, and labels. Set up authentication using HMAC secrets for security. In your automation tool, parse this JSON payload to extract key fields: repository name, PR ID, and base/head refs. Log the event for auditing and trigger downstream actions immediately upon receipt. Handle retries for failed webhook deliveries with exponential backoff, and monitor webhook health via status dashboards (e.g., using Sentry or logging to CloudWatch)."
+            },
+            {
+              "label": "Auto-Assign Reviewer Engine",
+              "category": "action",
+              "description": "Automatically assigns reviewers based on predefined rules to ensure timely reviews.",
+              "content": "Implement a script or use a tool like GitHub's CODEOWNERS file or a bot (e.g., Probot Assign) to assign reviewers. Steps: 1. Analyze PR changes: Use git diff to identify modified files and directories. 2. Map to code ownership: Check CODEOWNERS or a team configuration file (YAML/JSON) to find responsible developers. 3. Assign reviewers: Select 1-2 reviewers based on load balancing (track open reviews per person) or rotation (round-robin). 4. Notify: Post a comment on the PR with @mentions and send Slack/email alerts via integrations. 5. Fallback: If no owner is found, escalate to team leads or use a default reviewer list. Tools: GitHub Actions with 'actions/github-script', GitLab CI with API calls, or custom Python script using PyGithub. Error handling: Retry on API rate limits, log assignments for audit, and set up alerts for failures."
+            },
+            {
+              "label": "Review SLA Enforcement Policy",
+              "category": "policy",
+              "description": "Policy defining deadlines and escalation rules for PR reviews to prevent delays.",
+              "content": "Define clear SLAs: e.g., all PRs must be reviewed within 24 hours of assignment. Rules: 1. Deadline tracking: Use a timer triggered on reviewer assignment; monitor via a dashboard (e.g., Grafana with metrics from GitHub API). 2. Escalation steps: If no review within 12 hours, send a reminder to the assignee; at 18 hours, notify the team channel; at 24 hours, auto-assign to a backup reviewer or team lead. 3. Exceptions: Exclude PRs labeled 'WIP' or 'draft', and allow manual overrides via PR comments. 4. Enforcement: Implement with GitHub Actions scheduled jobs or a cron job that checks PR age and reviewer status. Tools: GitHub's 'stale' bot, custom scripts with cron, or CI/CD pipelines with conditional logic. Document the policy in the repository's CONTRIBUTING.md and ensure team awareness through regular syncs."
+            },
+            {
+              "label": "Peer Code Review Gate",
+              "category": "review",
+              "description": "Human review step where assigned reviewers approve, request changes, or reject the PR.",
+              "content": "Establish a structured review process: 1. Review criteria: Check for code quality (adherence to style guides via linters like ESLint, RuboCop), functionality (test coverage, edge cases), security (vulnerability scans with Snyk or SonarQube), and documentation updates. 2. Reviewer actions: Use GitHub review features—approve, request changes, or comment. Require at least one approval from a code owner. 3. SLA: Reviewers must respond within the SLA; use notifications via GitHub integrations with Slack or Microsoft Teams. 4. Escalation: If disagreements arise, involve a senior developer or architect for arbitration. 5. Documentation: Log review comments and decisions in the PR thread for traceability. Tools: Integrate with code review tools like Reviewable or use built-in GitHub reviews. Ensure training on review best practices and regular feedback loops."
+            },
+            {
+              "label": "PR Merge Automation",
+              "category": "action",
+              "description": "Automatically merges the PR after approval and all checks pass.",
+              "content": "Steps to merge PR safely: 1. Pre-merge checks: Verify that all required status checks are green (e.g., CI tests, linting, security scans). Use GitHub's protected branch rules to enforce this. 2. Merge method: Choose between merge commit, squash, or rebase based on team policy; configure via GitHub API or GitLab merge options. 3. Conflict handling: If conflicts arise, abort merge and notify the PR author via comment to resolve manually. 4. Automation: Trigger merge via GitHub Actions workflow or GitLab CI pipeline after approval; use conditions like `if: github.event.review.state == 'approved'`. 5. Post-merge: Close the PR, delete the source branch if enabled, and update issue trackers (e.g., Jira automation). Tools: GitHub's 'merge' action, GitLab's merge requests API, or Jenkins with plugins. Error handling: Log merge attempts, set up rollback procedures, and monitor for failures."
+            },
+            {
+              "label": "Change Request Handler",
+              "category": "action",
+              "description": "Manages the process when changes are requested during review, ensuring updates and re-review.",
+              "content": "Handle review rejections or change requests: 1. Notification: Automatically comment on the PR with specific change requests and tag the author. Send alerts via email or chat (e.g., Slack using webhooks). 2. Tracking: Update PR status to 'changes requested' and start a new timer for re-submission SLA (e.g., 48 hours). 3. Author actions: Guide the author to push updates to the same branch; use PR comments to acknowledge changes. 4. Re-trigger review: Once updates are pushed, automatically re-assign the original reviewers or notify them via @mentions. 5. Loop management: Limit re-review cycles to prevent infinite loops; after 3 iterations, escalate to a lead for manual intervention. Tools: GitHub Actions with event triggers on 'synchronize' (push to PR branch), custom bots, or CI/CD pipelines that reset review timers. Ensure documentation in the workflow wiki."
+            },
+            {
+              "label": "Production Deployment Pipeline",
+              "category": "output",
+              "description": "Final deployment of merged changes to production environment, ensuring smooth release.",
+              "content": "Deploy merged code to production with robustness: 1. Environment setup: Use infrastructure as code (Terraform, CloudFormation) to provision servers or containers (Kubernetes, Docker). 2. Deployment strategy: Choose blue-green, canary, or rolling updates to minimize downtime; configure with tools like ArgoCD, Spinnaker, or GitHub Deployments. 3. Steps: Build artifact from merged code, run integration tests, deploy to staging for smoke tests, then promote to production upon success. 4. Monitoring: Post-deployment, monitor metrics (latency, error rates) using Prometheus and Grafana; set up alerts for anomalies. 5. Rollback plan: Have automated rollback scripts triggered on deployment failures; use feature flags for gradual rollout. Tools: CI/CD platforms (Jenkins, GitLab CI), cloud services (AWS CodeDeploy, Google Cloud Build). Success metrics: Deployment frequency, lead time, and mean time to recovery (MTTR). Document the pipeline in runbooks."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "requires"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "approves"
+            },
+            {
+              "from": 3,
+              "to": 5,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "label": "updates"
+            },
+            {
+              "from": 4,
+              "to": 6,
+              "label": "outputs"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "monitors"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 115,
+        "maxScore": 115,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ Has \"review\" category",
+          "✓ Has \"action\" category",
+          "✓ All 8 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 855c, no thin nodes",
+          "✓ Architecture covers: assign, deadline, merge, deploy",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (8 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "creator-youtube",
+      "status": "ok",
+      "elapsed": 139935,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "I want to start a YouTube channel. Build me a production workflow for each video — topic research, scripting, filming, editing, thumbnail, SEO, upload, promotion.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! Mon ami, I have deduced the perfect production workflow for your YouTube channel. Voilà, a detailed map to ensure each video is a masterpiece, from clue-gathering in research to the grand reveal in promotion.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Video Idea Trigger",
+              "category": "trigger",
+              "description": "Initiates the video production process by generating and validating ideas",
+              "content": "This node kicks off the workflow by systematically generating video ideas. Use tools like Google Trends, YouTube Analytics, and TubeBuddy to identify trending topics and keywords. Monitor social media platforms such as Twitter, Reddit, and Instagram for viral content and audience discussions. Implement a brainstorming session with a checklist: assess alignment with channel niche (e.g., educational, entertainment), target demographic preferences, and SEO potential (search volume, competition). Validate ideas through audience polls in Community Tab, A/B testing with thumbnail mockups, and analyzing competitor performance metrics (views, engagement rates). Document each idea in a shared spreadsheet with criteria scores (0-10) for originality, feasibility, and expected ROI. This ensures only high-potential topics proceed, minimizing wasted effort. Très intéressant, non? The little grey cells must work overtime here!"
+            },
+            {
+              "label": "Topic Research & Validation",
+              "category": "action",
+              "description": "Deep dive into selected topics to gather evidence and ensure viability",
+              "content": "Once a topic is triggered, conduct thorough research to validate and enrich it. Start by using keyword research tools like Ahrefs or SEMrush to analyze search intent and competition. Gather data from sources such as academic papers, industry reports, and expert interviews to add depth. Create a content brief outlining key points, target audience pain points, and angle uniqueness. Perform competitor analysis: watch top 5 videos on the topic, note their structure, gaps, and engagement tactics (e.g., call-to-actions, hooks). Use surveys via Google Forms or Typeform to collect direct audience feedback on subtopics. Document findings in a research dossier with timestamps, links, and insights. Set validation metrics: minimum 70% positive feedback from a sample group, SEO score above 60/100, and alignment with channel goals. This step ensures the topic is evidence-based and compelling before scripting."
+            },
+            {
+              "label": "Script Writing",
+              "category": "action",
+              "description": "Craft a detailed script based on research, focusing on structure and engagement",
+              "content": "Transform research into a polished script. Begin with an outline: hook (first 15 seconds), introduction, main points (3-5 sections with subpoints), and conclusion with call-to-action. Use storytelling techniques like problem-agitate-solve or hero's journey to maintain viewer interest. Write dialogue with natural language, avoiding jargon; aim for a readability score of Grade 8 or lower via Hemingway Editor. Incorporate SEO keywords naturally, targeting 1-2% density. Add visual cues for filming (e.g., [B-roll shot], [screen recording]). Tools: Google Docs for collaboration, Grammarly for grammar checks, and ChatGPT for brainstorming tweaks. Review script for flow: ensure logical progression, pacing (total duration 5-15 minutes), and engagement elements (questions, polls, anecdotes). Share with a peer reviewer for feedback on clarity and entertainment value. Finalize with a timing breakdown (e.g., 0:00-0:30 hook). This meticulous scripting sets the foundation for effective filming."
+            },
+            {
+              "label": "Filming Setup & Execution",
+              "category": "action",
+              "description": "Prepare and record video footage according to the script",
+              "content": "Execute filming with precision. Setup: choose location with good lighting (softbox lights or natural light), minimal background noise (use sound blankets), and professional backdrop. Equipment checklist: camera (DSLR or smartphone with 4K capability), microphone (lavalier or shotgun), tripod, and teleprompter if needed. Follow a shot list derived from script cues: main shots (talking head), B-roll (supplementary footage), and cutaways. Record multiple takes for key segments to ensure quality. Monitor audio levels (aim for -6 dB to -3 dB) and video settings (frame rate 24/30 fps, resolution 1080p or higher). During filming, maintain energy and eye contact, use gestures for emphasis, and adhere to timing. Capture extra footage for flexibility in editing. Log files immediately with descriptions for easy retrieval. Post-shoot, backup raw footage to cloud storage like Google Drive or external drives. This step is crucial for high-quality visual evidence."
+            },
+            {
+              "label": "Video Editing",
+              "category": "action",
+              "description": "Edit raw footage into a cohesive video with enhancements",
+              "content": "Edit the video to polish and engage. Use software like Adobe Premiere Pro, Final Cut Pro, or DaVinci Resolve. Import footage and organize clips into bins by scene. First cut: assemble clips according to script timing, trimming dead air and mistakes. Add B-roll to illustrate points, using transitions (cuts, fades) sparingly. Enhance with color grading (LUTs for consistency), audio mixing (noise reduction with Audacity, balance levels), and text overlays for key points. Incorporate music from royalty-free sources like Epidemic Sound, ensuring it complements tone without overpowering dialogue. Add effects: lower thirds for introductions, subtle animations via After Effects. Review for pacing: aim for dynamic flow with varied shot lengths (2-5 seconds per clip average). Export in multiple formats (MP4 for YouTube, high-resolution backup). Create a rough cut for internal review before finalizing. This editing phase transforms raw evidence into a compelling narrative."
+            },
+            {
+              "label": "Thumbnail Design",
+              "category": "action",
+              "description": "Create an eye-catching thumbnail to drive clicks",
+              "content": "Design a thumbnail that maximizes click-through rate (CTR). Use tools like Canva, Photoshop, or Snappa. Start with a template: dimensions 1280x720 pixels, include high-contrast elements (bright colors, bold text). Key components: a clear, expressive face (close-up shot with emotion), minimal text (3-5 words in large, readable font like Impact), and branding (channel logo in corner). Apply principles of visual hierarchy: focal point on main subject, use arrows or circles to highlight key aspects. Test multiple versions with A/B tools like Thumbnail Test or via YouTube Analytics after upload. Analyze competitor thumbnails for trends (e.g., red accents, question marks). Ensure it aligns with video content to avoid clickbait; accuracy improves retention. Save in PNG format for quality. Add to video file metadata for consistency. This thumbnail is the first clue that hooks viewers—make it irresistible!"
+            },
+            {
+              "label": "SEO & Metadata Optimization",
+              "category": "action",
+              "description": "Optimize video metadata for search and discovery",
+              "content": "Optimize all metadata to boost visibility. Research primary and secondary keywords using TubeBuddy or VidIQ; target long-tail phrases with low competition. Craft a title under 60 characters, including main keyword at the beginning, and make it intriguing (e.g., use numbers, questions). Write a description of 200-300 words: first two lines with keyword and hook, followed by timestamps (chapters), links to resources, and call-to-action. Use all 500 characters for tags, mixing broad and specific terms. Add cards and end screens to promote other videos or website. Set category (e.g., Education, Entertainment) and language. Enable subtitles/CC by uploading a transcript for accessibility and SEO. Use YouTube Studio's analytics to predict performance with tools like keyword score. Update metadata based on trends post-upload. This SEO work ensures the video is discoverable, like following a trail of digital breadcrumbs."
+            },
+            {
+              "label": "Quality Assurance Review",
+              "category": "review",
+              "description": "Human review to approve video quality before launch",
+              "content": "Conduct a final review to ensure excellence. Create a checklist: video quality (no glitches, smooth transitions), audio clarity (no background noise, balanced levels), content accuracy (facts cross-checked with sources), and engagement elements (hook effective, call-to-action clear). Watch the video in full, noting any issues with timestamps. Check thumbnail and metadata for consistency and appeal. Involve a team member or trusted peer for fresh perspective; use feedback forms with specific questions (e.g., 'Was the pacing too fast?'). If issues are found, document them and assign priorities (critical, minor). Approve only if all criteria are met: score above 80/100 on review rubric. If rejected, provide detailed notes for refinements. This gatekeeping step prevents subpar content from going live, maintaining channel reputation. Mon ami, attention to detail here is paramount!"
+            },
+            {
+              "label": "Upload & Promotion Launch",
+              "category": "output",
+              "description": "Final step to publish video and promote across channels",
+              "content": "Publish the video and execute promotion strategies. In YouTube Studio, upload the final edited file, fill in optimized metadata from previous step, and set scheduling (prime time based on audience analytics). Use features like premiere for live engagement. Immediately share on social media: craft tailored posts for Twitter (with hashtags), Facebook (in groups), Instagram (stories and reels), and LinkedIn if relevant. Engage with communities on Reddit or Discord by sharing value-driven snippets. Send email newsletters to subscribers with behind-the-scenes insights. Monitor initial performance metrics (first 24 hours): views, watch time, CTR, and comments. Respond to comments promptly to boost engagement. Use paid promotion if budget allows, targeting lookalike audiences via Google Ads. Update video description with links based on feedback. This output delivers the video to the world, turning clues into a viral case—voilà!"
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "drives"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 6,
+              "label": "feeds"
+            },
+            {
+              "from": 5,
+              "to": 7,
+              "label": "feeds"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "feeds"
+            },
+            {
+              "from": 7,
+              "to": 8,
+              "label": "approves"
+            },
+            {
+              "from": 7,
+              "to": 4,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 95,
+        "maxScore": 95,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 9 (min: 5)",
+          "✓ Node count: 9 ≤ 10",
+          "✓ All 10 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 936c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (10 edges, 9 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "execute-incident-postmortem",
+      "status": "ok",
+      "elapsed": 60973,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Write a blameless post-mortem for a 2-hour production outage caused by a database migration that locked a critical table. 500 customers were affected. Include timeline, root cause, impact, and action items.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Post-Mortem Report: Production Outage - Critical Table Lock During Database Migration\n\n**Date of Incident:** [Date]\n**Report Date:** [Date]\n**Status:** RESOLVED\n**Severity:** SEV-1 (Critical)\n**Affected Service:** Core Application Database & API\n\n## **Executive Summary**\nOn [Date], a scheduled database migration caused a full production outage for approximately 2 hours, preventing approximately 500 customers from accessing our core application services. The outage was triggered when the migration script applied a schema change with an overly restrictive lock on a high-traffic `user_sessions` table, causing all subsequent queries to that table to queue and eventually time out. This report follows a **blameless** culture, focusing on systemic and process improvements.\n\n## **1. Timeline (All times in UTC)**\n*   **09:45:** Migration script, reviewed and approved, is initiated in the production environment via the standard deployment pipeline.\n*   **09:46:** Script begins `ALTER TABLE` operation on the `user_sessions` table. The operation requires an exclusive metadata lock.\n*   **09:47:** High-volume read/write traffic to the `user_sessions` table from the live application begins queuing behind the lock.\n*   **09:52:** Application monitoring alerts trigger for elevated API error rates (5xx) and database connection pool exhaustion.\n*   **09:55:** On-call engineer is paged, acknowledges incident, and begins investigation.\n*   **10:05:** Initial triage identifies the long-running migration and table lock as the probable cause. Decision made to attempt to kill the migration process.\n*   **10:15:** First attempt to kill the migration process fails due to the depth of the lock queue. Escalation to senior database engineering.\n*   **10:35:** Database engineering team gains direct access and forcefully terminates the migration connection, releasing the lock.\n*   **10:45:** Application services begin recovering automatically as queued requests clear. Error rates return to baseline.\n*   **11:00:** Full service restoration confirmed. Monitoring shows normal traffic patterns.\n\n## **2. Impact**\n*   **Duration:** 2 hours of partial service degradation, 1 hour 15 minutes of full outage for core functionality.\n*   **Users Affected:** ~500 active customers were unable to log in, access their dashboards, or perform write operations during the peak outage window.\n*   **Business Impact:**\n    *   Estimated loss of $[X] in potential transaction revenue.\n    *   ~120 customer support tickets generated.\n    *   Public status page updated to \"Major Service Outage.\" Minor increase in social media commentary.\n*   **System Impact:**\n    *   API error rate peaked at 95%.\n    *   Database connection pool saturation at 100% for 68 minutes.\n    *   Cascade failure to dependent services (analytics, real-time notifications) was contained by upstream circuit breakers.\n\n## **3. Root Cause Analysis**\n**Primary Cause (The Trigger):** The `ALTER TABLE` migration, while syntactically correct, was executed without an appropriate strategy to manage locking in a high-availability environment. The default behavior obtained an exclusive lock on the `user_sessions` table for the entire duration of the operation (which was expected to be brief in testing), halting all concurrent access.\n\n**Contributing Factors (The System Conditions):**\n1.  **Gap in Pre-Production Validation:** The staging database, used for migration testing, had orders of magnitude less load and concurrent connections than production. The lock contention issue did not manifest during testing, leading to a false sense of safety.\n2.  **Process Gap for High-Traffic Tables:** The existing change management checklist did not flag operations on identified \"critical/high-traffic\" tables for additional review or require the use of low-impact migration tools (e.g., `pt-online-schema-change`, `gh-ost`).\n3.  **Insufficient Runbook for Blocking Operations:** The runbook for \"stuck migration\" focused on rollback but did not have clear, pre-approved escalation paths and commands for forcibly terminating a deeply locked operation with minimal additional disruption.\n4.  **Monitoring Alert Delay:** Alerts for database lock wait times were configured but with a threshold that was too high, delaying detection by several minutes after the queue began forming.\n\n## **4. Action Items & Remediation Plan**\n| ID | Action Item | Owner | Target Date | Status |\n| :--- | :--- | :--- | :--- | :--- |\n| **P1-01** | **Implement Tooling for Safe Migrations:** Mandate the use of non-blocking schema migration tools (e.g., `gh-ost`) for all `ALTER` operations on tables flagged as high-traffic. | DB Engineering | [Date + 30d] | Not Started |\n| **P1-02** | **Enhance Staging/Pre-Prod Load Testing:** Create a synthetic load test in staging that mirrors production concurrency for critical tables, to be executed as a gate for any migration touching those tables. | Platform Eng | [Date + 45d] | Not Started |\n| **P1-03** | **Update Change Management Policy:** Formalize a \"critical table registry.\" Any migration on a registered table requires a written migration plan, approval from a database architect, and a defined, tested rollback procedure. | Engineering Mgmt | [Date + 14d] | Not Started |\n| **P2-01** | **Improve Lock Monitoring & Alerting:** Lower thresholds for database lock-wait-time alerts and create a dedicated dashboard for real-time visibility into active locks and blocking queries. | SRE | [Date + 21d] | Not Started |\n| **P2-02** | **Create and Drill Recovery Runbooks:** Develop and document a precise runbook for \"Terminating a Blocking Migration,\" including escalation points and command templates. Schedule a drill for the on-call team within 60 days. | SRE | [Date + 60d] | Not Started |\n| **P3-01** | **Customer Communication Review:** Review and standardize the process for timely internal and external (status page, social) communication for outages exceeding 30 minutes. | Comms / Support | [Date + 30d] | Not Started |\n\n## **5. Lessons Learned**\n*   **Testing Fidelity is Critical:** \"It worked in staging\" is insufficient. Testing must simulate production load patterns, especially for state-changing operations.\n*   **Processes Must Evolve with Scale:** Our change management process, effective at a smaller scale, lacked the specific safeguards needed for our current traffic volume and critical data paths.\n*   **Clarity in Crisis:** Clear, pre-defined escalation paths and command procedures can significantly reduce Mean Time To Recovery (MTTR). We will invest in more specific playbooks.\n*   **Blameless Culture in Action:** The focus on tooling, process, and monitoring gaps—rather than individual error—allowed for a rapid, honest, and constructive analysis. This is a strength to maintain.\n\n**Approved by:** [Incident Lead Name]\n**Next Review:** Actions will be reviewed in the weekly Engineering Leadership meeting until all P1 items are closed.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (6957 chars)",
+          "✓ Content length: 6957 ≥ 300"
+        ]
+      }
+    },
+    {
+      "id": "edge-question-looks-like-build",
+      "status": "ok",
+      "elapsed": 10898,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What's the best way to set up a data pipeline?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, a classic case of data logistics, mon ami! The best way is to treat it not as a mere pipe but as a living investigation: automate relentlessly, monitor like a hawk, and always leave a clear evidence trail. Start by defining your clues—source schemas, transformation rules, and quality thresholds—then architect with tools like Apache Airflow for orchestration, dbt for transformations, and Great Expectations for validation.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (428 chars)",
+          "✓ Message length: 428 ≥ 50"
+        ]
+      }
+    },
+    {
+      "id": "edge-build-looks-like-question",
+      "status": "ok",
+      "elapsed": 165075,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Can you set up a data pipeline for me? I have CSVs coming from 3 vendors daily and need them in BigQuery by morning.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "On it. Building a robust data pipeline for daily CSV ingestion from three vendors to BigQuery.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Daily Schedule Trigger",
+              "category": "trigger",
+              "description": "Automated daily event that initiates the data pipeline at a specified time.",
+              "content": "Set up a Cloud Scheduler job to trigger the pipeline daily at 2:00 AM UTC, ensuring data is ready by morning. Configure it to publish a JSON message to a Pub/Sub topic named 'data-pipeline-trigger' with payload: {'pipeline_run_id': 'auto-generated-uuid', 'timestamp': 'current-iso-time'}. This enables idempotency and traceability. Implement a Cloud Function subscribed to this topic to validate the payload, log the pipeline start with Stackdriver, and parallelly invoke ingestion processes for all vendors. Include error handling: retry up to 3 times with exponential backoff, and send alerts via Slack webhook or PagerDuty if triggers fail. Tools: Google Cloud Scheduler, Pub/Sub, Cloud Functions, IAM for permissions. Steps: 1. Create Pub/Sub topic. 2. Schedule job with HTTP target pointing to the Cloud Function. 3. Deploy function with logic to handle triggers and initiate ingestion."
+            },
+            {
+              "label": "Ingest Vendor A CSVs",
+              "category": "action",
+              "description": "Fetch and store daily CSVs from Vendor A's source into cloud storage.",
+              "content": "Steps: 1. Authenticate using API keys or SFTP credentials stored securely in Google Secret Manager. 2. Use a Python script with requests library or gsutil to download CSVs from Vendor A's endpoint (e.g., HTTPS, SFTP) to a designated GCS bucket (e.g., gs://data-pipeline-raw/vendor-a/). 3. Implement file naming convention: vendor-a_YYYY-MM-DD.csv. 4. Log ingestion status (success/failure) to BigQuery or Cloud Logging. 5. Handle failures with retry logic (max 5 attempts) and notify via email if persistent. 6. Set data retention: auto-delete files older than 30 days. Tools: Python, Google Cloud Storage, Secret Manager, with owner as Data Engineer. Ensure compliance with vendor SLAs."
+            },
+            {
+              "label": "Ingest Vendor B CSVs",
+              "category": "action",
+              "description": "Retrieve daily CSVs from Vendor B and upload to cloud storage.",
+              "content": "Steps: 1. Configure authentication via OAuth 2.0 or service account, credentials in Secret Manager. 2. Write a Cloud Function triggered by the daily scheduler to pull CSVs from Vendor B's API or cloud storage (e.g., AWS S3). 3. Transfer files to GCS bucket gs://data-pipeline-raw/vendor-b/ using gsutil or Storage API. 4. Validate file integrity with checksums (e.g., MD5). 5. Log each file's metadata (size, timestamp) for auditing. 6. Implement error handling: if download fails, queue for retry and alert team via Slack. Tools: Google Cloud Functions, boto3 for AWS, with monitoring via Cloud Monitoring dashboards."
+            },
+            {
+              "label": "Ingest Vendor C CSVs",
+              "category": "action",
+              "description": "Acquire daily CSVs from Vendor C and stage them in cloud storage.",
+              "content": "Steps: 1. Set up SFTP or REST API connection with credentials managed in HashiCorp Vault or Google Secret Manager. 2. Use Apache Airflow DAG or a scheduled Cloud Run job to fetch CSVs at 2:30 AM UTC. 3. Store files in GCS bucket gs://data-pipeline-raw/vendor-c/ with partitioning by date. 4. Perform initial schema check using Apache Avro to ensure compatibility. 5. Log ingestion metrics (e.g., row count, file size) to BigQuery for reporting. 6. Handle network timeouts with exponential backoff and fallback to secondary endpoints if available. Tools: Airflow, Cloud Run, with error notifications to Datadog."
+            },
+            {
+              "label": "Transform and Clean Data",
+              "category": "action",
+              "description": "Process raw CSVs from all vendors to standardize, clean, and prepare for BigQuery.",
+              "content": "Steps: 1. Use Google Dataflow with Apache Beam (Python SDK) to read CSVs from GCS, parse them, and apply transformations. 2. Clean data: handle missing values (impute with medians), standardize date formats to ISO 8601, deduplicate based on unique keys. 3. Convert data to Parquet format for efficient storage and querying. 4. Enforce schema validation using JSON Schema; reject rows with critical errors. 5. Add metadata columns: ingestion_timestamp, vendor_source. 6. Output transformed data to GCS bucket gs://data-pipeline-transformed/. Tools: Dataflow, Pandas for small batches, with error logging to BigQuery. Owner: Data Engineer."
+            },
+            {
+              "label": "Data Quality Validation",
+              "category": "test",
+              "description": "Automated tests to verify data integrity, completeness, and accuracy before loading.",
+              "content": "What to test: 1. Row counts match expected ranges (e.g., ±10% deviation triggers alert). 2. Schema compliance: check data types and required fields using Great Expectations suite. 3. Data integrity: validate referential constraints if any, and detect anomalies with statistical methods (e.g., z-scores). 4. Business rules: e.g., all amounts positive, dates in past. Pass/fail criteria: define thresholds (e.g., >95% accuracy). Tools: Great Expectations, custom Python scripts run in Cloud Functions. Coverage: test all critical columns; on failure, log details and trigger refinement. SLA: complete within 30 minutes."
+            },
+            {
+              "label": "Load to BigQuery",
+              "category": "action",
+              "description": "Load transformed and validated data into BigQuery tables for analytics.",
+              "content": "Steps: 1. Use BigQuery load jobs via bq command-line or Dataflow to insert data from GCS Parquet files. 2. Configure tables with partitioning by ingestion date and clustering by vendor_id for performance. 3. Handle incremental loads: merge new data with existing using MERGE statements, or overwrite daily partitions. 4. Monitor job status with BigQuery API; retry failed jobs up to 3 times. 5. Set up alerts for job failures via Cloud Monitoring. 6. Update table metadata and refresh materialized views if applicable. Tools: BigQuery, Cloud Scheduler for orchestration, with success notifications to Slack."
+            },
+            {
+              "label": "BigQuery Data Available",
+              "category": "output",
+              "description": "Final deliverable: fresh data loaded into BigQuery, ready for analysis and reporting.",
+              "content": "Deliverable: BigQuery dataset 'vendor_data' with tables partitioned by date, containing cleaned data from all three vendors. Distribution: grant read access to analysts via IAM roles, and publish data catalog entries in Data Catalog. Success metrics: data freshness (load completed by 6 AM local time), accuracy (99.9% match with source samples), and availability (99.95% uptime). Steps: 1. Validate load completion with row count queries. 2. Send confirmation email or Slack message to stakeholders. 3. Update dashboards in Looker or Tableau. 4. Archive logs and artifacts to GCS for compliance. Tools: BigQuery, Data Catalog, with ongoing monitoring via Cloud Monitoring."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 0,
+              "to": 2,
+              "label": "triggers"
+            },
+            {
+              "from": 0,
+              "to": 3,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "validates"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "drives"
+            },
+            {
+              "from": 5,
+              "to": 4,
+              "label": "refines"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "outputs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 90,
+        "maxScore": 90,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 4)",
+          "✓ All 10 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 668c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (10 edges, 8 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "personality-poirot-empty",
+      "status": "ok",
+      "elapsed": 10028,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Mon ami, the canvas is bare! A blank slate awaiting your grand design. My little grey cells are ready to assist – what case shall we investigate first?",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (151 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    }
+  ]
+}

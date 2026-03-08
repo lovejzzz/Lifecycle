@@ -1,0 +1,399 @@
+{
+  "timestamp": "2026-03-08T07-55-45",
+  "overall": 99,
+  "testsRun": [
+    "support-escalation",
+    "support-advice",
+    "execute-sow",
+    "edge-question-looks-like-build",
+    "edge-build-looks-like-question",
+    "personality-rowan-empty"
+  ],
+  "poolSize": 36,
+  "results": [
+    {
+      "id": "support-escalation",
+      "status": "ok",
+      "elapsed": 217331,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Customers keep complaining their tickets go into a black hole. Design an escalation workflow — ticket comes in, auto-classify priority, route to right team, SLA tracking, escalate if overdue.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! The case of the vanishing tickets is a classic mystery, mon ami. Let me design an escalation workflow with auto-classification, SLA tracking, and smart routing to ensure no ticket slips into the black hole. Voilà, the clues are assembled into a precise solution!",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Ticket Submission",
+              "category": "trigger",
+              "description": "Initial customer ticket entry point via multiple channels",
+              "content": "This node triggers when a customer submits a support ticket through various channels such as email, web forms, chat, or phone. Implement using tools like Zendesk Email Parser to convert emails into tickets, ServiceNow Email Integration for automated creation, or custom webhooks with REST APIs for form submissions. Key steps: 1. Capture and validate customer details (e.g., ID, contact info) and issue description using NLP for entity extraction (e.g., with Google Cloud Natural Language or spaCy). 2. Log timestamps and attach any files (e.g., screenshots, logs) to the ticket record. 3. Ensure data sanitization to prevent security issues like SQL injection. 4. Use queue management systems like AWS SQS or RabbitMQ to handle high volumes without drops. Tools recommended: Jira Service Management for enterprise, Freshservice for SMEs, or a custom setup with Python Flask and PostgreSQL. This trigger must be reliable and scale with load, setting the stage for the entire workflow."
+            },
+            {
+              "label": "Auto-Classify Priority",
+              "category": "action",
+              "description": "Automatically assign priority based on ticket content and context",
+              "content": "This node processes the ticket description to classify priority levels (e.g., Critical, High, Medium, Low) using AI or rule-based systems. Steps: 1. Preprocess text: remove stop words, tokenize, and apply lemmatization with libraries like NLTK or spaCy. 2. Use machine learning models (e.g., trained on historical data with scikit-learn or TensorFlow) to predict priority based on keywords, sentiment, and urgency indicators. Alternatively, implement rule-based classification with regex patterns for terms like 'urgent,' 'down,' or 'blocked.' 3. Assign SLA thresholds dynamically: Critical (1-hour response), High (4 hours), Medium (24 hours), Low (72 hours). 4. Log classification confidence scores and allow manual override via admin dashboards. Tools: Integrate with MonkeyLearn for no-code AI, or use custom Python scripts with pandas for data analysis. This action ensures tickets are prioritized accurately before routing."
+            },
+            {
+              "label": "SLA Policy Definition",
+              "category": "policy",
+              "description": "Define and manage Service Level Agreements for ticket resolution times",
+              "content": "This node establishes SLA policies that dictate maximum resolution times based on priority and ticket type. Detailed steps: 1. Define SLA metrics: First response time, resolution time, and escalation thresholds (e.g., escalate if 80% of SLA time passes without progress). 2. Configure in ticketing tools like Zendesk SLA Policies or Jira Service Level Agreements, with custom fields for business hours, holidays, and pause conditions. 3. Use YAML or JSON configuration files for version control, specifying rules such as 'Critical tickets must be resolved within 1 hour during business hours.' 4. Implement monitoring with tools like Datadog or Prometheus to track SLA compliance in real-time. 5. Regularly review and update policies based on performance data and customer feedback. This policy node provides the foundation for tracking and escalation, ensuring accountability and transparency."
+            },
+            {
+              "label": "Route to Appropriate Team",
+              "category": "action",
+              "description": "Direct ticket to the correct support team based on priority and category",
+              "content": "This node routes the classified ticket to the appropriate team (e.g., L1 Support, Development, Billing) using automated rules. Steps: 1. Map ticket attributes (priority, category from classification) to team skills and availability via lookup tables or AI models. 2. Implement round-robin or load-balancing algorithms to distribute tickets evenly, using tools like OTRS or custom scripts with Redis for queue management. 3. Integrate with collaboration platforms like Slack or Microsoft Teams to notify teams via webhooks. 4. Set up fallback routing: if primary team is overloaded, reroute to backup teams or escalate automatically. 5. Log routing decisions for audit trails and optimize based on historical resolution times. Tools: Use ServiceNow Assignment Rules, or build with Python and Kafka for event-driven routing. This action ensures efficient handling and reduces delays."
+            },
+            {
+              "label": "Ticket in Progress",
+              "category": "state",
+              "description": "Ticket is actively being handled by the assigned team",
+              "content": "This node represents the state where the ticket is under investigation and resolution by the support team. Key aspects: 1. Track status updates (e.g., 'In Progress,' 'Awaiting Customer Response') using state machines in tools like Apache Airflow or custom databases with status flags. 2. Monitor time spent via timers that integrate with the SLA policy, pausing during off-hours or waiting periods. 3. Enable team collaboration: attach notes, assign subtasks, and link related tickets using Jira issues or Trello cards. 4. Implement checkpoints: regular updates every few hours to prevent stagnation, with automated reminders via email or chatbots. 5. Use dashboards (e.g., Grafana or Tableau) to visualize progress and bottlenecks. This state feeds into SLA checks and ensures continuous movement toward resolution."
+            },
+            {
+              "label": "SLA Compliance Check",
+              "category": "test",
+              "description": "Verify if ticket is within SLA time limits and trigger actions based on status",
+              "content": "This node tests whether the ticket is adhering to the defined SLA policies. Detailed process: 1. Calculate elapsed time since ticket submission or last update, accounting for business hours and pauses using libraries like moment.js or Python's datetime. 2. Compare against SLA thresholds from the policy node: if time exceeds, mark as 'at risk' or 'breached.' 3. Implement branching logic: if within SLA, trigger resolution path; if overdue, trigger escalation path. 4. Use monitoring tools like Nagios or custom cron jobs to run checks every 5 minutes, with alerts via PagerDuty or SMS. 5. Log compliance scores and generate reports for analytics. Tools: Integrate with Elasticsearch for real-time querying or use AWS Lambda for serverless checks. This test ensures proactive management and prevents SLA violations."
+            },
+            {
+              "label": "Escalation Approval",
+              "category": "review",
+              "description": "Human review gate for escalating overdue tickets to higher levels",
+              "content": "This node involves human agents reviewing overdue tickets before escalation to ensure validity and prevent false escalations. Steps: 1. Present ticket details, SLA breach evidence, and previous handling notes in a dashboard (e.g., using React or Vue.js with a backend API). 2. Define approval criteria: escalation only if ticket complexity warrants higher-tier support or if initial team lacks expertise. 3. Implement workflow: reviewers (e.g., team leads) can approve, reject, or request more info via a UI integrated with tools like Asana or Monday.com. 4. Set time limits for review (e.g., 15 minutes) to avoid delays, with automatic escalation if no response. 5. Log all decisions and reasons for audit trails. Tools: Use GitHub Pull Request models for approval flows, or custom BPMN with Camunda. This review adds a human touch to prevent unnecessary escalations."
+            },
+            {
+              "label": "Escalate Ticket",
+              "category": "action",
+              "description": "Take action to escalate ticket to higher-level support or management",
+              "content": "This node executes the escalation process after approval. Detailed actions: 1. Reassign ticket to a senior team or manager based on escalation rules (e.g., to L2 Support or IT Director). 2. Update ticket priority to 'Critical' and adjust SLA thresholds if needed. 3. Send notifications via multiple channels: email to stakeholders, Slack messages to new assignees, and SMS alerts for urgent cases. 4. Create a sub-ticket or linked issue in systems like Jira for tracking escalation history. 5. Implement automated follow-ups: schedule check-ins every hour until resolution, using tools like Zapier or custom Python scripts with scheduling libraries. 6. Document escalation reasons and expected resolution times. This action ensures that stuck tickets receive attention from appropriate resources."
+            },
+            {
+              "label": "Resolve Ticket",
+              "category": "action",
+              "description": "Finalize ticket resolution after handling or escalation",
+              "content": "This node handles the closure of tickets, whether resolved normally or after escalation. Steps: 1. Verify resolution: confirm with customer via email or chat that the issue is fixed, using templates for consistency. 2. Update ticket status to 'Resolved' and log resolution details, including root cause analysis and steps taken. 3. Calculate and record actual resolution time for SLA performance metrics. 4. Trigger customer satisfaction surveys via tools like SurveyMonkey or Delighted, integrated with the ticketing system. 5. Archive ticket data to cold storage (e.g., AWS S3) for compliance and future reference. 6. If escalated, ensure knowledge base articles are updated to prevent recurrence. Tools: Use Zendesk Solve or custom workflows with Airtable. This action concludes the active handling phase."
+            },
+            {
+              "label": "Ticket Closed or Escalated",
+              "category": "output",
+              "description": "Final outcome of the ticket process, delivered as a report or status update",
+              "content": "This node produces the final output, summarizing the ticket's journey and outcome. Deliverables: 1. Generate a comprehensive report including ticket ID, timeline, priority changes, team assignments, SLA compliance status, and resolution details. 2. Export data to analytics platforms like Power BI or Google Data Studio for trend analysis and dashboard visualization. 3. Notify stakeholders (customer, management) via automated emails with summary and lessons learned. 4. Update external systems: sync with CRM like Salesforce for customer history, or log to centralized logging with Splunk. 5. Archive the workflow instance for audit purposes, using tools like Apache NiFi for data flow management. 6. Provide insights for continuous improvement: identify common escalation causes and suggest policy adjustments. This output ensures transparency and drives process optimization."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 5,
+              "label": "requires"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "monitors"
+            },
+            {
+              "from": 5,
+              "to": 8,
+              "label": "triggers"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "triggers"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "approves"
+            },
+            {
+              "from": 7,
+              "to": 8,
+              "label": "feeds"
+            },
+            {
+              "from": 8,
+              "to": 9,
+              "label": "outputs"
+            },
+            {
+              "from": 6,
+              "to": 4,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 100,
+        "maxScore": 100,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 10 (min: 5)",
+          "✓ Node count: 10 ≤ 10",
+          "✓ Has \"trigger\" category",
+          "✓ All 11 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 867c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (11 edges, 10 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "support-advice",
+      "status": "ok",
+      "elapsed": 37797,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Our CSAT score dropped to 3.2 out of 5. Average first response time is 8 hours. What should we fix first?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Mission: prioritize slashing first response time to under 1 hour using Zendesk automation for ticket triage and agent workload balancing. Deploy daily CSAT tracking; if scores don't rebound in two weeks, escalate with root-cause analysis on resolution quality via customer feedback tools like Qualtrics.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (303 chars)",
+          "✓ Message length: 303 ≥ 300"
+        ]
+      }
+    },
+    {
+      "id": "execute-sow",
+      "status": "ok",
+      "elapsed": 56017,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Write a statement of work for a 3-month web application redesign project. Client is a mid-size e-commerce company. Budget is $85,000. Include scope, deliverables, timeline, and payment terms.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "**STATEMENT OF WORK (SOW)**\n\n**Project Title:** E-Commerce Web Application Redesign\n**Client:** [Client Name], a Mid-Size E-Commerce Company\n**Vendor:** [Your Company/Consultancy Name]\n**Effective Date:** [Date]\n**Project Duration:** 3 Months (12 Weeks) from Kickoff\n**Total Project Budget:** $85,000\n\n---\n\n### **1.0 Project Overview & Objectives**\n\nThis Statement of Work outlines the agreement for a comprehensive redesign of the Client's existing e-commerce web application. The primary objective is to modernize the user experience (UX), improve site performance and conversion rates, enhance mobile responsiveness, and create a more scalable and maintainable technical architecture.\n\nKey business goals include:\n*   Increasing customer conversion rates and average order value (AOV).\n*   Reducing cart abandonment rates.\n*   Improving site speed and Core Web Vitals scores.\n*   Establishing a cohesive, brand-forward visual identity.\n*   Creating a more intuitive and accessible user journey.\n\n### **2.0 Scope of Work**\n\nThe project will be executed in three primary phases:\n\n**Phase 1: Discovery & Strategy (Weeks 1-3)**\n*   **Stakeholder Workshops:** Conduct interviews with key stakeholders from marketing, sales, and IT to define business requirements, user personas, and success metrics.\n*   **Competitive & Heuristic Analysis:** Review 3-5 competitor sites and perform a UX audit of the current application to identify strengths, weaknesses, and opportunities.\n*   **Technical Assessment:** High-level review of the current technology stack to inform redesign decisions and identify potential migration challenges.\n*   **Project Roadmap & UX Strategy:** Document findings and create a prioritized feature roadmap and core UX principles for the redesign.\n\n**Phase 2: UX/UI Design (Weeks 4-8)**\n*   **Information Architecture (IA) & User Flows:** Redesign the site map and define key user journeys (e.g., product discovery, checkout process).\n*   **Low-Fidelity Wireframes:** Create clickable wireframes for all core templates (Homepage, Product Listing Pages (PLP), Product Detail Pages (PDP), Cart, Checkout, Account Dashboard).\n*   **High-Fidelity Visual Design:** Develop a complete visual design system including typography, color palette, iconography, and UI component library. Apply designs to all wireframed templates.\n*   **Interactive Prototype:** Build a fully interactive prototype of key user flows for stakeholder review and usability testing.\n\n**Phase 3: Front-End Development & Handoff (Weeks 9-12)**\n*   **Component-Based Development:** Develop responsive, production-ready HTML/CSS/JavaScript components based on the approved design system.\n*   **Template Implementation:** Integrate developed components into the core page templates. Focus on performance, cross-browser compatibility, and adherence to accessibility standards (WCAG 2.1 AA).\n*   **Testing & Quality Assurance:** Conduct functional testing, browser/device testing, and performance testing (targeting Google Lighthouse scores >90).\n*   **Documentation & Knowledge Transfer:** Deliver all source code, assets, and comprehensive developer documentation. Conduct a handoff session with the Client's development team.\n\n### **3.0 Project Deliverables**\n\n*   **Phase 1 Deliverables:**\n    *   Discovery Findings & Strategy Report\n    *   User Personas & Journey Maps\n    *   Prioritized Feature Roadmap\n*   **Phase 2 Deliverables:**\n    *   Revised Site Map & User Flow Diagrams\n    *   Complete set of Low-Fidelity Wireframes (Figma/Adobe XD)\n    *   High-Fidelity Visual Design System & Style Guide\n    *   Interactive Prototype for core user flows\n*   **Phase 3 Deliverables:**\n    *   All developed front-end code (HTML, CSS, JS) in a Git repository\n    *   Fully responsive, tested page templates\n    *   Performance Audit Report\n    *   Technical Documentation & Handoff Materials\n\n### **4.0 Project Timeline & Milestones**\n\n*   **Week 1:** Project Kickoff & Stakeholder Alignment\n*   **Week 3:** **Milestone 1:** Delivery & Approval of Discovery Report and Strategy.\n*   **Week 6:** **Milestone 2:** Delivery & Approval of Wireframes and Visual Design System.\n*   **Week 9:** **Milestone 3:** Delivery & Approval of Interactive Prototype.\n*   **Week 12:** **Milestone 4:** Final Code Delivery, Testing Completion, and Project Handoff.\n\nA detailed week-by-week schedule will be maintained in the project management tool (e.g., Asana, Jira).\n\n### **5.0 Assumptions & Exclusions**\n\n**Assumptions:**\n*   Client will provide timely access to key stakeholders, analytics data, and brand assets.\n*   Client will provide timely feedback and approvals at designated milestones (approval window is 3 business days).\n*   The project budget is based on the scope defined herein. Significant changes in scope may affect timeline and cost, managed via a formal Change Order process.\n\n**Exclusions (Out of Scope):**\n*   Back-end development, database changes, or e-commerce platform migration.\n*   Third-party API integration beyond front-end display logic.\n*   Ongoing hosting, maintenance, or support post-handoff.\n*   Creation of new marketing content (copy, photography, video).\n*   Extensive post-launch bug-fixing beyond a 14-day warranty period.\n\n### **6.0 Payment Terms**\n\nThe total fixed project fee is **$85,000**. Payments are tied to project milestones:\n\n*   **25% ($21,250) upon SOW signing:** Project initiation.\n*   **25% ($21,250) upon approval of Milestone 1 (Discovery Report).**\n*   **25% ($21,250) upon approval of Milestone 2 (Design System).**\n*   **25% ($21,250) upon completion of Milestone 4 (Final Handoff).**\n\nAll invoices are payable within 15 days of receipt. Work on subsequent phases will commence upon receipt of payment for the preceding milestone.\n\n### **7.0 Success Metrics**\n\nProject success will be measured post-launch (benchmarked against pre-redesign baselines) by improvement in:\n*   Conversion Rate\n*   Average Order Value (AOV)\n*   Mobile Bounce Rate\n*   Site Speed (Largest Contentful Paint, Time to Interactive)\n*   User satisfaction (via post-launch survey)\n\n---\n**Acceptance**\n\nThe undersigned agree to the terms, scope, deliverables, and budget outlined in this Statement of Work.\n\n**Client Signature:** _________________________\n**Name:** _________________________\n**Title:** _________________________\n**Date:** _________________________\n\n**Vendor Signature:** _________________________\n**Name:** _________________________\n**Title:** _________________________\n**Date:** _________________________",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (6522 chars)",
+          "✓ Content length: 6522 ≥ 300"
+        ]
+      }
+    },
+    {
+      "id": "edge-question-looks-like-build",
+      "status": "ok",
+      "elapsed": 25187,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What's the best way to set up a data pipeline?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Aha! Setting up a data pipeline, mon ami, is like piecing together clues for a grand investigation—start by defining clear data requirements and SLAs, then architect with tools like Apache Kafka for ingestion, Apache Airflow for orchestration, and implement robust monitoring for metrics such as data latency and quality. Très intéressant, a proof of concept will validate your approach before full-scale deployment!",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (416 chars)",
+          "✓ Message length: 416 ≥ 50"
+        ]
+      }
+    },
+    {
+      "id": "edge-build-looks-like-question",
+      "status": "ok",
+      "elapsed": 183557,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Can you set up a data pipeline for me? I have CSVs coming from 3 vendors daily and need them in BigQuery by morning.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building daily CSV ingestion pipeline to BigQuery with validation and monitoring.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Daily CSV Arrival Trigger",
+              "category": "trigger",
+              "description": "Event that initiates the pipeline when CSVs are delivered daily from three vendors.",
+              "content": "Set up automated triggers for CSV arrivals using GCP tools. First, create a Cloud Storage bucket for each vendor to deposit CSVs, with folder structures like `gs://vendor-a-bucket/daily/`. Configure Cloud Scheduler to send a Pub/Sub message at 2 AM UTC daily, acting as a time-based trigger. Alternatively, use Cloud Storage triggers via Cloud Functions that fire on new file uploads, capturing metadata such as file name, size, and timestamp. Implement error handling for missed deliveries: set up retry policies with exponential backoff and alert via Cloud Monitoring if no files arrive within a 1-hour window. Tools: GCP Cloud Scheduler, Pub/Sub, Cloud Storage, Cloud Functions. Steps: 1. Enable necessary APIs in GCP (Cloud Scheduler, Pub/Sub, Storage). 2. Create Pub/Sub topics for each vendor. 3. Schedule cron jobs (e.g., `0 2 * * *`) to publish messages. 4. Deploy Cloud Functions to listen to bucket events, with code to parse file metadata and pass it downstream. Ensure payload includes vendor ID, file path, and upload time for tracking."
+            },
+            {
+              "label": "Vendor CSV Fetch and Consolidation",
+              "category": "action",
+              "description": "Collect CSVs from vendor sources, parse them, and merge into a unified dataset.",
+              "content": "Execute data ingestion using scalable GCP services. Steps: 1. Use Cloud Functions or Dataflow to read CSVs from the designated Cloud Storage buckets for each vendor. For each file, authenticate if required (e.g., via API keys for SFTP), but assume direct bucket access. 2. Parse CSV files using Python libraries like pandas or Apache Beam in Dataflow, handling encodings (UTF-8) and delimiters. 3. Standardize column names across vendors by mapping to a common schema (e.g., rename 'cust_id' to 'customer_id'). 4. Merge data from all three vendors into a single DataFrame or PCollection, ensuring no data loss. 5. Implement retry logic with exponential backoff for failed fetches, logging errors to Cloud Logging. Tools: GCP Dataflow with Apache Beam for batch processing, Cloud Functions for lightweight tasks. Error handling: Flag missing files and notify via Slack or email using Cloud Pub/Sub and Cloud Functions. Output a consolidated dataset in Parquet format to a staging Cloud Storage bucket."
+            },
+            {
+              "label": "Data Integrity and Schema Validation",
+              "category": "test",
+              "description": "Validate the ingested data for quality, schema compliance, and anomalies before processing.",
+              "content": "Perform rigorous validation to ensure data reliability. Steps: 1. Define validation rules using a framework like Great Expectations or custom Python scripts in Dataflow. Rules include: check for nulls in critical columns (e.g., transaction_id), validate data types (dates in YYYY-MM-DD format), ensure numerical ranges (e.g., amounts non-negative), and verify row counts against historical averages (±10%). 2. Run tests on the consolidated dataset, outputting pass/fail status. 3. On failure, trigger alerts via Cloud Monitoring and log detailed error reports to BigQuery or Cloud Storage. 4. Set pass criteria: all tests must pass; otherwise, pipeline halts and triggers a retry or manual intervention. Tools: Great Expectations integrated with Dataflow, or custom Beam transforms. Implement a feedback loop: if validation fails, data is sent back for re-fetching with updated error context. Coverage: aim for 95% test coverage on critical fields."
+            },
+            {
+              "label": "Data Cleansing and Standardization",
+              "category": "action",
+              "description": "Clean and standardize the validated data to ensure consistency and readiness for BigQuery.",
+              "content": "Transform data to meet quality standards. Steps: 1. Remove duplicate rows based on composite keys (e.g., vendor_id + timestamp). 2. Standardize formats: convert dates to ISO 8601, currencies to USD using real-time exchange rates from an API like OpenExchangeRates, and normalize text (lowercase, trim spaces). 3. Handle missing values: impute using median for numerical data or 'unknown' for categorical, with logging of imputations. 4. Enrich data by joining with reference tables (e.g., customer master from BigQuery). 5. Output cleansed data to a Cloud Storage bucket in partitioned Parquet files (by date). Tools: Apache Beam in Dataflow for scalable transformations, BigQuery SQL for lightweight joins. Error handling: Implement idempotent operations to handle retries, and monitor cleansing metrics via Cloud Monitoring. Ensure all steps are documented in a data lineage tool like Data Catalog."
+            },
+            {
+              "label": "BigQuery Data Load",
+              "category": "action",
+              "description": "Load the cleansed data into BigQuery tables, optimized for querying and analysis.",
+              "content": "Efficiently load data into BigQuery with robustness. Steps: 1. Define BigQuery table schemas in JSON format, with partitioning by ingestion date and clustering by key columns like vendor_id. 2. Use BigQuery load jobs (not streaming) for daily batches: initiate jobs from the cleansed Parquet files in Cloud Storage. 3. Implement idempotent loads: use WRITE_TRUNCATE mode to overwrite daily partitions, or MERGE statements for incremental updates. 4. Monitor job status via BigQuery API, with retries on failures (up to 3 attempts) and alerts for prolonged issues. 5. Validate load success by checking row counts and schema alignment in BigQuery. Tools: BigQuery client libraries in Python, Dataflow BigQuery I/O connector. Post-load, run data quality checks in BigQuery (e.g., NULL checks) and update metadata in Data Catalog. Ensure data is available by 6 AM SLA."
+            },
+            {
+              "label": "Pipeline Performance Monitoring",
+              "category": "state",
+              "description": "Monitor the pipeline's health, performance, and data quality over time with alerts and dashboards.",
+              "content": "Establish continuous monitoring to ensure pipeline reliability. Steps: 1. Use GCP Cloud Monitoring to track key metrics: ingestion latency (target < 30 minutes), error rates (target < 1%), and data freshness (data in BigQuery by 6 AM). 2. Create dashboards in Looker Studio for real-time visibility, showing pipeline runs, vendor-wise status, and data volumes. 3. Set up alerts: notify via email or Slack if SLA breaches occur, using Cloud Monitoring alert policies with conditions like 'latency > 1 hour'. 4. Log all pipeline events to Cloud Logging with structured JSON payloads for auditing. 5. Define pipeline states: 'running', 'completed', 'failed', with state transitions triggered by events (e.g., on failure, transition to 'failed' and trigger incident response). Tools: GCP Operations Suite, custom logging with log-based metrics. Regularly review and refine thresholds based on historical performance."
+            },
+            {
+              "label": "Operational BigQuery Tables",
+              "category": "output",
+              "description": "Final deliverable: clean, validated data available in BigQuery for downstream analysis and reporting.",
+              "content": "Deliver data that is ready for business use. Describe the output: 1. BigQuery tables partitioned by date and clustered by vendor_id, with schemas documented in Data Catalog including column descriptions and data types. 2. Data is refreshed daily, with historical data retained for 365 days in separate tables or partitions. 3. Success metrics: data availability > 99.9%, query performance < 5 seconds for common aggregates. 4. Distribution: tables are accessible to analysts via BigQuery UI, JDBC/ODBC connectors, and integrated with tools like Looker or Tableau. 5. Provide a data dictionary artifact in Cloud Storage with table schemas, sample queries, and usage guidelines. Ensure compliance with data governance policies by tagging sensitive data and setting up IAM roles for controlled access. Monitor usage patterns to optimize costs and performance."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "validates"
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "drives"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "outputs"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "monitors"
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 90,
+        "maxScore": 90,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 4)",
+          "✓ All 8 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 933c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (8 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "personality-rowan-empty",
+      "status": "ok",
+      "elapsed": 21142,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Currently, the workflow graph is empty—no nodes or edges configured. As your soldier, I'm standing by for orders. Tell me what you need built, and I'll deploy a tactical plan immediately.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 35,
+        "maxScore": 40,
+        "pct": 88,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (187 chars)",
+          "✗ Missing personality markers"
+        ]
+      }
+    }
+  ]
+}

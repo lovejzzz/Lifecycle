@@ -1,0 +1,160 @@
+{
+  "timestamp": "2026-03-08T06-24-35",
+  "overall": 94,
+  "testsRun": [
+    "founder-fundraising",
+    "marketing-campaign",
+    "eng-oncall",
+    "pm-feature-ship",
+    "execute-job-description",
+    "personality-poirot-empty"
+  ],
+  "poolSize": 32,
+  "results": [
+    {
+      "id": "founder-fundraising",
+      "status": "error",
+      "elapsed": 90037,
+      "error": "api_error: The operation was aborted due to timeout",
+      "request": {
+        "prompt": "We're raising our Series A. I need to manage the whole fundraising process — investor outreach, pitch deck prep, due diligence, term sheet negotiation. Build me a workflow for this.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "error": "api_error",
+        "message": "The operation was aborted due to timeout"
+      },
+      "scoring": {
+        "score": 0,
+        "maxScore": 1,
+        "pct": 0,
+        "checks": [
+          "✗ API error: api_error"
+        ]
+      }
+    },
+    {
+      "id": "marketing-campaign",
+      "status": "error",
+      "elapsed": 90017,
+      "error": "api_error: The operation was aborted due to timeout",
+      "request": {
+        "prompt": "I need to launch a Black Friday campaign across email, social media, and Google Ads. Budget is $10k. Make me a workflow that covers everything from creative to post-campaign analysis.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "error": "api_error",
+        "message": "The operation was aborted due to timeout"
+      },
+      "scoring": {
+        "score": 0,
+        "maxScore": 1,
+        "pct": 0,
+        "checks": [
+          "✗ API error: api_error"
+        ]
+      }
+    },
+    {
+      "id": "eng-oncall",
+      "status": "error",
+      "elapsed": 90015,
+      "error": "api_error: The operation was aborted due to timeout",
+      "request": {
+        "prompt": "We just got paged at 3am for the third time this week. We need an incident response process. Currently it's just chaos — whoever sees Slack first tries to fix it.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "error": "api_error",
+        "message": "The operation was aborted due to timeout"
+      },
+      "scoring": {
+        "score": 0,
+        "maxScore": 1,
+        "pct": 0,
+        "checks": [
+          "✗ API error: api_error"
+        ]
+      }
+    },
+    {
+      "id": "pm-feature-ship",
+      "status": "error",
+      "elapsed": 90018,
+      "error": "api_error: The operation was aborted due to timeout",
+      "request": {
+        "prompt": "I need to ship a new payments feature. It touches billing, the API, the frontend, and we need legal to review the T&C changes. Give me a workflow that makes sure nothing falls through the cracks.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "error": "api_error",
+        "message": "The operation was aborted due to timeout"
+      },
+      "scoring": {
+        "score": 0,
+        "maxScore": 1,
+        "pct": 0,
+        "checks": [
+          "✗ API error: api_error"
+        ]
+      }
+    },
+    {
+      "id": "execute-job-description",
+      "status": "ok",
+      "elapsed": 33187,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Write a job description for a Senior Full-Stack Engineer at a Series B fintech startup. Tech stack is React, Node.js, PostgreSQL, AWS. Remote-first, competitive equity.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Senior Full-Stack Engineer\n\n## About Us\nWe are a Series B fintech startup on a mission to democratize access to sophisticated financial tools. Backed by leading venture capital firms, we're building a platform that empowers individuals and businesses to make smarter financial decisions. As we scale our product and expand our market reach, we're looking for a Senior Full-Stack Engineer to join our remote-first team and help architect the future of our technology.\n\n## The Role\nAs a Senior Full-Stack Engineer, you will be a key contributor to our product development lifecycle, from ideation to deployment. You'll work closely with product managers, designers, and other engineers to build scalable, secure, and user-friendly features that directly impact our customers. This role requires both deep technical expertise and strong product intuition, with a focus on delivering high-quality software in a fast-paced environment.\n\n## Key Responsibilities\n- Design, develop, and maintain robust, scalable full-stack applications using React, Node.js, PostgreSQL, and AWS\n- Lead the implementation of complex features and architectural improvements across our entire stack\n- Collaborate with product and design teams to translate business requirements into technical specifications and elegant user experiences\n- Write clean, maintainable, and well-tested code while following best practices and coding standards\n- Optimize application performance, reliability, and security across frontend and backend systems\n- Participate in code reviews, providing constructive feedback to peers and mentoring junior engineers\n- Contribute to architectural decisions and help evolve our technical roadmap\n- Troubleshoot and resolve production issues, implementing long-term solutions to prevent recurrence\n- Stay current with emerging technologies and industry trends, advocating for improvements to our tech stack and development processes\n\n## Technical Requirements\n- 5+ years of professional software development experience with a focus on full-stack engineering\n- Extensive experience with our core stack: React, Node.js, PostgreSQL, and AWS\n- Strong proficiency in modern JavaScript/TypeScript, HTML5, and CSS3\n- Deep understanding of RESTful API design, microservices architecture, and database design principles\n- Experience with cloud infrastructure, DevOps practices, and CI/CD pipelines\n- Familiarity with testing frameworks (Jest, React Testing Library, Cypress) and monitoring tools\n- Knowledge of security best practices, particularly in fintech or regulated environments\n- Experience with containerization (Docker) and orchestration tools is a plus\n- Previous work in fintech, banking, or other highly regulated industries is advantageous\n\n## What We're Looking For\n- A product-minded engineer who understands business goals and user needs\n- Strong problem-solving skills with the ability to break down complex challenges\n- Excellent communication skills and experience collaborating in a distributed team environment\n- Ownership mentality with a focus on delivering high-impact results\n- Adaptability and comfort with ambiguity in a fast-growing startup\n- Passion for building products that make a real difference in people's financial lives\n\n## What We Offer\n- **Competitive Compensation:** Attractive salary package with significant equity stake\n- **Remote-First Culture:** Work from anywhere with a flexible schedule\n- **Health & Wellness:** Comprehensive medical, dental, and vision insurance\n- **Professional Growth:** Annual learning budget and conference attendance\n- **Equipment:** Latest technology and home office setup stipend\n- **Time Off:** Unlimited PTO with encouraged minimums and company-wide holidays\n- **Team Connection:** Regular virtual events and annual company offsites\n- **Impact:** Direct influence on product direction and company success\n\n## Our Engineering Values\n- **Quality & Craftsmanship:** We take pride in building software that's both functional and elegant\n- **Collaboration:** We believe the best solutions emerge from diverse perspectives\n- **Iterative Excellence:** We ship quickly, learn continuously, and improve constantly\n- **Technical Rigor:** We make informed decisions based on data and best practices\n- **User Empathy:** We build with our customers' needs at the center of every decision\n\n## How to Apply\nPlease submit your resume along with a brief note about why you're interested in this role and what excites you about fintech. Include links to your GitHub profile, portfolio, or any relevant projects that demonstrate your expertise.\n\nWe are committed to building a diverse and inclusive team. We encourage applications from all qualified individuals regardless of background, identity, or experience.\n\n*Note: This position may require occasional overlap with core team hours (9 AM - 5 PM EST) for collaboration and meetings.*",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (4881 chars)",
+          "✓ Content length: 4881 ≥ 200"
+        ]
+      }
+    },
+    {
+      "id": "personality-poirot-empty",
+      "status": "ok",
+      "elapsed": 4408,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Mon ami, the canvas is empty — a blank slate, a case without clues! But do not despair. The little grey cells are ready. Tell me, what mystery shall we solve? A workflow for a new feature? A deployment pipeline? A content approval process? Present me the facts, and I shall assemble the evidence.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (296 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    }
+  ]
+}
