@@ -1,0 +1,501 @@
+{
+  "timestamp": "2026-03-08T06-02-47",
+  "overall": 94,
+  "testsRun": [
+    "hr-hiring",
+    "freelancer-client",
+    "execute-incident-postmortem",
+    "edge-complex-multi-team",
+    "personality-rowan-empty",
+    "personality-poirot-empty"
+  ],
+  "poolSize": 30,
+  "results": [
+    {
+      "id": "hr-hiring",
+      "status": "ok",
+      "elapsed": 36683,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "We need to hire 5 engineers in the next 2 months. Our current process is just posting on LinkedIn and hoping. Build me a proper hiring pipeline.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building structured hiring pipeline for 5 engineers in 60 days.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Hiring Mandate",
+              "category": "input",
+              "description": "Business requirement to hire 5 engineers within 2 months.",
+              "content": "Objective: Hire 5 qualified engineers (mix of frontend, backend, full-stack) within 60 days. Budget approved. Current process: LinkedIn posts only. Need systematic pipeline."
+            },
+            {
+              "label": "Pipeline Kickoff",
+              "category": "trigger",
+              "description": "Initiates the structured hiring workflow.",
+              "content": "Trigger: Hiring mandate approved. Actions: Assemble hiring team (HM, recruiter, interviewers), define roles, allocate resources, set weekly review cadence."
+            },
+            {
+              "label": "Role & Sourcing Plan",
+              "category": "artifact",
+              "description": "Document defining target roles, requirements, and multi-channel sourcing strategy.",
+              "content": "Roles: 2 Backend (Node/Python), 2 Frontend (React), 1 Full-Stack. Requirements: JD, salary bands, tech stack, must-haves. Sourcing Channels: LinkedIn Recruiter, AngelList, GitHub jobs, employee referrals, 2 tech recruiters engaged. Daily sourcing quota: 15 outbound per role."
+            },
+            {
+              "label": "Candidate Screening",
+              "category": "action",
+              "description": "Active process: resume review, recruiter screen, technical assessment.",
+              "content": "Process: 1) Recruiter screen (30 min, culture/exp), 2) Take-home coding challenge (backend: API build, frontend: UI component), 3) Review by hiring manager. Goal: 5 qualified candidates in pipeline per role weekly. Tools: Greenhouse ATS, HackerRank."
+            },
+            {
+              "label": "Interview Loop",
+              "category": "state",
+              "description": "Live interview stages with defined panels and scoring.",
+              "content": "Stages: 1) Technical deep-dive (2 engineers, 60 min), 2) System design (HM + senior, 60 min), 3) Culture/leadership (skip-level, 45 min). Scorecard: 1-5 on skills, problem-solving, fit. Debrief within 24h. Target: 3-4 interviews per candidate."
+            },
+            {
+              "label": "Offer & Close",
+              "category": "action",
+              "description": "Extending offers, negotiation, and closing candidates.",
+              "content": "Process: Verbal offer → written offer (comp, equity, benefits) → negotiation window (48h) → sign. Tools: Comp benchmarks (Radford), approval workflow. Fallback: Identify backup candidates immediately. Target: 10 days from final interview to signed offer."
+            },
+            {
+              "label": "Pipeline Metrics",
+              "category": "review",
+              "description": "Weekly review of pipeline health and velocity.",
+              "content": "Metrics: Sourcing response rate, screen-to-interview ratio, time per stage, offer acceptance rate. Review: Every Monday, adjust sourcing/channels if lagging. Goal: 5 offers extended by Day 45 to account for 2-week notice periods."
+            },
+            {
+              "label": "Hires Onboarded",
+              "category": "output",
+              "description": "Successful hires completing first day.",
+              "content": "Output: 5 engineers hired, contracts signed, start dates confirmed within 60-day window. Handoff to onboarding team. Documentation: Pipeline post-mortem, cost per hire, source effectiveness for future scaling."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "drives"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 5,
+              "to": 7,
+              "label": "outputs"
+            },
+            {
+              "from": 6,
+              "to": 2,
+              "label": "monitors"
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "label": "monitors"
+            },
+            {
+              "from": 6,
+              "to": 4,
+              "label": "monitors"
+            },
+            {
+              "from": 6,
+              "to": 5,
+              "label": "monitors"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 80,
+        "maxScore": 85,
+        "pct": 94,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 5)",
+          "✓ Node count: 8 ≤ 10",
+          "✓ Has \"review\" category",
+          "✓ All 10 edges valid",
+          "✓ Starts with input",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "⚡ Content depth: avg 223c, 0 thin node(s)"
+        ]
+      }
+    },
+    {
+      "id": "freelancer-client",
+      "status": "ok",
+      "elapsed": 25003,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "I'm a freelance designer. I need a workflow for managing client projects — from initial inquiry to final delivery and getting paid. I keep forgetting to send invoices.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building client project management workflow with invoice automation.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Client Inquiry",
+              "category": "trigger",
+              "description": "Initial contact from potential client via email, form, or call.",
+              "content": "Capture: client name, contact, project brief, budget range, timeline. Auto-log in CRM."
+            },
+            {
+              "label": "Proposal & Contract",
+              "category": "action",
+              "description": "Create and send proposal, scope of work, contract.",
+              "content": "Generate proposal doc with deliverables, timeline, payment schedule. Attach contract (e-signature)."
+            },
+            {
+              "label": "Project Kickoff",
+              "category": "state",
+              "description": "Contract signed, deposit received, project active.",
+              "content": "Confirm deposit payment. Schedule kickoff meeting. Share project board/timeline with client."
+            },
+            {
+              "label": "Design Phase",
+              "category": "action",
+              "description": "Execute design work, client reviews, revisions.",
+              "content": "Track milestones: research, concepts, drafts, revisions. Use tools like Figma, Miro. Client feedback loops."
+            },
+            {
+              "label": "Final Approval",
+              "category": "review",
+              "description": "Client signs off on final deliverables.",
+              "content": "Formal approval via email or e-sign. Archive all final assets."
+            },
+            {
+              "label": "Invoice Generator",
+              "category": "cid",
+              "description": "Automated invoice creation and dispatch.",
+              "content": "Triggered by Final Approval. Pulls project fee, payment terms, client details. Generates PDF invoice, sends via email with payment link."
+            },
+            {
+              "label": "Payment Tracking",
+              "category": "state",
+              "description": "Monitor invoice status and payment receipt.",
+              "content": "Log invoice date, due date, amount. Flag overdue payments. Auto-reminder at 7 days overdue."
+            },
+            {
+              "label": "Project Archive",
+              "category": "output",
+              "description": "Close project, store assets, gather feedback.",
+              "content": "Archive all files. Send client satisfaction survey. Update portfolio if permitted."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "outputs"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "triggers"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "drives"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "feeds"
+            },
+            {
+              "from": 5,
+              "to": 7,
+              "label": "informs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 70,
+        "maxScore": 80,
+        "pct": 88,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 5)",
+          "✓ Node count: 8 ≤ 10",
+          "✓ All 8 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✗ Content too thin: avg 94c"
+        ]
+      }
+    },
+    {
+      "id": "execute-incident-postmortem",
+      "status": "ok",
+      "elapsed": 52963,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Write a blameless post-mortem for a 2-hour production outage caused by a database migration that locked a critical table. 500 customers were affected. Include timeline, root cause, impact, and action items.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Blameless Post-Mortem Report: Production Outage Due to Database Table Lock\n\n**Date of Incident:** October 26, 2023  \n**Start Time:** 09:14 UTC  \n**End Time:** 11:23 UTC  \n**Duration:** 2 hours, 9 minutes  \n**Service Affected:** User Transaction API and Dashboard  \n**Impact:** Approximately 500 customers unable to access transaction history or process new transactions.\n\n## Executive Summary\nOn October 26, 2023, a scheduled database migration to optimize indexes on the `user_transactions` table resulted in a full table lock that blocked all read and write operations for approximately two hours. The migration, which was intended to improve query performance, instead caused a cascading failure in our transaction processing system, affecting 500 active customers during peak business hours. This report details the timeline, root causes, impact, and corrective actions to prevent recurrence.\n\n## Timeline (All Times UTC)\n- **08:30** – Database migration scheduled and initiated in staging environment; completed successfully in 15 minutes with no noticeable impact.\n- **09:00** – Migration script approved for production deployment via standard change management process.\n- **09:14** – Migration begins in production on the `user_transactions` table. Table lock is immediately triggered.\n- **09:17** – First alerts fire for elevated API error rates (5xx errors) and increased database connection timeouts.\n- **09:25** – On-call engineer acknowledges alerts and begins investigation. Initial suspicion is on application layer due to recent deployment.\n- **09:40** – Database monitoring shows `user_transactions` table with 100% lock contention. Migration identified as probable cause.\n- **09:55** – Attempt to kill migration process fails due to rollback already being in progress. Decision made to allow migration to complete rather than attempt risky manual intervention.\n- **10:45** – Migration completes rollback after exhausting transaction log space. Table locks released.\n- **10:50** – Services begin recovering automatically as database connections stabilize.\n- **11:23** – All systems confirmed operational at baseline performance levels. Incident resolved.\n\n## Impact\n### Technical Impact\n- User Transaction API: 100% error rate for duration of incident\n- Dashboard service: Unable to load transaction history for affected users\n- Database connection pool exhaustion across multiple application services\n- 14,000 failed transactions during outage window\n\n### Customer Impact\n- 500 customers actively using the platform during the outage were affected\n- Customers could not view transaction history or initiate new transactions\n- 247 customer support tickets generated\n- 8 customers contacted account managers directly\n\n### Business Impact\n- Estimated $18,000 in lost transaction revenue\n- 43% increase in customer support volume\n- Minor brand/reputation impact (social media mentions increased by 15%)\n\n## Root Cause Analysis\n### Primary Root Cause\nThe `ALTER TABLE` migration on the `user_transactions` table was executed with default locking behavior, which imposed an exclusive lock on the entire table for the duration of the operation. With 85 million rows, the migration took significantly longer in production than in staging due to:\n1. **Production data volume** was 12x larger than staging\n2. **Concurrent transaction load** was at peak business hours, creating lock contention\n3. **Transaction log growth** exceeded available disk space, forcing a rollback\n\n### Contributing Factors\n1. **Testing Gap:** Staging environment did not accurately reflect production data volume or load patterns. The migration was only tested with 1/12th of production data.\n2. **Procedural Gap:** Change management process did not require lock impact analysis for database migrations.\n3. **Monitoring Gap:** Pre-migration checks did not include verification of available transaction log space.\n4. **Communication Gap:** The migration was scheduled during regional business hours without considering peak usage patterns.\n\n## Action Items\n### Immediate Actions (Completed)\n- [x] Restored full service functionality by 11:23 UTC\n- [x] Communicated incident resolution to all affected customers via email\n- [x] Updated customer support team with detailed incident information\n- [x] Compensated affected customers with service credits\n\n### Short-term Actions (Next 30 Days)\n1. **Implement Safe Migration Procedures**\n   - Require all `ALTER TABLE` operations to use `ALGORITHM=INPLACE, LOCK=NONE` where supported\n   - Create pre-migration checklist including lock analysis and rollback planning\n   - Establish mandatory maintenance windows for high-risk migrations\n\n2. **Enhance Testing Environment**\n   - Create production-like database subset for performance testing (minimum 50% of production data volume)\n   - Implement load testing for migrations during simulated peak traffic\n\n3. **Improve Monitoring and Alerting**\n   - Create specific alerts for long-running database locks (>30 seconds)\n   - Implement dashboard for real-time migration progress monitoring\n   - Enhance database disk space forecasting and alerting\n\n### Long-term Actions (Next 90 Days)\n1. **Architectural Improvements**\n   - Evaluate implementing online schema change tools (pt-online-schema-change, gh-ost)\n   - Design database partitioning strategy for `user_transactions` table to reduce migration impact\n   - Implement read replicas to maintain availability during maintenance operations\n\n2. **Process Improvements**\n   - Develop database migration runbook with explicit approval gates\n   - Establish blameless post-mortem follow-up process to verify action item completion\n   - Create database change advisory board with rotating membership\n\n3. **Training and Documentation**\n   - Conduct database migration best practices workshop for engineering teams\n   - Document production migration checklist in company knowledge base\n   - Implement \"migration dry-run\" requirement for all production schema changes\n\n## Key Learnings\n1. **Production is not staging:** Performance characteristics can differ dramatically due to data volume, load patterns, and infrastructure differences.\n2. **Lock awareness is critical:** Understanding locking behavior should be a prerequisite for any database change.\n3. **Timing matters:** Even properly tested changes can have unexpected consequences when executed during peak load.\n4. **Rollback planning is as important as execution planning:** Having a tested, timely rollback procedure is essential for risk mitigation.\n\n## Acknowledgments\nThank you to the on-call engineering team for their rapid response and systematic approach to resolution, and to the customer support team for managing customer communications during the incident. The blameless analysis conducted here will make our systems and processes more resilient.\n\n---\n\n**Report Status:** Final  \n**Next Review:** Action items to be reviewed in 30 days (November 26, 2023)  \n**Distribution:** Engineering, Operations, Customer Support, Executive Leadership",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (7030 chars)",
+          "✓ Content length: 7030 ≥ 300"
+        ]
+      }
+    },
+    {
+      "id": "edge-complex-multi-team",
+      "status": "ok",
+      "elapsed": 48303,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "We're migrating from AWS to GCP. It involves the platform team, app developers, security, and finance. There are 40 microservices. I need a migration plan workflow.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, a case of grand migration! The plot thickens with 40 microservices and a cast of characters—platform, developers, security, finance. My little grey cells are already assembling the clues. A proper investigation requires a structured plan, a blueprint for this delicate operation. We shall not merely move; we shall orchestrate a symphony of migration. Voilà! I present to you a migration plan workflow, designed with the precision of a detective's mind.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Migration Kickoff & Stakeholder Alignment",
+              "category": "input",
+              "description": "Initial meeting to align all teams (platform, app dev, security, finance) on goals, timeline, and responsibilities.",
+              "content": "Objective: Establish migration charter, define success metrics (cost, performance, security), assign RACI matrix. Key attendees: Platform Lead, App Dev Managers, Security Officer, Finance Analyst. Output: Signed-off migration charter document."
+            },
+            {
+              "label": "AWS Environment Discovery & Inventory",
+              "category": "action",
+              "description": "Comprehensive audit of current AWS infrastructure, services, dependencies, and costs for all 40 microservices.",
+              "content": "Tools: AWS Config, CloudTrail, Cost Explorer, custom scripts. Deliverables: Inventory spreadsheet mapping each microservice to its AWS resources (EC2, RDS, S3, Lambda, etc.), dependency graph, baseline cost analysis, and security configuration snapshot."
+            },
+            {
+              "label": "GCP Target Architecture Design",
+              "category": "artifact",
+              "description": "Design the GCP equivalent architecture, ensuring parity, optimization, and compliance.",
+              "content": "Architecture diagrams (using GCP Compute Engine, Cloud SQL, Cloud Storage, Cloud Run, etc.), network design (VPC, subnets, firewalls), IAM roles design, and data migration strategy. Security review embedded. Finance provides cost projection comparison."
+            },
+            {
+              "label": "Migration Wave Planning & Prioritization",
+              "category": "state",
+              "description": "Group microservices into logical migration waves based on complexity, dependencies, and business criticality.",
+              "content": "Wave 1 (Low-hanging fruit): 10 stateless, non-critical services. Wave 2 (Moderate): 15 services with some state. Wave 3 (Complex): 10 services with high dependencies. Wave 4 (Critical): 5 business-critical services. Each wave has a timeline and rollback plan."
+            },
+            {
+              "label": "Security & Compliance Validation",
+              "category": "review",
+              "description": "Security team reviews GCP design, ensures compliance (e.g., SOC2, GDPR), and defines guardrails.",
+              "content": "Security assessment report, compliance checklist, IAM policy validation, encryption standards, and logging/monitoring requirements for GCP. Approval required before any migration execution."
+            },
+            {
+              "label": "Pilot Migration (Wave 1 Execution)",
+              "category": "action",
+              "description": "Execute migration of first wave microservices, including data transfer, configuration, and cutover.",
+              "content": "Steps: 1. Provision GCP resources. 2. Migrate data (using Database Migration Service or transfer appliances). 3. Deploy microservices (CI/CD pipeline to GCP). 4. Smoke testing. 5. DNS cutover. 6. Monitor for 48 hours. Document lessons learned."
+            },
+            {
+              "label": "Performance & Cost Monitoring Dashboard",
+              "category": "state",
+              "description": "Real-time dashboard to track GCP performance, costs, and compare against AWS baseline.",
+              "content": "GCP Monitoring dashboards with alerts. Cost dashboard in GCP Billing. Key metrics: latency, error rates, CPU/memory usage, cost per service. Reviewed weekly by platform and finance."
+            },
+            {
+              "label": "Full Migration Rollout (Waves 2-4)",
+              "category": "action",
+              "description": "Iterative migration of remaining waves, incorporating learnings from pilot.",
+              "content": "Repeatable process per wave: 1. Pre-migration validation. 2. Data sync. 3. Deployment. 4. Testing (integration, load). 5. Cutover with fallback. 6. Post-migration optimization. Continuous coordination with app developers for validation."
+            },
+            {
+              "label": "Decommission AWS Resources",
+              "category": "action",
+              "description": "After full validation and stability period, decommission migrated AWS resources.",
+              "content": "Checklist: 1. Confirm 30 days of stable operation in GCP. 2. Backup final AWS data. 3. Terminate EC2 instances, databases, storage. 4. Update documentation. 5. Verify cost savings. Security sign-off required."
+            },
+            {
+              "label": "Migration Retrospective & Final Report",
+              "category": "output",
+              "description": "Final review with all stakeholders, documenting successes, issues, and lessons learned.",
+              "content": "Report includes: Timeline vs actual, cost comparison (AWS vs GCP), performance metrics, security compliance status, team feedback, and recommendations for future cloud operations. Published to all stakeholders."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "feeds"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "informs"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "requires"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "approves"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "triggers"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "monitors"
+            },
+            {
+              "from": 7,
+              "to": 8,
+              "label": "validates"
+            },
+            {
+              "from": 8,
+              "to": 9,
+              "label": "outputs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 75,
+        "maxScore": 80,
+        "pct": 94,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 10 (min: 5)",
+          "✓ Node count: 10 ≤ 10",
+          "✓ All 9 edges valid",
+          "✓ Starts with input",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "⚡ Content depth: avg 227c, 0 thin node(s)"
+        ]
+      }
+    },
+    {
+      "id": "personality-rowan-empty",
+      "status": "ok",
+      "elapsed": 2864,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Mission received. Current graph is empty. No nodes or edges exist. Ready for deployment.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (88 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "personality-poirot-empty",
+      "status": "ok",
+      "elapsed": 3998,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, mon ami! The canvas is pristine, untouched by the fingerprints of logic. We have no nodes, no edges—a perfect blank slate awaiting the first clue. The little grey cells are eager, but the investigation has not yet begun. What mystery shall we unravel?",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (255 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    }
+  ]
+}

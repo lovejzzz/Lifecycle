@@ -1,0 +1,481 @@
+{
+  "timestamp": "2026-03-08T05-44-53",
+  "overall": 100,
+  "testsRun": [
+    "pm-user-research",
+    "support-escalation",
+    "freelancer-client",
+    "execute-incident-postmortem",
+    "edge-question-looks-like-build",
+    "personality-poirot-empty"
+  ],
+  "poolSize": 30,
+  "results": [
+    {
+      "id": "pm-user-research",
+      "status": "ok",
+      "elapsed": 53477,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "We're redesigning our onboarding flow. I want to do proper user research — recruit users, run interviews, analyze findings, create recommendations, test prototypes. Build this for me.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, mon ami! A most intriguing case — the redesign of the sacred onboarding ritual! The little grey cells are already tingling. This requires a proper investigation, not mere guesswork. I shall construct for you a systematic workflow that uncovers the truth about your users' needs, desires, and frustrations. Voilà!",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Research Objectives & Recruitment Plan",
+              "category": "input",
+              "description": "Define what we need to learn and who we need to talk to.",
+              "content": "**Primary Objective:** Understand pain points, motivations, and unmet needs during current onboarding.\n**Key Questions:**\n- What causes users to drop off?\n- What feels confusing or overwhelming?\n- What 'aha' moment are users seeking?\n- What external tools/mental models are they bringing?\n**Recruitment Criteria:**\n- 8-10 users: Mix of new sign-ups (last 30 days), stalled users, and recently activated users.\n- Diverse roles, company sizes, and technical comfort.\n**Incentive:** $50 gift card per 45-minute session."
+            },
+            {
+              "label": "User Recruitment & Scheduling",
+              "category": "action",
+              "description": "Execute recruitment plan and schedule interviews.",
+              "content": "**Actions:**\n1. Filter database for users matching criteria.\n2. Send personalized email invites with Calendly link.\n3. Send reminder 24h before interview.\n4. Prepare consent form & incentive payment process.\n**Tools:** Internal CRM, Calendly, Google Forms for consent."
+            },
+            {
+              "label": "Semi-Structured Interview Guide",
+              "category": "artifact",
+              "description": "Script with open-ended questions and tasks.",
+              "content": "**Welcome & Context (5 min):** Explain purpose, confidentiality.\n**Warm-up (5 min):** Tell me about your role and what brought you to our product.\n**Journey Mapping (15 min):** Walk me through your sign-up and first 30 minutes. Where did you pause? What was unclear?\n**Task Observation (10 min):** \"Show me how you would complete [key onboarding task]. Think aloud.\"\n**Ideal State (10 min):** \"If you could design the perfect first experience, what would it feel like?\"\n**Wrap-up (5 min):** Any other thoughts? Next steps."
+            },
+            {
+              "label": "Conduct User Interviews",
+              "category": "action",
+              "description": "Run sessions, record (with consent), and take notes.",
+              "content": "**Protocol:**\n- 45-minute Zoom sessions, video recorded.\n- Two researchers: one leads, one takes detailed notes.\n- Use screen sharing for walkthroughs.\n- Probe gently: \"Can you say more about that?\" \"What were you expecting here?\"\n**Logistics:** Backup audio recording, test setup beforehand."
+            },
+            {
+              "label": "Interview Synthesis & Analysis",
+              "category": "state",
+              "description": "Transcribe, tag, and identify patterns and insights.",
+              "content": "**Process:**\n1. Full transcript via Otter.ai.\n2. Affinity mapping in Miro: Tag quotes by theme (e.g., 'Confusion at step 3', 'Delight at feature X', 'Missing expectation Y').\n3. Identify frequency and severity of pain points.\n4. Create user journey map with emotional highs/lows.\n**Key Outputs:** Top 5 friction points, 3-5 user archetypes, list of 'jobs to be done' during onboarding."
+            },
+            {
+              "label": "Research Findings & Recommendations Report",
+              "category": "artifact",
+              "description": "Consolidated insights with actionable design recommendations.",
+              "content": "**Structure:**\n- Exec Summary: Key findings & priority recommendations.\n- User Archetypes: Persona snippets with goals/frustrations.\n- Journey Map Visual: Emotional curve with pain points annotated.\n- Top 5 Friction Points: Each with evidence quotes and suggested fix.\n- Design Principles: e.g., 'Progressively disclose complexity', 'Celebrate early wins'.\n- Recommended Onboarding Flow Changes: High-level before/after."
+            },
+            {
+              "label": "Prototype Design & Creation",
+              "category": "action",
+              "description": "Translate recommendations into testable prototypes.",
+              "content": "**Scope:**\n- Create 2-3 key onboarding screens in Figma.\n- Focus on addressing top friction points (e.g., simplified setup, better progress indicators, contextual help).\n- Include interactive elements: clickable buttons, input fields, tooltips.\n- Version A (radical redesign) & Version B (iterative improvement)."
+            },
+            {
+              "label": "Usability Testing of Prototypes",
+              "category": "test",
+              "description": "Test prototypes with new users to validate solutions.",
+              "content": "**Plan:**\n- Recruit 5 new users (not interview participants).\n- Task-based testing: \"Sign up and complete [key goal].\"\n- Measure: Success rate, time on task, perceived ease (SEQ).\n- Observe: Where do they hesitate? What comments do they make?\n**Script:** \"We're testing the design, not you. Think aloud as you go.\""
+            },
+            {
+              "label": "Final Recommendations & Implementation Brief",
+              "category": "output",
+              "description": "Prioritized, tested recommendations ready for development.",
+              "content": "**Deliverables:**\n1. Validated prototype (Figma link) with annotations.\n2. Usability test report: metrics, quotes, observed issues.\n3. Prioritized backlog of changes: P0 (critical), P1 (high impact), P2 (nice-to-have).\n4. Implementation considerations: tech dependencies, analytics to add.\n5. Success metrics proposal: e.g., increase Day 7 activation by 15%.\n**Next Steps:** Handoff to product & engineering teams."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "feeds"
+            },
+            {
+              "from": 0,
+              "to": 2,
+              "label": "informs"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "informs"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "drives"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "informs"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "feeds"
+            },
+            {
+              "from": 7,
+              "to": 8,
+              "label": "validates"
+            },
+            {
+              "from": 5,
+              "to": 8,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 70,
+        "maxScore": 70,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 9 (min: 5)",
+          "✓ Node count: 9 ≤ 10",
+          "✓ All 10 edges valid",
+          "✓ Starts with input",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected"
+        ]
+      }
+    },
+    {
+      "id": "support-escalation",
+      "status": "ok",
+      "elapsed": 35551,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Customers keep complaining their tickets go into a black hole. Design an escalation workflow — ticket comes in, auto-classify priority, route to right team, SLA tracking, escalate if overdue.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, a classic case of the vanishing ticket! A black hole, you say? Mon ami, this is a symptom of a system without proper procedure. The little grey cells see it clearly: we need a mechanism of classification, routing, tracking, and—most critically—escalation. A workflow that watches, monitors, and acts. Très bien. I shall design the system. Observe!",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "New Support Ticket",
+              "category": "trigger",
+              "description": "Incoming customer issue from any channel (email, web, chat).",
+              "content": "Trigger Event: Ticket Created.\nPayload includes: customer ID, subject, description, initial channel, timestamp."
+            },
+            {
+              "label": "Auto-Priority Classifier",
+              "category": "action",
+              "description": "AI/NLP model analyzes ticket content and metadata to assign a priority tier.",
+              "content": "Action: Classify Priority.\nAlgorithm uses keywords, sentiment, customer tier, and issue type.\nOutputs: P0 (Critical), P1 (High), P2 (Medium), P3 (Low)."
+            },
+            {
+              "label": "Team Routing Matrix",
+              "category": "state",
+              "description": "Defines which team handles which issue type and priority combination.",
+              "content": "State: Routing Rules.\nExamples:\n- P0/P1 Technical Bug -> Engineering On-Call\n- P2 Billing Issue -> Finance Team\n- P3 General Inquiry -> L1 Support\n- All Security -> Security Team"
+            },
+            {
+              "label": "SLA Clock & Tracker",
+              "category": "state",
+              "description": "Starts a countdown timer based on the assigned priority and tracks ticket status.",
+              "content": "State: Active Timers & Status.\nSLA Policy:\n- P0: 1 hour to first response, 4 hours to resolve.\n- P1: 4 hours / 1 business day.\n- P2: 1 business day / 3 business days.\n- P3: 2 business days / 5 business days.\nStores: timer start, deadline, current status (New, Assigned, In Progress)."
+            },
+            {
+              "label": "Escalation Engine",
+              "category": "action",
+              "description": "Monitors the SLA tracker. If a deadline is breached, it triggers escalation actions.",
+              "content": "Action: Escalate.\nLogic: IF (current_time > deadline) AND (status != 'Resolved' OR 'Closed'):\n- Notify team lead & manager via alert.\n- Post to high-priority escalation channel (e.g., Slack #urgent).\n- Re-route ticket to a backup or senior agent queue.\n- Optionally, notify the customer of the delay and new ETA."
+            },
+            {
+              "label": "Agent Workspace & Audit Log",
+              "category": "artifact",
+              "description": "The interface where agents work and a full history of all actions, routing, and escalations is kept.",
+              "content": "Artifact: Ticket Thread & Log.\nContains: full customer conversation, internal notes, priority change history, routing history, all escalation events with timestamps and actors. Provides full auditability."
+            },
+            {
+              "label": "Resolved Ticket & Report",
+              "category": "output",
+              "description": "Final state of the ticket and generated performance data for the cycle.",
+              "content": "Output: Resolution & Metrics.\nTicket marked 'Resolved' or 'Closed'.\nAuto-generate report for the incident: Time to First Response, Time to Resolution, SLA Met/ Breached, Escalation Count. Feed into analytics dashboard."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "monitors"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "updates"
+            },
+            {
+              "from": 1,
+              "to": 5,
+              "label": "informs"
+            },
+            {
+              "from": 2,
+              "to": 5,
+              "label": "informs"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "outputs"
+            },
+            {
+              "from": 4,
+              "to": 6,
+              "label": "informs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 75,
+        "maxScore": 75,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ Has \"trigger\" category",
+          "✓ All 9 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected"
+        ]
+      }
+    },
+    {
+      "id": "freelancer-client",
+      "status": "ok",
+      "elapsed": 25139,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "I'm a freelance designer. I need a workflow for managing client projects — from initial inquiry to final delivery and getting paid. I keep forgetting to send invoices.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building client project management workflow with invoice automation.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Client Inquiry",
+              "category": "trigger",
+              "description": "New client contact via email, form, or referral.",
+              "content": "Capture: client name, contact, project type, budget range, timeline. Auto-log to CRM."
+            },
+            {
+              "label": "Proposal & Agreement",
+              "category": "artifact",
+              "description": "Scope doc, quote, contract sent for approval.",
+              "content": "Generate proposal template. Include: deliverables, milestones, payment schedule (e.g., 50% upfront, 50% on delivery), terms. E-signature integration."
+            },
+            {
+              "label": "Project Kickoff",
+              "category": "action",
+              "description": "Internal setup and client onboarding.",
+              "content": "Create project folder. Share access. Schedule kickoff call. Confirm scope, assets, and communication channels."
+            },
+            {
+              "label": "Design & Review Cycles",
+              "category": "state",
+              "description": "Active work phase with client feedback.",
+              "content": "Track versions. Use review tool (e.g., Figma comments). Log client feedback. Update task status."
+            },
+            {
+              "label": "Final Approval",
+              "category": "review",
+              "description": "Client signs off on final deliverables.",
+              "content": "Deliver final files via secure link. Require formal approval email or e-signature. Trigger invoice generation."
+            },
+            {
+              "label": "Invoice Generator",
+              "category": "cid",
+              "description": "Auto-creates and sends invoice upon approval.",
+              "content": "Pull project fee, payment terms, client billing info. Generate PDF invoice. Send via email with payment link. Log sent date."
+            },
+            {
+              "label": "Payment Tracker",
+              "category": "state",
+              "description": "Monitors invoice status and sends reminders.",
+              "content": "Check payment status daily. Auto-reminder at 7, 14, 30 days overdue. Update project financial status."
+            },
+            {
+              "label": "Project Archive & Handoff",
+              "category": "output",
+              "description": "Close project and archive materials.",
+              "content": "Final assets transferred. Access revoked if needed. Project marked complete. Client satisfaction survey sent."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "informs"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "validates"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "triggers"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "outputs"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "monitors"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 70,
+        "maxScore": 70,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 5)",
+          "✓ Node count: 8 ≤ 10",
+          "✓ All 7 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected"
+        ]
+      }
+    },
+    {
+      "id": "execute-incident-postmortem",
+      "status": "ok",
+      "elapsed": 35032,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Write a blameless post-mortem for a 2-hour production outage caused by a database migration that locked a critical table. 500 customers were affected. Include timeline, root cause, impact, and action items.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Blameless Post-Mortem Report: Production Database Outage\n\n**Date of Incident:** October 26, 2023  \n**Incident Start:** 09:15 UTC  \n**Incident End:** 11:22 UTC  \n**Total Duration:** 2 hours, 7 minutes  \n**Service Affected:** User Transaction API & Dashboard  \n**Impact:** ~500 customers unable to access transaction history or process payments  \n**Severity:** SEV-2 (Partial Service Disruption)\n\n## Executive Summary\n\nOn October 26, 2023, a scheduled database migration to add indexing to the `transactions` table resulted in a 2-hour production outage affecting approximately 500 customers. The migration unexpectedly acquired a long-term exclusive lock on the table, blocking all read and write operations to the core transaction system. This report documents the timeline, root causes, impact, and corrective actions to prevent recurrence.\n\n## Timeline (UTC)\n\n**09:00** - Database migration initiated via automated deployment pipeline  \n**09:15** - First alerts received: API latency spikes (>5s) and failed transactions  \n**09:18** - On-call engineer acknowledges incident, begins investigation  \n**09:25** - Database monitoring shows `transactions` table with exclusive lock  \n**09:40** - Attempt to kill migration process fails due to rollback state  \n**10:05** - Decision made to restore from backup snapshot  \n**10:30** - Restoration process begins  \n**11:22** - Service fully restored, monitoring shows normal operation  \n**11:30** - Internal all-clear declared, customer notifications begin\n\n## Impact Assessment\n\n### Technical Impact\n- Transaction API: 100% error rate for duration\n- User Dashboard: Transaction history unavailable\n- Payment processing: Failed for affected customers\n- Database: `transactions` table completely locked for 2 hours\n\n### Business Impact\n- 500 active customers affected during peak business hours\n- 3,200 failed transaction attempts\n- Estimated revenue impact: $8,500 (based on average transaction volume)\n- Customer support received 187 tickets during incident\n- Brand reputation: Minor impact, no social media escalation\n\n## Root Cause Analysis\n\n### Primary Cause\nThe migration script used `ALTER TABLE ADD INDEX` with default parameters that, under our production dataset size (approximately 50 million rows), required rebuilding the entire table. This operation acquired an exclusive metadata lock that blocked all concurrent operations. The migration was expected to complete in under 5 minutes based on staging environment tests, but production data volume caused it to enter a multi-hour execution state.\n\n### Contributing Factors\n\n1. **Testing Gap**: Staging database contained only 1% of production data volume, leading to inaccurate performance predictions\n2. **Migration Strategy**: Used blocking operation instead of online DDL (pt-online-schema-change or native online operations)\n3. **Monitoring Blindspot**: No alert threshold for long-running DDL operations\n4. **Rollback Plan**: No tested rollback procedure for stuck migrations\n5. **Timing**: Migration executed during regional business hours instead of maintenance window\n\n## Action Items\n\n### Immediate (Completed)\n- [x] Restore service via backup restoration\n- [x] Notify affected customers with service credits\n- [x] Disable automated migration pipeline for production\n- [x] Document emergency restoration procedure\n\n### Short-term (30 days)\n- [ ] Implement online schema change tooling for all database migrations\n- [ ] Create production-like dataset in staging (minimum 30% of production volume)\n- [ ] Establish mandatory maintenance windows for DDL operations\n- [ ] Add monitoring for long-running database operations (>5 minutes)\n- [ ] Conduct team training on safe migration practices\n\n### Long-term (90 days)\n- [ ] Implement database change management policy requiring peer review\n- [ ] Build automated canary testing for database migrations\n- [ ] Develop blue-green deployment capability for database changes\n- [ ] Create automated rollback triggers for migrations exceeding time limits\n- [ ] Establish database performance testing as part of CI/CD pipeline\n\n## Lessons Learned\n\n1. **Data Volume Matters**: Testing must reflect production scale, not just schema\n2. **Blocking Operations Are Dangerous**: Default behaviors in database tools often prioritize safety over availability\n3. **Rollback Plans Need Testing**: Having a documented procedure isn't enough—it must be practiced\n4. **Timing Is Critical**: Even \"safe\" operations should occur during low-traffic periods\n5. **Monitoring Coverage**: We need alerts not just for system failure, but for dangerous states\n\n## Recognition\n\nThanks to the on-call engineer who quickly identified the locking issue, the database team who executed the restoration, and the customer support team who managed communications. The blameless culture allowed for rapid, honest assessment and effective problem-solving.\n\n---\n\n**Report Status:** Final  \n**Next Review:** Action item review scheduled for November 26, 2023  \n**Distribution:** Engineering, Product, Customer Support, Executive Leadership",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (5057 chars)",
+          "✓ Content length: 5057 ≥ 300"
+        ]
+      }
+    },
+    {
+      "id": "edge-question-looks-like-build",
+      "status": "ok",
+      "elapsed": 6856,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "What's the best way to set up a data pipeline?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, mon ami, a most intriguing question! Setting up a data pipeline is like assembling the clues in a grand investigation—each piece must be meticulously placed to reveal the truth. The best way depends on your goals, but let me share some investigative wisdom. First, define your data sources and destinations—the 'crime scene' and the 'evidence locker.' Then, consider transformation logic—the 'deductive reasoning' that cleans and structures the data. You must also plan for monitoring and error handling—the 'surveillance' to catch anomalies. For a robust pipeline, think in stages: ingestion, processing, storage, and consumption. And always, always document your steps—the detective's notebook is essential! Would you like me to construct a specific workflow blueprint for your case?",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (789 chars)",
+          "✓ Message length: 789 ≥ 50"
+        ]
+      }
+    },
+    {
+      "id": "personality-poirot-empty",
+      "status": "ok",
+      "elapsed": 4099,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, mon ami! The canvas is pristine, untouched by the hand of investigation. We have no nodes, no edges—a blank slate awaiting the first clue. The little grey cells are eager, but the case file is empty. What mystery shall we unravel? A workflow, perhaps? The game is afoot!",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (274 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    }
+  ]
+}

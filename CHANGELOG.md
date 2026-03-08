@@ -1,5 +1,19 @@
 # Changelog
 
+### 2026-03-08 — Round 72: Agent Quality Refinement (Eval-Driven)
+
+**Prompt engineering (4 improvements, all measured by eval):**
+- Semantic edge label guidance: added descriptions for all 14 edge types (e.g., "triggers" = one step causes another, "feeds" = data flows). Edge labels now semantically accurate across all test cases.
+- Content depth enforcement: CRITICAL rule requiring 300+ char node content with concrete steps/tools/checklists. Added BAD/GOOD example. Poirot content avg 369-409c (excellent), Rowan improving from 94c → 194c → trending up.
+- Rowan personality rewrite: separated terse "message" from detailed "content" — content is the deliverable, not the personality. Added field manual metaphor.
+- Rowan advice boundary: fixed Rowan building workflows on diagnostic questions ("What should we fix?"). Now correctly returns advice (workflow:null).
+- Refined "informs" vs "drives" distinction: "informs" is now explicitly for optional/supplementary context only.
+
+**Eval harness improvements:**
+- Expanded test pool from 8 → 30 real-world human-task prompts (startup founders, marketing managers, HR, freelancers, creators, etc.)
+- Added content depth scoring: checks avg content length and flags thin nodes (<150c)
+- 7 eval runs saved with full results and reports
+
 ### 2026-03-08 — Round 71: Real-World Eval & Prompt Fixes
 
 **Eval harness (`tests/eval/run-eval.mjs`):**

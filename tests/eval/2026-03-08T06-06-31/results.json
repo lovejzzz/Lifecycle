@@ -1,0 +1,402 @@
+{
+  "timestamp": "2026-03-08T06-06-31",
+  "overall": 98,
+  "testsRun": [
+    "eng-advice-scaling",
+    "hr-hiring",
+    "creator-youtube",
+    "execute-sow",
+    "edge-question-looks-like-build",
+    "personality-rowan-empty"
+  ],
+  "poolSize": 30,
+  "results": [
+    {
+      "id": "eng-advice-scaling",
+      "status": "ok",
+      "elapsed": 4042,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Our API is hitting 500ms response times at 1000 concurrent users. Database is PostgreSQL. What should I look at first?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "On it. First, check database query performance and connection pool saturation. Run `EXPLAIN ANALYZE` on slow endpoints' queries, monitor active connections vs max_connections, and review index usage on high-frequency tables.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (224 chars)",
+          "✓ Message length: 224 ≥ 80"
+        ]
+      }
+    },
+    {
+      "id": "hr-hiring",
+      "status": "ok",
+      "elapsed": 34601,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "We need to hire 5 engineers in the next 2 months. Our current process is just posting on LinkedIn and hoping. Build me a proper hiring pipeline.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building a structured hiring pipeline for 5 engineers in 2 months.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Hiring Mandate",
+              "category": "input",
+              "description": "Business requirement to hire 5 engineers within 2 months.",
+              "content": "Goal: Hire 5 full-time engineers (mix of frontend, backend, full-stack) within 60 days. Budget approved. Current process: LinkedIn posts only, insufficient."
+            },
+            {
+              "label": "Recruitment Trigger",
+              "category": "trigger",
+              "description": "Initiates the structured hiring pipeline.",
+              "content": "Pipeline start date: [Current Date]. Automated daily check for new applications and sourcing progress."
+            },
+            {
+              "label": "Sourcing Strategy",
+              "category": "action",
+              "description": "Multi-channel candidate sourcing plan.",
+              "content": "1. LinkedIn Recruiter (active outreach).\n2. Referral program launch ($3k bonus).\n3. Targeted job boards (AngelList, Hired, Wellfound).\n4. Engineering community events (virtual/in-person).\n5. Agency partnership for niche roles (optional)."
+            },
+            {
+              "label": "Screening & Assessment",
+              "category": "state",
+              "description": "Central hub for candidate evaluation.",
+              "content": "Process:\n- Resume screen (ATS filters for 3+ years, relevant stack).\n- Recruiter phone screen (30 min, culture fit).\n- Technical assessment (take-home or live coding, 60 min).\n- Hiring manager review (45 min deep-dive).\nTrack metrics: time-to-screen (<48 hrs), pass rates."
+            },
+            {
+              "label": "Interview Loop",
+              "category": "artifact",
+              "description": "Structured interview panel and schedule.",
+              "content": "Panel: Hiring Manager, Tech Lead, Peer Engineer, VP Eng (final).\nStages:\n1. Technical deep-dive (system design, 60 min).\n2. Pair programming/code review (45 min).\n3. Behavioral & values alignment (45 min).\nCalibration: Scorecard per role, debrief within 24 hrs."
+            },
+            {
+              "label": "Offer & Close",
+              "category": "action",
+              "description": "Final offer generation and negotiation.",
+              "content": "Offer package: Base salary (market +10%), equity, signing bonus, benefits summary.\nProcess: Verbal offer -> written offer (DocuSign) -> 48 hr response window. Counter-negotiation playbook prepared."
+            },
+            {
+              "label": "Pipeline Dashboard",
+              "category": "review",
+              "description": "Real-time monitoring of hiring metrics.",
+              "content": "KPIs:\n- Candidates in pipeline: target 50.\n- Weekly applications: target 25.\n- Offer acceptance rate: target 85%.\n- Time to hire: target 35 days.\nTools: Greenhouse/ATS integration, weekly syncs."
+            },
+            {
+              "label": "5 Engineers Hired",
+              "category": "output",
+              "description": "Successful fulfillment of hiring mandate.",
+              "content": "Outcome: 5 engineers onboarded, roles filled per spec. Documentation: signed offers, start dates confirmed, onboarding scheduled."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "drives"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "informs"
+            },
+            {
+              "from": 5,
+              "to": 7,
+              "label": "outputs"
+            },
+            {
+              "from": 1,
+              "to": 6,
+              "label": "monitors"
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "label": "updates"
+            },
+            {
+              "from": 6,
+              "to": 4,
+              "label": "validates"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 80,
+        "maxScore": 85,
+        "pct": 94,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 5)",
+          "✓ Node count: 8 ≤ 10",
+          "✓ Has \"review\" category",
+          "✓ All 9 edges valid",
+          "✓ Starts with input",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "⚡ Content depth: avg 194c, 2 thin node(s)"
+        ]
+      }
+    },
+    {
+      "id": "creator-youtube",
+      "status": "ok",
+      "elapsed": 62617,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "I want to start a YouTube channel. Build me a production workflow for each video — topic research, scripting, filming, editing, thumbnail, SEO, upload, promotion.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, mon ami! A YouTube channel — the modern stage for ideas! The little grey cells are already working. I have investigated your request and constructed a production workflow worthy of a master detective's case file. Each node represents a critical step in your video creation process, with connections that ensure nothing is left to chance. Voilà!",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Topic & Audience Research",
+              "category": "input",
+              "description": "Initial research phase to identify trending topics and target audience interests",
+              "content": "Research Steps:\n1. Use YouTube Analytics Studio to identify audience demographics\n2. Analyze competitor channels in your niche\n3. Check Google Trends and YouTube search suggestions\n4. Review comments on existing videos for audience questions\n5. Validate topic viability with keyword research tools (TubeBuddy, VidIQ)\n\nOutput: 3-5 validated video topic options with target keywords"
+            },
+            {
+              "label": "Script & Storyboard Creation",
+              "category": "artifact",
+              "description": "Develop detailed script and visual storyboard for the video",
+              "content": "Script Template:\n- Hook (0-15 seconds): Attention-grabbing opening\n- Introduction (15-60s): State value proposition\n- Main Content (60s-80%): Structured segments with clear transitions\n- Call-to-Action (last 30s): Subscribe, like, comment prompts\n- Outro: End screen with related videos\n\nStoryboard Elements:\n- Shot list with camera angles\n- B-roll requirements\n- On-screen text/graphics placement\n- Audio cues and music timing"
+            },
+            {
+              "label": "Filming Setup & Recording",
+              "category": "action",
+              "description": "Physical production phase with equipment setup and recording",
+              "content": "Equipment Checklist:\n- Camera (DSLR/phone with 4K capability)\n- Lighting (3-point setup: key, fill, backlight)\n- Audio (lavalier mic + shotgun mic backup)\n- Background/Set design\n- Teleprompter for script\n\nRecording Protocol:\n1. Test all equipment 30 minutes before recording\n2. Record multiple takes of key sections\n3. Capture 30% extra B-roll footage\n4. Maintain consistent framing and lighting\n5. Record room tone for 60 seconds"
+            },
+            {
+              "label": "Video Editing Suite",
+              "category": "action",
+              "description": "Post-production editing with software tools",
+              "content": "Editing Pipeline (DaVinci Resolve/Premiere Pro):\n1. Import and organize footage\n2. Rough cut assembly (follow storyboard)\n3. Fine editing with J-cuts and L-cuts\n4. Color grading (apply LUTs, match shots)\n5. Audio mixing (dialogue at -6dB, music at -18dB)\n6. Graphics and text overlays\n7. Transitions and effects\n8. Quality check at 4K resolution\n\nExport Settings: H.264, 4K UHD, 30fps, 50Mbps bitrate"
+            },
+            {
+              "label": "Thumbnail & Title Design",
+              "category": "artifact",
+              "description": "Create click-worthy thumbnail and compelling title",
+              "content": "Thumbnail Best Practices:\n- High contrast with bright colors\n- Human face showing emotion\n- Minimal text (3-5 words max)\n- Brand consistency (template + logo)\n- Test multiple versions\n\nTitle Formula:\n[Number] Ways to [Achieve Benefit] Without [Pain Point]\nExample: \"7 Editing Tricks to Make Videos Go Viral Without Expensive Gear\"\n\nTools: Canva, Photoshop, Thumbnail Test"
+            },
+            {
+              "label": "SEO & Metadata Optimization",
+              "category": "action",
+              "description": "Optimize video for YouTube search and discovery",
+              "content": "Metadata Checklist:\n- Title: <70 characters with primary keyword\n- Description: First 150 characters must hook + keywords + timestamps\n- Tags: 10-15 relevant tags (mix of broad and specific)\n- Chapters: Time-stamped sections\n- Cards/End Screens: Link to related content\n- Category: Select most accurate\n\nSEO Tools: TubeBuddy, VidIQ for keyword scoring\n\nTranscript: Upload .srt file for accessibility and SEO"
+            },
+            {
+              "label": "Upload & Scheduling",
+              "category": "action",
+              "description": "Final upload to YouTube with scheduling options",
+              "content": "Upload Protocol:\n1. Upload 4K master file\n2. Add all metadata from previous step\n3. Set custom thumbnail\n4. Choose visibility (Public/Private/Scheduled)\n5. Enable monetization if applicable\n6. Set age restrictions if needed\n7. Add location if relevant\n\nScheduling Strategy:\n- Analyze audience peak times (YouTube Analytics)\n- Schedule 24-48 hours in advance\n- Use \"Premiere\" feature for live debut if appropriate"
+            },
+            {
+              "label": "Cross-Platform Promotion",
+              "category": "action",
+              "description": "Promote video across social media and communities",
+              "content": "Promotion Matrix:\n\nImmediate (0-24 hours):\n- Instagram/TikTok teaser clips\n- Twitter thread with key takeaways\n- LinkedIn post for professional content\n- Email newsletter to subscribers\n- Community posts (Reddit, Discord, Facebook Groups)\n\nSustained (1-7 days):\n- Pinterest pins with infographics\n- Respond to all comments (first 48 hours critical)\n- Share behind-the-scenes on Stories\n- Collaborate with other creators for shoutouts\n\nTools: Buffer, Hootsuite for scheduling"
+            },
+            {
+              "label": "Analytics & Iteration Review",
+              "category": "review",
+              "description": "Analyze performance and identify improvements for next video",
+              "content": "Key Metrics to Track:\n- Click-Through Rate (CTR) of thumbnail\n- Average View Duration (AVD)\n- Audience Retention graph\n- Traffic sources\n- Subscriber conversion rate\n- Engagement (likes/comments/shares)\n\nReview Process:\n1. Weekly performance review\n2. A/B test thumbnails\n3. Analyze drop-off points\n4. Compare to previous videos\n5. Document learnings for next production cycle\n\nIteration Focus: Improve weakest metric each cycle"
+            },
+            {
+              "label": "Published Video Portfolio",
+              "category": "output",
+              "description": "Final published video with complete metadata and promotion",
+              "content": "Final Deliverable:\n- Live YouTube video with all optimizations\n- Cross-platform promotion active\n- Analytics tracking enabled\n- Community engagement initiated\n- Ready for algorithmic distribution\n\nSuccess Indicators:\n- First 24-hour views exceed channel average\n- CTR > 5%\n- AVD > 50% of video length\n- Positive comment sentiment\n- Increased subscriber rate"
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "feeds"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "triggers"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "drives"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "triggers"
+            },
+            {
+              "from": 7,
+              "to": 8,
+              "label": "informs"
+            },
+            {
+              "from": 8,
+              "to": 9,
+              "label": "refines"
+            },
+            {
+              "from": 9,
+              "to": 0,
+              "label": "informs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 80,
+        "maxScore": 80,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 10 (min: 5)",
+          "✓ Node count: 10 ≤ 10",
+          "✓ All 10 edges valid",
+          "✓ Starts with input",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 409c, no thin nodes"
+        ]
+      }
+    },
+    {
+      "id": "execute-sow",
+      "status": "ok",
+      "elapsed": 56831,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Write a statement of work for a 3-month web application redesign project. Client is a mid-size e-commerce company. Budget is $85,000. Include scope, deliverables, timeline, and payment terms.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Statement of Work: E-Commerce Web Application Redesign\n\n**Project Title:** E-Commerce Platform Redesign & Modernization\n**Client:** [Client Name], a mid-size e-commerce company\n**Vendor/Service Provider:** [Your Company/Agency Name]\n**Effective Date:** [Date]\n**Project Duration:** 3 Months (Approximately 12-13 weeks)\n**Total Project Budget:** $85,000\n\n---\n\n## 1. Project Overview & Objectives\n\nThis Statement of Work (SOW) outlines the agreement between [Client Name] and [Your Company/Agency Name] for the comprehensive redesign of the client's primary customer-facing e-commerce web application. The project aims to modernize the user interface, improve site performance, enhance the mobile shopping experience, and implement a refreshed visual identity aligned with current brand standards. The core objectives are to increase user engagement, improve conversion rates, and provide a scalable, maintainable technical foundation.\n\n## 2. Scope of Work\n\nThe scope includes the following key activities:\n\n### 2.1 Discovery & Strategy (Weeks 1-2)\n*   **Stakeholder Workshops:** Conduct collaborative sessions to define business goals, user personas, and key success metrics.\n*   **Competitive & Heuristic Analysis:** Review 3-5 competitor sites and perform a usability audit of the current application.\n*   **Technical Assessment:** High-level review of the existing tech stack to identify constraints and opportunities for the redesign.\n*   **Project Plan & Sitemap Finalization:** Develop a detailed project roadmap and updated information architecture.\n\n### 2.2 User Experience (UX) & Interface (UI) Design (Weeks 3-7)\n*   **Wireframing:** Create low-to-mid-fidelity interactive wireframes for all key user flows, including:\n    *   Homepage & Category Navigation\n    *   Product Listing Pages (PLPs) with filtering/sorting\n    *   Product Detail Pages (PDPs)\n    *   Shopping Cart & Checkout Process (through order confirmation)\n    *   User Account Dashboard (order history, saved items, profile)\n*   **Visual Design & UI Kit:** Develop a complete, responsive visual design system (UI Kit) including typography, color palette, iconography, button states, and component styles.\n*   **High-Fidelity Mockups:** Apply the visual design to all wireframed screens for desktop, tablet, and mobile breakpoints.\n*   **Interactive Prototyping:** Build a clickable prototype in Figma for key flows to demonstrate functionality and gather feedback.\n\n### 2.3 Front-End Development (Weeks 8-12)\n*   **Component-Based Development:** Develop a responsive, semantic HTML/CSS/JavaScript front-end based on the approved designs and UI Kit.\n*   **Performance Optimization:** Ensure code and assets are optimized for fast loading (targeting Core Web Vitals improvements).\n*   **Cross-Browser & Device Testing:** Ensure consistent functionality and appearance across modern browsers (Chrome, Safari, Firefox, Edge) and device types.\n*   **Integration Support:** Develop the front-end to be cleanly integrated with the client's existing back-end e-commerce platform ([e.g., Shopify Plus, Magento, Custom Platform]). This scope includes coordination and support for the integration but does not include deep back-end development or data migration.\n\n### 2.4 Quality Assurance (QA) & Launch (Weeks 11-13)\n*   **Functional Testing:** Test all interactive elements, forms, and user flows.\n*   **User Acceptance Testing (UAT) Support:** Provide a staging environment and documentation to facilitate client UAT. Address critical bugs identified during UAT.\n*   **Launch Preparation & Deployment Support:** Assist the client's technical team with the final deployment to production.\n*   **Post-Launch Review:** Conduct a project retrospective and provide a 2-week period for monitoring and addressing any critical post-launch issues.\n\n## 3. Out of Scope\n\nThe following items are explicitly **excluded** from this project's $85,000 budget and timeline:\n*   Back-end development, database changes, or API creation.\n*   Major e-commerce platform migration or re-platforming.\n*   Content creation (new product photography, marketing copywriting).\n*   Ongoing maintenance, hosting, or support after the post-launch period.\n*   Third-party software or plugin licenses.\n*   Extensive changes to the product information management (PIM) or order management system (OMS).\n*   Search Engine Optimization (SEO) strategy beyond technical SEO best practices in the code.\n*   Marketing campaign creation or paid media.\n\n## 4. Deliverables\n\nAll deliverables will be provided in digital format via a shared project management platform (e.g., Asana, Jira) and/or cloud storage.\n\n1.  **Discovery & Strategy Document**\n2.  **Updated Sitemap & User Flow Diagrams**\n3.  **Interactive Wireframes** (Figma or similar)\n4.  **Complete UI Design System / Style Guide**\n5.  **High-Fidelity Mockups** for all key screens (desktop, tablet, mobile)\n6.  **Interactive Prototype** of primary user journeys\n7.  **Fully Developed, Responsive Front-End Code** (HTML, CSS, JS, assets)\n8.  **QA Test Plan & Bug Log**\n9.  **Technical Documentation for Integration**\n10. **Launch Report & Project Retrospective Summary**\n\n## 5. Project Timeline & Milestones\n\nThe project will follow a phased approach over **13 weeks**. Key milestones and payment triggers are as follows:\n\n*   **Kick-off & Project Start:** Week 1\n*   **Milestone 1: Strategy & IA Approval:** End of Week 2\n*   **Milestone 2: Wireframes & UX Approval:** End of Week 5\n*   **Milestone 3: Visual Design & UI Kit Approval:** End of Week 7\n*   **Milestone 4: Front-End Development Complete (Staging Ready):** End of Week 11\n*   **Milestone 5: UAT Sign-off & Launch:** End of Week 13\n*   **Project Close & Post-Launch Review:** Week 14\n\n## 6. Payment Terms\n\nThe total fixed project fee is **$85,000**. Invoices will be issued upon completion of each milestone, with payment due within **15 days** of receipt.\n\n*   **Invoice 1 (20%):** $17,000 – Due upon project kick-off and SOW signing.\n*   **Invoice 2 (20%):** $17,000 – Due upon approval of Milestone 1 (Strategy & IA).\n*   **Invoice 3 (20%):** $17,000 – Due upon approval of Milestone 2 (Wireframes).\n*   **Invoice 4 (20%):** $17,000 – Due upon approval of Milestone 3 (Visual Design).\n*   **Invoice 5 (20%):** $17,000 – Due upon client sign-off for UAT and project launch (Milestone 5).\n\nAll payments are in US Dollars. A late payment fee of 1.5% per month may be applied to overdue balances.\n\n## 7. Assumptions & Success Factors\n\n*   Client will appoint a single primary Project Sponsor with authority to make final approvals.\n*   Client will provide timely feedback (within 3 business days) at designated review points.\n*   Client will provide necessary access to existing brand assets, style guides, and staging/dev environments.\n*   Client's back-end development team will be available for integration coordination during the front-end development phase.\n*   Scope changes requested after sign-off on major phases may impact timeline and budget, subject to a formal change order process.\n\n---\n\n**Approval:**\n\n**Client Signature:** _________________________\n**Print Name:** _________________________\n**Title:** _________________________\n**Date:** _________________________\n\n**Vendor Signature:** _________________________\n**Print Name:** _________________________\n**Title:** _________________________\n**Date:** _________________________",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (7392 chars)",
+          "✓ Content length: 7392 ≥ 300"
+        ]
+      }
+    },
+    {
+      "id": "edge-question-looks-like-build",
+      "status": "ok",
+      "elapsed": 14573,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "What's the best way to set up a data pipeline?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, mon ami, a fascinating question indeed! Setting up a data pipeline is like orchestrating a grand investigation—every piece of evidence must flow seamlessly from source to insight. Let me put my little grey cells to work and share the best approach.\n\nFirst, the principles: A robust data pipeline should be **reliable, scalable, and maintainable**. Think of it as a chain of custody for your data—each step must be traceable and secure.\n\nKey stages to consider:\n1. **Ingestion** – How will you collect data? Batch or streaming? Sources like APIs, databases, or files.\n2. **Processing** – Cleaning, transforming, and enriching the data. Use tools like Apache Spark, dbt, or custom scripts.\n3. **Storage** – Where will processed data live? Data warehouses (Snowflake, BigQuery) or data lakes (S3, Delta Lake).\n4. **Orchestration** – Coordinating the workflow. Apache Airflow, Prefect, or Dagster are excellent choices.\n5. **Monitoring & Quality** – Ensuring data integrity with checks, alerts, and logging (e.g., Great Expectations).\n6. **Consumption** – Making data available for analytics, ML, or dashboards.\n\nTrès intéressant! For a modern setup, I'd recommend a cloud-native stack: Use **Airflow for orchestration**, **Spark for processing**, **S3 for raw storage**, and **Snowflake for analytics**. Always design with idempotency and fault tolerance in mind—data, like a suspect's alibi, must be consistent under scrutiny.\n\nParfait! If you'd like me to design a specific workflow structure for your pipeline, just say the word, and I'll lay out the nodes and edges with detective precision.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (1596 chars)",
+          "✓ Message length: 1596 ≥ 50"
+        ]
+      }
+    },
+    {
+      "id": "personality-rowan-empty",
+      "status": "ok",
+      "elapsed": 2628,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Mission received. Current graph is empty. No nodes or edges exist. Ready for deployment.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (88 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    }
+  ]
+}

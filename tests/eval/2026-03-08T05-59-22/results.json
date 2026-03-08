@@ -1,0 +1,532 @@
+{
+  "timestamp": "2026-03-08T05-59-22",
+  "overall": 92,
+  "testsRun": [
+    "marketing-blog",
+    "eng-deploy-process",
+    "support-advice",
+    "freelancer-client",
+    "execute-sow",
+    "personality-poirot-empty"
+  ],
+  "poolSize": 30,
+  "results": [
+    {
+      "id": "marketing-blog",
+      "status": "ok",
+      "elapsed": 42791,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Our blog is a mess. We publish whenever someone feels like it, no editorial calendar, no SEO, no promotion. Design a proper content pipeline for us.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, mon ami, a classic case of creative chaos! The clues are all there: sporadic publishing, no strategy, no amplification. A proper content pipeline is not a luxury—it is the very scaffold of influence. Let us apply the little grey cells and design a system of order, from ideation to triumph. Voilà!",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Content Strategy & Brief",
+              "category": "input",
+              "description": "The master plan. Defines themes, audience, SEO targets, and quarterly goals.",
+              "content": "**Quarterly Content Strategy Brief**\n**Themes:** Industry thought leadership (Q1), Product deep-dives (Q2), Customer success stories (Q3).\n**Primary Audience:** Technical founders, product managers.\n**SEO Pillars:** 'scalable architecture', 'product-led growth', 'SaaS metrics'.\n**Success Metrics:** 20% MoM organic traffic growth, 15% conversion from blog to trial.\n**Cadence:** 2 major posts/week, 1 newsletter edition/week."
+            },
+            {
+              "label": "Editorial Calendar Trigger",
+              "category": "trigger",
+              "description": "Automated schedule that initiates the creation process for each piece.",
+              "content": "**Automated Calendar (Google Sheets + Zapier)**\nTriggers every Monday at 9 AM for the week's assigned topic.\nPayload: { \"topic\": \"The 5 Pitfalls of Microservices\", \"author\": \"DevRel Team\", \"due_date\": \"Friday EOD\", \"target_keywords\": [\"microservices architecture\", \"distributed systems\"], \"brief_link\": \"strategy-doc-link\" }"
+            },
+            {
+              "label": "Draft & Research Hub",
+              "category": "artifact",
+              "description": "Central location for collaborative writing, research, and SEO optimization.",
+              "content": "**Notion Template for Blog Drafts**\n- **Outline:** H1, H2s, key points.\n- **Keyword Placement:** Primary in title & first 100 words; secondaries in H2s.\n- **Internal Links:** Link to 3 existing relevant posts.\n- **Meta Description:** Draft with CTA.\n- **Assets:** Placeholder for images, diagrams, code snippets.\n- **Word Count Target:** 1500-2000 words."
+            },
+            {
+              "label": "Editorial Review & SEO Check",
+              "category": "review",
+              "description": "Human and automated review for quality, clarity, and technical SEO.",
+              "content": "**Review Checklist**\n1. **Editor (Human):** Flow, argument strength, brand voice, grammar.\n2. **Technical Lead (Human):** Accuracy of technical claims/code.\n3. **SEO Bot (Automated - via Ahrefs/Surfer API):** Keyword density, readability score, meta tags.\n**Gate:** Must pass all three to proceed. Comments resolved in Notion."
+            },
+            {
+              "label": "Publish & Distribute Action",
+              "category": "action",
+              "description": "The orchestrated launch: publishing to CMS and pushing to all channels.",
+              "content": "**Automated Publication Script (Python)**\n1. Formats final Markdown to CMS (WordPress) template.\n2. Schedules post for optimal time (Tue/Thu 10 AM EST).\n3. **Simultaneous Distribution:**\n   - Creates & schedules Twitter thread.\n   - Posts excerpt to LinkedIn Company Page.\n   - Adds to weekly newsletter queue (Mailchimp).\n   - Shares in relevant Slack communities (via Slack bot).\n4. Logs publication event to analytics dashboard."
+            },
+            {
+              "label": "Performance Monitor",
+              "category": "state",
+              "description": "Tracks post-launch metrics and triggers promotion or updates.",
+              "content": "**Dashboard (Google Data Studio)**\n**KPIs (7-day lookback):**\n- Organic traffic (Google Analytics)\n- Engagement: Avg. time on page, comments (CMS API)\n- Social shares (BuzzSumo API)\n- Lead conversions (HubSpot)\n**Alert Rules:**\nIF traffic < 50% of forecast THEN trigger 'Promotion Boost' workflow.\nIF conversion rate > 20% THEN flag for 'Case Study Expansion'."
+            },
+            {
+              "label": "Optimized Content Archive",
+              "category": "output",
+              "description": "The living, breathing library of content, continually refined.",
+              "content": "**Quarterly Audit Process**\n1. **Identify:** Posts with declining traffic or outdated info.\n2. **Update:** Refresh content, keywords, and links.\n3. **Repromote:** Re-share on social as 'Updated Guide'.\n4. **Cluster:** Interlink posts to build topical authority.\n**Output:** A perpetually relevant, high-ranking resource hub that drives consistent organic growth."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "feeds"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "triggers"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "approves"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "monitors"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "updates"
+            },
+            {
+              "from": 6,
+              "to": 0,
+              "label": "informs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 85,
+        "maxScore": 85,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ Has \"review\" category",
+          "✓ All 7 edges valid",
+          "✓ Starts with input",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 369c, no thin nodes"
+        ]
+      }
+    },
+    {
+      "id": "eng-deploy-process",
+      "status": "ok",
+      "elapsed": 27555,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "My team pushes to production by SSH-ing into the server and running git pull. We need a real deployment process. We use React, Node, and PostgreSQL on AWS.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building a CI/CD deployment workflow for React, Node, PostgreSQL on AWS.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Code Push",
+              "category": "trigger",
+              "description": "Developer pushes code to main branch in Git repository.",
+              "content": "Trigger: git push origin main"
+            },
+            {
+              "label": "CI Pipeline",
+              "category": "action",
+              "description": "Automated build, test, and security scan.",
+              "content": "1. Install dependencies (npm install).\n2. Run linter (ESLint).\n3. Run unit tests (Jest).\n4. Build React app (npm run build).\n5. Security scan (npm audit, Snyk).\n6. Build Docker images for Node API."
+            },
+            {
+              "label": "Test Environment",
+              "category": "state",
+              "description": "Staging environment for automated integration tests.",
+              "content": "AWS EC2 instance or ECS cluster with:\n- React frontend (port 3000).\n- Node backend (port 5000).\n- PostgreSQL test database (RDS).\nAutomated Cypress/Postman tests run here."
+            },
+            {
+              "label": "Deployment Approval",
+              "category": "review",
+              "description": "Manual approval gate before production deployment.",
+              "content": "Team lead reviews CI results and test reports in Slack/email. Clicks 'Approve' in CI dashboard."
+            },
+            {
+              "label": "Production Deployment",
+              "category": "action",
+              "description": "Automated deployment to production AWS environment.",
+              "content": "1. Update AWS ECS task definitions.\n2. Deploy new Docker containers (blue-green).\n3. Update React frontend on S3/CloudFront.\n4. Run database migrations (if any) via AWS Lambda or manual script."
+            },
+            {
+              "label": "Production Environment",
+              "category": "state",
+              "description": "Live AWS production stack.",
+              "content": "AWS Resources:\n- Frontend: S3 + CloudFront.\n- Backend: ECS Fargate (Node API).\n- Database: RDS PostgreSQL.\n- Monitoring: CloudWatch alarms."
+            },
+            {
+              "label": "Health Check & Rollback",
+              "category": "test",
+              "description": "Post-deployment validation and automated rollback if failures.",
+              "content": "1. Health check endpoints (/health).\n2. Smoke tests (API endpoints).\n3. CloudWatch metrics (error rate, latency).\n4. Auto-rollback to previous version if health checks fail for 5 minutes."
+            },
+            {
+              "label": "Deployment Complete",
+              "category": "output",
+              "description": "Deployment successful, team notified.",
+              "content": "Status: Production deployment complete.\nNotification sent to Slack #deployments.\nDeployment log and metrics available in CI dashboard."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "informs"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "approves"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "updates"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "monitors"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "validates"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 80,
+        "maxScore": 90,
+        "pct": 89,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 5)",
+          "✓ Node count: 8 ≤ 10",
+          "✓ Has \"test\" category",
+          "✓ Has \"action\" category",
+          "✓ All 7 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✗ Content too thin: avg 143c"
+        ]
+      }
+    },
+    {
+      "id": "support-advice",
+      "status": "ok",
+      "elapsed": 27541,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Our CSAT score dropped to 3.2 out of 5. Average first response time is 8 hours. What should we fix first?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Mission received. Analyzing CSAT drop and response time. Primary bottleneck identified: first response time. Fix sequence: 1) Immediate triage automation, 2) Escalation routing, 3) Agent capacity. Building workflow.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "CSAT Drop Alert",
+              "category": "trigger",
+              "description": "Trigger when CSAT score falls below threshold (e.g., <3.5) and/or first response time exceeds SLA.",
+              "content": "Alert triggered: CSAT = 3.2, Avg First Response Time = 8 hours. Threshold breached. Initiating incident response workflow."
+            },
+            {
+              "label": "Triage & Tag Incoming Tickets",
+              "category": "action",
+              "description": "Automatically categorize and prioritize incoming support tickets based on content, sentiment, and customer tier.",
+              "content": "Action: Implement NLP-based tagging. Priority rules:\n- Keywords: 'urgent', 'broken', 'not working' -> P0\n- Sentiment score < 0.2 -> High Priority\n- Enterprise customer -> High Priority\n- Route to appropriate queue (Technical, Billing, General)."
+            },
+            {
+              "label": "Agent Capacity Dashboard",
+              "category": "state",
+              "description": "Real-time view of agent availability, backlog, and current load.",
+              "content": "Dashboard Metrics:\n- Agents online: 12/15\n- Backlog: 247 tickets\n- Avg tickets/agent/hour: 4.2\n- Target capacity utilization: 85%\n- Alert: Backlog > 200 triggers capacity review."
+            },
+            {
+              "label": "Auto-Escalation Rules",
+              "category": "policy",
+              "description": "Policy to automatically escalate tickets nearing or exceeding first response SLA.",
+              "content": "Policy: Escalation Rules\n1. Ticket age > 4 hours -> Notify team lead.\n2. Ticket age > 6 hours -> Escalate to secondary support pool.\n3. P0 ticket age > 2 hours -> Escalate to engineering on-call.\n4. Reassign based on agent skill and current load."
+            },
+            {
+              "label": "Response Time SLA Monitor",
+              "category": "state",
+              "description": "Continuously tracks first response time against target SLA (e.g., 1 hour).",
+              "content": "Monitor Configuration:\n- Target SLA: 1 hour for first response.\n- Current Avg: 8 hours (CRITICAL).\n- Sampling: Every 15 minutes.\n- Alert channel: #support-ops-alerts."
+            },
+            {
+              "label": "Optimized Support Workflow",
+              "category": "output",
+              "description": "Deployed and monitored workflow to reduce first response time and improve CSAT.",
+              "content": "Output: Workflow deployed.\n- Triage automation active.\n- Escalation rules enabled.\n- Capacity dashboard operational.\n- Expected impact: Reduce first response time to <2 hours within 7 days. Re-evaluate CSAT weekly."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "informs"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "monitors"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "validates"
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "label": "feeds"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 35,
+        "maxScore": 50,
+        "pct": 70,
+        "checks": [
+          "✓ Valid JSON response",
+          "✗ Workflow unexpectedly present",
+          "✓ All 6 edges valid",
+          "✓ Has message (215 chars)",
+          "✓ Message length: 215 ≥ 80"
+        ]
+      }
+    },
+    {
+      "id": "freelancer-client",
+      "status": "ok",
+      "elapsed": 28162,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "I'm a freelance designer. I need a workflow for managing client projects — from initial inquiry to final delivery and getting paid. I keep forgetting to send invoices.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building client project management workflow with invoice enforcement.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Client Inquiry",
+              "category": "trigger",
+              "description": "New client contact via email, form, or referral.",
+              "content": "Capture: Name, contact, project type, budget range, timeline. Initial qualification criteria: budget > $500, timeline > 2 weeks, scope clear."
+            },
+            {
+              "label": "Proposal & Contract",
+              "category": "action",
+              "description": "Create and send proposal, scope of work, contract.",
+              "content": "Generate proposal doc with deliverables, milestones, payment schedule (e.g., 50% upfront, 50% on delivery), terms. Use template. Attach contract for e-signature."
+            },
+            {
+              "label": "Project Kickoff",
+              "category": "state",
+              "description": "Contract signed, deposit received, project active.",
+              "content": "Confirmed: Contract executed, deposit invoice paid. Schedule kickoff call. Share project board/tool access. Define communication protocol."
+            },
+            {
+              "label": "Design & Review Cycles",
+              "category": "action",
+              "description": "Execute design work, present, collect feedback.",
+              "content": "Milestone 1: Concepts (2 rounds). Milestone 2: Refinements (1 round). Milestone 3: Final deliverables. Use Figma/Adobe Suite. Client feedback via marked-up PDFs or comments."
+            },
+            {
+              "label": "Final Delivery & Approval",
+              "category": "review",
+              "description": "Deliver final files, get client sign-off.",
+              "content": "Package final assets (source files, exports, style guide). Send via WeTransfer or Google Drive. Require formal approval email or signed completion form."
+            },
+            {
+              "label": "Invoice Generation",
+              "category": "action",
+              "description": "Create and send final invoice immediately upon approval.",
+              "content": "Invoice template: Remaining balance due, payment terms (Net 7), payment methods (bank transfer, PayPal, Stripe). Auto-send via accounting software (QuickBooks, FreshBooks) triggered by approval state."
+            },
+            {
+              "label": "Payment Tracking",
+              "category": "state",
+              "description": "Monitor invoice status and payment receipt.",
+              "content": "Track: Invoice sent date, due date, payment status (pending/paid). Set 3-day reminder before due date. Flag overdue invoices at day 8 for follow-up."
+            },
+            {
+              "label": "Project Archive",
+              "category": "output",
+              "description": "Close project, archive assets, collect testimonial.",
+              "content": "Move project files to archive. Send thank-you email requesting testimonial/referral. Update portfolio if permitted. Finalize accounting records."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "validates"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "triggers"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "outputs"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "outputs"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "requires"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 75,
+        "maxScore": 80,
+        "pct": 94,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 5)",
+          "✓ Node count: 8 ≤ 10",
+          "✓ All 8 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "⚡ Content depth: avg 157c, 4 thin node(s)"
+        ]
+      }
+    },
+    {
+      "id": "execute-sow",
+      "status": "ok",
+      "elapsed": 55058,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Write a statement of work for a 3-month web application redesign project. Client is a mid-size e-commerce company. Budget is $85,000. Include scope, deliverables, timeline, and payment terms.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Statement of Work: E-Commerce Web Application Redesign\n\n**Project Title:** E-Commerce Platform Redesign & User Experience Enhancement\n**Client:** [Client Name], a Mid-Size E-Commerce Company\n**Vendor:** [Your Company/Agency Name]\n**Effective Date:** [Date]\n**Project Duration:** 3 Months (12 Weeks)\n**Total Project Budget:** $85,000\n\n---\n\n## 1. Project Overview & Objectives\n\nThis Statement of Work (SOW) outlines the terms, deliverables, and responsibilities for a comprehensive redesign of the Client's existing e-commerce web application. The primary objectives are to modernize the user interface, significantly improve the customer journey and conversion funnel, enhance site performance and mobile responsiveness, and implement a scalable design system for future growth. The project aims to directly contribute to increased sales, improved customer retention, and a stronger brand presence in the digital marketplace.\n\n## 2. Scope of Work\n\nThe Vendor will provide the following services and work within the defined scope:\n\n### 2.1 Discovery & Strategy (Weeks 1-2)\n*   **Stakeholder Workshops:** Conduct collaborative sessions to understand business goals, brand voice, and key performance indicators (KPIs).\n*   **User Research & Analysis:** Review existing analytics, conduct heuristic evaluation of the current site, and develop user personas and journey maps.\n*   **Competitive & Market Analysis:** Analyze key competitors and industry best practices.\n*   **Technical Audit:** Assess current technology stack, site architecture, and performance metrics to inform the redesign approach.\n*   **Project Plan Finalization:** Deliver a detailed project roadmap, sitemap, and functional requirements document for sign-off.\n\n### 2.2 User Experience (UX) & Information Architecture (Weeks 3-5)\n*   Develop refined user flows for core journeys: product discovery, shopping cart, checkout, and account management.\n*   Create a new, logical sitemap and navigation structure.\n*   Design low-fidelity wireframes for all key templates (Homepage, Category/PLP, Product Detail Page, Cart, Checkout, Account Dashboard).\n*   Conduct internal usability reviews on wireframes.\n\n### 2.3 User Interface (UI) & Visual Design (Weeks 6-8)\n*   Develop a modern, cohesive visual design language, including a comprehensive style guide covering:\n    *   Color palette & typography\n    *   Iconography & imagery style\n    *   UI component library (buttons, forms, cards, etc.)\n*   Design high-fidelity, pixel-perfect mockups for all key pages and responsive states (desktop, tablet, mobile).\n*   Create interactive prototypes to demonstrate key user interactions and transitions.\n\n### 2.4 Front-End Development Preparation (Weeks 9-10)\n*   Prepare and hand off all design assets in an organized, developer-ready format (e.g., Figma files, Zeplin, etc.).\n*   Generate a detailed design specification document outlining animations, interactions, and responsive behaviors.\n*   **Note:** This SOW covers design through to development handoff. Full-stack development and implementation are **out of scope** and would be covered under a separate phase or SOW.\n\n## 3. Deliverables\n\nAll deliverables will be provided in digital format via a shared project management platform (e.g., Asana, Trello, Jira).\n\n1.  **Discovery & Strategy Report:** Document containing research findings, personas, journey maps, and final project plan.\n2.  **Information Architecture & Sitemap:** Visual and document outlining the new site structure.\n3.  **Complete Set of Wireframes:** Low-fidelity layouts for all key pages and user flows.\n4.  **UI Style Guide & Component Library:** Comprehensive digital brand and UI standards.\n5.  **High-Fidelity Mockups:** Final visual designs for all approved page templates across three device breakpoints.\n6.  **Interactive Prototype:** A clickable prototype demonstrating primary user flows.\n7.  **Design Handoff Package:** All source files (Figma/Sketch), exported assets, and specification documentation for development.\n\n## 4. Project Timeline & Milestones\n\nThe project will follow a 12-week schedule from the Effective Date.\n\n*   **Kick-off & Project Start:** Week 1\n*   **Milestone 1: Discovery Sign-off:** End of Week 2\n*   **Milestone 2: UX Wireframes Approval:** End of Week 5\n*   **Milestone 3: UI Visual Design Approval:** End of Week 8\n*   **Milestone 4: Final Delivery & Project Closure:** End of Week 12\n\nA detailed week-by-week Gantt chart will be provided within the initial Project Plan. The timeline is dependent on timely feedback and asset provision from the Client at each milestone.\n\n## 5. Client Responsibilities\n\nTo ensure project success, the Client agrees to:\n*   Appoint a single primary Project Sponsor with decision-making authority.\n*   Provide timely feedback and approvals at each milestone (within 3 business days for standard reviews).\n*   Provide access to necessary resources: analytics, brand assets, login credentials for current platform, and key stakeholder availability.\n*   Clearly communicate any changes to scope or requirements, which may impact timeline and budget as governed by the Change Control Process.\n\n## 6. Assumptions & Exclusions\n\n**Assumptions:**\n*   Client will provide all necessary brand guidelines and copy at the start of relevant phases.\n*   Client will have the internal technical capability to receive the design handoff for development.\n\n**Exclusions (Out of Scope):**\n*   Back-end development, programming, or CMS implementation.\n*   Content creation, migration, or copywriting (except for UX/UI placeholder text).\n*   Photography or video production.\n*   Third-party software licensing or e-commerce platform fees.\n*   Post-launch maintenance, hosting, or support.\n*   Search Engine Optimization (SEO) strategy beyond foundational UX/IA best practices.\n*   Any work not explicitly described in Section 2 (Scope of Work).\n\n## 7. Payment Terms\n\nThe total fixed project fee is **$85,000**.\n\nPayments are tied to project milestones as follows:\n\n*   **Payment 1 (25% - $21,250):** Due upon signing this SOW to initiate the project.\n*   **Payment 2 (25% - $21,250):** Due upon Client approval of Milestone 1 (Discovery Sign-off).\n*   **Payment 3 (25% - $21,250):** Due upon Client approval of Milestone 2 (UX Wireframes Approval).\n*   **Payment 4 (25% - $21,250):** Due upon Final Delivery (Milestone 4) and project closure.\n\nAll invoices are payable within **15 days** of receipt. Late payments may result in a pause of project work.\n\n## 8. Change Control Process\n\nAny request that alters the agreed-upon Scope of Work, deliverables, or timeline will be considered a Change Order. The Vendor will provide a written change order request detailing the impact on scope, schedule, and cost. Work on the change will commence only upon written approval from the Client's Project Sponsor.\n\n## 9. Acceptance\n\nThis Statement of Work represents the entire agreement between the Client and the Vendor for the services described herein. By signing below, both parties agree to the terms, scope, deliverables, timeline, and payment schedule.\n\n**Approved for [Client Name]:**\n___________________________\nPrint Name & Title\nDate\n\n**Approved for [Vendor Name]:**\n___________________________\nPrint Name & Title\nDate",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (7255 chars)",
+          "✓ Content length: 7255 ≥ 300"
+        ]
+      }
+    },
+    {
+      "id": "personality-poirot-empty",
+      "status": "ok",
+      "elapsed": 4024,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, mon ami! The canvas is pristine, untouched by the fingerprints of logic. We have no nodes, no edges—a blank slate awaiting the first clue. The little grey cells are eager, but the investigation has not yet begun. What mystery shall we unravel? A workflow, perhaps?",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (268 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    }
+  ]
+}
