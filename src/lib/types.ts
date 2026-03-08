@@ -1,0 +1,279 @@
+import React from 'react';
+
+// NodeCategory is a string so CID can create custom types beyond the built-in ones
+export type NodeCategory = string;
+
+export const BUILT_IN_CATEGORIES: NodeCategory[] = [
+  'input', 'state', 'artifact', 'note', 'cid', 'review', 'policy', 'patch', 'dependency', 'output',
+];
+
+export interface LifecycleEvent {
+  id: string;
+  type: 'created' | 'edited' | 'regenerated' | 'approved' | 'locked' | 'optimized' | 'refined' | 'propagated' | 'stale';
+  nodeId?: string;
+  message: string;
+  timestamp: number;
+  agent?: boolean;
+}
+
+export type CIDMode = 'rowan' | 'poirot';
+
+export interface CIDCard {
+  id: string;
+  label: string;
+  description?: string;
+  icon?: string;
+}
+
+export interface CIDMessage {
+  id: string;
+  role: 'user' | 'cid';
+  content: string;
+  timestamp: number;
+  action?: 'creating' | 'analyzing' | 'optimizing' | 'refining' | 'thinking' | 'investigating' | 'building';
+  cards?: CIDCard[];
+  cardPrompt?: string; // the question the cards answer
+  suggestions?: string[]; // clickable follow-up prompt suggestions
+}
+
+export interface NodeData extends Record<string, unknown> {
+  label: string;
+  category: NodeCategory;
+  status: 'active' | 'stale' | 'pending' | 'locked' | 'generating' | 'reviewing';
+  description?: string;
+  dependencies?: string[];
+  locked?: boolean;
+  version?: number;
+  lastUpdated?: number;
+  content?: string;
+  sections?: { id: string; title: string; status: 'current' | 'stale' | 'regenerating' }[];
+  acceptedFileTypes?: string[];  // e.g. ['.pdf', '.docx', '.txt'] — renders file drop zone on input nodes
+  inputType?: 'text' | 'url' | 'file';  // how the input node accepts data
+  serviceName?: string;  // e.g. 'Google Docs', 'Notion' — service integration label
+  serviceIcon?: string;  // emoji or identifier for the service
+  placeholder?: string;  // placeholder text for input fields
+
+  // Execution fields
+  apiKey?: string;           // user's API key for this AI node
+  aiPrompt?: string;         // instruction/prompt for the AI to execute
+  aiModel?: string;          // model to use (default: claude-sonnet-4-20250514)
+  executionResult?: string;  // output from last execution
+  executionStatus?: 'idle' | 'running' | 'success' | 'error';  // current run state
+  executionError?: string;   // error message if execution failed
+  inputValue?: string;       // user-provided input value (text, URL, etc.)
+
+  // Output format for download-capable output nodes
+  outputFormat?: string;     // e.g. 'pdf', 'docx', 'csv', 'md', 'html'
+  outputMimeType?: string;   // e.g. 'application/pdf'
+  outputFormatLabel?: string; // e.g. 'PDF'
+}
+
+export interface NodeColorSet {
+  primary: string;
+  bg: string;
+  border: string;
+  glow: string;
+}
+
+// Built-in color definitions
+const BUILT_IN_COLORS: Record<string, NodeColorSet> = {
+  input: {
+    primary: '#22d3ee',
+    bg: 'rgba(34, 211, 238, 0.08)',
+    border: 'rgba(34, 211, 238, 0.3)',
+    glow: 'rgba(34, 211, 238, 0.15)',
+  },
+  output: {
+    primary: '#f97316',
+    bg: 'rgba(249, 115, 22, 0.08)',
+    border: 'rgba(249, 115, 22, 0.3)',
+    glow: 'rgba(249, 115, 22, 0.15)',
+  },
+  state: {
+    primary: '#06b6d4',
+    bg: 'rgba(6, 182, 212, 0.08)',
+    border: 'rgba(6, 182, 212, 0.3)',
+    glow: 'rgba(6, 182, 212, 0.15)',
+  },
+  artifact: {
+    primary: '#8b5cf6',
+    bg: 'rgba(139, 92, 246, 0.08)',
+    border: 'rgba(139, 92, 246, 0.3)',
+    glow: 'rgba(139, 92, 246, 0.15)',
+  },
+  note: {
+    primary: '#f59e0b',
+    bg: 'rgba(245, 158, 11, 0.08)',
+    border: 'rgba(245, 158, 11, 0.3)',
+    glow: 'rgba(245, 158, 11, 0.15)',
+  },
+  cid: {
+    primary: '#10b981',
+    bg: 'rgba(16, 185, 129, 0.08)',
+    border: 'rgba(16, 185, 129, 0.3)',
+    glow: 'rgba(16, 185, 129, 0.15)',
+  },
+  review: {
+    primary: '#f43f5e',
+    bg: 'rgba(244, 63, 94, 0.08)',
+    border: 'rgba(244, 63, 94, 0.3)',
+    glow: 'rgba(244, 63, 94, 0.15)',
+  },
+  policy: {
+    primary: '#64748b',
+    bg: 'rgba(100, 116, 139, 0.08)',
+    border: 'rgba(100, 116, 139, 0.3)',
+    glow: 'rgba(100, 116, 139, 0.15)',
+  },
+  patch: {
+    primary: '#ec4899',
+    bg: 'rgba(236, 72, 153, 0.08)',
+    border: 'rgba(236, 72, 153, 0.3)',
+    glow: 'rgba(236, 72, 153, 0.15)',
+  },
+  dependency: {
+    primary: '#6366f1',
+    bg: 'rgba(99, 102, 241, 0.08)',
+    border: 'rgba(99, 102, 241, 0.3)',
+    glow: 'rgba(99, 102, 241, 0.15)',
+  },
+};
+
+// Runtime registry for custom categories added by CID
+const _customColors: Record<string, NodeColorSet> = {};
+
+// Generate a deterministic color from a category name
+function generateColorFromName(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const h = ((hash % 360) + 360) % 360;
+  return `hsl(${h}, 70%, 55%)`;
+}
+
+function hslToRgb(hsl: string): { r: number; g: number; b: number } {
+  const match = hsl.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/);
+  if (!match) return { r: 100, g: 100, b: 200 };
+  const h = parseInt(match[1]) / 360;
+  const s = parseInt(match[2]) / 100;
+  const l = parseInt(match[3]) / 100;
+  let r: number, g: number, b: number;
+  if (s === 0) {
+    r = g = b = l;
+  } else {
+    const hue2rgb = (p: number, q: number, t: number) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+      return p;
+    };
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1 / 3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1 / 3);
+  }
+  return { r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255) };
+}
+
+function colorSetFromHex(primary: string): NodeColorSet {
+  // Parse hex or use as-is
+  let r = 100, g = 100, b = 200;
+  if (primary.startsWith('#')) {
+    r = parseInt(primary.slice(1, 3), 16);
+    g = parseInt(primary.slice(3, 5), 16);
+    b = parseInt(primary.slice(5, 7), 16);
+  } else if (primary.startsWith('hsl')) {
+    const rgb = hslToRgb(primary);
+    r = rgb.r; g = rgb.g; b = rgb.b;
+    // Convert to hex for primary
+    primary = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+  }
+  return {
+    primary,
+    bg: `rgba(${r}, ${g}, ${b}, 0.08)`,
+    border: `rgba(${r}, ${g}, ${b}, 0.3)`,
+    glow: `rgba(${r}, ${g}, ${b}, 0.15)`,
+  };
+}
+
+// Register a custom category with an optional color
+export function registerCustomCategory(category: string, hexColor?: string): NodeColorSet {
+  if (BUILT_IN_COLORS[category]) return BUILT_IN_COLORS[category];
+  if (_customColors[category]) return _customColors[category];
+  const color = hexColor || generateColorFromName(category);
+  const colorSet = colorSetFromHex(color);
+  _customColors[category] = colorSet;
+  return colorSet;
+}
+
+// Universal color lookup — works for built-in and custom categories
+export function getNodeColors(category: string): NodeColorSet {
+  if (BUILT_IN_COLORS[category]) return BUILT_IN_COLORS[category];
+  if (_customColors[category]) return _customColors[category];
+  // Auto-register with generated color
+  return registerCustomCategory(category);
+}
+
+// Shared category icon mapping — single source of truth
+import {
+  Database, FileText, StickyNote, Bot, CheckCircle2, Shield,
+  GitBranch, Link, LogIn, LogOut,
+  Waypoints, ShieldCheck, Flame, Radar, Puzzle,
+} from 'lucide-react';
+
+export const CATEGORY_ICONS: Record<string, React.ElementType> = {
+  input: LogIn,
+  output: LogOut,
+  state: Database,
+  artifact: FileText,
+  note: StickyNote,
+  cid: Bot,
+  review: CheckCircle2,
+  policy: Shield,
+  patch: GitBranch,
+  dependency: Link,
+  // CID-created custom types
+  connector: Waypoints,
+  validator: ShieldCheck,
+  cascade: Flame,
+  watchdog: Radar,
+};
+
+export function getCategoryIcon(category: string): React.ElementType {
+  return CATEGORY_ICONS[category] || Puzzle;
+}
+
+/** Shared relative time formatter — "just now", "5m ago", "2h ago", "3d ago" */
+export function relativeTime(ts: number): string {
+  const diff = Date.now() - ts;
+  const secs = Math.floor(diff / 1000);
+  if (secs < 60) return 'just now';
+  const mins = Math.floor(secs / 60);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(ts).toLocaleDateString();
+}
+
+export const EDGE_LABEL_COLORS: Record<string, string> = {
+  drives: '#06b6d4',
+  feeds: '#f59e0b',
+  refines: '#10b981',
+  validates: '#f43f5e',
+  monitors: '#10b981',
+  connects: '#6366f1',
+  outputs: '#eab308',
+  updates: '#f97316',
+  watches: '#22d3ee',
+  approves: '#22c55e',
+  triggers: '#a855f7',
+  requires: '#6366f1',
+  informs: '#06b6d4',
+  blocks: '#f43f5e',
+};

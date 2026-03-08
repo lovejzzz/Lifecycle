@@ -1,0 +1,204 @@
+@import "tailwindcss";
+
+:root {
+  --bg-primary: #08080d;
+  --bg-secondary: #0c0c14;
+  --bg-tertiary: #12121a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg-primary);
+  color: #fff;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}
+
+/* Scrollbar */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* React Flow dark mode overrides */
+.react-flow.dark {
+  --xy-background-color: var(--bg-primary);
+  --xy-node-background-color: transparent;
+  --xy-node-border-color: transparent;
+  --xy-minimap-background-color: rgba(12, 12, 20, 0.85);
+  --xy-minimap-mask-background-color: rgba(0, 0, 0, 0.75);
+  --xy-controls-background-color: rgba(12, 12, 20, 0.9);
+  --xy-controls-border-color: rgba(255, 255, 255, 0.06);
+  --xy-controls-button-background-color: transparent;
+  --xy-controls-button-background-color-hover: rgba(255, 255, 255, 0.05);
+  --xy-controls-button-color: rgba(255, 255, 255, 0.4);
+  --xy-controls-button-color-hover: rgba(255, 255, 255, 0.7);
+  --xy-controls-button-border-color: rgba(255, 255, 255, 0.06);
+}
+
+.react-flow__background {
+  background: var(--bg-primary) !important;
+}
+
+.react-flow__pane {
+  cursor: grab;
+}
+
+.react-flow__pane:active {
+  cursor: grabbing;
+}
+
+.react-flow__edge-path {
+  stroke-linecap: round;
+}
+
+.react-flow__minimap {
+  border-radius: 12px !important;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+.react-flow__controls {
+  gap: 2px;
+  border-radius: 12px !important;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+}
+
+.react-flow__controls button {
+  transition: all 0.2s;
+  width: 32px !important;
+  height: 32px !important;
+}
+
+.react-flow__controls button svg {
+  fill: currentColor;
+  max-width: 14px;
+  max-height: 14px;
+}
+
+/* Edge hover highlight */
+.react-flow__edge path {
+  transition: filter 0.2s, stroke-width 0.2s;
+}
+
+.react-flow__edge:hover path {
+  filter: drop-shadow(0 0 6px currentColor);
+  stroke-width: 3 !important;
+  cursor: pointer;
+}
+
+/* Animated edge glow + flow pulse */
+.react-flow__edge.animated path {
+  filter: drop-shadow(0 0 4px currentColor);
+  animation: edge-flow-pulse 2s ease-in-out infinite;
+}
+
+.react-flow__edge.animated:hover path {
+  filter: drop-shadow(0 0 8px currentColor);
+}
+
+@keyframes edge-flow-pulse {
+  0%, 100% {
+    stroke-dashoffset: 0;
+    filter: drop-shadow(0 0 3px currentColor);
+  }
+  50% {
+    stroke-dashoffset: -20;
+    filter: drop-shadow(0 0 6px currentColor);
+  }
+}
+
+/* Selection ring */
+.react-flow__node.selected {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.react-flow__node {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Glass effect helper */
+.glass {
+  background: rgba(12, 12, 20, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+/* Pulse animation */
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.5);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Ambient background glow */
+.ambient-glow {
+  position: fixed;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ambient-glow::before {
+  content: '';
+  position: absolute;
+  top: 15%;
+  left: 25%;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.04) 0%, transparent 70%);
+  border-radius: 50%;
+  filter: blur(80px);
+}
+
+.ambient-glow::after {
+  content: '';
+  position: absolute;
+  bottom: 20%;
+  right: 30%;
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.03) 0%, transparent 70%);
+  border-radius: 50%;
+  filter: blur(80px);
+}
