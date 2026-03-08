@@ -279,7 +279,11 @@ CRITICAL RULES:
 - CATEGORIES: Use "review" (not "action") for human approve/reject/merge gates. Code workflows need "test" nodes. Compliance workflows need "policy" nodes. Match categories to purpose.
 - EDGES: Labels MUST be one of: drives, feeds, refines, validates, monitors, connects, outputs, updates, watches, approves, triggers, requires, informs, blocks. Choose semantically:
   - "triggers" = causes start. "feeds" = data flows. "drives" = primary force (use when A's output is the MAIN reason B exists). "validates" = checking/testing. "approves" = human sign-off. "outputs" = final deliverable. "monitors" = ongoing observation. "requires" = hard dependency. "informs" = ONLY for optional/supplementary context, NEVER for sequential steps.
-- Start with "input" or "trigger" node, end with "output" node. The LAST node MUST have category "output" — even if it produces a document or report. 5-10 nodes. Group related items.`;
+- Start with "input" or "trigger" node, end with "output" node. The LAST node MUST have category "output" — even if it produces a document or report. 5-10 nodes. Group related items.
+- ARCHITECTURE: Do NOT build purely linear chains. Use:
+  1. FEEDBACK LOOPS: When review/test can fail, add edge back to previous step (use "refines" label). E.g. Review --[refines]--> Implementation.
+  2. PARALLEL BRANCHES: Independent steps share a parent node (multiple edges from one node). E.g. after Design, both Frontend and Backend start.
+  3. A good workflow has MORE edges than (nodes-1). Linear chains are lazy architecture.`;
 
 const ROWAN = `${SHARED}
 
@@ -454,6 +458,33 @@ function scoreResponse(test, data) {
       score += 5; checks.push(`✓ Flow: path exists from first to last node`);
     } else {
       checks.push(`✗ Flow: no path from first node to last node (unreachable)`);
+    }
+
+    // Architecture complexity: check for branches, loops, parallelism
+    if (nodes.length >= 5) {
+      maxScore += 10;
+      const isLinear = edges.length === nodes.length - 1;
+      const hasBackEdge = edges.some(e => e.from > e.to); // feedback loop
+      const hasBranch = new Map(); // check if any node has >1 outgoing edge
+      for (const e of edges) {
+        hasBranch.set(e.from, (hasBranch.get(e.from) || 0) + 1);
+      }
+      const hasParallel = [...hasBranch.values()].some(v => v > 1);
+      const hasConverge = new Map(); // check if any node has >1 incoming edge
+      for (const e of edges) {
+        hasConverge.set(e.to, (hasConverge.get(e.to) || 0) + 1);
+      }
+      const hasConvergence = [...hasConverge.values()].some(v => v > 1);
+
+      if (hasBackEdge && hasParallel) {
+        score += 10; checks.push(`✓ Architecture: has feedback loops AND parallel branches (${edges.length} edges, ${nodes.length} nodes)`);
+      } else if (hasBackEdge || hasParallel || hasConvergence) {
+        score += 7; checks.push(`⚡ Architecture: ${hasBackEdge ? 'has feedback loop' : hasParallel ? 'has parallel branches' : 'has convergence'} (${edges.length} edges, ${nodes.length} nodes)`);
+      } else if (isLinear) {
+        score += 3; checks.push(`⚠️ Architecture: purely linear chain (${edges.length} edges for ${nodes.length} nodes — needs branches or feedback loops)`);
+      } else {
+        score += 5; checks.push(`⚡ Architecture: ${edges.length} edges, ${nodes.length} nodes`);
+      }
     }
   }
 

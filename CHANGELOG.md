@@ -1,5 +1,29 @@
 # Changelog
 
+### 2026-03-08 — Round 75: Non-Linear Workflow Architecture (Eval-Driven)
+
+**Problem found:** All workflows were purely linear chains (N nodes, N-1 edges). Real problem-solving needs feedback loops, parallel branches, and convergence points.
+
+**Prompt fix — architecture instruction:**
+- Added explicit architecture rules: "Do NOT build purely linear chains"
+- Defined 3 required patterns: feedback loops (use "refines"), parallel branches (multiple edges from one node), convergence (multiple edges to one node)
+- Added rule: "A good workflow has MORE edges than (nodes-1)"
+
+**Eval — architecture complexity scoring:**
+- Detects feedback loops (back-edges where from > to)
+- Detects parallel branches (nodes with >1 outgoing edge)
+- Detects convergence (nodes with >1 incoming edge)
+- Scores: 10pts for loops+branches, 7pts for either, 3pts for linear chains
+- Penalizes purely linear architectures that don't model real-world iteration
+
+**Results — before vs after:**
+- founder-mvp-launch: was 8 nodes/7 edges (linear) → now 9 nodes/13 edges (feedback + parallel)
+  - Has: staging review → CI/CD feedback loop, post-launch → deployment validation loop, parallel monitoring + testing
+- founder-fundraising: 7 nodes/12 edges with metrics → outreach feedback loop, parallel pitch + outreach branches
+- All workflows now pass architecture complexity checks
+
+**Also fixed:** API generate/execute timeout 90s → 120s, expert advice depth instruction, last-node output enforcement
+
 ### 2026-03-08 — Round 74: Workflow Architecture Validation (Eval-Driven)
 
 **New eval capability: architecture checks**

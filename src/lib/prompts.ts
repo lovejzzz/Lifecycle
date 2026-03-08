@@ -64,7 +64,11 @@ CRITICAL RULES:
   Do NOT use other labels.
 - Every workflow MUST start with an "input" or "trigger" node and end with an "output" node. The last node MUST have category "output" — even if it produces a document, report, or artifact, use "output" as the category for the final deliverable. Do not use "action", "state", or "artifact" as the last node.
 - Design workflows with 5-10 nodes for optimal visual clarity. Each node should represent a distinct, meaningful step. If the user lists many items, group related items into single nodes rather than creating one node per item.
-- Consider parallel branches where steps can happen simultaneously (e.g. testing and security scanning).
+- IMPORTANT — WORKFLOW ARCHITECTURE: Do NOT build purely linear chains. Real workflows have:
+  1. FEEDBACK LOOPS: When a review/test step can fail, add an edge back to a previous step (e.g. "Review → rejected → back to Implementation"). Use "refines" for feedback edges.
+  2. PARALLEL BRANCHES: When steps are independent, connect them from the same parent (e.g. after "Design Complete", both "Frontend Dev" and "Backend Dev" start from the same node). Multiple edges from one node = parallel.
+  3. CONVERGENCE: When parallel branches complete, connect them to a single gate/test node that waits for both.
+  A good workflow has MORE edges than (nodes-1). Linear chains with exactly (nodes-1) edges are lazy architecture.
 - You MUST respond with valid JSON only. No text before or after the JSON object.`;
 
 const ROWAN_PERSONALITY = `PERSONALITY — ROWAN (The Soldier):

@@ -1,0 +1,426 @@
+{
+  "timestamp": "2026-03-08T07-05-38",
+  "overall": 100,
+  "testsRun": [
+    "founder-mvp-launch",
+    "founder-fundraising",
+    "execute-incident-postmortem",
+    "execute-job-description",
+    "edge-question-looks-like-build",
+    "personality-poirot-empty"
+  ],
+  "poolSize": 34,
+  "results": [
+    {
+      "id": "founder-mvp-launch",
+      "status": "ok",
+      "elapsed": 85710,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "I'm launching my SaaS app in 2 weeks. I have the code ready but no deployment process, no monitoring, nothing. Help me set up everything I need to go live safely.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building a deployment and monitoring workflow for your SaaS launch.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Code Repository Push",
+              "category": "trigger",
+              "description": "Event that triggers the deployment pipeline when code is pushed to the main branch",
+              "content": "This trigger activates when a developer pushes code to the main branch (e.g., `main` or `master`) in your Git repository (GitHub, GitLab, or Bitbucket). Configure a webhook in your repository settings to send a POST request to your CI/CD tool (e.g., GitHub Actions, GitLab CI, or Jenkins) on every push. The payload includes commit details, branch name, and author. Ensure the webhook is secured with a secret token to prevent unauthorized triggers. Set up branch protection rules to require pull request reviews and status checks before merging to main, ensuring only stable code triggers deployment. Use environment variables in your CI/CD tool to store sensitive data like API keys, avoiding hardcoding in the repository."
+            },
+            {
+              "label": "CI/CD Pipeline Execution",
+              "category": "action",
+              "description": "Automated steps to build, test, and prepare the application for deployment",
+              "content": "Execute a CI/CD pipeline with these numbered steps: 1. **Checkout Code**: Clone the repository using `git clone`. 2. **Install Dependencies**: Run `npm install` (for Node.js) or `pip install -r requirements.txt` (for Python) to install all required packages. 3. **Run Tests**: Execute unit and integration tests with tools like Jest, Pytest, or Selenium; fail the pipeline if test coverage drops below 80% or any test fails. 4. **Build Artifact**: Compile the application (e.g., `npm run build` for React) and create a Docker image using a Dockerfile, tagging it with the commit hash. 5. **Security Scan**: Use tools like Snyk or Trivy to scan for vulnerabilities in dependencies and the Docker image. 6. **Push to Registry**: Upload the Docker image to a container registry (e.g., Docker Hub, AWS ECR). Configure the pipeline to run on every push to main, with detailed logs and notifications (e.g., Slack) on failure. Owner: DevOps team."
+            },
+            {
+              "label": "Staging Deployment",
+              "category": "action",
+              "description": "Deploy the built artifact to a staging environment for validation",
+              "content": "Deploy the application to a staging environment that mirrors production. Steps: 1. **Provision Infrastructure**: Use Infrastructure as Code (IaC) tools like Terraform or AWS CloudFormation to set up servers (e.g., EC2 instances) or containers (e.g., Kubernetes pods). 2. **Deploy Application**: Use orchestration tools like Kubernetes (`kubectl apply`) or AWS ECS to deploy the Docker image from the registry. 3. **Configure Environment**: Set environment variables (e.g., database URLs, API keys) using secrets management (e.g., AWS Secrets Manager). 4. **Run Smoke Tests**: Execute automated smoke tests (e.g., with Postman or Selenium) to verify basic functionality (login, API endpoints). 5. **Performance Test**: Use tools like Apache JMeter to simulate load and ensure response times under 200ms. Roll back automatically if any test fails, using blue-green deployment strategies to minimize downtime. Owner: DevOps team."
+            },
+            {
+              "label": "Staging Review & Approval",
+              "category": "review",
+              "description": "Human review of the staging deployment before promoting to production",
+              "content": "Manual approval gate where a senior developer or product manager reviews the staging environment. Criteria: 1. **Functional Testing**: Verify all user stories from the sprint are working via a checklist in a tool like Jira. 2. **Performance Metrics**: Confirm response times are below 200ms and error rates under 1% using dashboards (e.g., Grafana). 3. **Security Compliance**: Ensure no critical vulnerabilities from the security scan; use exceptions only with documented justification. 4. **UI/UX Check**: Validate design consistency across browsers (Chrome, Firefox) using tools like BrowserStack. The reviewer has 4 hours to approve or reject; if rejected, provide detailed feedback and trigger a re-deploy from the CI/CD pipeline. Escalate to the tech lead if unresolved after 8 hours. SLA: 24-hour max for approval."
+            },
+            {
+              "label": "Production Deployment",
+              "category": "action",
+              "description": "Deploy the validated application to the production environment",
+              "content": "Deploy to production using a zero-downtime strategy. Steps: 1. **Blue-Green Deployment**: Route traffic from the old version (blue) to the new version (green) using a load balancer (e.g., AWS ALB) after health checks pass. 2. **Database Migrations**: Run any necessary database schema updates using tools like Liquibase or Django migrations, with rollback scripts prepared. 3. **Update Configuration**: Apply production-specific environment variables and secrets from a secure store. 4. **Warm-up Caches**: Preload caches (e.g., Redis) to avoid cold starts. 5. **Monitor Initial Traffic**: Use real-time monitoring (e.g., New Relic) to watch for spikes in errors or latency. Automate rollback if error rate exceeds 5% in the first 15 minutes. Owner: DevOps team, with on-call engineer standby."
+            },
+            {
+              "label": "Production Monitoring Setup",
+              "category": "action",
+              "description": "Configure ongoing monitoring, alerting, and logging for the live application",
+              "content": "Set up comprehensive monitoring to ensure application health. Steps: 1. **Application Performance Monitoring (APM)**: Install agents (e.g., New Relic, Datadog) to track response times, throughput, and error rates; set dashboards for key metrics. 2. **Infrastructure Monitoring**: Use CloudWatch (AWS) or Prometheus to monitor server CPU, memory, and disk usage; alert if usage exceeds 80% for 5 minutes. 3. **Log Management**: Aggregate logs with ELK Stack (Elasticsearch, Logstash, Kibana) or Splunk; structure logs in JSON format for easy querying. 4. **Alerting Configuration**: Create alerts for critical issues (e.g., error rate > 2%, latency > 500ms) and route to PagerDuty or Slack with escalation policies. 5. **Uptime Monitoring**: Use Pingdom or UptimeRobot to check endpoint availability every minute. Document runbooks for common incidents. Owner: SRE team."
+            },
+            {
+              "label": "Post-Launch Validation",
+              "category": "test",
+              "description": "Automated and manual tests to verify the production deployment is successful",
+              "content": "Validate the production deployment immediately after go-live. Tests: 1. **Smoke Tests**: Run automated scripts (e.g., with Cypress) to test critical user flows (signup, payment) every 10 minutes for the first hour. 2. **Performance Tests**: Use tools like LoadRunner to simulate 100 concurrent users and ensure p95 latency stays under 300ms. 3. **Security Tests**: Perform a quick vulnerability scan with OWASP ZAP to check for common issues like SQL injection. 4. **Integration Tests**: Verify third-party API integrations (e.g., payment gateways) are functioning. Pass criteria: All smoke tests pass, error rate < 1%, and no critical security vulnerabilities. Fail criteria: Any test failure triggers an alert to the on-call engineer and initiates rollback procedures. Coverage: 95% of critical paths."
+            },
+            {
+              "label": "Incident Response Plan",
+              "category": "policy",
+              "description": "Policy for handling production incidents post-launch",
+              "content": "Define rules for incident management to ensure quick resolution. Rules: 1. **Classification**: Severity levels—P0 (outage, fix within 15 minutes), P1 (critical degradation, 1 hour), P2 (minor issue, 4 hours). 2. **Response Team**: Assign on-call engineers with a rotation schedule using PagerDuty; include contact details and escalation paths. 3. **Communication**: Use a dedicated Slack channel (#incidents) for updates; notify stakeholders hourly for P0/P1 incidents. 4. **Post-Mortem**: For any P0/P1 incident, conduct a blameless post-mortem within 48 hours, documenting root cause and preventive actions. 5. **Enforcement**: Automate alert routing based on severity; require post-mortem completion before closing tickets. Exceptions: None for P0 incidents. Review monthly."
+            },
+            {
+              "label": "Launch Report & Metrics",
+              "category": "output",
+              "description": "Final deliverable summarizing the launch success and key metrics",
+              "content": "Produce a comprehensive report post-launch to evaluate success. Format: PDF document distributed via email and stored in a shared drive (e.g., Google Drive). Sections: 1. **Executive Summary**: Overview of launch timeline and major milestones. 2. **Performance Metrics**: Data on uptime (target 99.9%), response times (avg < 200ms), error rates (< 1%), and user signups. 3. **Incident Log**: Summary of any incidents with resolutions and downtime minutes. 4. **User Feedback**: Initial feedback from early users via surveys or support tickets. 5. **Improvements**: List of action items for next iteration (e.g., optimize database queries). Success metrics: Uptime > 99.5%, zero security breaches, and positive user sentiment in first week. Update this report weekly for the first month."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "approves"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "drives"
+            },
+            {
+              "from": 4,
+              "to": 6,
+              "label": "triggers"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "monitors"
+            },
+            {
+              "from": 6,
+              "to": 4,
+              "label": "validates"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "informs"
+            },
+            {
+              "from": 7,
+              "to": 5,
+              "label": "requires"
+            },
+            {
+              "from": 3,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 6,
+              "to": 8,
+              "label": "outputs"
+            },
+            {
+              "from": 5,
+              "to": 8,
+              "label": "feeds"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 115,
+        "maxScore": 115,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 9 (min: 5)",
+          "✓ Node count: 9 ≤ 10",
+          "✓ Has \"action\" category",
+          "✓ Has \"test\" category",
+          "✓ All 13 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 826c, no thin nodes",
+          "✓ Architecture covers: deploy, monitor, test",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (13 edges, 9 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "founder-fundraising",
+      "status": "ok",
+      "elapsed": 71373,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "We're raising our Series A. I need to manage the whole fundraising process — investor outreach, pitch deck prep, due diligence, term sheet negotiation. Build me a workflow for this.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, mon ami! A Series A fundraising is a most delicate investigation — we must gather evidence, present our case with precision, and negotiate with the cunning of a master detective. Let us build a workflow that tracks every clue from initial outreach to signed term sheet.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Fundraising Strategy & Target List",
+              "category": "input",
+              "description": "Initial planning phase defining investment thesis, target metrics, and investor targeting",
+              "content": "Begin by establishing clear fundraising objectives: target amount ($5-15M typical for Series A), valuation expectations, and use of funds breakdown (18-24 months runway). Create investor target matrix with three tiers: Tier 1 (top 5 dream investors with relevant sector expertise), Tier 2 (10-15 strong fits with good track records), Tier 3 (20+ broader VC/strategic investors). For each investor, document: partner relationships, previous investments in your space, check size preferences, decision timeline patterns, and specific value-add beyond capital (biz dev, talent network, follow-on capacity). Use tools like PitchBook, Crunchbase, and LinkedIn Sales Navigator to build profiles. Set success metrics: 40-50 qualified meetings needed to secure 1-2 term sheets. Create outreach sequencing strategy with personalized touchpoints over 4-6 weeks."
+            },
+            {
+              "label": "Pitch Materials Development",
+              "category": "artifact",
+              "description": "Creation of pitch deck, financial model, data room foundation, and narrative assets",
+              "content": "Develop 3 versions of pitch deck: 1) 10-slide email version (problem, solution, traction, team, ask), 2) 15-20 slide meeting version (adds market size, competition, business model, unit economics, roadmap), 3) 25+ slide deep dive (detailed financial projections, technology architecture, hiring plan). Financial model must include: 5-year projections with monthly granularity for first 2 years, detailed assumptions documentation, sensitivity analysis (±30% on key drivers), cap table pro forma with dilution scenarios. Build data room skeleton with: corporate documents (certificates, bylaws, cap table), IP documentation (patents, assignments), financial statements (audited if available), customer contracts, employee agreements. Craft narrative components: 2-minute elevator pitch, 30-second teaser, founder bios with relevant achievements highlighted, customer case studies with quantifiable impact metrics."
+            },
+            {
+              "label": "Investor Outreach Execution",
+              "category": "action",
+              "description": "Systematic outreach campaign with tracking and follow-up mechanisms",
+              "content": "Execute multi-channel outreach sequence: 1) Warm introductions via existing investors/advisors (highest conversion), 2) Personalized cold emails referencing specific portfolio companies/recent investments, 3) Strategic event attendance (select 2-3 key conferences). Use CRM (HubSpot, Affinity) to track: email opens, meeting scheduling, feedback patterns. First contact should include: personalized paragraph about why specific partner/firm is relevant, 2-sentence company description, traction highlights (revenue growth, key metrics), ask for 20-minute intro call. Schedule meetings in batches to create momentum. Follow-up within 24 hours with deck version requested. Track response rates: aim for 15-20% meeting conversion from qualified outreach. After meetings, log specific questions/concerns raised by each investor to identify pattern recognition for deck refinement."
+            },
+            {
+              "label": "Due Diligence Preparation",
+              "category": "state",
+              "description": "Active due diligence phase with investor Q&A, data room population, and reference coordination",
+              "content": "Activate comprehensive due diligence process when investors express serious interest. Populate data room with organized folders: 1) Corporate & Legal (cap table, certificates, board minutes), 2) Financial (historical statements, projections, tax returns), 3) Product & Technology (architecture diagrams, roadmaps, security audits), 4) Commercial (customer contracts, pipeline, partnership agreements), 5) Team (employment agreements, org chart, option pool). Assign due diligence lead from leadership team. Create FAQ document addressing common investor concerns. Prepare reference list: 3-5 customers (referenceable with success metrics), 2-3 advisors/board members, 1-2 former colleagues. Conduct mock due diligence sessions with existing investors. Track investor requests in centralized log with 24-hour response SLA. Anticipate 2-4 weeks of active diligence per serious investor."
+            },
+            {
+              "label": "Term Sheet Analysis & Negotiation",
+              "category": "review",
+              "description": "Term sheet evaluation, negotiation strategy, and legal counsel coordination",
+              "content": "When term sheet arrives, conduct comprehensive analysis within 48 hours. Key evaluation areas: 1) Economics (valuation, option pool size, liquidation preference - aim for 1x non-participating), 2) Control (board composition - target 2 founders, 1 investor, 1 independent; protective provisions list), 3) Rights (pro-rata rights, anti-dilution - broad-based weighted average preferred), 4) Other terms (drag-along thresholds, redemption rights - avoid). Create negotiation priority matrix: Must-haves (valuation within 15% of target, reasonable board control), Nice-to-haves (founder-friendly provisions), Tradeables (option pool size, information rights). Engage legal counsel experienced in Series A financings. Develop counter-proposal strategy: lead with collaborative framing, provide market comps (NVCA model documents), focus on long-term alignment. Negotiation typically 3-5 rounds over 1-2 weeks. Document all agreed changes before signing."
+            },
+            {
+              "label": "Fundraising Metrics Dashboard",
+              "category": "artifact",
+              "description": "Real-time tracking of fundraising progress, pipeline health, and investor sentiment",
+              "content": "Build dashboard tracking: 1) Pipeline metrics (total investors contacted, meetings held, follow-ups scheduled, term sheets received), 2) Conversion rates (contact-to-meeting, meeting-to-diligence, diligence-to-term sheet), 3) Timeline tracking (days in each stage, overall process duration), 4) Investor sentiment analysis (common concerns raised, competitive dynamics). Use tools like Google Sheets with automated data pulls or dedicated fundraising CRM. Include weekly review cadence with fundraising team to identify bottlenecks. Track competing investor interest to create urgency when appropriate. Monitor market signals: comparable company financings, sector sentiment shifts. Document lessons learned for future rounds. Key success indicators: maintaining 3-5 active serious conversations simultaneously, term sheet within 8-12 weeks of active outreach, minimizing founder time distraction to <30% during peak fundraising."
+            },
+            {
+              "label": "Series A Closing & Integration",
+              "category": "output",
+              "description": "Final closing documentation, funds transfer, and investor onboarding process",
+              "content": "Execute final closing process: 1) Legal documentation (Stock Purchase Agreement, Investor Rights Agreement, etc.) typically 50-100 pages, 2) Closing conditions satisfaction (corporate approvals, third-party consents), 3) Funds flow coordination with bank and legal counsel, 4) Post-closing matters (filing amendments, updating cap table, issuing certificates). Plan investor integration: schedule first board meeting within 30 days, create regular update rhythm (monthly investor updates, quarterly board decks), establish communication protocols with lead investor. Distribute closing binder with all executed documents. Update internal teams on new investor value-add areas for leveraging. Set first 90-day plan with new investors: specific introductions requested, strategic guidance sessions, follow-on investor networking. Celebrate milestone but immediately transition to execution mode with clear accountability for deployed capital against planned milestones."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "feeds"
+            },
+            {
+              "from": 0,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "triggers"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "requires"
+            },
+            {
+              "from": 2,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 5,
+              "label": "updates"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "informs"
+            },
+            {
+              "from": 4,
+              "to": 6,
+              "label": "triggers"
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 4,
+              "label": "informs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 100,
+        "maxScore": 100,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ Has \"review\" category",
+          "✓ All 12 edges valid",
+          "✓ Starts with input",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 910c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (12 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "execute-incident-postmortem",
+      "status": "ok",
+      "elapsed": 53142,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Write a blameless post-mortem for a 2-hour production outage caused by a database migration that locked a critical table. 500 customers were affected. Include timeline, root cause, impact, and action items.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Post-Mortem Report: Production Outage Due to Database Table Lock\n\n**Date of Incident:** October 26, 2023  \n**Start Time:** 09:14 UTC  \n**End Time:** 11:23 UTC  \n**Duration:** 2 hours, 9 minutes  \n**Severity:** SEV-1 (Critical Service Disruption)  \n**Affected Service:** User Transaction API & Dashboard  \n**Customers Impacted:** Approximately 500 active users  \n**Report Status:** Final\n\n## Executive Summary\n\nOn October 26, 2023, between 09:14 and 11:23 UTC, our primary user-facing services experienced a complete outage, rendering transaction processing and account dashboards unavailable. The outage was triggered by a scheduled database migration that placed an exclusive lock on the `user_transactions` table, which subsequently blocked all read and write operations to this critical component. This report follows our blameless culture principle, focusing on systemic factors and process improvements rather than individual actions.\n\n## Impact\n\n### Customer Impact\n- **500 active customers** were unable to access their transaction dashboards\n- **Transaction processing** was completely halted for the duration\n- **API error rates** reached 100% for affected endpoints\n- **Mobile applications** displayed persistent loading states and timeout errors\n- **Support ticket volume** increased by 300% during the incident\n\n### Business Impact\n- **Service Level Agreement (SLA) violation:** 99.95% uptime commitment was breached\n- **Revenue impact:** Estimated $15,000 in lost transaction revenue\n- **Brand reputation:** Negative social media mentions increased by 450%\n- **Engineering productivity:** 25 person-hours diverted to incident response\n\n## Timeline (UTC)\n\n**Pre-Incident**\n- 08:30: Database migration scheduled and approved via change management system\n- 08:45: Engineer begins migration preparation in staging environment\n- 09:00: Final pre-production checks completed\n\n**Incident**\n- 09:14: Migration execution begins in production\n- 09:15: `user_transactions` table locked for schema alteration\n- 09:17: First alerts trigger for elevated API latency (95th percentile > 5s)\n- 09:22: Error rates exceed 50% threshold; on-call engineer paged\n- 09:30: Incident commander declared; war room established\n- 09:45: Root cause identified as table lock contention\n- 10:05: Decision made to rollback migration (estimated 45-minute process)\n- 10:50: Rollback completes but table remains locked due to orphaned processes\n- 11:05: Database administrator manually terminates blocking processes\n- 11:23: Services fully restored; monitoring shows normal error rates\n\n**Post-Incident**\n- 11:30: Internal all-clear communicated\n- 11:45: Customer notification email drafted and approved\n- 12:00: Customer notification sent with transparency about cause and resolution\n- 14:00: Internal incident review meeting begins\n\n## Root Cause Analysis\n\n### Primary Cause\nThe production outage was caused by an **exclusive table lock** acquired during a schema migration on the `user_transactions` table. The migration script used `ALTER TABLE ADD COLUMN` with default values, which in our database version requires rewriting the entire table and holding an exclusive lock for the duration.\n\n### Contributing Factors\n\n1. **Testing Gap:** The migration was tested in staging with only 0.1% of production data volume. The locking behavior scaled non-linearly with table size, making the production impact unpredictable based on staging tests.\n\n2. **Monitoring Blindspot:** While we monitored database performance metrics, we lacked real-time alerting for long-running locks or lock contention thresholds specific to critical tables.\n\n3. **Change Review Process:** The migration plan was approved through standard channels but didn't trigger additional review for operations on tables identified as \"critical path\" components.\n\n4. **Rollback Procedure Complexity:** The rollback process required manual intervention to terminate orphaned database connections, adding 33 minutes to recovery time.\n\n5. **Traffic Management:** No automated mechanism existed to gracefully degrade or queue requests during database contention, causing cascading failures in dependent services.\n\n## Action Items\n\n### Immediate (Completed within 24 hours)\n- [x] **IM-01:** Update playbook with explicit steps for identifying and terminating blocking locks\n- [x] **IM-02:** Implement emergency dashboard for real-time lock monitoring\n- [x] **IM-03:** Communicate transparently with affected customers about service credits\n\n### Short-term (30 days)\n- [ ] **ST-01:** Implement database migration safety framework with:\n  - Automatic lock timeout configuration for migrations\n  - Required peer review for critical table operations\n  - Production-like data volume in staging migration tests\n- [ ] **ST-02:** Enhance monitoring with:\n  - Alerting for locks exceeding 30 seconds on critical tables\n  - Synthetic transactions that detect migration-related degradation\n- [ ] **ST-03:** Develop and test graceful degradation patterns for database contention scenarios\n- [ ] **ST-04:** Create automated rollback procedures for failed migrations\n\n### Long-term (90 days)\n- [ ] **LT-01:** Evaluate and implement online schema change tools (e.g., pt-online-schema-change, gh-ost)\n- [ ] **LT-02:** Design and implement a canary deployment strategy for database changes\n- [ ] **LT-03:** Conduct quarterly \"failure injection\" exercises for database operations\n- [ ] **LT-04:** Review and update the critical table registry with ownership and risk assessments\n\n## Lessons Learned\n\n1. **Testing at Scale Matters:** Performance characteristics in staging environments with minimal data don't accurately predict production behavior for locking operations.\n\n2. **Defense in Depth:** Multiple layers of protection (monitoring, timeouts, reviews) are necessary for changes to critical infrastructure components.\n\n3. **Recovery Time is Critical:** Complex rollback procedures significantly extend customer impact. Recovery mechanisms should be as simple and automated as possible.\n\n4. **Transparency Builds Trust:** Our prompt, honest communication about the incident resulted in positive customer feedback despite the service disruption.\n\n## Conclusion\n\nThis incident highlighted gaps in our change management process for database operations, particularly around critical tables. By implementing the action items above, we will significantly reduce the likelihood and impact of similar incidents. The blameless analysis confirms that our engineers followed established procedures, and the failure resulted from systemic issues that we are now addressing.\n\n**Key Metrics for Success:**\n- Reduce critical table migration incidents to zero in next quarter\n- Achieve migration rollback time under 15 minutes\n- Maintain customer satisfaction score above pre-incident levels\n\n---\n\n*This report follows our blameless post-mortem philosophy. The goal is to improve our systems and processes, not to assign blame to individuals. All engineers involved acted in good faith with the information available to them at the time.*",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (7051 chars)",
+          "✓ Content length: 7051 ≥ 300"
+        ]
+      }
+    },
+    {
+      "id": "execute-job-description",
+      "status": "ok",
+      "elapsed": 33077,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Write a job description for a Senior Full-Stack Engineer at a Series B fintech startup. Tech stack is React, Node.js, PostgreSQL, AWS. Remote-first, competitive equity.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Senior Full-Stack Engineer\n\n## About Us\n\nWe are a Series B fintech startup on a mission to revolutionize the financial landscape. Backed by leading investors, we are building a next-generation platform that empowers individuals and businesses with smarter, more accessible financial tools. Our culture is built on innovation, collaboration, and a relentless focus on solving real-world problems. As a remote-first company, we believe in hiring the best talent regardless of location, fostering a flexible and inclusive environment where great ideas thrive.\n\n## The Opportunity\n\nWe are seeking a seasoned Senior Full-Stack Engineer to join our core product team. You will play a pivotal role in architecting, building, and scaling our customer-facing platform and internal systems. This is a high-impact role where you will own significant features from conception to deployment, directly influencing our product roadmap and technical direction. You will collaborate closely with product managers, designers, and fellow engineers to deliver robust, secure, and elegant solutions in a fast-paced, agile environment.\n\n## What You'll Do\n\n*   **Design & Development:** Architect, develop, test, and maintain scalable, secure, and high-performance full-stack applications using React, Node.js, PostgreSQL, and AWS services.\n*   **End-to-End Ownership:** Take full ownership of features and services, from technical design and implementation to deployment, monitoring, and iterative improvement.\n*   **System Architecture:** Contribute to the evolution of our microservices architecture, making strategic decisions on system design, data modeling, and API contracts.\n*   **Collaboration & Mentorship:** Work cross-functionally with product and design teams to translate complex requirements into technical solutions. Mentor junior engineers and promote best practices in code quality, testing, and DevOps.\n*   **Performance & Reliability:** Optimize applications for maximum speed, scalability, and reliability. Implement robust monitoring, alerting, and logging practices.\n*   **Security Champion:** Uphold and advance our security posture, ensuring compliance with financial industry standards and implementing best practices for data protection.\n\n## What We're Looking For\n\n*   **5+ years** of professional software development experience with a proven track record of building and shipping complex web applications.\n*   **Deep expertise in our core stack:** Advanced proficiency with React (and its ecosystem), Node.js, and relational databases (PostgreSQL preferred).\n*   **Strong backend fundamentals:** Experience designing RESTful and/or GraphQL APIs, microservices, and working with relational data models and optimizations.\n*   **Cloud & DevOps proficiency:** Hands-on experience with AWS (e.g., EC2, Lambda, RDS, S3, CloudFront) and modern CI/CD pipelines.\n*   **Full-stack mindset:** A strong understanding of the entire web development lifecycle, from UI/UX principles to database design and infrastructure.\n*   **Excellent problem-solving skills:** Ability to break down ambiguous problems, analyze trade-offs, and build simple, effective solutions.\n*   **Strong communication:** Ability to articulate complex technical concepts clearly to both technical and non-technical stakeholders in a remote setting.\n*   **Bonus Points:** Experience in fintech, banking, or another regulated industry. Knowledge of TypeScript, containerization (Docker/Kubernetes), and infrastructure-as-code (Terraform/CDK).\n\n## What We Offer\n\n*   **Competitive Compensation:** A competitive salary package commensurate with experience.\n*   **Meaningful Equity:** A competitive equity grant, ensuring you share directly in the company's success and long-term growth.\n*   **Remote-First Culture:** Work from anywhere. We provide the tools and support to help you excel in a distributed environment.\n*   **Health & Wellness:** Comprehensive medical, dental, and vision insurance.\n*   **Flexible PTO:** Take the time you need to recharge with our unlimited paid time off policy.\n*   **Professional Growth:** Annual learning and development stipend for conferences, courses, and books.\n*   **Home Office Setup:** A generous budget to set up your productive and comfortable home workspace.\n*   **Team Connection:** Regular virtual team events and annual company offsites to foster connection and collaboration.\n\n## How to Apply\n\nIf you are passionate about building transformative fintech products and thrive in a collaborative, high-growth environment, we would love to hear from you.\n\nPlease submit your resume and a brief note highlighting a challenging technical project you led or a significant contribution you're proud of.\n\n*We are an equal opportunity employer and value diversity at our company. We do not discriminate on the basis of race, religion, color, national origin, gender, sexual orientation, age, marital status, veteran status, or disability status.*",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (4949 chars)",
+          "✓ Content length: 4949 ≥ 200"
+        ]
+      }
+    },
+    {
+      "id": "edge-question-looks-like-build",
+      "status": "ok",
+      "elapsed": 6344,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "What's the best way to set up a data pipeline?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, mon ami, the best way to set up a data pipeline is a case worthy of the little grey cells! First, define your objectives clearly—what data, from where, and for what purpose? Use tools like Apache Airflow for orchestration, Apache Kafka for streaming, and cloud services like AWS Glue or Google Dataflow. Ensure robust monitoring with Prometheus and Grafana, and implement data quality checks with Great Expectations. Always design for scalability and fault tolerance—think incremental loads, idempotency, and error handling. Très intéressant, non?",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (551 chars)",
+          "✓ Message length: 551 ≥ 50"
+        ]
+      }
+    },
+    {
+      "id": "personality-poirot-empty",
+      "status": "ok",
+      "elapsed": 4180,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, mon ami, the canvas is pristine—no clues, no evidence, no case yet. But the little grey cells are ready to weave a tapestry of logic and action. Present your scenario, and we shall construct a workflow worthy of a detective's scrutiny.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (239 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    }
+  ]
+}
