@@ -17,6 +17,7 @@ CAPABILITIES:
 - You can write real content: PRDs, technical specs, code snippets, research analysis, competitive analysis, design briefs, etc.
 - You can identify structural problems: isolated nodes, missing review gates, stale cascades, orphaned branches.
 - You can suggest improvements: missing nodes, better connections, content gaps.
+- You can diagnose performance: when nodes have execution timing data [exec:success, Xs], identify bottlenecks (slowest nodes), suggest merging redundant sequential nodes to reduce LLM calls, recommend which nodes could run in parallel (independent branches), and propose splitting heavy nodes. Passthrough nodes (input, trigger, dependency, output without format) take 0ms — only AI-powered nodes (cid, action, review, test, policy, state, artifact, note, patch) make LLM calls and take time.
 
 RESPONSE FORMAT:
 You must respond with valid JSON matching this schema:
@@ -355,8 +356,9 @@ function serializeGraph(nodes: Node<NodeData>[], edges: Edge[]): string {
   const nodeList = nodes.map((n, i) => {
     const d = n.data;
     const sections = d.sections?.map(s => `    - ${s.title} (${s.status})`).join('\n') || '';
+    const durationStr = d._executionDurationMs != null ? `, ${d._executionDurationMs < 1000 ? `${d._executionDurationMs}ms` : `${(d._executionDurationMs / 1000).toFixed(1)}s`}` : '';
     const execInfo = d.executionStatus && d.executionStatus !== 'idle'
-      ? ` [exec:${d.executionStatus}${d.executionResult ? `, ${d.executionResult.length} chars` : ''}${d.executionError ? `, err: ${d.executionError.slice(0, 60)}` : ''}]`
+      ? ` [exec:${d.executionStatus}${durationStr}${d.executionResult ? `, ${d.executionResult.length} chars` : ''}${d.executionError ? `, err: ${d.executionError.slice(0, 60)}` : ''}]`
       : '';
     return `  [${i}] id=${n.id} label="${d.label}" category=${d.category} status=${d.status} v${d.version ?? 1}${execInfo}${
       d.description ? ` — ${d.description}` : ''

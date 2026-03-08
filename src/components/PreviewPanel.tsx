@@ -14,7 +14,8 @@ interface PreviewMessage {
   role: 'user' | 'bot' | 'system';
   content: string;
   timestamp: number;
-  nodeTrace?: string[];
+  nodeTrace?: { name: string; durationMs: number | null }[];
+  totalDurationMs?: number;
 }
 
 export default function PreviewPanel() {
@@ -99,8 +100,9 @@ export default function PreviewPanel() {
 
       // Execute nodes in topological order
       const order = getExecutionOrder();
-      const trace: string[] = [];
+      const trace: { name: string; durationMs: number | null }[] = [];
       const errors: string[] = [];
+      const workflowStart = Date.now();
 
       for (const nodeId of order) {
         const node = useLifecycleStore.getState().nodes.find(n => n.id === nodeId);
@@ -110,24 +112,29 @@ export default function PreviewPanel() {
         if (node.data.category === 'note') continue;
 
         setActiveNodeId(nodeId);
-        trace.push(node.data.label);
 
         // Skip input node (already set content)
-        if (node.data.category === 'input') continue;
+        if (node.data.category === 'input') {
+          trace.push({ name: node.data.label, durationMs: 0 });
+          continue;
+        }
 
         try {
           await executeNode(nodeId);
           // Check if this node errored
           const updated = useLifecycleStore.getState().nodes.find(n => n.id === nodeId);
+          trace.push({ name: node.data.label, durationMs: updated?.data._executionDurationMs ?? null });
           if (updated?.data.executionStatus === 'error') {
             errors.push(`${node.data.label}: ${updated.data.executionError || 'failed'}`);
           }
         } catch (e) {
+          trace.push({ name: node.data.label, durationMs: null });
           errors.push(`${node.data.label}: ${e instanceof Error ? e.message : 'failed'}`);
         }
       }
 
       setActiveNodeId(null);
+      const totalDurationMs = Date.now() - workflowStart;
 
       // Find the best response to display
       const store = useLifecycleStore.getState();
@@ -161,6 +168,7 @@ export default function PreviewPanel() {
         content: botResponse,
         timestamp: Date.now(),
         nodeTrace: trace,
+        totalDurationMs,
       };
       setMessages(prev => [...prev, botMsg]);
     } catch (err) {
@@ -284,13 +292,25 @@ export default function PreviewPanel() {
                   {msg.role === 'user' ? msg.content : renderMarkdown(msg.content)}
                 </div>
                 {msg.nodeTrace && msg.nodeTrace.length > 0 && (
-                  <div className="mt-2 pt-1.5 border-t border-white/[0.04] flex flex-wrap gap-1">
-                    {msg.nodeTrace.map((name, i) => (
-                      <span key={i} className="flex items-center gap-0.5 text-[8px] text-white/20">
-                        {i > 0 && <ChevronRight size={7} className="text-white/10" />}
-                        {name}
-                      </span>
-                    ))}
+                  <div className="mt-2 pt-1.5 border-t border-white/[0.04]">
+                    <div className="flex flex-wrap gap-1">
+                      {msg.nodeTrace.map((t, i) => (
+                        <span key={i} className="flex items-center gap-0.5 text-[8px] text-white/20">
+                          {i > 0 && <ChevronRight size={7} className="text-white/10" />}
+                          {t.name}
+                          {t.durationMs != null && t.durationMs > 0 && (
+                            <span className="text-white/10 font-mono ml-0.5">
+                              {t.durationMs < 1000 ? `${t.durationMs}ms` : `${(t.durationMs / 1000).toFixed(1)}s`}
+                            </span>
+                          )}
+                        </span>
+                      ))}
+                    </div>
+                    {msg.totalDurationMs != null && (
+                      <div className="text-[7px] text-white/15 mt-1 font-mono">
+                        Total: {msg.totalDurationMs < 1000 ? `${msg.totalDurationMs}ms` : `${(msg.totalDurationMs / 1000).toFixed(1)}s`}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
