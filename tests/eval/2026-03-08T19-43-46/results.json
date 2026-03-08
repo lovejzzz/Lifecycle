@@ -1,0 +1,620 @@
+{
+  "timestamp": "2026-03-08T19-43-46",
+  "overall": 98,
+  "testsRun": [
+    "creator-youtube",
+    "freelancer-advice",
+    "personality-poirot-empty",
+    "finance-audit-readiness",
+    "healthcare-patient-intake",
+    "execute-security-incident",
+    "healthcare-patient-intake"
+  ],
+  "poolSize": 92,
+  "results": [
+    {
+      "id": "creator-youtube",
+      "status": "ok",
+      "elapsed": 57630,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "I want to start a YouTube channel. Build me a production workflow for each video — topic research, scripting, filming, editing, thumbnail, SEO, upload, promotion.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, mon ami! A YouTube channel case! Let us examine the evidence and build a proper production workflow. The little grey cells tell me we need structure with feedback loops — for quality is everything in this game.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Topic & Research",
+              "category": "input",
+              "description": "Initial idea generation and audience research phase",
+              "content": "Begin with data-driven topic selection. First, use YouTube Studio Analytics to identify high-performing content gaps in your niche. Cross-reference with Google Trends and TubeBuddy for search volume and competition analysis. Create a scoring matrix (1-10) for each idea based on: audience demand (search volume), competition (existing videos' performance), alignment with channel theme, and your unique angle. Validate with Reddit communities and Quora questions to gauge real audience pain points. Document 3-5 top contenders with brief outlines. Set up a Trello board or Notion database to track ideas, including target keywords, estimated length, and required resources. This phase should produce a prioritized list with at least one primary topic and two backups."
+            },
+            {
+              "label": "Script & Storyboard",
+              "category": "artifact",
+              "description": "Creating the video blueprint with narrative structure",
+              "content": "Transform your chosen topic into a compelling narrative. Start with a hook formula: problem statement + promise + preview. Use a three-act structure: Setup (introduce topic and why it matters), Confrontation (deep dive with examples/data), Resolution (actionable takeaways). Write in spoken language with natural pauses marked. Include specific visual cues for b-roll, graphics, and on-screen text. Tools: Final Draft or Google Docs with template. Key elements: timestamp markers every 30 seconds, call-to-action placement (mid-roll and end), keyword density optimization (2-3% for primary keyword). Create a simple storyboard using Canva or Storyboard That showing key visual transitions. Final checklist: script under target length by 10%, all technical terms explained, emotional peaks identified."
+            },
+            {
+              "label": "Production & Filming",
+              "category": "action",
+              "description": "Recording video and audio with proper equipment setup",
+              "content": "Execute filming with technical precision. Equipment checklist: DSLR/mirrorless camera (Sony A7III or similar) with 24-70mm lens, lavalier microphone (Rode Wireless Go II), three-point lighting setup (key, fill, backlight), teleprompter app (Teleprompter Pro). Scene setup: clean background with brand colors, test audio levels (-12dB to -6dB), white balance calibration. Shoot in 4K at 24fps for cinematic look. Capture multiple takes of each section, especially openings and closings. Record room tone for 30 seconds. B-roll protocol: shoot 3x more b-roll than needed, using varied angles (wide, medium, close-up, Dutch). Safety shots: record 10 seconds of silence at beginning/end. File management: immediately transfer footage to SSD with folder structure (A_roll, B_roll, audio)."
+            },
+            {
+              "label": "Editing & Thumbnail",
+              "category": "action",
+              "description": "Post-production and thumbnail creation in parallel",
+              "content": "Edit using DaVinci Resolve or Premiere Pro with organized workflow. First, sync audio using waveform matching. Rough cut: assemble A-roll following script timestamps. Fine cut: add b-roll (rule of thirds composition), transitions (cuts only, no effects), lower thirds (consistent typography). Color grade using LUTs matching channel brand. Audio polish: noise reduction (Adobe Audition), compression, normalize to -14 LUFS. Thumbnail creation in Photoshop: use template with consistent branding elements (font, color palette, logo placement). Apply thumbnail psychology: human face with emotion, contrasting colors, maximum 5 words in large font, curiosity gap. Create 3 thumbnail variations for A/B testing. Export checklist: H.264 codec, 4K resolution, 50Mbps bitrate, separate SRT file for captions."
+            },
+            {
+              "label": "SEO & Upload Prep",
+              "category": "action",
+              "description": "Optimizing metadata and preparing YouTube upload",
+              "content": "Comprehensive SEO optimization before upload. Title: 60 characters max, primary keyword first, power words (Ultimate, Secret). Description: first 150 characters must contain keyword and value proposition, include 5-7 relevant keywords naturally, add timestamp chapters every 2-3 minutes, include links to related videos. Tags: 10-15 tags mixing broad and specific (use TubeBuddy's tag explorer). Cards and end screens: place 2 cards at optimal moments (75% and 90% through video), design end screen with 4 elements (subscribe, next video, playlist, website). Create custom captions file (not auto-generated) for better SEO. Schedule upload 24-48 hours in advance to allow processing. Set as 'Unlisted' initially for final review. Prepare community post and Instagram story teasers with countdown."
+            },
+            {
+              "label": "Quality Review",
+              "category": "review",
+              "description": "Final human review before publication",
+              "content": "Methodical review checklist across three passes. First pass (content): watch entire video without distractions, verify information accuracy against sources, check pacing (no segment longer than 3 minutes), confirm call-to-actions are clear. Second pass (technical): audio levels consistent, color grading uniform, no jump cuts or awkward transitions, thumbnail readable at mobile size. Third pass (SEO): title matches thumbnail promise, description has proper formatting, cards/end screens functional. Use Fresh Eyes technique: have one trusted person review separately. Document all issues in Asana/Trello with timestamps. Critical: check for copyright issues using YouTube's Copyright Match tool. Approval requires zero critical issues (factual errors, audio problems) and maximum 3 minor issues (typos, slight color mismatch)."
+            },
+            {
+              "label": "Publication & Promotion",
+              "category": "output",
+              "description": "Launching video and executing promotion strategy",
+              "content": "Execute multi-platform launch sequence. YouTube: publish at optimal time (use VidIQ analytics for your audience), immediately pin best comment, respond to first 10 comments within hour. Social media: Twitter thread breaking down key insights, Instagram Reel with behind-the-scenes, LinkedIn article linking to video. Email list: send dedicated newsletter with exclusive insights not in video. Community engagement: share in relevant Reddit threads (value-first, not spammy), Quora answers linking to video, niche Facebook groups. Analytics monitoring: track first 48-hour performance metrics (click-through rate, average view duration, audience retention graphs). Engagement protocol: reply to all comments within first 24 hours, ask questions to spark discussion. Cross-promotion: add to relevant playlists, update video cards in older related content. Document results for next iteration."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "feeds"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "drives"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "requires"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "approves"
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "label": "refines"
+            },
+            {
+              "from": 6,
+              "to": 0,
+              "label": "informs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 95,
+        "maxScore": 95,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ All 9 edges valid",
+          "✓ Starts with input",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 810c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (9 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "freelancer-advice",
+      "status": "ok",
+      "elapsed": 4174,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "I'm charging $50/hour for web development and I'm always booked but barely making rent. What am I doing wrong?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Mon ami, the case is clear: you are a master craftsman, but a poor accountant. Your rate is a clue—$50/hour is the apprentice's fee, not the maestro's. The evidence points to underpricing, scope creep, and perhaps a lack of strategic positioning. Let us examine the financial forensics.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (286 chars)",
+          "✓ Message length: 286 ≥ 250"
+        ]
+      }
+    },
+    {
+      "id": "personality-poirot-empty",
+      "status": "ok",
+      "elapsed": 3298,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, mon ami, the canvas is empty—a blank slate awaiting the first clue. But do not fret; every great investigation begins with a single piece of evidence. What case shall we unravel today?",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (188 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "finance-audit-readiness",
+      "status": "ok",
+      "elapsed": 68194,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "We have a SOC 2 audit in 90 days. Build me a workflow to get audit-ready: evidence collection, access reviews, policy documentation, vulnerability scanning, and vendor risk assessment. We have never done this before.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building SOC 2 readiness workflow with parallel tracks and feedback loops.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "SOC 2 Audit Kickoff",
+              "category": "trigger",
+              "description": "Formal initiation of SOC 2 readiness program with stakeholder alignment",
+              "content": "**Event**: Executive sponsor approval of SOC 2 readiness timeline. **Payload**: Scope document defining in-scope systems (AWS/GCP infrastructure, SaaS applications like Salesforce/Slack, internal HR/payroll systems), trust services criteria (Security, Availability, Confidentiality), and organizational boundaries. **Configuration**: Establish project charter with RACI matrix assigning Security Lead (primary owner), IT Director (infrastructure), Engineering VP (development), Legal Counsel (contracts), and HR Director (personnel). **Setup**: Create dedicated Slack channel #soc2-readiness, Confluence workspace for documentation, Jira project with SOC 2 template, and weekly steering committee calendar invites. Initial deliverables: Scope document v1.0, 90-day calendar with milestones at 30/60/90 days, and vendor inventory template."
+            },
+            {
+              "label": "Policy Framework Development",
+              "category": "artifact",
+              "description": "Create and formalize required security policies and procedures",
+              "content": "**Document Outline**: 1. Information Security Policy (scope, objectives, management commitment) 2. Access Control Policy (user provisioning/deprovisioning, least privilege, role-based access) 3. Change Management Policy (SDLC controls, deployment approvals) 4. Incident Response Policy (IR plan with roles, communication matrix, escalation paths) 5. Risk Assessment Policy (annual risk assessments, treatment plans) 6. Physical Security Policy (data center/office access) 7. Business Continuity & Disaster Recovery Policy (RTO/RPO objectives). **Format**: Google Docs with version control, approval workflows, and export to PDF for auditor delivery. **Sections per policy**: Purpose, Scope, Responsibilities, Procedures, Review Frequency, Exceptions Process. **Tools**: Tugboat Logic, Vanta, or Drata for policy templates; Confluence for collaboration; DocuSign for executive approvals. **Action Steps**: 1. Gap analysis against SOC 2 criteria using CSA CCM mapping 2. Draft policies using NIST 800-53/ISO 27001 references 3. Legal review for regulatory alignment 4. Socialize with department heads 5. Executive approval and company-wide communication."
+            },
+            {
+              "label": "Technical Control Implementation",
+              "category": "action",
+              "description": "Deploy and configure security controls across infrastructure and applications",
+              "content": "**Numbered Steps**: 1. Identity & Access Management: Implement SSO (Okta/Auth0) for all SaaS applications, enforce MFA for administrative accounts, configure role-based access in AWS IAM/GCP IAM, establish quarterly access review process. 2. Vulnerability Management: Schedule weekly automated scans with Tenable.io or Qualys for infrastructure; integrate Snyk or GitHub Advanced Security into CI/CD pipelines for code scanning; establish 30-day remediation SLA for critical vulnerabilities. 3. Logging & Monitoring: Centralize logs in SIEM (Splunk, Datadog, Sumo Logic) with 90-day retention; configure alerts for security events (failed logins, configuration changes, data exports); establish 24/7 on-call rotation. 4. Encryption: Enable TLS 1.2+ everywhere; encrypt data at rest (AWS KMS, GCP KMS); implement database encryption for PII. 5. Backup & Recovery: Configure automated backups with 7-day retention tested quarterly; document recovery procedures. **Tools**: Terraform for infrastructure-as-code; Ansible for configuration management; Jenkins/GitHub Actions for CI/CD. **Error Handling**: Rollback procedures for failed deployments; incident response playbooks for control failures. **Owner**: Security Engineer with Cloud/DevOps support."
+            },
+            {
+              "label": "Evidence Collection & Gap Assessment",
+              "category": "action",
+              "description": "Systematically gather evidence and identify compliance gaps",
+              "content": "**Steps**: 1. Create evidence request list mapped to SOC 2 criteria (200+ items): screenshots of console configurations, system-generated reports, policy acknowledgments, training completion certificates. 2. Use automation tools (Vanta, Drata, Laika) to continuously collect evidence from APIs (AWS Config, GitHub, Jira, HR systems). 3. Manual evidence collection for non-automatable items: interview stakeholders, document processes, collect signed policy acknowledgments. 4. Gap assessment: Compare evidence against SOC 2 requirements using spreadsheet with columns: Requirement, Evidence Collected, Gap Status (Open/Closed), Owner, Due Date. 5. Weekly gap review meetings to track progress. **Tools**: Google Sheets with conditional formatting for status; Jira for tracking gaps; SharePoint/Google Drive for evidence repository organized by trust criteria. **Criteria**: Evidence must be dated within audit period, show appropriate approvals, and demonstrate operating effectiveness. **Owner**: Compliance Analyst with departmental SMEs."
+            },
+            {
+              "label": "Vendor Risk Assessment",
+              "category": "review",
+              "description": "Evaluate third-party vendors for security risks and obtain SOC 2 reports",
+              "content": "**Approval Criteria**: 1. Vendor criticality classification (High/Medium/Low based on data access, integration depth, business impact) 2. Required documentation: SOC 2 Type II report, security questionnaire (CAIQ), incident response plan, data processing agreement. 3. Risk scoring: Use standardized questionnaire (SIG Lite, VSA) scoring 80%+ for high-risk vendors. **Who Reviews**: Security Lead assesses technical controls; Legal reviews contracts; Procurement reviews business terms. **Escalation**: Vendors scoring below threshold require risk acceptance from CISO or alternative vendor selection. **SLA**: Complete assessments for all high-risk vendors within 60 days, medium within 75 days. **Process**: 1. Inventory all vendors with owner, contract dates, data classification 2. Send assessment requests via RiskRecon, BitSight, or manual questionnaires 3. Review responses against internal standards 4. Document exceptions and compensating controls 5. Maintain vendor risk register updated quarterly."
+            },
+            {
+              "label": "Readiness Review & Dry Run",
+              "category": "test",
+              "content": "**What to Test**: 1. Evidence completeness against SOC 2 criteria 2. Control operating effectiveness through sample testing 3. Interview preparedness with process owners 4. Auditor document request handling. **Pass/Fail Criteria**: Evidence coverage ≥95%, control testing samples show ≥90% effectiveness, mock auditor interviews completed without major findings. **Tools**: Internal audit checklist; sample selection methodology (random sampling of 30+ items per criteria); interview question bank. **Coverage**: All five trust services criteria (Security, Availability, Confidentiality, Processing Integrity, Privacy if applicable). **Process**: 1. Independent internal auditor or consultant conducts dry run 2. Sample 25-30 controls across all criteria 3. Document findings in readiness report 4. Remediate critical gaps within 14 days 5. Final executive briefing before auditor engagement. **Metrics**: Gap closure rate, evidence quality score, owner preparedness rating.",
+              "description": "Conduct mock audit to validate readiness before external auditor engagement"
+            },
+            {
+              "label": "SOC 2 Audit Execution",
+              "category": "output",
+              "description": "Formal audit engagement resulting in SOC 2 Type II report",
+              "content": "**Deliverable Format**: SOC 2 Type II report with auditor opinion letter, description of system, and detailed testing results. **Distribution**: Provided to customers/prospects under NDA, posted in vendor security portal, shared with board of directors. **Success Metrics**: Clean opinion with no material weaknesses, report issuance within 120 days of period end, customer acceptance rate ≥95%. **Process**: 1. Select audit firm (Big 4 or specialized firm) and sign engagement letter 2. Provide evidence repository access and facilitate interviews 3. Respond to auditor inquiries within 48 hours 4. Review draft report for accuracy 5. Finalize report with management assertion letter. **Post-Audit**: 1. Implement auditor recommendations within 90 days 2. Establish continuous compliance program with quarterly control testing 3. Schedule next annual audit. **Tools**: Auditor portal (typically proprietary), secure file sharing, video conferencing for remote interviews."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "drives"
+            },
+            {
+              "from": 0,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 0,
+              "to": 3,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "triggers"
+            },
+            {
+              "from": 3,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "approves"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 110,
+        "maxScore": 115,
+        "pct": 96,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✗ Missing \"policy\" category (found: trigger, artifact, action, review, test, output)",
+          "✓ Has \"review\" category",
+          "✓ All 10 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 1033c, no thin nodes",
+          "✓ Architecture covers: evidence, access, policy, vulnerab",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (10 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "healthcare-patient-intake",
+      "status": "ok",
+      "elapsed": 60209,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Design a patient intake workflow for a telehealth clinic. Steps include appointment scheduling, insurance verification, medical history form, consent collection, provider assignment, and video call setup. Must be HIPAA compliant.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, mon ami! A telehealth intake case worthy of the little grey cells. I have constructed a workflow that not only captures the essential steps but weaves in the critical HIPAA safeguards throughout - the evidence must be properly secured at every turn!",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Patient Scheduling Request",
+              "category": "trigger",
+              "description": "Initial patient contact through website, phone, or portal",
+              "content": "When a patient initiates contact through any channel (website booking widget, phone call, patient portal), this triggers the intake workflow. The system must capture: patient name, contact information, preferred appointment date/time, reason for visit (chief complaint), and preferred provider if any. All data collection interfaces must use TLS 1.2+ encryption. The scheduling interface should offer real-time availability from provider calendars while masking specific provider details until verification completes. Initial data should be stored in an encrypted database with access logs. Tools: HIPAA-compliant scheduling software (like Acuity, JaneApp, or custom solution with AWS/GCP HIPAA-compliant infrastructure), encrypted web forms with SSL certificates, automated calendar integration via secure APIs."
+            },
+            {
+              "label": "Parallel Verification & Consent",
+              "category": "state",
+              "description": "Simultaneous insurance verification and consent collection",
+              "content": "Two parallel processes begin immediately after scheduling: (1) Insurance verification: Automated system checks patient insurance eligibility using clearinghouse APIs (like Change Healthcare, Availity) or direct payer portals. System validates: active coverage, copay/coinsurance amounts, telehealth coverage specifics, pre-authorization requirements. Results documented in EHR. (2) Digital consent collection: Patient receives secure portal link to complete: HIPAA authorization form (uses and disclosures), telehealth consent (technology risks, privacy limitations), financial responsibility agreement, and optional release of information. All forms must be e-signed with audit trail (timestamp, IP address, signature hash). Tools: Insurance verification APIs integrated with practice management software, HIPAA-compliant e-signature platforms (DocuSign, Adobe Sign with BAA), patient portal with role-based access controls."
+            },
+            {
+              "label": "Medical History Intake",
+              "category": "artifact",
+              "description": "Comprehensive health history collection via structured forms",
+              "content": "Patient completes detailed medical history through secure patient portal. Forms include: demographic information, past medical history (conditions, surgeries, hospitalizations), current medications with dosages/frequencies, allergies (medication, environmental, food), family medical history, social history (tobacco/alcohol/substance use, occupation, living situation), review of systems (constitutional, respiratory, cardiovascular, etc.). All forms must use dropdowns/checkboxes where possible for structured data entry. System should validate required fields and flag potential contradictions (e.g., medication allergies with prescribed medications). Data automatically populates EHR templates. Tools: Custom-built HIPAA-compliant forms (React/Vue with encrypted state management) or configured EHR modules (Epic, Cerner, Athenahealth), data validation scripts, automated mapping to EHR fields."
+            },
+            {
+              "label": "HIPAA Security Review",
+              "category": "policy",
+              "description": "Continuous compliance monitoring and technical safeguards",
+              "content": "Parallel policy node that monitors all workflow steps for HIPAA compliance. Technical safeguards: All data in transit encrypted via TLS 1.2+, data at rest encrypted with AES-256, access controls with unique user IDs, automatic logoff after 15 minutes inactivity, audit logs of all access/actions. Physical safeguards: Secure data center locations, workstation security policies. Administrative safeguards: Security risk assessments every 12 months, workforce training on HIPAA, Business Associate Agreements (BAAs) with all vendors. Implementation checklist: Regular vulnerability scans, penetration testing annually, encrypted backup procedures, incident response plan documented, designated security officer appointed. Tools: HIPAA compliance platforms (Compliancy Group, HIPAA Secure Now), vulnerability scanners (Nessus, OpenVAS), encrypted cloud storage (AWS S3 with encryption, Azure Blob Storage with customer-managed keys)."
+            },
+            {
+              "label": "Provider Assignment & Prep",
+              "category": "action",
+              "description": "Clinical team review and provider matching based on specialty/availability",
+              "content": "Clinical coordinator or automated system reviews completed intake package: verified insurance, signed consents, medical history forms. Assignment criteria: Provider specialty matching chief complaint, patient preferences (language, gender), provider availability, insurance network participation, and acuity level. System flags incomplete items requiring follow-up. Assigned provider receives: patient summary sheet, relevant medical history highlights, insurance verification results, consent status. Provider reviews materials 24 hours before appointment, may request additional information through secure messaging. Preparation steps: Load patient data into EHR encounter template, prepare any specialty-specific assessment tools, verify video platform access. Tools: Automated provider matching algorithms, EHR task assignment systems, secure clinical messaging (TigerConnect, Spok), provider calendar integration."
+            },
+            {
+              "label": "Pre-Visit Quality Check",
+              "category": "review",
+              "description": "Final human review before visit to ensure completeness",
+              "content": "Clinical staff performs final review 2-4 hours before scheduled appointment. Checklist: All consents signed and dated, insurance verification complete with copay amount documented, medical history forms 100% complete, provider assignment confirmed and provider available, patient contact information verified, video platform link/test instructions sent, any required pre-visit questionnaires completed. If deficiencies found: staff contacts patient via secure message/encrypted email for missing items, may reschedule if critical components missing. Success criteria: Patient can join visit without technical/administrative barriers, provider has complete clinical picture, billing information validated. Documentation: Review timestamp, reviewer name, any follow-up actions taken. Tools: Custom checklists in practice management software, automated reminder systems, secure patient communication platforms."
+            },
+            {
+              "label": "Telehealth Visit Launch",
+              "category": "output",
+              "description": "Final output: successful connection to HIPAA-compliant video visit",
+              "content": "Patient receives unique, encrypted video link 15 minutes before appointment time (via SMS/email with disclaimer about privacy risks). Link directs to waiting room with: practice branding, estimated wait time, technical requirements check. Provider joins from secure location, begins encounter with proper identification. System features: End-to-end encryption for video/audio, ability to share screen for education, integrated vital signs if patient has connected devices, secure text chat within platform. Visit documentation: EHR integration auto-populates intake data, allows real-time note-taking, e-prescribing if needed. Post-visit: Visit summary automatically generated, follow-up instructions sent via secure portal, billing claim initiated with proper telehealth modifiers. Tools: HIPAA-compliant video platforms (Doxy.me, Zoom for Healthcare, VSee), EHR integration APIs, e-prescribing software (Surescripts), automated discharge instruction generators."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "informs"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "requires"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "approves"
+            },
+            {
+              "from": 3,
+              "to": 0,
+              "label": "monitors"
+            },
+            {
+              "from": 3,
+              "to": 1,
+              "label": "monitors"
+            },
+            {
+              "from": 3,
+              "to": 2,
+              "label": "monitors"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "monitors"
+            },
+            {
+              "from": 3,
+              "to": 5,
+              "label": "monitors"
+            },
+            {
+              "from": 3,
+              "to": 6,
+              "label": "monitors"
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 110,
+        "maxScore": 110,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ Has \"policy\" category",
+          "✓ All 13 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 908c, no thin nodes",
+          "✓ Architecture covers: insurance, consent, hipaa",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (13 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "execute-security-incident",
+      "status": "ok",
+      "elapsed": 56180,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Write a security incident report for a data breach where an attacker exploited an unpatched Log4j vulnerability to access our customer database. 15,000 user records were exposed including emails and hashed passwords. The breach was detected 72 hours after initial access via anomalous CloudWatch logs.",
+        "agent": "poirot",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Security Incident Report: Unauthorized Data Access via Log4Shell Exploitation\n\n**Report Classification:** CONFIDENTIAL - INTERNAL USE ONLY  \n**Incident ID:** SEC-2023-0472  \n**Date of Report:** October 26, 2023  \n**Prepared by:** Digital Forensics & Incident Response Team  \n\n---\n\n## 1. EXECUTIVE SUMMARY\n\n**Incident Type:** Data Breach - Unauthorized Access  \n**Severity Level:** CRITICAL (CVSS Score: 10.0)  \n**Timeline:** Initial Access: October 20, 2023, 14:32 UTC | Detection: October 23, 2023, 15:18 UTC | Containment: October 23, 2023, 18:45 UTC  \n\nA threat actor successfully exploited the CVE-2021-44228 (Log4Shell) vulnerability in an unpatched instance of our customer-facing web application server. The exploitation resulted in unauthorized access to our primary customer database, leading to the exfiltration of approximately 15,000 user records containing personally identifiable information (PII) and authentication credentials.\n\nThe breach remained undetected for approximately 72 hours until anomalous patterns in AWS CloudWatch logs triggered our automated alerting system. Immediate containment actions were implemented, preventing further data loss.\n\n---\n\n## 2. TECHNICAL INVESTIGATION FINDINGS\n\n### 2.1 Attack Vector Analysis\n\n**Vulnerability Exploited:** CVE-2021-44228 (Log4Shell)  \n**CVSS Score:** 10.0 CRITICAL  \n**Patch Status:** Unpatched on affected server (Apache Log4j 2.14.1)  \n**MITRE ATT&CK Techniques:**\n- T1190: Exploit Public-Facing Application\n- T1210: Exploitation of Remote Services\n- T1048: Exfiltration Over Alternative Protocol\n\n### 2.2 Attack Timeline Reconstruction\n\n**Phase 1: Initial Compromise (October 20, 14:32 UTC)**\n- Threat actor sent crafted JNDI lookup string through user-agent field\n- Successful exploitation granted remote code execution on web-app-03\n- Initial payload established reverse shell to attacker-controlled infrastructure (IP: 185.143.223.47)\n\n**Phase 2: Lateral Movement & Privilege Escalation (October 20-22)**\n- Attacker leveraged compromised service account credentials\n- Moved laterally to database server (db-primary-01)\n- Extracted database credentials from configuration files\n- Established persistent access via scheduled tasks\n\n**Phase 3: Data Exfiltration (October 22, 03:15-04:42 UTC)**\n- Bulk SQL queries executed against customer database\n- 15,000 records extracted from `users` table\n- Data compressed and exfiltrated via encrypted HTTPS connection\n- Exfiltration volume: Approximately 850 MB over 87-minute period\n\n**Phase 4: Detection & Response (October 23, 15:18 UTC)**\n- CloudWatch anomaly detection triggered on abnormal database query patterns\n- SIEM correlation rule fired on unusual outbound traffic volume\n- Incident declared at 15:32 UTC\n\n### 2.3 Compromised Data Assessment\n\n**Data Category:** Customer PII & Authentication Data  \n**Records Affected:** 15,000 (confirmed)  \n**Data Elements Exposed:**\n- Email addresses (15,000)\n- Hashed passwords (bcrypt, 12 rounds)\n- Account creation dates\n- Last login timestamps\n- User IDs (internal)\n\n**Data NOT Compromised:**\n- Financial information\n- Payment card data\n- Social security numbers\n- Unhashed passwords\n- Physical addresses\n\n**Risk Assessment:** HIGH - Hashed passwords provide some protection, but combined with email addresses creates significant credential stuffing and phishing risks.\n\n---\n\n## 3. DETECTION & RESPONSE TIMELINE\n\n| Time (UTC) | Event | Action Taken |\n|------------|-------|--------------|\n| Oct 23, 15:18 | CloudWatch anomaly alert triggered | Automated investigation initiated |\n| Oct 23, 15:32 | SIEM correlation confirmed breach | Incident declared, response team mobilized |\n| Oct 23, 15:45 | Network isolation of affected systems | Containment phase initiated |\n| Oct 23, 16:30 | Forensic imaging completed | Evidence preservation |\n| Oct 23, 17:15 | Malicious persistence mechanisms identified | Remediation procedures executed |\n| Oct 23, 18:45 | All affected systems secured | Containment completed |\n| Oct 23, 19:30 | Log4j patches applied enterprise-wide | Vulnerability remediation |\n| Oct 24, 08:00 | Password reset process initiated for affected users | Customer protection measures |\n\n---\n\n## 4. ROOT CAUSE ANALYSIS\n\n### Primary Factors:\n1. **Unpatched Vulnerability:** Failure to apply Log4j patches released in December 2021\n2. **Configuration Management Gap:** Affected server omitted from automated patch management system\n3. **Detection Delay:** Lack of specific Log4Shell detection signatures in IDS/IPS systems\n4. **Network Segmentation:** Insufficient segmentation between web and database tiers\n\n### Contributing Factors:\n- Inadequate vulnerability scanning frequency\n- Missing JNDI lookup monitoring in application logs\n- Delayed implementation of runtime protection controls\n\n---\n\n## 5. CONTAINMENT & ERADICATION\n\n### Immediate Actions (Completed):\n- Isolated affected systems from production network\n- Terminated all suspicious processes and connections\n- Revoked compromised credentials and certificates\n- Applied Log4j 2.17.0 patches to all systems\n- Implemented temporary blocking of JNDI lookups\n\n### Forensic Preservation:\n- Complete disk images of compromised systems\n- Network traffic captures from intrusion period\n- Memory dumps from affected servers\n- CloudWatch and VPC Flow Logs preserved\n\n---\n\n## 6. RECOMMENDATIONS\n\n### Short-term (0-30 days):\n1. **Mandatory password reset** for all affected users with enhanced authentication requirements\n2. **Implement 24/7 threat hunting** focused on Log4j-related IOCs\n3. **Deploy additional monitoring** for JNDI and LDAP protocol usage\n4. **Conduct comprehensive vulnerability assessment** across all environments\n\n### Medium-term (30-90 days):\n1. **Enhance patch management** with automated compliance reporting\n2. **Implement micro-segmentation** between application tiers\n3. **Deploy runtime application self-protection (RASP)** solutions\n4. **Establish regular red team exercises** focusing on critical vulnerabilities\n\n### Long-term (90-180 days):\n1. **Adopt zero-trust architecture** principles across infrastructure\n2. **Implement deception technology** for early threat detection\n3. **Enhance data loss prevention** controls with behavioral analytics\n4. **Develop automated incident response playbooks** for critical CVEs\n\n---\n\n## 7. LEGAL & COMPLIANCE IMPLICATIONS\n\n### Notification Requirements:\n- **GDPR:** Required within 72 hours of awareness (notification completed)\n- **CCPA:** Required for California residents (in progress)\n- **Sector-specific regulations:** Review ongoing\n\n### Regulatory Risk Assessment:\n- Potential fines for delayed patching of critical vulnerability\n- Possible enforcement actions for inadequate security controls\n- Contractual breach notifications to business partners\n\n---\n\n## 8. LESSONS LEARNED\n\n1. **Patch Management Criticality:** One unpatched system can compromise entire environments\n2. **Detection Gap:** Signature-based detection insufficient for novel attack patterns\n3. **Response Time:** 72-hour detection window unacceptable for critical systems\n4. **Defense in Depth:** Multiple security controls failed simultaneously\n\n---\n\n## 9. CONCLUSION\n\nThis incident demonstrates the critical importance of timely patch management and layered security controls. While the hashing algorithm provided some protection for passwords, the exposure of email addresses creates significant secondary risks. The 72-hour detection window represents a serious security gap that must be addressed through enhanced monitoring and threat hunting capabilities.\n\nThe organization's response was effective once the breach was detected, but prevention and earlier detection mechanisms require substantial improvement. All recommendations in this report should be treated as high-priority initiatives.\n\n---\n\n**Investigation Status:** ACTIVE  \n**Next Review Date:** November 2, 2023  \n**Distribution:** CISO, Legal Department, Compliance Office, IT Leadership",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (7934 chars)",
+          "✓ Content length: 7934 ≥ 1500"
+        ]
+      }
+    },
+    {
+      "id": "healthcare-patient-intake",
+      "status": "ok",
+      "elapsed": 49803,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Build a patient intake workflow for our new urgent care clinic. Steps: online pre-registration, insurance verification, HIPAA consent forms, triage assessment, provider assignment, and visit documentation. We see 80 patients/day and need average intake under 15 minutes.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building a high-throughput patient intake workflow optimized for 15-minute average intake.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Patient Pre-Registration Trigger",
+              "category": "trigger",
+              "description": "Patient initiates intake via online portal or walk-in registration kiosk",
+              "content": "This node triggers the intake workflow when a patient submits pre-registration data through our secure online portal (e.g., integrated with Epic MyChart or a custom web form) or via an in-clinic tablet kiosk for walk-ins. The payload includes patient demographics (name, DOB, contact), chief complaint, and preliminary insurance information. Configuration: Set up HTTPS webhooks from the portal to our workflow engine (e.g., Zapier or custom API endpoint) with authentication tokens. For walk-ins, the kiosk software should auto-generate a unique patient ID and timestamp. Error handling: Validate required fields (name, DOB) and format (phone, email) before proceeding; if invalid, trigger an automated SMS/email to patient with correction link. Owner: Front desk staff monitor the queue dashboard for new entries."
+            },
+            {
+              "label": "Insurance Verification & HIPAA Consent",
+              "category": "action",
+              "description": "Parallel automated insurance eligibility check and digital consent capture",
+              "content": "1. Insurance Verification: Use an integrated clearinghouse API (e.g., Change Healthcare or Availity) to verify eligibility in real-time. Steps: Submit patient insurance ID, group number, and DOB via HIPAA-compliant HTTPS POST; parse response for coverage status, copay, deductible, and active status. Tools: Script using Python requests library with retry logic for timeouts. 2. HIPAA Consent: Present digital consent form via patient's device (portal or kiosk) requiring electronic signature using DocuSign or Adobe Sign embedded workflow. Capture acknowledgment of privacy practices, treatment consent, and financial responsibility. Store signed PDF in EHR (e.g., Epic) under patient record. Error handling: If insurance verification fails (e.g., coverage not found), flag for manual review by billing staff and proceed with self-pay protocol. Owner: Medical biller oversees exceptions."
+            },
+            {
+              "label": "Triage Assessment",
+              "category": "action",
+              "description": "Clinical staff perform rapid triage using standardized acuity scoring",
+              "content": "1. Triage Process: Nurse or MA greets patient in waiting area, conducts brief assessment using ESI (Emergency Severity Index) or similar protocol. Steps: Record vital signs (BP, pulse, temp via automated devices), chief complaint severity, pain scale (0-10), and any red flags (e.g., chest pain, difficulty breathing). 2. Tools: Use tablet with triage app syncing to EHR (Epic's Rover module); auto-calculate acuity level (1-5). 3. Criteria: Level 1 (immediate life-threatening) triggers rapid provider assignment; Levels 2-3 queue based on arrival time; Levels 4-5 may wait longer. 4. Error handling: If vitals are abnormal (e.g., high fever), alert provider via pager system. Owner: Triage nurse; target time: <3 minutes per patient."
+            },
+            {
+              "label": "Provider Assignment & Rooming",
+              "category": "state",
+              "description": "Dynamic assignment of patient to available provider and exam room",
+              "content": "States: 'Awaiting Provider' (after triage), 'Provider Assigned' (when MD/PA/NP is allocated), 'Room Ready' (exam room cleaned and stocked), 'In Room' (patient seated). Transitions: Trigger 'Provider Assigned' based on real-time provider availability dashboard (e.g., Epic's Welcome board) considering acuity level and provider specialty (e.g., pediatric vs. adult). Use automated paging system to notify provider. Trigger 'Room Ready' when environmental services mark room clean in system (using RFID sensors or manual check-in). Trigger 'In Room' when patient escorted by MA. Tools: Integration with nurse call system (e.g., Rauland) for room status. Owner: Charge nurse manages assignments; target: <2 minutes from triage to rooming."
+            },
+            {
+              "label": "Visit Documentation",
+              "category": "artifact",
+              "description": "Provider completes clinical note, orders, and discharge instructions",
+              "content": "This artifact is the final visit documentation comprising: 1. Clinical Note: SOAP format—Subjective (patient history), Objective (exam findings), Assessment (diagnosis), Plan (treatment). Use EHR templates (Epic SmartPhrases) for common conditions (e.g., URI, laceration). 2. Orders: Prescriptions sent electronically via Surescripts, lab orders interfaced with LabCorp, imaging orders to radiology. 3. Discharge Instructions: Printed or emailed after-visit summary with follow-up details, medication instructions, and warning signs. Format: PDF/A for compliance. Steps: Provider dictates or types note during/after visit; system auto-populates vitals and triage data; finalize note with digital signature. Quality check: Ensure all required fields (ICD-10 code, CPT codes) are completed for billing. Owner: Attending provider; time goal: <8 minutes documentation per patient."
+            },
+            {
+              "label": "Intake Output & Metrics",
+              "category": "output",
+              "content": "Deliverable: Completed patient visit record and performance metrics report. Format: 1. Patient Record: Consolidated PDF including registration forms, consent, triage notes, provider documentation, and discharge summary, stored in EHR and archived per HIPAA (7-year retention). 2. Metrics Report: Automated daily dashboard (Power BI or Tableau) showing average intake time (target <15 minutes), patient volume (80/day), triage-to-provider time, and documentation completion rate. Distribution: Email to clinic manager and medical director at EOD. Success metrics: Intake time <15 minutes for 90% of patients, patient satisfaction score >4.5/5, zero consent form errors. Tools: Generate via EHR reporting module and export to shared drive.",
+              "description": "Final output of processed patient visit and intake performance analytics"
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "drives"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "outputs"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "informs"
+            },
+            {
+              "from": 1,
+              "to": 5,
+              "label": "monitors"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 102,
+        "maxScore": 110,
+        "pct": 93,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 6 (min: 5)",
+          "✓ Node count: 6 ≤ 10",
+          "✗ Missing \"review\" category (found: trigger, action, state, artifact, output)",
+          "✓ All 7 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 798c, no thin nodes",
+          "✓ Architecture covers: registr, insurance, triage, document",
+          "✓ Flow: path exists from first to last node",
+          "⚡ Architecture: has parallel branches (7 edges, 6 nodes)"
+        ]
+      }
+    }
+  ]
+}

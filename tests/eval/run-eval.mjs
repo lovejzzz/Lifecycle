@@ -774,6 +774,22 @@ const POOL = [
     prompt: 'I run a small artisanal chocolate company. We source cacao from three countries (Ecuador, Ghana, Madagascar), each with different harvest seasons. We roast, conch, temper, and mold everything in our 2000 sq ft facility with 4 employees. I need a workflow for managing our entire production cycle from bean sourcing to retail delivery. We also do custom corporate gift orders during Q4 which doubles our volume. Our current process is all on paper and post-it notes — we keep missing orders and our inventory tracking is a mess. Please build something comprehensive that covers procurement, production scheduling, quality control, inventory management, order fulfillment, and shipping. We sell through our own website, two local retail partners, and seasonal farmers markets.',
     expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustMentionInNodes: ['sourc|procur|cacao', 'product|roast|temper', 'quality|control', 'order|fulfil|ship'] },
   },
+
+  // Round 108 — immigration visa processing (legal/compliance gap)
+  {
+    id: 'immigration-visa-processing',
+    agent: 'rowan', taskType: 'generate',
+    prompt: 'Build a workflow for processing H-1B visa applications at our immigration law firm. We handle 200+ petitions per year. Steps include client intake, eligibility assessment, prevailing wage determination, LCA filing with DOL, I-129 petition preparation, USCIS filing, RFE response handling, and approval tracking. Must track deadlines strictly — missed filing windows mean waiting another year.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['policy'], mustMentionInNodes: ['intake|client', 'eligib|assess', 'fil|petition|uscis', 'deadline|track|approv'] },
+  },
+
+  // Round 108 — edge case: user asks to build AND immediately modify
+  {
+    id: 'edge-build-then-modify',
+    agent: 'poirot', taskType: 'generate',
+    prompt: 'Create a CI/CD pipeline for our mobile app. Actually wait — make sure the testing phase includes both unit tests AND integration tests as separate steps, and add a rollback mechanism after production deployment.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['test'], mustMentionInNodes: ['unit|test', 'deploy|production', 'rollback|revert'] },
+  },
 ];
 
 // ─── Agent System Prompts (synced with src/lib/prompts.ts) ─────────────────

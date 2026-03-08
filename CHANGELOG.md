@@ -1,5 +1,25 @@
 # Changelog
 
+### 2026-03-08 — Round 108: 98% Chat (Rowan Category Pattern) + Pool 92→94
+
+**Eval results: 98% (7/7 passed) — DeepSeek Chat**
+
+Two minor deductions from Rowan category choices:
+- `finance-audit-readiness` (96%): Missing `policy` category — Rowan used `artifact` for "Policy Framework Development." Content covers policy extensively (1152c) but category mismatch costs points. Richest batch at 1033c avg across 7 nodes, 10 edges.
+- `healthcare-patient-intake` Rowan variant (93%): Missing `review` category, simpler architecture (6 nodes, 7 edges). Compare with Poirot's version of same domain: 7 nodes, **13 edges** — densest graph in batch.
+
+Quality highlights:
+- `healthcare-patient-intake` (Poirot, 100%): 13 edges across 7 nodes — richest edge density this session. HIPAA policy node with `monitors` edges. `state` node for parallel verification/consent.
+- `creator-youtube` (Poirot, 100%): Full video production pipeline with feedback loop from Quality Review back to Editing. 810c avg content.
+- `execute-security-incident` (Poirot, 100%): 7,934c professional incident report with CONFIDENTIAL classification, Log4Shell exploitation timeline, 72-hour detection gap analysis.
+- `freelancer-advice` (Poirot, 100%): 286c advice correctly identifying underpricing + scope creep. No workflow generated — clean analyze detection.
+
+**Insight:** Poirot consistently builds denser edge networks than Rowan (13 vs 7 for same domain). Rowan favors action-oriented categories (action/artifact/state) while Poirot leverages the full 13-category spread. Both styles are valid — not a bug.
+
+**Pool: 92 → 94 tests:** `immigration-visa-processing` (H-1B petitions with strict deadline tracking, policy category required), `edge-build-then-modify` (user asks to build then immediately refines requirements mid-prompt).
+
+**Build:** Clean — 0 lint warnings, typecheck passes, production build succeeds.
+
 ### 2026-03-08 — Round 107: Test Fix (edge-conflicting-advice) + Pool 90→92
 
 **Eval results: 96% (5/6 passed, 330/345 points) → 100% after fix — DeepSeek Chat**
