@@ -956,7 +956,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         store.updateNodeData(nodeId, { executionResult: content, executionStatus: 'success' });
         store.addToast(`Downloaded ${d.outputFormatLabel || d.outputFormat.toUpperCase()} file`, 'success');
         return;
-      } catch (_err) {
+      } catch {
         store.updateNodeData(nodeId, { executionStatus: 'error', executionError: 'Failed to export file.' });
         return;
       }
@@ -2362,7 +2362,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         // Layer 5: Reflect on chat-only interaction too
         runReflection(curMode, prompt, result.message);
       }
-    } catch (_err) {
+    } catch {
       // Layer 4: Track error in generation state
       const errMode = store.cidMode;
       sessionGeneration[errMode].errorCount++;

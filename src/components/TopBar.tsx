@@ -42,6 +42,8 @@ export default function TopBar() {
     if (showCIDPanel) lastSeenCount.current = messages.length;
   }, [showCIDPanel, messages.length]);
 
+  // Derive hasUnread from ref — acceptable ref read since it's only updated in effects above
+  // eslint-disable-next-line react-hooks/refs -- lastSeenCount is effect-synchronized, safe to read
   const hasUnread = !showCIDPanel && messages.length > lastSeenCount.current;
 
   const activeCount = nodes.filter((n) => n.data.status === 'active').length;
