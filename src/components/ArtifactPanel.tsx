@@ -424,11 +424,16 @@ export default function ArtifactPanel() {
   const panelRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Sync edit draft when node/tab/mode changes
+  // Sync edit draft when source content, node, tab, or mode changes
   const currentText = node
     ? (artifactPanelTab === 'result' ? (node.data.executionResult || '') : (node.data.content || ''))
     : '';
-  useEffect(() => { setEditDraft(currentText); }, [currentText, artifactPanelMode, artifactPanelTab]);
+  const prevSyncKey = useRef('');
+  const syncKey = `${activeArtifactNodeId}:${artifactPanelTab}:${artifactPanelMode}:${currentText}`;
+  if (syncKey !== prevSyncKey.current) {
+    prevSyncKey.current = syncKey;
+    if (editDraft !== currentText) setEditDraft(currentText);
+  }
 
   // Keyboard shortcuts: Ctrl+F (find), Ctrl+B/I (format), Escape (close fullscreen)
   useEffect(() => {
