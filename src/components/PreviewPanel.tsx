@@ -100,6 +100,7 @@ export default function PreviewPanel() {
       // Execute nodes in topological order
       const order = getExecutionOrder();
       const trace: string[] = [];
+      const errors: string[] = [];
 
       for (const nodeId of order) {
         const node = useLifecycleStore.getState().nodes.find(n => n.id === nodeId);
@@ -116,18 +117,33 @@ export default function PreviewPanel() {
 
         try {
           await executeNode(nodeId);
-        } catch {
-          // Node execution handles its own errors
+          // Check if this node errored
+          const updated = useLifecycleStore.getState().nodes.find(n => n.id === nodeId);
+          if (updated?.data.executionStatus === 'error') {
+            errors.push(`${node.data.label}: ${updated.data.executionError || 'failed'}`);
+          }
+        } catch (e) {
+          errors.push(`${node.data.label}: ${e instanceof Error ? e.message : 'failed'}`);
         }
       }
 
       setActiveNodeId(null);
 
-      // Get the output node's result
-      const finalOutput = useLifecycleStore.getState().nodes.find(n => n.id === outputNode?.id);
-      const botResponse = finalOutput?.data.executionResult
-        || finalOutput?.data.content
-        || 'No output generated. Make sure your workflow has an output node with content.';
+      // Find the last node in execution order that has a result (prefer output category)
+      const store = useLifecycleStore.getState();
+      const outputNodes = order
+        .map(id => store.nodes.find(n => n.id === id))
+        .filter(Boolean)
+        .reverse();
+      const finalOutput = outputNodes.find(n => n!.data.category === 'output' && n!.data.executionResult)
+        || outputNodes.find(n => n!.data.executionResult);
+      let botResponse = finalOutput?.data.executionResult || '';
+
+      if (!botResponse && errors.length > 0) {
+        botResponse = `Workflow execution had errors:\n${errors.map(e => `- ${e}`).join('\n')}`;
+      } else if (!botResponse) {
+        botResponse = 'No output generated. Check that your workflow nodes are connected and an API key is configured.';
+      }
 
       const botMsg: PreviewMessage = {
         id: `prev-${Date.now()}-bot`,

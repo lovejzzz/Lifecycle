@@ -3103,18 +3103,17 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       'Chatbot': {
         nodes: [
           { label: 'User Message', category: 'input', description: 'Incoming user query or command' },
-          { label: 'Intent Detection', category: 'cid', description: 'Classify intent: question, command, smalltalk, escalation' },
-          { label: 'Context Retrieval', category: 'state', description: 'Fetch conversation history, user profile, and knowledge base docs' },
-          { label: 'Response Generation', category: 'cid', description: 'LLM generates response using intent + context' },
-          { label: 'Safety Filter', category: 'policy', description: 'Check for harmful content, PII leaks, hallucinations' },
-          { label: 'Fallback & Escalation', category: 'action', description: 'Route to human agent if confidence is low or user requests it' },
-          { label: 'Reply', category: 'output', description: 'Deliver response to user via chat interface' },
+          { label: 'Intent Detection', category: 'cid', description: 'Classify the user message into one of: greeting, question, command, feedback, escalation. Return ONLY the classified intent and a one-line summary.' },
+          { label: 'Context & Knowledge', category: 'state', description: 'Organize the conversation context. Summarize what the user wants based on the detected intent and any prior context. List key topics mentioned.' },
+          { label: 'Response Generation', category: 'cid', description: 'Generate a helpful, friendly chatbot response to the user based on the intent classification and context summary. Be conversational and concise. Respond directly to what the user said.' },
+          { label: 'Safety Check', category: 'policy', description: 'Review the generated response. Check for: harmful content, PII exposure, hallucinated facts, off-topic drift. If the response is safe, pass it through unchanged. If not, flag the issue.' },
+          { label: 'Fallback Handler', category: 'action', description: 'If the safety check flagged issues or the intent was unclear, generate a safe fallback response asking for clarification. Otherwise pass through the approved response unchanged.' },
+          { label: 'Bot Reply', category: 'output', description: 'Format and deliver the final chatbot response to the user. Pass through the response content from upstream as the final output.' },
         ],
         edges: [
           { from: 0, to: 1, label: 'triggers' }, { from: 1, to: 2, label: 'drives' },
           { from: 2, to: 3, label: 'feeds' }, { from: 3, to: 4, label: 'validates' },
-          { from: 4, to: 6, label: 'approves' }, { from: 4, to: 5, label: 'blocks' },
-          { from: 5, to: 6, label: 'outputs' }, { from: 6, to: 0, label: 'refines' },
+          { from: 4, to: 5, label: 'feeds' }, { from: 5, to: 6, label: 'outputs' },
         ],
       },
     };
