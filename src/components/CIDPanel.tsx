@@ -1279,7 +1279,7 @@ export default function CIDPanel() {
           </motion.div>
         )}
 
-        {/* Typing indicator */}
+        {/* Typing indicator — agent-branded with name */}
         {isProcessing && !messages.some(m => m.action === 'thinking' || m.action === 'investigating' || m.action === 'building') && (
           <div className="flex justify-start">
             <div className={`rounded-xl px-3.5 py-2 text-[12px] rounded-bl-sm ${
@@ -1287,10 +1287,15 @@ export default function CIDPanel() {
                 ? 'bg-amber-500/[0.07] border border-amber-500/[0.12]'
                 : 'bg-emerald-500/[0.07] border border-emerald-500/[0.12]'
             }`}>
-              <div className="flex items-center gap-1.5">
-                <span className={`w-1.5 h-1.5 rounded-full animate-bounce ${isAmber ? 'bg-amber-400/60' : 'bg-emerald-400/60'}`} style={{ animationDelay: '0ms' }} />
-                <span className={`w-1.5 h-1.5 rounded-full animate-bounce ${isAmber ? 'bg-amber-400/60' : 'bg-emerald-400/60'}`} style={{ animationDelay: '150ms' }} />
-                <span className={`w-1.5 h-1.5 rounded-full animate-bounce ${isAmber ? 'bg-amber-400/60' : 'bg-emerald-400/60'}`} style={{ animationDelay: '300ms' }} />
+              <div className="flex items-center gap-2">
+                <span className={`text-[10px] font-medium ${isAmber ? 'text-amber-400/70' : 'text-emerald-400/70'}`}>
+                  {isAmber ? 'Poirot' : 'Rowan'}
+                </span>
+                <div className="flex items-center gap-1">
+                  <span className={`w-1.5 h-1.5 rounded-full animate-bounce ${isAmber ? 'bg-amber-400/60' : 'bg-emerald-400/60'}`} style={{ animationDelay: '0ms' }} />
+                  <span className={`w-1.5 h-1.5 rounded-full animate-bounce ${isAmber ? 'bg-amber-400/60' : 'bg-emerald-400/60'}`} style={{ animationDelay: '150ms' }} />
+                  <span className={`w-1.5 h-1.5 rounded-full animate-bounce ${isAmber ? 'bg-amber-400/60' : 'bg-emerald-400/60'}`} style={{ animationDelay: '300ms' }} />
+                </div>
               </div>
             </div>
           </div>

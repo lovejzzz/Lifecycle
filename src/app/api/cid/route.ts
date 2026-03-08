@@ -364,6 +364,48 @@ export async function POST(req: NextRequest) {
         if (mods.remove_edges && !Array.isArray(mods.remove_edges)) mods.remove_edges = [];
       }
 
+      // ── Pre-flight Workflow Validation (inspired by LangGraph's compile step) ──
+      // Catch structural issues the LLM missed and auto-repair before returning
+      if (parsed.workflow?.nodes?.length > 0) {
+        const nodes = parsed.workflow.nodes as Array<{ category: string; label: string; content?: string; [k: string]: unknown }>;
+        const edges = parsed.workflow.edges as Array<{ from: number; to: number; label: string }>;
+
+        // 1. Ensure output bookend — last node must be "output"
+        if (nodes.length > 1 && nodes[nodes.length - 1].category !== 'output') {
+          const outputIdx = nodes.findIndex(n => n.category === 'output');
+          if (outputIdx >= 0 && outputIdx < nodes.length - 1) {
+            // Move output to end
+            const [outputNode] = nodes.splice(outputIdx, 1);
+            nodes.push(outputNode);
+            // Remap edges
+            const remap = (idx: number) => idx === outputIdx ? nodes.length - 1 : idx > outputIdx ? idx - 1 : idx;
+            parsed.workflow.edges = edges.map(e => ({ from: remap(e.from), to: remap(e.to), label: e.label }));
+          }
+        }
+
+        // 2. Detect orphan nodes (no incoming or outgoing edges) and connect them
+        const connected = new Set<number>();
+        for (const e of parsed.workflow.edges as Array<{ from: number; to: number }>) {
+          connected.add(e.from);
+          connected.add(e.to);
+        }
+        for (let i = 0; i < nodes.length; i++) {
+          if (!connected.has(i) && nodes.length > 1) {
+            // Connect orphan to nearest neighbor
+            const target = i === 0 ? 1 : i - 1;
+            const label = i < target ? 'drives' : 'feeds';
+            (parsed.workflow.edges as Array<{ from: number; to: number; label: string }>).push(
+              { from: Math.min(i, target), to: Math.max(i, target), label }
+            );
+          }
+        }
+
+        // 3. Log validation metrics
+        const edgeCount = (parsed.workflow.edges as unknown[]).length;
+        const isLinear = edgeCount === nodes.length - 1;
+        console.log(`[CID API] Validation: ${nodes.length} nodes, ${edgeCount} edges${isLinear ? ' (linear — no loops/branches)' : ''}`);
+      }
+
       return NextResponse.json({ result: parsed, provider, model });
     } catch {
       return NextResponse.json({ result: { message: text, workflow: null }, provider, model });
