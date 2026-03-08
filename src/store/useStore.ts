@@ -41,6 +41,8 @@ interface LifecycleStore {
   deleteMultiSelected: () => number;
   showCIDPanel: boolean;
   showActivityPanel: boolean;
+  showPreviewPanel: boolean;
+  togglePreviewPanel: () => void;
   isProcessing: boolean;
 
   // Agent mode
@@ -877,6 +879,7 @@ export const useLifecycleStore = create<LifecycleStore>((set, get) => ({
   selectedNodeId: null,
   showCIDPanel: true,
   showActivityPanel: false,
+  showPreviewPanel: false,
   isProcessing: false,
 
   // Fit view trigger
@@ -1540,6 +1543,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
 
   toggleCIDPanel: () => set((s) => ({ showCIDPanel: !s.showCIDPanel })),
   toggleActivityPanel: () => set((s) => ({ showActivityPanel: !s.showActivityPanel })),
+  togglePreviewPanel: () => set((s) => ({ showPreviewPanel: !s.showPreviewPanel })),
 
   addEvent: (event) =>
     set((s) => {
@@ -3094,6 +3098,23 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
           { from: 0, to: 4, label: 'drives' }, { from: 2, to: 3, label: 'triggers' },
           { from: 3, to: 5, label: 'approves' }, { from: 4, to: 5, label: 'feeds' },
           { from: 5, to: 6, label: 'triggers' },
+        ],
+      },
+      'Chatbot': {
+        nodes: [
+          { label: 'User Message', category: 'input', description: 'Incoming user query or command' },
+          { label: 'Intent Detection', category: 'cid', description: 'Classify intent: question, command, smalltalk, escalation' },
+          { label: 'Context Retrieval', category: 'state', description: 'Fetch conversation history, user profile, and knowledge base docs' },
+          { label: 'Response Generation', category: 'cid', description: 'LLM generates response using intent + context' },
+          { label: 'Safety Filter', category: 'policy', description: 'Check for harmful content, PII leaks, hallucinations' },
+          { label: 'Fallback & Escalation', category: 'action', description: 'Route to human agent if confidence is low or user requests it' },
+          { label: 'Reply', category: 'output', description: 'Deliver response to user via chat interface' },
+        ],
+        edges: [
+          { from: 0, to: 1, label: 'triggers' }, { from: 1, to: 2, label: 'drives' },
+          { from: 2, to: 3, label: 'feeds' }, { from: 3, to: 4, label: 'validates' },
+          { from: 4, to: 6, label: 'approves' }, { from: 4, to: 5, label: 'blocks' },
+          { from: 5, to: 6, label: 'outputs' }, { from: 6, to: 0, label: 'refines' },
         ],
       },
     };

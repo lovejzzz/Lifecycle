@@ -752,6 +752,7 @@ function CanvasInner() {
                   { label: 'Content Pipeline', type: 'template' },
                   { label: 'Incident Response', type: 'template' },
                   { label: 'Product Launch', type: 'template' },
+                  { label: 'Chatbot', type: 'template' },
                 ].map(({ label }) => (
                   <button
                     key={label}

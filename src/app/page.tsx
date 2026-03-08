@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, CheckCircle2, Info, AlertTriangle } from 'lucide-react';
 import TopBar from '@/components/TopBar';
 import Canvas from '@/components/Canvas';
+import PreviewPanel from '@/components/PreviewPanel';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { useLifecycleStore } from '@/store/useStore';
 
@@ -55,6 +56,7 @@ export default function Home() {
         <div className="relative z-10 flex flex-col h-full w-full">
           <TopBar />
           <Canvas />
+          <PreviewPanel />
         </div>
         <Toasts />
       </div>

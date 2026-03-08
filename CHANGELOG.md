@@ -1,5 +1,23 @@
 # Changelog
 
+### 2026-03-08 — Preview Panel + Chat Auto-Scroll Fix
+
+**Preview Panel** — new right-side docked panel for testing workflows as a chatbot:
+- Toggle from TopBar "Preview" button (violet accent when active)
+- Sends user message to workflow's input node, executes all nodes in topological order, shows output node's result
+- Real-time node execution indicator (shows which node is currently running)
+- Node trace breadcrumbs on each response (Input > Intent > Context > Response > Output)
+- Ephemeral test conversations with reset button
+- Empty state guides: shows input/output node names, prompts workflow creation if < 2 nodes
+- Model info and node/edge count in footer
+
+**Chat Auto-Scroll Fix** — CIDPanel now properly auto-scrolls:
+- Tracks message count changes to detect new messages (not just near-bottom check)
+- Force-scrolls on any new message arrival (user or CID)
+- Increased near-bottom threshold from 80px to 150px for more reliable detection
+
+**Chatbot Template** added to canvas landing page (from previous commit).
+
 ### 2026-03-08 — ArtifactPanel: Edit & Sync Hardened + Eval Coverage
 
 **Edit/Sync fixes:**

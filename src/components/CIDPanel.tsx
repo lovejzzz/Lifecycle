@@ -192,20 +192,27 @@ export default function CIDPanel() {
   const agent = getAgent(cidMode);
   const isAmber = agent.accent === 'amber';
 
-  // Track last message content for scroll trigger during streaming/building updates
-  const lastMsgContent = messages.length > 0 ? messages[messages.length - 1].content : '';
+  // Auto-scroll: always scroll on new message count or when last message updates (streaming)
+  const msgCount = messages.length;
+  const lastMsgContent = msgCount > 0 ? messages[msgCount - 1].content : '';
+  const lastMsgRole = msgCount > 0 ? messages[msgCount - 1].role : '';
+  const prevMsgCountRef = useRef(0);
   useEffect(() => {
     const container = messagesContainerRef.current;
+    const isNewMessage = msgCount > prevMsgCountRef.current;
+    prevMsgCountRef.current = msgCount;
+
+    // Force scroll when: new message arrives, user just sent a message, or CID just responded
+    const forceScroll = isNewMessage || lastMsgRole === 'user' || lastMsgRole === 'cid';
     if (!container) { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); return; }
-    // Only auto-scroll if user is near the bottom
-    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 80;
-    if (isNearBottom) {
+    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 150;
+    if (forceScroll || isNearBottom) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       setShowScrollDown(false);
     } else {
       setShowScrollDown(true);
     }
-  }, [messages, lastMsgContent]);
+  }, [msgCount, lastMsgContent, lastMsgRole]);
 
   // Close model picker on click outside
   useEffect(() => {

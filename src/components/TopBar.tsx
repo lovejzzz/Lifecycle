@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Bot, Activity, Layers, Circle, Plus, Undo2, Redo2, Search,
-  Download, Upload, Heart, FilePlus2,
+  Download, Upload, Heart, FilePlus2, Play,
 } from 'lucide-react';
 import { useLifecycleStore } from '@/store/useStore';
 import type { NodeCategory } from '@/lib/types';
@@ -27,7 +27,7 @@ const BUILT_IN_TYPES: { category: NodeCategory; label: string }[] = [
 ];
 
 export default function TopBar() {
-  const { nodes, toggleCIDPanel, toggleActivityPanel, showCIDPanel, showActivityPanel, createNewNode, undo, redo, history, future, cidMode, exportWorkflow, importWorkflow, newProject, messages, getHealthScore } = useLifecycleStore();
+  const { nodes, toggleCIDPanel, toggleActivityPanel, togglePreviewPanel, showCIDPanel, showActivityPanel, showPreviewPanel, createNewNode, undo, redo, history, future, cidMode, exportWorkflow, importWorkflow, newProject, messages, getHealthScore } = useLifecycleStore();
   const agent = getAgent(cidMode);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showAddMenu, setShowAddMenu] = useState(false);
@@ -242,17 +242,30 @@ export default function TopBar() {
       {/* Right - Toggles */}
       <div className="flex items-center gap-2">
         {mounted && nodes.length > 0 && (
-          <button
-            onClick={toggleActivityPanel}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
-              showActivityPanel
-                ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
-                : 'bg-white/[0.04] text-white/40 border border-white/[0.06] hover:text-white/60'
-            }`}
-          >
-            <Activity size={12} />
-            <span className="hidden sm:inline">Activity</span>
-          </button>
+          <>
+            <button
+              onClick={togglePreviewPanel}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                showPreviewPanel
+                  ? 'bg-violet-500/10 text-violet-400 border border-violet-500/20'
+                  : 'bg-white/[0.04] text-white/40 border border-white/[0.06] hover:text-white/60'
+              }`}
+            >
+              <Play size={12} />
+              <span className="hidden sm:inline">Preview</span>
+            </button>
+            <button
+              onClick={toggleActivityPanel}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                showActivityPanel
+                  ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
+                  : 'bg-white/[0.04] text-white/40 border border-white/[0.06] hover:text-white/60'
+              }`}
+            >
+              <Activity size={12} />
+              <span className="hidden sm:inline">Activity</span>
+            </button>
+          </>
         )}
         <button
           onClick={toggleCIDPanel}
