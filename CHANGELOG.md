@@ -1,5 +1,26 @@
 # Changelog
 
+### 2026-03-08 — Round 73: Rowan Content Depth Breakthrough (Eval-Driven)
+
+**Root cause found:** Eval script had its own stripped-down system prompts that were missing all improvements from prompts.ts. Synced eval prompts with production prompts — this was the unlock.
+
+**Prompt engineering (3 fixes):**
+- Rowan content template: gave per-category content structure (trigger: payload/config/webhook, action: numbered steps/tools/owner, review: criteria/SLA, etc.). Result: Rowan content avg jumped from 123c → 631c on code review workflow.
+- "informs" label restriction: changed from "optional context" to "ONLY for truly optional/supplementary context, NEVER for sequential steps." Result: zero "informs" labels on sequential flows.
+- Category intelligence: "Any step where a human decides approve/reject/merge MUST use category review, not action." Result: code review workflow now correctly has a `review` node.
+- Rowan advice depth: fixed terse advice responses (63 chars) — Rowan is now terse for workflow messages but substantive for advice.
+
+**Eval results — before vs after:**
+- eng-code-review: 83% → 100% (content 123c → 631c, gained review node)
+- pm-feature-ship: 100% with avg 561c, 2 review gates, test node, policy node
+- pm-user-research: 100% with avg 1213c (Poirot)
+- Overall: 99% (355/360)
+
+**Eval harness:**
+- Synced eval system prompts with production prompts.ts (was using outdated stripped-down versions)
+- Added 2 new test cases: GDPR compliance workflow, terse prompt ("Build me a CI/CD pipeline")
+- Pool grown to 32 tests
+
 ### 2026-03-08 — Round 72: Agent Quality Refinement (Eval-Driven)
 
 **Prompt engineering (4 improvements, all measured by eval):**
