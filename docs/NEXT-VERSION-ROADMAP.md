@@ -10,7 +10,7 @@ Each item includes specific files, implementation steps, acceptance criteria, an
 ## Backlog
 
 ### 1. Self-Correcting Retry Loop
-**Status:** [ ] Not started
+**Status:** [x] Done
 **Version target:** 1.1.0
 **Inspiration:** LangGraph's Generate → Check → Reflect → Regenerate pattern
 **Complexity:** Medium (2-3 hours)
@@ -51,7 +51,7 @@ Each item includes specific files, implementation steps, acceptance criteria, an
 ---
 
 ### 2. Structured Agent Goal Declarations
-**Status:** [ ] Not started
+**Status:** [x] Done
 **Version target:** 1.2.0
 **Inspiration:** CrewAI's role + goal + backstory + tools character sheet
 **Complexity:** Medium (1-2 hours)

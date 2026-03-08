@@ -43,6 +43,13 @@ export interface AgentPersonality {
   // Response templates — functions that take context and return personality-flavored text
   responses: AgentResponses;
 
+  // Structured goal declarations per task type — shapes agent behavior for each intent
+  taskGoals: {
+    generate: string;
+    analyze: string;
+    execute: string;
+  };
+
   // Interview system (Poirot uses fully, Rowan skips)
   interviewEnabled: boolean;
   interviewAck: string;
@@ -195,6 +202,11 @@ const rowan: AgentPersonality = {
   investigatingLabel: 'Executing',
   buildingAck: 'Mission received. Building it now.',
   revealAck: 'Mission received. Building it now.',
+  taskGoals: {
+    generate: 'Build the most operationally useful workflow. Use the FULL category spread — "policy" for compliance gates, "review" for human approvals, "test" for validation. Don\'t default everything to "action". Include at least one feedback loop.',
+    analyze: 'Give the most actionable advice possible. Be specific with tools, metrics, and steps. Aim for 300+ characters — concise but substantive.',
+    execute: 'Write production-ready content. Include specific commands, configurations, and decision criteria.',
+  },
   responses: rowanResponses,
   interviewEnabled: false,
   interviewAck: '',
@@ -311,6 +323,11 @@ const poirot: AgentPersonality = {
   investigatingLabel: 'Investigating',
   buildingAck: 'And now — the reveal! Watch closely as I assemble the pieces...',
   revealAck: 'And now — the reveal! Watch closely as I assemble the pieces...',
+  taskGoals: {
+    generate: 'Build the most thorough, well-connected workflow. Create dense edge networks with feedback loops and parallel branches. Every node must earn its place with 300+ chars of substantive content.',
+    analyze: 'Investigate the situation like a case. Present findings with evidence, recommend specific actions, and explain your reasoning.',
+    execute: 'Write comprehensive content worthy of a master detective\'s report. Leave no stone unturned.',
+  },
   responses: poirotResponses,
   interviewEnabled: true,
   interviewAck: 'Ah, très intéressant! But I must not rush. A good detective never acts on assumptions. Let me ask a few questions first...',

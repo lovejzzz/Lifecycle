@@ -237,22 +237,30 @@ function MarkdownToolbar({
     });
   };
 
-  const btn = "p-1 rounded hover:bg-white/[0.08] text-white/30 hover:text-white/60 transition-colors";
+  const [flashBtn, setFlashBtn] = useState<string | null>(null);
+  const flash = (id: string, action: () => void) => {
+    action();
+    setFlashBtn(id);
+    setTimeout(() => setFlashBtn(null), 150);
+  };
+
+  const btn = (id: string) =>
+    `p-1 rounded transition-colors ${flashBtn === id ? 'bg-white/[0.15] text-white/80' : 'hover:bg-white/[0.08] text-white/30 hover:text-white/60'}`;
   const sep = "w-px h-3.5 bg-white/[0.06] mx-0.5";
 
   return (
     <div className="flex items-center gap-0.5 px-1 py-1 border-b border-white/[0.04] bg-white/[0.02]">
-      <button className={btn} onClick={() => wrap('**', '**')} title="Bold (Ctrl+B)"><Bold size={11} /></button>
-      <button className={btn} onClick={() => wrap('*', '*')} title="Italic (Ctrl+I)"><Italic size={11} /></button>
-      <button className={btn} onClick={() => wrap('`', '`')} title="Inline Code"><Code size={11} /></button>
+      <button className={btn('bold')} onClick={() => flash('bold', () => wrap('**', '**'))} title="Bold (Ctrl+B)"><Bold size={11} /></button>
+      <button className={btn('italic')} onClick={() => flash('italic', () => wrap('*', '*'))} title="Italic (Ctrl+I)"><Italic size={11} /></button>
+      <button className={btn('code')} onClick={() => flash('code', () => wrap('`', '`'))} title="Inline Code"><Code size={11} /></button>
       <div className={sep} />
-      <button className={btn} onClick={() => insertLine('## ')} title="Heading"><Heading2 size={11} /></button>
-      <button className={btn} onClick={() => insertLine('- ')} title="Bullet List"><List size={11} /></button>
-      <button className={btn} onClick={() => insertLine('1. ')} title="Numbered List"><ListOrdered size={11} /></button>
-      <button className={btn} onClick={() => insertLine('> ')} title="Blockquote"><Quote size={11} /></button>
+      <button className={btn('h2')} onClick={() => flash('h2', () => insertLine('## '))} title="Heading"><Heading2 size={11} /></button>
+      <button className={btn('ul')} onClick={() => flash('ul', () => insertLine('- '))} title="Bullet List"><List size={11} /></button>
+      <button className={btn('ol')} onClick={() => flash('ol', () => insertLine('1. '))} title="Numbered List"><ListOrdered size={11} /></button>
+      <button className={btn('quote')} onClick={() => flash('quote', () => insertLine('> '))} title="Blockquote"><Quote size={11} /></button>
       <div className={sep} />
-      <button className={btn} onClick={() => wrap('\n```\n', '\n```\n')} title="Code Block"><Code size={11} className="text-emerald-400/50" /></button>
-      <button className={btn} onClick={() => insertLine('---\n')} title="Horizontal Rule"><Minus size={11} /></button>
+      <button className={btn('codeblock')} onClick={() => flash('codeblock', () => wrap('\n```\n', '\n```\n'))} title="Code Block"><Code size={11} className="text-emerald-400/50" /></button>
+      <button className={btn('hr')} onClick={() => flash('hr', () => insertLine('---\n'))} title="Horizontal Rule"><Minus size={11} /></button>
     </div>
   );
 }
@@ -338,13 +346,17 @@ function FindReplace({
           onChange={(e) => { setQuery(e.target.value); setMatchIdx(0); }}
           onKeyDown={(e) => {
             if (e.key === 'Escape') onClose();
-            if (e.key === 'Enter') setMatchIdx(i => (i + 1) % Math.max(1, matches.length));
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); setMatchIdx(i => (i + 1) % Math.max(1, matches.length)); }
+            if (e.key === 'Enter' && e.shiftKey) { e.preventDefault(); setMatchIdx(i => (i - 1 + matches.length) % Math.max(1, matches.length)); }
+            // Ctrl/Cmd+G: next match, Shift+Ctrl/Cmd+G: prev match
+            if ((e.metaKey || e.ctrlKey) && e.key === 'g' && !e.shiftKey) { e.preventDefault(); setMatchIdx(i => (i + 1) % Math.max(1, matches.length)); }
+            if ((e.metaKey || e.ctrlKey) && e.key === 'g' && e.shiftKey) { e.preventDefault(); setMatchIdx(i => (i - 1 + matches.length) % Math.max(1, matches.length)); }
           }}
-          placeholder="Find..."
+          placeholder="Find... (Enter/Shift+Enter to navigate)"
           className="bg-transparent text-[11px] text-white/70 placeholder:text-white/20 outline-none flex-1"
         />
-        <span className="text-[9px] text-white/25 tabular-nums w-12 text-right">
-          {query ? `${matches.length > 0 ? (matchIdx % matches.length) + 1 : 0}/${matches.length}` : ''}
+        <span className={`text-[9px] tabular-nums w-14 text-right ${query && matches.length === 0 ? 'text-red-400/60' : 'text-white/30'}`}>
+          {query ? `${matches.length > 0 ? (matchIdx % matches.length) + 1 : 0} of ${matches.length}` : ''}
         </span>
         <button onClick={() => setShowReplace(!showReplace)} className="p-0.5 rounded hover:bg-white/[0.06] text-white/25 hover:text-white/50 transition-colors" title="Toggle Replace">
           <Replace size={11} />
@@ -437,14 +449,24 @@ export default function ArtifactPanel() {
     }
   }, [activeArtifactNodeId, artifactPanelTab, artifactPanelMode, currentText, editDraft]);
 
-  // Keyboard shortcuts: Ctrl+F (find), Ctrl+B/I (format), Escape (close fullscreen)
+  // Ref to allow save shortcut to call handleSave without stale closure
+  const saveRef = useRef<(() => void) | null>(null);
+
+  // Keyboard shortcuts: Ctrl+F (find), Ctrl+B/I (format), Ctrl+S (save), Escape (close fullscreen)
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (!activeArtifactNodeId) return;
-      // Ctrl/Cmd+F: Toggle find/replace
-      if ((e.metaKey || e.ctrlKey) && e.key === 'f' && panelRef.current?.contains(document.activeElement as Node | null)) {
+      const isInPanel = panelRef.current?.contains(document.activeElement as globalThis.Node | null);
+
+      // Ctrl/Cmd+F: Toggle find/replace (when focused in panel)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'f' && isInPanel) {
         e.preventDefault();
         setShowFindReplace(v => !v);
+      }
+      // Ctrl/Cmd+S: Save (in edit or split mode, when panel is focused)
+      if ((e.metaKey || e.ctrlKey) && e.key === 's' && isInPanel && (artifactPanelMode === 'edit' || isSplitView)) {
+        e.preventDefault();
+        saveRef.current?.();
       }
       // Escape: close fullscreen first, then find, then panel
       if (e.key === 'Escape') {
@@ -472,7 +494,7 @@ export default function ArtifactPanel() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [activeArtifactNodeId, showFindReplace, isFullScreen, artifactPanelMode, editDraft]);
+  }, [activeArtifactNodeId, showFindReplace, isFullScreen, artifactPanelMode, isSplitView, editDraft]);
 
   // Handle text selection for AI rewrite
   const handleMouseUp = useCallback(() => {
@@ -539,6 +561,9 @@ export default function ArtifactPanel() {
       for (const d of downstream) updateNodeStatus(d.id, 'stale');
     }
   };
+
+  // Keep save ref current for keyboard shortcut
+  saveRef.current = handleSave;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(activeText);
@@ -777,6 +802,7 @@ export default function ArtifactPanel() {
                 </button>
                 <button
                   onClick={handleSave}
+                  title="Save (Ctrl+S)"
                   className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-medium bg-emerald-500/15 border border-emerald-500/20 text-emerald-400/80 hover:bg-emerald-500/25 transition-colors"
                 >
                   <Save size={10} />

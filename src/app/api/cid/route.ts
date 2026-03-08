@@ -3,14 +3,101 @@ import { NextRequest, NextResponse } from 'next/server';
 // CID API route — uses DeepSeek as primary, OpenRouter as fallback.
 // DeepSeek API is OpenAI-compatible.
 
+// ─── Self-Correcting Retry Loop ──────────────────────────────────────────────
+// Scores a generated workflow for structural quality. Returns a list of issues
+// and a numeric score penalty. If score < -20, a single reflection retry fires.
+
+interface QualityIssue {
+  code: string;
+  message: string;
+  penalty: number;
+}
+
+function validateWorkflowQuality(
+  nodes: Array<{ category: string; content?: string; label?: string }>,
+  edges: Array<{ from: number; to: number; label: string }>,
+): { score: number; issues: QualityIssue[] } {
+  const issues: QualityIssue[] = [];
+
+  // isLinear: edge count === nodes - 1 (no branches/loops)
+  if (nodes.length > 2 && edges.length === nodes.length - 1) {
+    issues.push({
+      code: 'linear-chain',
+      message: `Linear chain detected (${edges.length} edges for ${nodes.length} nodes). Add parallel branches and feedback loops.`,
+      penalty: -20,
+    });
+  }
+
+  // thinContent: any node content < 300 chars
+  for (const n of nodes) {
+    if ((n.content || '').length < 300) {
+      issues.push({
+        code: 'thin-content',
+        message: `Node "${n.label || 'Untitled'}" has thin content (${(n.content || '').length} chars, need 300+). Expand with concrete steps, tools, and criteria.`,
+        penalty: -10,
+      });
+    }
+  }
+
+  // missingBookends: no trigger/input at start or no output at end
+  if (nodes.length > 1) {
+    const firstCat = nodes[0]?.category;
+    const lastCat = nodes[nodes.length - 1]?.category;
+    if (firstCat !== 'trigger' && firstCat !== 'input') {
+      issues.push({
+        code: 'missing-start-bookend',
+        message: `Workflow should start with a "trigger" or "input" node, not "${firstCat}".`,
+        penalty: -30,
+      });
+    }
+    if (lastCat !== 'output') {
+      issues.push({
+        code: 'missing-end-bookend',
+        message: `Workflow should end with an "output" node, not "${lastCat}".`,
+        penalty: -30,
+      });
+    }
+  }
+
+  // orphanNodes: nodes with 0 edges
+  const connectedSet = new Set<number>();
+  for (const e of edges) {
+    connectedSet.add(e.from);
+    connectedSet.add(e.to);
+  }
+  for (let i = 0; i < nodes.length; i++) {
+    if (!connectedSet.has(i) && nodes.length > 1) {
+      issues.push({
+        code: 'orphan-node',
+        message: `Node "${nodes[i].label || 'Untitled'}" (index ${i}) has no connections.`,
+        penalty: -15,
+      });
+    }
+  }
+
+  // noFeedbackLoop: zero backward edges
+  const hasBackwardEdge = edges.some(e => e.from > e.to);
+  if (nodes.length > 3 && !hasBackwardEdge) {
+    issues.push({
+      code: 'no-feedback-loop',
+      message: 'No feedback loops detected. Add at least one backward edge (e.g., review rejection → rework).',
+      penalty: -10,
+    });
+  }
+
+  const score = issues.reduce((s, i) => s + i.penalty, 0);
+  return { score, issues };
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { systemPrompt, messages, model: requestedModel, taskType } = body as {
+    const { systemPrompt, messages, model: requestedModel, taskType, _retryCount } = body as {
       systemPrompt: string;
       messages: Array<{ role: 'user' | 'assistant'; content: string }>;
       model?: string;
       taskType?: 'generate' | 'execute' | 'analyze';
+      _retryCount?: number;
     };
 
     if (!systemPrompt || !messages || !Array.isArray(messages) || messages.length === 0) {
@@ -404,6 +491,56 @@ export async function POST(req: NextRequest) {
         const edgeCount = (parsed.workflow.edges as unknown[]).length;
         const isLinear = edgeCount === nodes.length - 1;
         console.log(`[CID API] Validation: ${nodes.length} nodes, ${edgeCount} edges${isLinear ? ' (linear — no loops/branches)' : ''}`);
+
+        // 4. Self-Correcting Retry Loop — score quality and trigger reflection if needed
+        //    Bounded to exactly 1 retry (no infinite loops). Only for generate tasks.
+        if ((_retryCount ?? 0) < 1 && taskType === 'generate') {
+          const qualityResult = validateWorkflowQuality(
+            nodes as Array<{ category: string; content?: string; label?: string }>,
+            parsed.workflow.edges as Array<{ from: number; to: number; label: string }>,
+          );
+
+          if (qualityResult.score < -20) {
+            const issueMessages = qualityResult.issues.map(i => `- [${i.code}] ${i.message}`);
+            console.log(`[CID API] Reflection retry triggered: ${qualityResult.issues.length} issues (score: ${qualityResult.score})`);
+
+            const reflectionPrompt = `Your workflow had these quality issues:\n${issueMessages.join('\n')}\n\nFix them and return the corrected JSON. Keep the same overall structure but:\n1. Add parallel branches and feedback loops (more edges than nodes-1)\n2. Expand thin node content to 300+ characters with concrete steps, tools, criteria\n3. Ensure trigger/input at start and output at end\n4. Connect any orphan nodes`;
+
+            // Re-call the same endpoint with reflection appended
+            const retryMessages = [
+              ...messages,
+              { role: 'assistant' as const, content: text },
+              { role: 'user' as const, content: reflectionPrompt },
+            ];
+
+            const retryBody = JSON.stringify({
+              systemPrompt,
+              messages: retryMessages,
+              model: requestedModel,
+              taskType,
+              _retryCount: 1,
+            });
+
+            try {
+              const selfUrl = req.nextUrl.clone();
+              const retryResponse = await fetch(selfUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: retryBody,
+                signal: AbortSignal.timeout(timeoutMs),
+              });
+
+              if (retryResponse.ok) {
+                const retryData = await retryResponse.json();
+                console.log(`[CID API] Reflection retry succeeded — returning corrected workflow`);
+                return NextResponse.json(retryData);
+              }
+            } catch (retryErr) {
+              console.log(`[CID API] Reflection retry failed, returning original:`, retryErr instanceof Error ? retryErr.message : 'unknown');
+            }
+            // If retry fails, fall through and return original result
+          }
+        }
       }
 
       return NextResponse.json({ result: parsed, provider, model });

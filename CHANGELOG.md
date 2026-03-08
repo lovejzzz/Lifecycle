@@ -1,5 +1,26 @@
 # Changelog
 
+### 2026-03-08 — Self-Correcting Retry Loop + Agent Goal Declarations + ArtifactPanel Polish
+
+**Roadmap Item 1: Self-Correcting Retry Loop** (v1.1.0) — LangGraph-inspired generate-check-reflect pattern:
+- `validateWorkflowQuality()` scores workflows on 5 criteria: linear chains (-20), thin content <300c (-10/node), missing bookends (-30), orphan nodes (-15/each), no feedback loops (-10)
+- If score < -20 on `generate` tasks, fires a single reflection retry with issue-specific fix instructions
+- Bounded to exactly 1 retry via `_retryCount` in request body (no cost explosion)
+- Reflection prompt tells LLM exactly what to fix: add branches, expand content, connect orphans
+- Console logs: `[CID API] Reflection retry triggered: N issues (score: X)`
+
+**Roadmap Item 2: Structured Agent Goal Declarations** (v1.2.0) — CrewAI-inspired task-specific goals:
+- Added `taskGoals` to `AgentPersonality` interface with `generate`, `analyze`, `execute` goals
+- Rowan: "Use the FULL category spread — policy for compliance, review for approvals, test for validation"
+- Poirot: "Build the most thorough, well-connected workflow with dense edge networks"
+- Goals injected into system prompt via `compilePersonalityPrompt()` as `CURRENT GOAL (taskType): ...`
+- `taskType` added to `GenerationContext` and set before prompt compilation in `sendMessage` and `chatWithCID`
+
+**ArtifactPanel Polish** — 3 targeted UX improvements:
+- **Ctrl+S save shortcut**: Save from edit or split mode with Ctrl/Cmd+S. Save buttons show shortcut hint in tooltip.
+- **Find & Replace navigation**: Shift+Enter for previous match, Ctrl+G / Shift+Ctrl+G for next/prev. "No matches" shown in red. Match counter widened for readability.
+- **Toolbar click feedback**: Markdown toolbar buttons flash brighter on click (150ms active state) for clear visual confirmation.
+
 ### 2026-03-08 — Preview Panel + Chat Auto-Scroll Fix
 
 **Preview Panel** — new right-side docked panel for testing workflows as a chatbot:

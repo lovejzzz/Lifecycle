@@ -328,6 +328,12 @@ export function compilePersonalityPrompt(
   // Layer 5: Growth Awareness (from Reflection) — METACOGNITION and self-reorganization
   const growthBlock = compileGrowthAwareness(layers);
 
+  // Task-specific goal declaration from agent config
+  const taskType = layers.generation.context.taskType;
+  const goalBlock = taskType && agent.taskGoals?.[taskType]
+    ? `\nCURRENT GOAL (${taskType}): ${agent.taskGoals[taskType]}`
+    : '';
+
   return `${lensBlock}
 
 ${tensionBlock}
@@ -336,6 +342,7 @@ ${NODE_CONTENT_GUIDE}
 ${patternsBlock}
 ${expressionBlock}
 ${growthBlock}
+${goalBlock}
 
 - IMPORTANT: When the user asks "what should we fix?", "what should I look at?", "what's wrong?", "how should I...", or any diagnostic/advice question, give ADVICE (workflow:null). Only build when explicitly asked to CREATE/BUILD/DESIGN/MAKE something.`;
 }

@@ -126,6 +126,7 @@ export interface GenerationContext {
   canvasState: 'empty' | 'sparse' | 'moderate' | 'dense';
   sessionDepth: 'fresh' | 'warming-up' | 'deep-flow' | 'marathon';
   conversationMomentum: 'building' | 'steady' | 'stuck' | 'pivoting';
+  taskType?: 'generate' | 'analyze' | 'execute';
 }
 
 export interface ExpressionModifiers {
@@ -243,6 +244,8 @@ export interface NodeData extends Record<string, unknown> {
   executionResult?: string;  // output from last execution
   executionStatus?: 'idle' | 'running' | 'success' | 'error';  // current run state
   executionError?: string;   // error message if execution failed
+  _executionStartedAt?: number;  // Date.now() when execution began (ephemeral)
+  _executionDurationMs?: number; // total ms elapsed for this node's execution (ephemeral)
   inputValue?: string;       // user-provided input value (text, URL, etc.)
 
   // Output format for download-capable output nodes

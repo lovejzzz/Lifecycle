@@ -1074,23 +1074,24 @@ export const useLifecycleStore = create<LifecycleStore>((set, get) => ({
     cidLog('executeNode', { nodeId, label: node.data.label, category: node.data.category });
 
     const d = node.data;
+    const _execStart = Date.now();
 
     // Passthrough categories: these don't call the AI API, they pass data downstream
     if (d.category === 'input') {
       const value = d.inputValue || d.content || '';
-      store.updateNodeData(nodeId, { executionResult: value, executionStatus: value ? 'success' : 'idle' });
+      store.updateNodeData(nodeId, { executionResult: value, executionStatus: value ? 'success' : 'idle', _executionStartedAt: _execStart, _executionDurationMs: Date.now() - _execStart });
       return;
     }
     if (d.category === 'trigger') {
       // Triggers are initiators — they pass through their description/content as context
       const value = d.content || d.description || `Trigger: ${d.label}`;
-      store.updateNodeData(nodeId, { executionResult: value, executionStatus: 'success' });
+      store.updateNodeData(nodeId, { executionResult: value, executionStatus: 'success', _executionStartedAt: _execStart, _executionDurationMs: Date.now() - _execStart });
       return;
     }
     if (d.category === 'dependency') {
       // Dependencies are prerequisites — pass through as metadata
       const value = d.content || d.description || `Dependency: ${d.label}`;
-      store.updateNodeData(nodeId, { executionResult: value, executionStatus: 'success' });
+      store.updateNodeData(nodeId, { executionResult: value, executionStatus: 'success', _executionStartedAt: _execStart, _executionDurationMs: Date.now() - _execStart });
       return;
     }
 
@@ -1105,7 +1106,7 @@ export const useLifecycleStore = create<LifecycleStore>((set, get) => ({
     if (d.category === 'output' && d.outputFormat) {
       const content = upstreamResults.join('\n\n---\n\n') || d.content || '';
       if (!content) {
-        store.updateNodeData(nodeId, { executionStatus: 'error', executionError: 'No content from upstream nodes to export.' });
+        store.updateNodeData(nodeId, { executionStatus: 'error', executionError: 'No content from upstream nodes to export.', _executionStartedAt: _execStart, _executionDurationMs: Date.now() - _execStart });
         return;
       }
 
@@ -1134,7 +1135,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
             printWindow.document.close();
             setTimeout(() => printWindow.print(), 500);
           }
-          store.updateNodeData(nodeId, { executionResult: content, executionStatus: 'success' });
+          store.updateNodeData(nodeId, { executionResult: content, executionStatus: 'success', _executionStartedAt: _execStart, _executionDurationMs: Date.now() - _execStart });
           store.addToast(`PDF ready — use your browser's print dialog to save as PDF`, 'success');
           return;
         } else if (d.outputFormat === 'html') {
@@ -1154,11 +1155,11 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         a.click();
         URL.revokeObjectURL(url);
 
-        store.updateNodeData(nodeId, { executionResult: content, executionStatus: 'success' });
+        store.updateNodeData(nodeId, { executionResult: content, executionStatus: 'success', _executionStartedAt: _execStart, _executionDurationMs: Date.now() - _execStart });
         store.addToast(`Downloaded ${d.outputFormatLabel || d.outputFormat.toUpperCase()} file`, 'success');
         return;
       } catch {
-        store.updateNodeData(nodeId, { executionStatus: 'error', executionError: 'Failed to export file.' });
+        store.updateNodeData(nodeId, { executionStatus: 'error', executionError: 'Failed to export file.', _executionStartedAt: _execStart, _executionDurationMs: Date.now() - _execStart });
         return;
       }
     }
@@ -1170,7 +1171,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       return src?.data.executionResult && src.data.executionResult !== src.data.content;
     });
     if (d.content && d.content.length > 50 && !hasUpstreamExecResults && !d.aiPrompt) {
-      store.updateNodeData(nodeId, { executionResult: d.content, executionStatus: 'success' });
+      store.updateNodeData(nodeId, { executionResult: d.content, executionStatus: 'success', _executionStartedAt: _execStart, _executionDurationMs: Date.now() - _execStart });
       return;
     }
 
@@ -1197,7 +1198,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     // If no prompt could be generated, pass through upstream content
     if (!autoPrompt) {
       const passthrough = upstreamResults.join('\n\n---\n\n') || d.content || '';
-      store.updateNodeData(nodeId, { executionResult: passthrough, executionStatus: passthrough ? 'success' : 'idle' });
+      store.updateNodeData(nodeId, { executionResult: passthrough, executionStatus: passthrough ? 'success' : 'idle', _executionStartedAt: _execStart, _executionDurationMs: Date.now() - _execStart });
       return;
     }
 
@@ -1205,7 +1206,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       ? `Input from upstream nodes:\n\n${upstreamResults.join('\n\n---\n\n')}`
       : d.content || 'No input provided.';
 
-    store.updateNodeData(nodeId, { executionStatus: 'running', executionError: undefined });
+    store.updateNodeData(nodeId, { executionStatus: 'running', executionError: undefined, _executionStartedAt: _execStart });
     store.updateNodeStatus(nodeId, 'generating');
     cidLog('executeNode:running', { nodeId, label: d.label, model: store.cidAIModel, upstreamCount: upstreamResults.length });
 
@@ -1228,13 +1229,13 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
 
         if (!res.ok) {
           const errMsg = `CID API error ${res.status}`;
-          store.updateNodeData(nodeId, { executionStatus: 'error', executionError: errMsg });
+          store.updateNodeData(nodeId, { executionStatus: 'error', executionError: errMsg, _executionDurationMs: Date.now() - _execStart });
           store.updateNodeStatus(nodeId, 'active');
           return;
         }
         const result = await res.json();
         if (result.error) {
-          store.updateNodeData(nodeId, { executionStatus: 'error', executionError: result.error === 'no_api_key' ? 'No API key configured on server.' : result.message });
+          store.updateNodeData(nodeId, { executionStatus: 'error', executionError: result.error === 'no_api_key' ? 'No API key configured on server.' : result.message, _executionDurationMs: Date.now() - _execStart });
           store.updateNodeStatus(nodeId, 'active');
           return;
         }
@@ -1242,13 +1243,14 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         output = result.result?.content || result.result?.message || (typeof result.result === 'string' ? result.result : JSON.stringify(result.result));
       }
 
-      store.updateNodeData(nodeId, { executionResult: output, executionStatus: 'success', executionError: undefined, apiKey: undefined });
+      const _execDuration = Date.now() - _execStart;
+      store.updateNodeData(nodeId, { executionResult: output, executionStatus: 'success', executionError: undefined, apiKey: undefined, _executionDurationMs: _execDuration });
       store.updateNodeStatus(nodeId, 'active');
-      store.addEvent({ id: uid(), type: 'regenerated', message: `Executed "${d.label}" successfully`, timestamp: Date.now(), nodeId, agent: true });
-      cidLog('executeNode:success', { nodeId, outputLength: output.length });
+      store.addEvent({ id: uid(), type: 'regenerated', message: `Executed "${d.label}" successfully (${(_execDuration / 1000).toFixed(1)}s)`, timestamp: Date.now(), nodeId, agent: true });
+      cidLog('executeNode:success', { nodeId, outputLength: output.length, durationMs: _execDuration });
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : 'Execution failed';
-      store.updateNodeData(nodeId, { executionStatus: 'error', executionError: errMsg });
+      store.updateNodeData(nodeId, { executionStatus: 'error', executionError: errMsg, _executionDurationMs: Date.now() - _execStart });
       store.updateNodeStatus(nodeId, 'active');
       cidLog('executeNode:error', errMsg);
     }
@@ -1404,9 +1406,20 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
     const parallelNote = sortedLevels.length < order.length ? ` (${sortedLevels.length} parallel stages)` : '';
 
+    // Build per-node timing breakdown
+    const currentNodes = get().nodes;
+    const timingLines = order.map(id => {
+      const n = currentNodes.find(x => x.id === id);
+      if (!n) return null;
+      const ms = n.data._executionDurationMs;
+      const status = n.data.executionStatus;
+      const icon = status === 'success' ? '✓' : status === 'error' ? '✗' : '○';
+      const time = ms != null ? (ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`) : '-';
+      return `${icon} ${n.data.label}: ${time}`;
+    }).filter(Boolean);
+
     // Build actionable next-step suggestions
     const nextSteps: string[] = [];
-    const currentNodes = get().nodes;
     const outputNodes = currentNodes.filter(n => n.data.category === 'output' && n.data.executionStatus === 'success');
     const reviewNodes = currentNodes.filter(n => n.data.category === 'review' && n.data.executionStatus === 'success');
 
@@ -1427,6 +1440,9 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       msg = mode === 'poirot'
         ? `Execution finished in ${elapsed}s${parallelNote}. ${parts.join(', ')}. These culprits require investigation, mon ami.`
         : `Done in ${elapsed}s${parallelNote}. ${parts.join(', ')}.`;
+    }
+    if (timingLines.length > 0) {
+      msg += '\n\n**Timing:**\n' + timingLines.map(l => `- ${l}`).join('\n');
     }
     if (nextSteps.length > 0) {
       msg += '\n\n**Next:** ' + nextSteps.join(' · ');
@@ -2348,6 +2364,14 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       const recentUserMsgs = store.messages.filter(m => m.role === 'user' && m.content).slice(-5).map(m => m.content);
       refreshGenerationContext(store.cidMode, enrichedPrompt, store.nodes.length, recentUserMsgs);
 
+      // Detect if the user is requesting a build/modification (needs more time + creativity)
+      const lowerPrompt = enrichedPrompt.toLowerCase();
+      const isBuildOrModify = /\b(build|create|generate|make|design|add|remove|change|update|edit|modify|tweak|revise|insert|delete|replace|rename|move|swap)\b/.test(lowerPrompt);
+      const chatTaskType = isBuildOrModify ? 'generate' : 'analyze';
+
+      // Set taskType in generation context so compilePersonalityPrompt can inject goal declarations
+      sessionGeneration[store.cidMode].context.taskType = chatTaskType as 'generate' | 'analyze';
+
       const agent = getAgent(store.cidMode);
       const layers = getAgentLayers(store.cidMode);
       const systemPrompt = buildSystemPrompt(store.cidMode, store.nodes, store.edges, store.cidRules, agent, layers) + getBuildContext();
@@ -2355,11 +2379,6 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         .filter(m => m.content && !m.action)
         .map(m => ({ role: m.role as 'user' | 'cid', content: m.content }));
       const messages = buildMessages(chatHistory, enrichedPrompt);
-
-      // Detect if the user is requesting a build/modification (needs more time + creativity)
-      const lowerPrompt = enrichedPrompt.toLowerCase();
-      const isBuildOrModify = /\b(build|create|generate|make|design|add|remove|change|update|edit|modify|tweak|revise|insert|delete|replace|rename|move|swap)\b/.test(lowerPrompt);
-      const chatTaskType = isBuildOrModify ? 'generate' : 'analyze';
       const chatTimeoutMs = isBuildOrModify ? 120000 : 45000;
 
       const chatController = new AbortController();
@@ -2759,6 +2778,8 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       cidLog('tryAPIGeneration', 'attempting API call...');
       try {
         const agentConfig = getAgent(cidMode);
+        // Set taskType for goal declaration injection
+        sessionGeneration[cidMode].context.taskType = 'generate';
         const agentLayers = getAgentLayers(cidMode);
         const systemPrompt = buildSystemPrompt(cidMode, store.nodes, store.edges, store.cidRules, agentConfig, agentLayers);
         const chatHistory = store.messages
