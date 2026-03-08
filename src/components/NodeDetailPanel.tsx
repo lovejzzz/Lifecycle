@@ -685,7 +685,7 @@ export default function NodeDetailPanel() {
             )}
 
             {/* AI Execution Config — for CID/AI nodes */}
-            {(data.category === 'cid' || data.aiPrompt || data.apiKey) && (
+            {(data.category === 'cid' || data.aiPrompt) && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] text-white/35 uppercase tracking-wider">AI Execution</span>
@@ -701,13 +701,6 @@ export default function NodeDetailPanel() {
                     <span className="text-[9px] text-rose-400">Error</span>
                   )}
                 </div>
-                <input
-                  type="password"
-                  value={data.apiKey ?? ''}
-                  onChange={(e) => updateNodeData(node.id, { apiKey: e.target.value })}
-                  placeholder="sk-ant-... (your Anthropic API key)"
-                  className="w-full text-[11px] text-white/60 bg-white/[0.04] rounded-lg px-3 py-2 border border-white/10 outline-none placeholder:text-white/15 font-mono"
-                />
                 <textarea
                   value={data.aiPrompt ?? ''}
                   onChange={(e) => updateNodeData(node.id, { aiPrompt: e.target.value })}

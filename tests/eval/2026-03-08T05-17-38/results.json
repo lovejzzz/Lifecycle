@@ -1,0 +1,581 @@
+{
+  "timestamp": "2026-03-08T05-17-38",
+  "overall": 89,
+  "results": [
+    {
+      "id": "rowan-build-cicd",
+      "status": "error",
+      "elapsed": 45040,
+      "error": "api_error: The operation was aborted due to timeout",
+      "request": {
+        "prompt": "Build a CI/CD pipeline for a Next.js app with GitHub Actions, testing, staging deploy, and production release",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "error": "api_error",
+        "message": "The operation was aborted due to timeout"
+      },
+      "scoring": {
+        "score": 0,
+        "maxScore": 1,
+        "pct": 0,
+        "checks": [
+          "✗ API error: api_error"
+        ]
+      }
+    },
+    {
+      "id": "rowan-build-content",
+      "status": "ok",
+      "elapsed": 41041,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Create a content publishing workflow: draft article, AI review, editor approval, SEO optimization, publish to CMS, social media distribution",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building content publishing workflow with draft, AI review, editor approval, SEO optimization, CMS publish, and social distribution.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Draft Article",
+              "category": "artifact",
+              "description": "Initial article content written by author",
+              "content": "Title: The Future of AI in Content Marketing\n\nBody: Artificial intelligence is transforming how content is created, optimized, and distributed. This article explores practical applications of AI tools for content teams, including automated research, SEO analysis, and personalized distribution strategies. Case studies from leading tech companies show a 40% increase in engagement when AI-assisted workflows are implemented.\n\nTarget audience: Content marketers, SEO specialists, digital strategists.\n\nKey points:\n- AI-powered content ideation\n- Automated SEO optimization\n- Personalization at scale\n- Measuring ROI of AI tools"
+            },
+            {
+              "label": "AI Content Review",
+              "category": "review",
+              "description": "Automated quality, tone, and plagiarism check",
+              "content": "AI Review Results:\n\nQuality Score: 8.2/10\n- Readability: Good (Flesch-Kincaid Grade 9)\n- Tone: Professional yet accessible\n- Grammar/Spelling: 2 minor corrections suggested\n- Plagiarism: 0% detected\n\nRecommendations:\n1. Add more data points in case study section\n2. Include specific tool recommendations\n3. Strengthen call-to-action\n4. Optimize for target keywords: 'AI content tools', 'automated SEO', 'content personalization'"
+            },
+            {
+              "label": "Editor Approval",
+              "category": "review",
+              "description": "Human editor review and sign-off",
+              "content": "Editor Notes:\n\nApproved with revisions:\n✓ Content aligns with brand voice\n✓ Case studies are relevant\n✓ Structure is logical\n\nRequired changes:\n1. Add executive summary at beginning\n2. Include 2-3 specific AI tool examples\n3. Add internal links to related articles\n4. Finalize meta description\n\nStatus: APPROVED pending revisions\nEditor: Sarah Chen\nDate: 2024-03-15"
+            },
+            {
+              "label": "SEO Optimization",
+              "category": "action",
+              "description": "Keyword optimization and metadata creation",
+              "content": "SEO Implementation:\n\nPrimary Keyword: AI content tools\nSecondary Keywords: automated SEO, content personalization, AI marketing\n\nMeta Title: AI Content Tools: The Complete Guide for 2024 | BrandName\nMeta Description: Discover how AI content tools transform marketing workflows. Learn about automated SEO, personalization, and measurable ROI from industry case studies.\n\nURL Slug: /ai-content-tools-guide-2024\n\nHeader Optimization:\nH1: The Future of AI in Content Marketing\nH2: AI-Powered Content Ideation\nH2: Automated SEO Optimization\nH2: Personalization at Scale\nH2: Measuring AI ROI\n\nInternal Links: 3 added\nExternal Links: 2 authoritative sources added"
+            },
+            {
+              "label": "CMS Publishing",
+              "category": "action",
+              "description": "Publish optimized article to content management system",
+              "content": "CMS Configuration:\n\nPlatform: WordPress\nCategory: Marketing Technology\nTags: AI, Content Marketing, SEO, Automation\n\nScheduled: Publish immediately\nFeatured Image: ai-content-tools-header.jpg\nAuthor: Alex Rivera\n\nStatus: PUBLISHED\nArticle ID: 8472\nURL: https://brandname.com/ai-content-tools-guide-2024\n\nCMS Notes: Mobile-responsive, AMP enabled, social sharing buttons added"
+            },
+            {
+              "label": "Social Media Distribution",
+              "category": "action",
+              "description": "Schedule and publish across social platforms",
+              "content": "Social Distribution Plan:\n\nTwitter (3 posts):\n1. Main announcement with link\n2. Key statistic quote card\n3. Thread highlighting 3 main takeaways\n\nLinkedIn:\n- Article post with professional insights\n- Company page announcement\n\nFacebook:\n- Article link with engaging question\n\nSchedule:\nTwitter: Publish + 0h, +4h, +24h\nLinkedIn: Publish + 2h\nFacebook: Publish + 1h\n\nTracking:\nUTM parameters added for all links\nSocial listening alerts configured"
+            },
+            {
+              "label": "Performance Monitor",
+              "category": "state",
+              "description": "Track article performance metrics",
+              "content": "Performance Dashboard:\n\nMetrics to track:\n- Pageviews (target: 10K first week)\n- Average time on page (target: 3+ minutes)\n- Social shares\n- Backlinks generated\n- Keyword rankings for target terms\n- Conversion rate from article\n\nAlerts configured for:\n- Traffic spikes/drops\n- Social engagement thresholds\n- SEO ranking changes\n\nWeekly report automated to content team"
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "informs"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "approves"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "drives"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "triggers"
+            },
+            {
+              "from": 4,
+              "to": 6,
+              "label": "triggers"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "feeds"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 55,
+        "maxScore": 65,
+        "pct": 85,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✗ Missing \"input\" category (found: artifact, review, action, state)",
+          "✓ Has \"review\" category",
+          "✗ Missing \"output\" category (found: artifact, review, action, state)",
+          "✓ All 7 edges valid"
+        ]
+      }
+    },
+    {
+      "id": "poirot-build-incident",
+      "status": "ok",
+      "elapsed": 37683,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Design an incident response workflow: alert detection, triage, investigation, mitigation, post-mortem, and preventive action",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! A case of utmost urgency, mon ami. The incident response workflow—a classic procedural mystery where every second counts. My little grey cells are already assembling the scene: from the first alert's shrill cry to the final preventive action that ensures the villain does not return. Très intéressant! I shall design a structured yet elegant workflow, capturing each critical phase with clarity and purpose. Voilà!",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Alert Detection",
+              "category": "trigger",
+              "description": "Initial signal of a potential incident from monitoring systems, user reports, or automated alerts.",
+              "content": "Alert triggered: Unusual spike in error rates (500s) detected in API gateway logs at 03:14 UTC. Source: CloudWatch Alarm 'High-ErrorRate' breached threshold of 5% for 5 minutes. Severity: P1 (Critical)."
+            },
+            {
+              "label": "Incident Triage",
+              "category": "action",
+              "description": "Assess alert validity, assign severity, and activate response team.",
+              "content": "Triage Steps:\n1. Confirm alert is not a false positive (verified via log correlation).\n2. Assign Severity: P1 (service degradation affecting >50% users).\n3. Activate Incident Commander: @alice-eng.\n4. Create incident channel #inc-2023-789 and initiate war room."
+            },
+            {
+              "label": "Investigation Log",
+              "category": "artifact",
+              "description": "Real-time documentation of findings, hypotheses, and evidence during investigation.",
+              "content": "Investigation Timeline:\n- 03:20: Error traced to UserService microservice (v2.1.4).\n- 03:25: Database latency spikes observed (p95 > 2s).\n- 03:30: Hypothesis: Recent deployment of UserService at 02:30 UTC introduced a faulty query under load.\n- 03:35: Evidence: APM traces show N+1 query pattern in new endpoint /api/v2/users/profile."
+            },
+            {
+              "label": "Mitigation Action",
+              "category": "action",
+              "description": "Immediate steps to contain impact and restore service.",
+              "content": "Mitigation Plan Executed:\n1. Roll back UserService to stable version v2.1.3 (03:40 UTC).\n2. Implement database query caching for affected endpoint.\n3. Verify error rates drop to baseline (<0.5%) by 03:55 UTC.\n4. Communicate status to users via status page."
+            },
+            {
+              "label": "Post-Mortem Analysis",
+              "category": "review",
+              "description": "Structured review of incident timeline, root cause, and lessons learned.",
+              "content": "Post-Mortem Report:\n- Root Cause: Lack of load testing on new query pattern in UserService deployment.\n- Impact: 2 hours of partial outage, 30% user transactions failed.\n- Detection Gap: Alert latency of 5 minutes too slow for rapid response.\n- Kudos: Team coordination reduced MTTR (Mean Time to Resolution) to 41 minutes."
+            },
+            {
+              "label": "Preventive Actions",
+              "category": "policy",
+              "description": "Long-term changes to prevent recurrence, including process and technical improvements.",
+              "content": "Preventive Measures:\n1. Policy: All new database queries require performance review and load testing before production deployment.\n2. Technical: Implement automated canary analysis for database query performance.\n3. Process: Reduce alert detection threshold to 2% error rate with 2-minute evaluation.\n4. Training: Conduct quarterly incident response drills for engineering teams."
+            },
+            {
+              "label": "Incident Closure",
+              "category": "output",
+              "description": "Formal closure of incident with documentation and stakeholder sign-off.",
+              "content": "Closure Checklist:\n- ✅ Service fully restored at 04:00 UTC.\n- ✅ Post-mortem published and shared with all teams.\n- ✅ Preventive action items assigned (due: 2 weeks).\n- ✅ Stakeholder (VP Engineering) approval obtained.\n- Incident #INC-2023-789 closed at 04:30 UTC."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "informs"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "validates"
+            },
+            {
+              "from": 6,
+              "to": 0,
+              "label": "monitors"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 55,
+        "maxScore": 60,
+        "pct": 92,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ Has \"trigger\" category",
+          "✗ Missing \"state\" category (found: trigger, action, artifact, review, policy, output)",
+          "✓ All 7 edges valid"
+        ]
+      }
+    },
+    {
+      "id": "rowan-chat-advice",
+      "status": "ok",
+      "elapsed": 3477,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "What makes a good deployment pipeline?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "On it. A good deployment pipeline is automated, reliable, fast, and secure. Key elements: version control integration, automated testing, environment consistency, rollback capability, monitoring, and security scanning. It should enable frequent, low-risk deployments with clear visibility.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (289 chars)",
+          "✓ Message length: 289 ≥ 50"
+        ]
+      }
+    },
+    {
+      "id": "poirot-chat-advice",
+      "status": "ok",
+      "elapsed": 31331,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "How should I structure a code review process?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, mon ami, a most excellent question! The structure of a code review process is like a well-orchestrated investigation—each step must be deliberate, each clue examined. Let us consider the key elements: a trigger for review, clear policies, a review node for human judgment, and outputs for approval or iteration. Voilà! I shall design a workflow that captures this elegant process.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Pull Request Created",
+              "category": "trigger",
+              "description": "A developer opens a pull request, initiating the review process.",
+              "content": "Trigger: New pull request in repository. This event starts the code review workflow."
+            },
+            {
+              "label": "Code Review Policy",
+              "category": "policy",
+              "description": "Defines standards and requirements for code quality, security, and style.",
+              "content": "Policy: All code must pass linting, have unit tests with >80% coverage, include no security vulnerabilities (per static analysis), and follow the team's style guide. Reviews require at least one senior engineer approval."
+            },
+            {
+              "label": "Automated Checks",
+              "category": "action",
+              "description": "Runs automated tests, linting, and security scans on the pull request.",
+              "content": "Action: Execute CI/CD pipeline—run unit tests, integration tests, linting (e.g., ESLint), static analysis (e.g., SonarQube), and security scans (e.g., Snyk)."
+            },
+            {
+              "label": "Review Artifact",
+              "category": "artifact",
+              "description": "The pull request diff, comments, and automated check results.",
+              "content": "Artifact: GitHub Pull Request #123. Includes code diff, description, linked issues, and automated check status (pass/fail)."
+            },
+            {
+              "label": "Human Code Review",
+              "category": "review",
+              "description": "A senior engineer reviews the code for logic, design, and adherence to standards.",
+              "content": "Review: Senior engineer examines code for correctness, readability, performance, and alignment with architecture. Provides feedback via comments."
+            },
+            {
+              "label": "Approval Decision",
+              "category": "state",
+              "description": "Determines if the pull request is approved, requires changes, or is rejected.",
+              "content": "State: Based on human review and automated checks. Options: Approved, Changes Requested, Rejected."
+            },
+            {
+              "label": "Merge & Deploy",
+              "category": "action",
+              "description": "Merges the approved code and deploys it to the target environment.",
+              "content": "Action: Merge pull request into main branch, trigger deployment pipeline to staging/production."
+            },
+            {
+              "label": "Post-Deployment Review",
+              "category": "test",
+              "description": "Validates the deployment and monitors for issues in production.",
+              "content": "Test: Smoke tests in production, monitor error rates and performance metrics (e.g., via Datadog)."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 0,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "informs"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "validates"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "approves"
+            },
+            {
+              "from": 2,
+              "to": 5,
+              "label": "informs"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "triggers"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "drives"
+            },
+            {
+              "from": 7,
+              "to": 0,
+              "label": "monitors"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 35,
+        "maxScore": 50,
+        "pct": 70,
+        "checks": [
+          "✓ Valid JSON response",
+          "✗ Workflow unexpectedly present",
+          "✓ All 10 edges valid",
+          "✓ Has message (384 chars)",
+          "✓ Message length: 384 ≥ 50"
+        ]
+      }
+    },
+    {
+      "id": "execute-artifact",
+      "status": "error",
+      "elapsed": 45016,
+      "error": "api_error: The operation was aborted due to timeout",
+      "request": {
+        "prompt": "Write a technical specification for a user authentication system with OAuth2, JWT tokens, and role-based access control",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "error": "api_error",
+        "message": "The operation was aborted due to timeout"
+      },
+      "scoring": {
+        "score": 0,
+        "maxScore": 1,
+        "pct": 0,
+        "checks": [
+          "✗ API error: api_error"
+        ]
+      }
+    },
+    {
+      "id": "rowan-ambiguous",
+      "status": "ok",
+      "elapsed": 30562,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "I need to onboard new employees",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building employee onboarding workflow. Focus on automation, compliance, and integration.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "HRIS Trigger",
+              "category": "trigger",
+              "description": "New hire record created in HRIS (e.g., Workday, BambooHR)",
+              "content": "Trigger: New employee record status changes to 'Active - Start Date Pending'. Payload includes: employee_id, full_name, start_date, department, manager_email, role."
+            },
+            {
+              "label": "Onboarding Policy",
+              "category": "policy",
+              "description": "Centralized rules for access, equipment, and training",
+              "content": "Policy Document: Access provisioning follows role-based security groups. All employees receive mandatory security training within first week. Equipment (laptop, peripherals) must be shipped 3 business days before start date. Manager must complete 'First 30 Days' plan before Day 1."
+            },
+            {
+              "label": "Access Provisioning",
+              "category": "action",
+              "description": "Automated IT account and tool setup",
+              "content": "Action Script: 1. Create Active Directory/Okta account. 2. Assign to security groups based on department/role. 3. Provision SaaS licenses (Google Workspace, Slack, GitHub). 4. Generate temporary password sent via secure channel."
+            },
+            {
+              "label": "Equipment Fulfillment",
+              "category": "action",
+              "description": "Laptop and hardware logistics",
+              "content": "Procurement Workflow: 1. Check inventory for standard-issue laptop (MacBook Pro 14\" or Dell XPS). 2. If out of stock, auto-PO to vendor. 3. Image device with base OS and security stack. 4. Ship via FedEx with tracking to employee address. 5. Send tracking info to employee and manager."
+            },
+            {
+              "label": "Training Portal",
+              "category": "artifact",
+              "description": "Mandatory courses and resources",
+              "content": "LMS Integration: Auto-enroll in 'Security Awareness 2025', 'Company Code of Conduct', 'Anti-Harassment Training'. Assign department-specific technical onboarding. Due date: 7 days after start."
+            },
+            {
+              "label": "Manager Checklist",
+              "category": "review",
+              "description": "Manager approvals and tasks",
+              "content": "Checklist Items: 1. Confirm team introduction scheduled. 2. Review and submit first 30-day plan. 3. Approve initial project assignments. 4. Schedule first 1:1. Status: Pending until all items completed."
+            },
+            {
+              "label": "Day 1 Welcome",
+              "category": "output",
+              "description": "Final orchestration and employee readiness",
+              "content": "Output Bundle: 1. Send welcome email with schedule, access details, and training links. 2. Create Slack channel #welcome-[name]. 3. Add to relevant team/distribution lists. 4. Notify HR and manager that onboarding is live."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "requires"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "requires"
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "label": "requires"
+            },
+            {
+              "from": 0,
+              "to": 5,
+              "label": "triggers"
+            },
+            {
+              "from": 2,
+              "to": 6,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 6,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 6,
+              "label": "feeds"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "approves"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 45,
+        "maxScore": 45,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 3)",
+          "✓ All 9 edges valid"
+        ]
+      }
+    },
+    {
+      "id": "poirot-personality",
+      "status": "ok",
+      "elapsed": 4912,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Tell me about the current state of this workflow",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, mon ami! The current state of this workflow is a mystery waiting to be unraveled—but alas, the canvas is bare. There are no nodes, no edges, no clues to follow. It is a blank slate, a fresh case file, a pristine investigation board. If you wish to build something, I shall put my little grey cells to work and design a workflow worthy of a detective's scrutiny. Just say the word!",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (384 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    }
+  ]
+}

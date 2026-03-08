@@ -1,0 +1,606 @@
+{
+  "timestamp": "2026-03-08T05-21-18",
+  "overall": 96,
+  "results": [
+    {
+      "id": "rowan-build-cicd",
+      "status": "ok",
+      "elapsed": 40269,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Build a CI/CD pipeline for a Next.js app with GitHub Actions, testing, staging deploy, and production release",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building CI/CD pipeline for Next.js app with GitHub Actions, testing, staging deploy, and production release.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Code Push",
+              "category": "trigger",
+              "description": "Trigger on push to main or pull request to main branch.",
+              "content": "GitHub Actions trigger: on:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]"
+            },
+            {
+              "label": "PRD & Config",
+              "category": "input",
+              "description": "Requirements and configuration files.",
+              "content": "Project Requirements Document (PRD) and configuration files (next.config.js, package.json, .github/workflows/ci-cd.yml, environment variables)."
+            },
+            {
+              "label": "Build & Lint",
+              "category": "action",
+              "description": "Install dependencies, run linter, and build the Next.js application.",
+              "content": "GitHub Actions job:\n- name: Build and Lint\n  runs-on: ubuntu-latest\n  steps:\n    - uses: actions/checkout@v4\n    - uses: actions/setup-node@v4\n    - run: npm ci\n    - run: npm run lint\n    - run: npm run build"
+            },
+            {
+              "label": "Unit & Integration Tests",
+              "category": "test",
+              "description": "Execute Jest/React Testing Library unit and integration tests.",
+              "content": "GitHub Actions job:\n- name: Run Tests\n  runs-on: ubuntu-latest\n  steps:\n    - uses: actions/checkout@v4\n    - uses: actions/setup-node@v4\n    - run: npm ci\n    - run: npm test -- --coverage --passWithNoTests"
+            },
+            {
+              "label": "Staging Deployment",
+              "category": "action",
+              "description": "Deploy the built application to a staging environment (e.g., Vercel Preview, AWS Amplify).",
+              "content": "GitHub Actions job (conditional on main branch push):\n- name: Deploy to Staging\n  if: github.event_name == 'push' && github.ref == 'refs/heads/main'\n  runs-on: ubuntu-latest\n  env:\n    VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}\n    VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}\n  steps:\n    - uses: actions/checkout@v4\n    - uses: amondnet/vercel-action@v25\n      with:\n        vercel-token: ${{ secrets.VERCEL_TOKEN }}\n        vercel-args: '--prod'"
+            },
+            {
+              "label": "Staging Review",
+              "category": "review",
+              "description": "Manual approval gate for promotion to production.",
+              "content": "Manual approval step in GitHub Actions workflow or external tool (e.g., Vercel Dashboard, manual check). Requires sign-off from QA/Product."
+            },
+            {
+              "label": "Production Release",
+              "category": "action",
+              "description": "Deploy the approved build to production environment.",
+              "content": "GitHub Actions job (triggered after staging approval):\n- name: Deploy to Production\n  runs-on: ubuntu-latest\n  env:\n    VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}\n    VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}\n  steps:\n    - uses: actions/checkout@v4\n    - uses: amondnet/vercel-action@v25\n      with:\n        vercel-token: ${{ secrets.VERCEL_TOKEN }}\n        vercel-args: '--prod'"
+            },
+            {
+              "label": "Pipeline Monitor",
+              "category": "state",
+              "description": "Monitor pipeline health, test coverage, and deployment status.",
+              "content": "Dashboards and alerts (GitHub Actions status, Vercel Analytics, Sentry for errors, test coverage reports)."
+            },
+            {
+              "label": "Deployed Artifacts",
+              "category": "output",
+              "description": "Final deployed application URLs and build artifacts.",
+              "content": "Production URL: https://myapp.vercel.app\nStaging URL: https://myapp-git-main-myteam.vercel.app\nBuild logs and test reports stored in GitHub Actions artifacts."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 2,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "drives"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "drives"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "outputs"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "approves"
+            },
+            {
+              "from": 6,
+              "to": 8,
+              "label": "outputs"
+            },
+            {
+              "from": 0,
+              "to": 7,
+              "label": "monitors"
+            },
+            {
+              "from": 3,
+              "to": 7,
+              "label": "feeds"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "feeds"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 70,
+        "maxScore": 70,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 9 (min: 5)",
+          "✓ Node count: 9 ≤ 12",
+          "✓ Has \"input\" category",
+          "✓ Has \"test\" category",
+          "✓ Has \"action\" category",
+          "✓ Has \"output\" category",
+          "✓ All 10 edges valid"
+        ]
+      }
+    },
+    {
+      "id": "rowan-build-content",
+      "status": "ok",
+      "elapsed": 21018,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Create a content publishing workflow: draft article, AI review, editor approval, SEO optimization, publish to CMS, social media distribution",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building content publishing workflow with draft, review, approval, SEO, CMS publish, and social distribution.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Article Draft",
+              "category": "artifact",
+              "description": "Initial draft of the article content",
+              "content": "Draft article content in markdown format. Includes title, body, images, and metadata."
+            },
+            {
+              "label": "AI Content Review",
+              "category": "review",
+              "description": "Automated review for grammar, tone, and basic compliance",
+              "content": "Run AI review using tool (e.g., Grammarly, Writer). Check for clarity, grammar, brand voice, and flag potential issues."
+            },
+            {
+              "label": "Editor Approval",
+              "category": "review",
+              "description": "Human editor review and sign-off",
+              "content": "Editor reviews AI feedback and draft. Makes final content and structural decisions. Gives approval to proceed."
+            },
+            {
+              "label": "SEO Optimization",
+              "category": "action",
+              "description": "Optimize article for search engines",
+              "content": "Add target keywords, meta title/description, alt text, internal links, and URL slug. Ensure readability score."
+            },
+            {
+              "label": "CMS Publishing",
+              "category": "action",
+              "description": "Publish the finalized article to the Content Management System",
+              "content": "Push article to CMS (e.g., WordPress, Contentful). Schedule publish time, set categories/tags, and final preview."
+            },
+            {
+              "label": "Social Media Distribution",
+              "category": "action",
+              "description": "Create and schedule social media posts for the published article",
+              "content": "Generate social posts (LinkedIn, Twitter, Facebook) with snippets, links, and images. Schedule via tool (e.g., Hootsuite, Buffer)."
+            },
+            {
+              "label": "Publishing Trigger",
+              "category": "trigger",
+              "description": "Manual or scheduled trigger to start the workflow",
+              "content": "Editor or schedule initiates the workflow for a new article."
+            }
+          ],
+          "edges": [
+            {
+              "from": 6,
+              "to": 0,
+              "label": "triggers"
+            },
+            {
+              "from": 0,
+              "to": 1,
+              "label": "validates"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "informs"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "approves"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "drives"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "triggers"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 55,
+        "maxScore": 65,
+        "pct": 85,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✗ Missing \"input\" category (found: artifact, review, action, trigger)",
+          "✓ Has \"review\" category",
+          "✗ Missing \"output\" category (found: artifact, review, action, trigger)",
+          "✓ All 6 edges valid"
+        ]
+      }
+    },
+    {
+      "id": "poirot-build-incident",
+      "status": "ok",
+      "elapsed": 44216,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Design an incident response workflow: alert detection, triage, investigation, mitigation, post-mortem, and preventive action",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! Mon ami, the case of the digital disturbance! The little grey cells are tingling. An incident response workflow—a systematic investigation to unmask the culprit, contain the chaos, and ensure it never dares to show its face again. Très intéressant! I shall design a procedural masterpiece, a blueprint for order in the face of operational calamity. Observe, the nodes and edges of our investigation are laid bare. Voilà!",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Alert Ingest & Detection",
+              "category": "trigger",
+              "description": "Initial signal of a potential incident from monitoring tools, user reports, or automated systems.",
+              "content": "**Source:** SIEM alerts, APM thresholds, user support tickets, external threat intel feeds.\n**Detection Criteria:** Unusual error rate spike (>5x baseline), failed login attempts from anomalous geolocation, critical service health check failure, malware signature match."
+            },
+            {
+              "label": "Initial Triage & Severity Assessment",
+              "category": "action",
+              "description": "Rapid evaluation to confirm incident, assign initial severity, and notify relevant responders.",
+              "content": "**Process:**\n1. Confirm alert is not a false positive.\n2. Assess impact scope (users, systems, data).\n3. Assign Severity Level (SEV-0: Full outage, SEV-1: Major degradation, SEV-2: Minor issue, SEV-3: Informational).\n4. Activate incident response channel (e.g., Slack #incident-war-room, PagerDuty).\n**Output:** Declared incident with SEV level, initial impact statement."
+            },
+            {
+              "label": "Investigation War Room",
+              "category": "artifact",
+              "description": "Central hub for collaboration, evidence gathering, and timeline reconstruction.",
+              "content": "**Artifacts to Collect:**\n- Logs from affected services (last 72 hours).\n- System metrics (CPU, memory, network I/O).\n- Recent deployment records and change tickets.\n- User session data (if applicable).\n**Tooling:** Shared document for timeline, evidence locker (S3 bucket), collaborative chat/voice channel."
+            },
+            {
+              "label": "Containment & Mitigation Actions",
+              "category": "action",
+              "description": "Execute short-term fixes to isolate the issue and restore service.",
+              "content": "**Potential Actions:**\n- Block malicious IPs at firewall/WAF.\n- Rollback recent deployment to last known good state.\n- Failover traffic to healthy region/instance.\n- Restart crashed service with increased resources.\n- Apply emergency security patch.\n**Rule:** Document every action taken for the post-mortem."
+            },
+            {
+              "label": "Service Restoration Verification",
+              "category": "test",
+              "description": "Validate that mitigation actions have successfully restored normal operation.",
+              "content": "**Verification Steps:**\n1. Monitor key business metrics (error rate, latency, throughput) return to baseline.\n2. Execute synthetic transactions/canary tests.\n3. Confirm user-facing functionality is operational.\n4. Obtain stakeholder sign-off (e.g., Product/Support lead).\n**Exit Criteria:** All critical systems green for 15 consecutive minutes."
+            },
+            {
+              "label": "Post-Mortem (Blameless Analysis)",
+              "category": "review",
+              "description": "Structured retrospective to understand root cause, contributing factors, and lessons learned.",
+              "content": "**Agenda:**\n1. Timeline reconstruction (from first symptom to resolution).\n2. Root Cause Analysis (5 Whys, Fishbone diagram).\n3. Identify what went well and what didn't (detection, communication, mitigation).\n4. Draft actionable follow-up items.\n**Output:** Published post-mortem document with timeline, root cause, and action items."
+            },
+            {
+              "label": "Preventive Action & Follow-up",
+              "category": "policy",
+              "description": "Implement changes to prevent recurrence and improve the response system itself.",
+              "content": "**Action Item Examples:**\n- **Technical:** Fix bug, improve monitoring coverage, add circuit breakers, update runbooks.\n- **Process:** Revise escalation procedures, improve alert fatigue, schedule incident response drills.\n- **Documentation:** Update architecture diagrams, create new playbook for this incident type.\n**Ownership:** Each action item assigned to an owner and ETA. Tracked in project management tool."
+            },
+            {
+              "label": "Closed Incident & Knowledge Base Update",
+              "category": "output",
+              "description": "Final state. Incident record is closed, and insights are institutionalized.",
+              "content": "**Final Steps:**\n1. Update incident tracking system status to 'Resolved'.\n2. Archive all war room artifacts and communications.\n3. Publish sanitized post-mortem to internal knowledge base.\n4. Share key learnings in company-wide newsletter or tech talk.\n**Goal:** Transform incident pain into organizational resilience."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "informs"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "triggers"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "approves"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "updates"
+            },
+            {
+              "from": 5,
+              "to": 0,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 55,
+        "maxScore": 60,
+        "pct": 92,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 5)",
+          "✓ Node count: 8 ≤ 10",
+          "✓ Has \"trigger\" category",
+          "✗ Missing \"state\" category (found: trigger, action, artifact, test, review, policy, output)",
+          "✓ All 9 edges valid"
+        ]
+      }
+    },
+    {
+      "id": "rowan-chat-advice",
+      "status": "ok",
+      "elapsed": 3390,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "What makes a good deployment pipeline?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "On it. A good deployment pipeline is automated, reliable, fast, and secure. Key elements: version control integration, automated testing, environment consistency, rollback capability, monitoring, and security scanning. It should enable frequent, low-risk deployments.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (267 chars)",
+          "✓ Message length: 267 ≥ 50"
+        ]
+      }
+    },
+    {
+      "id": "poirot-chat-advice",
+      "status": "ok",
+      "elapsed": 6449,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "How should I structure a code review process?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, mon ami, a most excellent question! The structure of a code review process is like a well-orchestrated investigation—each step must be deliberate, each clue examined. Let us apply the little grey cells. A robust code review workflow should include: a trigger (like a pull request), an initial automated check (linting, tests), a human review phase with clear criteria, a feedback loop for revisions, and a final approval gate before merging. It should also capture artifacts like review comments and metrics for continuous improvement. Would you like me to design a specific workflow for you? Just say the word, and I shall build it—voilà!",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (643 chars)",
+          "✓ Message length: 643 ≥ 50"
+        ]
+      }
+    },
+    {
+      "id": "execute-artifact",
+      "status": "error",
+      "elapsed": 45019,
+      "error": "api_error: The operation was aborted due to timeout",
+      "request": {
+        "prompt": "Write a technical specification for a user authentication system with OAuth2, JWT tokens, and role-based access control",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "error": "api_error",
+        "message": "The operation was aborted due to timeout"
+      },
+      "scoring": {
+        "score": 0,
+        "maxScore": 1,
+        "pct": 0,
+        "checks": [
+          "✗ API error: api_error"
+        ]
+      }
+    },
+    {
+      "id": "rowan-ambiguous",
+      "status": "ok",
+      "elapsed": 29220,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "I need to onboard new employees",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building onboarding workflow.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "New Hire Trigger",
+              "category": "trigger",
+              "description": "HR system event or manual trigger for new employee start date.",
+              "content": "Trigger: New employee record created in HRIS (e.g., Workday, BambooHR) with start date confirmed. Event payload includes employee ID, name, role, department, manager, start date."
+            },
+            {
+              "label": "Onboarding Policy",
+              "category": "policy",
+              "description": "Company onboarding requirements and compliance checklist.",
+              "content": "Policy Document: Mandatory steps: 1. IT provisioning (laptop, email, access). 2. Security & compliance training. 3. Role-specific tool access. 4. Manager 1:1 scheduled. 5. First-week goals set. 6. Benefits enrollment. 7. Office access/badge. Compliance: Complete I-9, tax forms, NDAs."
+            },
+            {
+              "label": "IT Provisioning",
+              "category": "action",
+              "description": "Automated IT ticket to provision hardware, software, accounts.",
+              "content": "Action: Create Jira/ServiceNow ticket for IT. Auto-generate email account (GSuite/Office 365). Ship laptop/equipment. Provision Slack, VPN, internal tool access based on role. Assign to IT queue."
+            },
+            {
+              "label": "Training & Docs",
+              "category": "artifact",
+              "description": "Central repository of onboarding materials and training modules.",
+              "content": "Artifact: Notion/Confluence page: Welcome guide, org chart, key contacts. Required training: Security awareness (KnowBe4), anti-harassment, product overview. Links to HR policies, expense reporting, time-off system."
+            },
+            {
+              "label": "Manager Checklist",
+              "category": "state",
+              "description": "Track manager-led onboarding tasks and first-week goals.",
+              "content": "State: Manager tasks: Schedule day-1 intro meetings. Set up 30/60/90-day plan. Assign buddy/mentor. Review team norms. Confirm equipment received. Status: pending/in-progress/complete."
+            },
+            {
+              "label": "Compliance Review",
+              "category": "review",
+              "description": "HR review of signed documents and training completion.",
+              "content": "Review: HR validates: I-9, W-4, direct deposit, signed NDA, completed training certificates. Escalate missing items after 3 days. Mark employee as 'compliant' in system."
+            },
+            {
+              "label": "Onboarding Complete",
+              "category": "output",
+              "description": "Final status and welcome notification.",
+              "content": "Output: Onboarding checklist 100% complete. Send welcome email to team. Activate full system access. Log completion in HRIS. Trigger 30-day check-in survey."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "requires"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "label": "requires"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "updates"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "requires"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "approves"
+            },
+            {
+              "from": 2,
+              "to": 6,
+              "label": "feeds"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 45,
+        "maxScore": 45,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 3)",
+          "✓ All 9 edges valid"
+        ]
+      }
+    },
+    {
+      "id": "poirot-personality",
+      "status": "ok",
+      "elapsed": 5529,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Tell me about the current state of this workflow",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, mon ami! I have examined the scene with the utmost care. The current state of this workflow is... empty! There are no nodes, no edges—a blank canvas, a fresh mystery waiting to be solved. It is like a detective's notebook before the first clue is jotted down. Très intéressant! If you wish to build a new workflow, I am ready to assist. Just say the word, and we shall construct a case—er, a workflow—together. Parfait!",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (423 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    }
+  ]
+}

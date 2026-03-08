@@ -4,7 +4,7 @@ import React from 'react';
 export type NodeCategory = string;
 
 export const BUILT_IN_CATEGORIES: NodeCategory[] = [
-  'input', 'state', 'artifact', 'note', 'cid', 'review', 'policy', 'patch', 'dependency', 'output',
+  'input', 'trigger', 'state', 'artifact', 'note', 'cid', 'action', 'review', 'test', 'policy', 'patch', 'dependency', 'output',
 ];
 
 export interface LifecycleEvent {
@@ -34,6 +34,7 @@ export interface CIDMessage {
   cards?: CIDCard[];
   cardPrompt?: string; // the question the cards answer
   suggestions?: string[]; // clickable follow-up prompt suggestions
+  _ephemeral?: boolean; // ephemeral messages are not persisted to localStorage
 }
 
 export interface NodeData extends Record<string, unknown> {
@@ -54,7 +55,8 @@ export interface NodeData extends Record<string, unknown> {
   placeholder?: string;  // placeholder text for input fields
 
   // Execution fields
-  apiKey?: string;           // user's API key for this AI node
+  /** @deprecated API keys are now server-side only. This field is stripped on save. */
+  apiKey?: string;
   aiPrompt?: string;         // instruction/prompt for the AI to execute
   aiModel?: string;          // model to use (default: claude-sonnet-4-20250514)
   executionResult?: string;  // output from last execution
@@ -136,6 +138,24 @@ const BUILT_IN_COLORS: Record<string, NodeColorSet> = {
     bg: 'rgba(99, 102, 241, 0.08)',
     border: 'rgba(99, 102, 241, 0.3)',
     glow: 'rgba(99, 102, 241, 0.15)',
+  },
+  trigger: {
+    primary: '#a855f7',
+    bg: 'rgba(168, 85, 247, 0.08)',
+    border: 'rgba(168, 85, 247, 0.3)',
+    glow: 'rgba(168, 85, 247, 0.15)',
+  },
+  test: {
+    primary: '#14b8a6',
+    bg: 'rgba(20, 184, 166, 0.08)',
+    border: 'rgba(20, 184, 166, 0.3)',
+    glow: 'rgba(20, 184, 166, 0.15)',
+  },
+  action: {
+    primary: '#e879f9',
+    bg: 'rgba(232, 121, 249, 0.08)',
+    border: 'rgba(232, 121, 249, 0.3)',
+    glow: 'rgba(232, 121, 249, 0.15)',
   },
 };
 
@@ -221,13 +241,16 @@ export function getNodeColors(category: string): NodeColorSet {
 // Shared category icon mapping — single source of truth
 import {
   Database, FileText, StickyNote, Bot, CheckCircle2, Shield,
-  GitBranch, Link, LogIn, LogOut,
+  GitBranch, Link, LogIn, LogOut, Zap, FlaskConical, Play,
   Waypoints, ShieldCheck, Flame, Radar, Puzzle,
 } from 'lucide-react';
 
 export const CATEGORY_ICONS: Record<string, React.ElementType> = {
   input: LogIn,
   output: LogOut,
+  trigger: Zap,
+  test: FlaskConical,
+  action: Play,
   state: Database,
   artifact: FileText,
   note: StickyNote,

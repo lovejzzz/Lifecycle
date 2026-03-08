@@ -637,36 +637,42 @@ function CanvasInner() {
                   </button>
                 ))}
               </div>
-              {/* Or build custom */}
-              <div className="mt-3 flex flex-wrap justify-center gap-2 pointer-events-auto">
+              {/* Prompt categories with contextual suggestions */}
+              <div className="mt-4 pointer-events-auto space-y-2">
+                <div className="text-[9px] text-white/20 uppercase tracking-widest mb-1">or describe what you need</div>
                 {[
-                  'Build a content pipeline',
-                  'Create a code review workflow',
-                  'Design a lesson plan system',
-                  'Make a product launch workflow',
-                ].map((prompt) => (
-                  <button
-                    key={prompt}
-                    onClick={() => {
-                      if (!showCIDPanel) toggleCIDPanel();
-                      setTimeout(() => {
-                        const cidInput = document.querySelector<HTMLInputElement>('[data-cid-input]');
-                        if (cidInput) {
-                          const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
-                          nativeInputValueSetter?.call(cidInput, prompt);
-                          cidInput.dispatchEvent(new Event('input', { bubbles: true }));
-                          cidInput.focus();
-                        }
-                      }, 150);
-                    }}
-                    className={`px-3 py-1.5 rounded-lg text-[10px] border transition-all hover:scale-[1.03] ${
-                      agent.accent === 'amber'
-                        ? 'border-amber-500/15 text-amber-400/60 bg-amber-500/[0.04] hover:bg-amber-500/[0.1] hover:border-amber-500/25'
-                        : 'border-emerald-500/15 text-emerald-400/60 bg-emerald-500/[0.04] hover:bg-emerald-500/[0.1] hover:border-emerald-500/25'
-                    }`}
-                  >
-                    {prompt}
-                  </button>
+                  { icon: '📝', prompts: ['Build a blog content pipeline', 'Create a research paper workflow'] },
+                  { icon: '🚀', prompts: ['Design a CI/CD pipeline for React', 'Make a product launch workflow'] },
+                  { icon: '🎓', prompts: ['Turn a Google Doc into a lesson plan and export to PDF', 'Create an onboarding training system'] },
+                  { icon: '🔍', prompts: ['Build a code review and QA pipeline', 'Design an incident response workflow'] },
+                ].map((group, gi) => (
+                  <div key={gi} className="flex items-center justify-center gap-1.5 flex-wrap">
+                    <span className="text-[10px]">{group.icon}</span>
+                    {group.prompts.map((prompt) => (
+                      <button
+                        key={prompt}
+                        onClick={() => {
+                          if (!showCIDPanel) toggleCIDPanel();
+                          setTimeout(() => {
+                            const cidInput = document.querySelector<HTMLInputElement>('[data-cid-input]');
+                            if (cidInput) {
+                              const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+                              nativeInputValueSetter?.call(cidInput, prompt);
+                              cidInput.dispatchEvent(new Event('input', { bubbles: true }));
+                              cidInput.focus();
+                            }
+                          }, 150);
+                        }}
+                        className={`px-2.5 py-1 rounded-lg text-[9.5px] border transition-all hover:scale-[1.03] ${
+                          agent.accent === 'amber'
+                            ? 'border-amber-500/10 text-amber-400/50 bg-amber-500/[0.02] hover:bg-amber-500/[0.08] hover:border-amber-500/20'
+                            : 'border-emerald-500/10 text-emerald-400/50 bg-emerald-500/[0.02] hover:bg-emerald-500/[0.08] hover:border-emerald-500/20'
+                        }`}
+                      >
+                        {prompt}
+                      </button>
+                    ))}
+                  </div>
                 ))}
               </div>
               <div className="mt-4 text-[10px] text-white/15">
@@ -1013,11 +1019,18 @@ function CanvasInner() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.2 }}
-              className="fixed top-4 left-1/2 -translate-x-1/2 z-50 rounded-xl border border-cyan-500/20 bg-[#0e0e18]/95 backdrop-blur-xl px-5 py-3 shadow-2xl min-w-[280px]"
+              className="fixed top-4 left-1/2 -translate-x-1/2 z-50 rounded-xl border border-cyan-500/20 bg-[#0e0e18]/95 backdrop-blur-xl px-5 py-3 shadow-2xl min-w-[300px]"
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[11px] font-medium text-cyan-400/80">Executing Workflow</span>
-                <span className="text-[10px] text-white/40 font-mono">{executionProgress.current}/{executionProgress.total}</span>
+                <div className="flex items-center gap-2">
+                  {executionProgress.totalStages && executionProgress.totalStages > 1 && (
+                    <span className="text-[9px] text-white/25 font-mono">
+                      stage {executionProgress.stage}/{executionProgress.totalStages}
+                    </span>
+                  )}
+                  <span className="text-[10px] text-white/40 font-mono">{executionProgress.current}/{executionProgress.total}</span>
+                </div>
               </div>
               <div className="h-[4px] rounded-full bg-white/[0.06] overflow-hidden mb-2">
                 <motion.div
@@ -1027,9 +1040,22 @@ function CanvasInner() {
                   transition={{ duration: 0.3 }}
                 />
               </div>
-              <div className="flex items-center gap-2">
-                <Loader2 size={10} className="text-cyan-400/60 animate-spin" />
-                <span className="text-[10px] text-white/40 truncate">{executionProgress.currentLabel}</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Loader2 size={10} className="text-cyan-400/60 animate-spin" />
+                  <span className="text-[10px] text-white/40 truncate max-w-[160px]">{executionProgress.currentLabel}</span>
+                </div>
+                <div className="flex items-center gap-2 text-[9px] font-mono">
+                  {(executionProgress.succeeded ?? 0) > 0 && (
+                    <span className="text-emerald-400/60">{executionProgress.succeeded}✓</span>
+                  )}
+                  {(executionProgress.failed ?? 0) > 0 && (
+                    <span className="text-rose-400/60">{executionProgress.failed}✗</span>
+                  )}
+                  {(executionProgress.skipped ?? 0) > 0 && (
+                    <span className="text-amber-400/60">{executionProgress.skipped}⊘</span>
+                  )}
+                </div>
               </div>
             </motion.div>
           )}

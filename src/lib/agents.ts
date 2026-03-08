@@ -132,12 +132,12 @@ const rowan: AgentPersonality = {
   title: 'CID Rowan',
   subtitle: 'The Soldier',
   accent: 'emerald',
-  welcome: 'CID online — powered by DeepSeek V3.\n\nI design workflows, analyze structures, and answer questions with real AI intelligence. Tell me what you\'re building.\n\n\u2022 "Build a content pipeline with SEO optimization"\n\u2022 "Create a code review workflow for React"\n\u2022 "Turn a Google Doc into a lesson plan"\n\nI\'ll design it, you refine it. Say `run workflow` when ready to execute.',
+  welcome: 'CID online.\n\nI design workflows, analyze structures, and answer questions with real AI intelligence. Tell me what you\'re building.\n\n\u2022 "Build a content pipeline with SEO optimization"\n\u2022 "Create a code review workflow for React"\n\u2022 "Turn a Google Doc into a lesson plan"\n\nI\'ll design it, you refine it. Say `run workflow` when ready to execute.',
   placeholder: 'State your mission...',
   placeholderInterviewing: 'State your mission...',
   footerText: '"A Message to Garcia" — just state the goal, CID handles the rest',
   emptyCanvasTitle: 'Give CID the mission',
-  emptyCanvasDescription: 'Describe what you\'re building. CID designs the workflow, you add your API key to AI nodes, then run the whole pipeline. From architect to executor.',
+  emptyCanvasDescription: 'Describe what you\'re building. CID designs the workflow, then run the whole pipeline. From architect to executor.',
   emptyCanvasHint: 'State your mission — CID builds it, you run it',
   topBarHint: 'Give CID the mission — consider it done',
   thinkingLabel: 'Processing',
@@ -209,12 +209,12 @@ const poirot: AgentPersonality = {
   title: 'CID Poirot',
   subtitle: 'The Detective',
   accent: 'amber',
-  welcome: 'Ah, bonjour! I am Poirot — now powered by the formidable DeepSeek V3.\n\nMy little grey cells have never been sharper, mon ami. Describe what you wish to build, and I shall investigate with precision — interviewing you, analyzing every angle, then assembling the perfect workflow.\n\n\u2022 "Design a research pipeline with competitive analysis"\n\u2022 "Build an onboarding workflow for new hires"\n\u2022 "Create a content review system"\n\nDescribe the case. I shall begin my investigation.',
+  welcome: 'Ah, bonjour! I am Poirot.\n\nMy little grey cells have never been sharper, mon ami. Describe what you wish to build, and I shall investigate with precision — interviewing you, analyzing every angle, then assembling the perfect workflow.\n\n\u2022 "Design a research pipeline with competitive analysis"\n\u2022 "Build an onboarding workflow for new hires"\n\u2022 "Create a content review system"\n\nDescribe the case. I shall begin my investigation.',
   placeholder: 'Describe the case...',
   placeholderInterviewing: 'Or type your answer...',
   footerText: 'Poirot investigates first, then acts — with precision',
   emptyCanvasTitle: 'Describe the case to Poirot',
-  emptyCanvasDescription: 'Tell Poirot what you\'re building. He\'ll interview you, design the perfect pipeline, and when you add your API key — execute it with precision. The little grey cells demand thoroughness.',
+  emptyCanvasDescription: 'Tell Poirot what you\'re building. He\'ll interview you, design the perfect pipeline, then execute it with precision. The little grey cells demand thoroughness.',
   emptyCanvasHint: 'Describe your project — Poirot will interview you first',
   topBarHint: 'Describe the case to Poirot — precision before action',
   thinkingLabel: 'Assembling',
@@ -243,20 +243,37 @@ export interface InterviewQuestion {
   key: string;
 }
 
-export function getInterviewQuestions(prompt: string): InterviewQuestion[] {
+export function getInterviewQuestions(prompt: string, existingNodes?: Node<NodeData>[], existingEdges?: Edge[]): InterviewQuestion[] {
   const lower = prompt.toLowerCase();
   const questions: InterviewQuestion[] = [];
+  const hasExistingWorkflow = (existingNodes?.length ?? 0) > 0;
 
-  questions.push({
-    key: 'scale',
-    question: 'First, tell me — what is the scale of this endeavor?',
-    cards: [
-      { id: 'solo', label: 'Solo Project', description: 'Just me, working alone' },
-      { id: 'small-team', label: 'Small Team', description: '2-5 people collaborating' },
-      { id: 'large-team', label: 'Large Team', description: '6+ people, multiple roles' },
-      { id: 'enterprise', label: 'Enterprise', description: 'Cross-department initiative' },
-    ],
-  });
+  // If extending an existing workflow, ask about intent first instead of generic scale
+  if (hasExistingWorkflow) {
+    const nodeCount = existingNodes!.length;
+    const categories = [...new Set(existingNodes!.map(n => n.data.category))];
+    questions.push({
+      key: 'intent',
+      question: `I see you already have ${nodeCount} nodes (${categories.slice(0, 4).join(', ')}). What would you like me to do?`,
+      cards: [
+        { id: 'extend', label: 'Extend', description: 'Add new stages to the existing workflow' },
+        { id: 'replace', label: 'Start Fresh', description: 'Replace with a new workflow entirely' },
+        { id: 'branch', label: 'Branch Off', description: 'Add a parallel track from an existing node' },
+        { id: 'improve', label: 'Improve', description: 'Make the current workflow better' },
+      ],
+    });
+  } else {
+    questions.push({
+      key: 'scale',
+      question: 'First, tell me — what is the scale of this endeavor?',
+      cards: [
+        { id: 'solo', label: 'Solo Project', description: 'Just me, working alone' },
+        { id: 'small-team', label: 'Small Team', description: '2-5 people collaborating' },
+        { id: 'large-team', label: 'Large Team', description: '6+ people, multiple roles' },
+        { id: 'enterprise', label: 'Enterprise', description: 'Cross-department initiative' },
+      ],
+    });
+  }
 
   questions.push({
     key: 'priority',
@@ -269,17 +286,21 @@ export function getInterviewQuestions(prompt: string): InterviewQuestion[] {
     ],
   });
 
-  questions.push({
-    key: 'stage',
-    question: 'Ah, one more thing — where are you in this journey?',
-    cards: [
-      { id: 'ideation', label: 'Just an Idea', description: 'Starting from scratch' },
-      { id: 'planning', label: 'Planning Phase', description: 'Have a vision, need structure' },
-      { id: 'in-progress', label: 'Already Started', description: 'Need to organize existing work' },
-      { id: 'rescue', label: 'Needs Rescue', description: 'Things went wrong, fix it' },
-    ],
-  });
+  // Skip the generic stage question if extending — they're clearly already started
+  if (!hasExistingWorkflow) {
+    questions.push({
+      key: 'stage',
+      question: 'Ah, one more thing — where are you in this journey?',
+      cards: [
+        { id: 'ideation', label: 'Just an Idea', description: 'Starting from scratch' },
+        { id: 'planning', label: 'Planning Phase', description: 'Have a vision, need structure' },
+        { id: 'in-progress', label: 'Already Started', description: 'Need to organize existing work' },
+        { id: 'rescue', label: 'Needs Rescue', description: 'Things went wrong, fix it' },
+      ],
+    });
+  }
 
+  // Domain-specific questions
   if (/launch|product|release|ship/i.test(lower)) {
     questions.push({
       key: 'launch',
@@ -300,6 +321,17 @@ export function getInterviewQuestions(prompt: string): InterviewQuestion[] {
         { id: 'user', label: 'User Research', description: 'Understanding people' },
         { id: 'technical', label: 'Technical Research', description: 'Evaluating solutions' },
         { id: 'competitive', label: 'Competitive Analysis', description: 'Studying rivals' },
+      ],
+    });
+  } else if (/ci\/?cd|pipeline|deploy|devops|build/i.test(lower)) {
+    questions.push({
+      key: 'pipeline',
+      question: 'A pipeline! Tell me — what kind of automation are we building?',
+      cards: [
+        { id: 'cicd', label: 'CI/CD', description: 'Build, test, deploy code' },
+        { id: 'data', label: 'Data Pipeline', description: 'ETL, analytics, processing' },
+        { id: 'content', label: 'Content Pipeline', description: 'Create, review, publish' },
+        { id: 'approval', label: 'Approval Flow', description: 'Multi-stage review & sign-off' },
       ],
     });
   } else {

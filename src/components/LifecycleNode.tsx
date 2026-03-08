@@ -282,16 +282,64 @@ function LifecycleNode({ data, id }: NodeProps) {
 
           {/* Execution status indicator */}
           {nodeData.executionStatus && nodeData.executionStatus !== 'idle' && (
-            <div className={`flex items-center gap-1.5 mb-1.5 px-1 ${
-              nodeData.executionStatus === 'running' ? 'text-cyan-400/70' :
-              nodeData.executionStatus === 'success' ? 'text-emerald-400/70' :
-              'text-rose-400/70'
+            <div className={`mb-1.5 rounded-lg border px-2 py-1.5 ${
+              nodeData.executionStatus === 'running'
+                ? 'border-cyan-500/20 bg-cyan-500/[0.04]'
+                : nodeData.executionStatus === 'success'
+                  ? 'border-emerald-500/15 bg-emerald-500/[0.03]'
+                  : 'border-rose-500/15 bg-rose-500/[0.03]'
             }`}>
-              {nodeData.executionStatus === 'running' && <Loader2 size={9} className="animate-spin" />}
-              <span className="text-[8px] font-medium uppercase tracking-wider">
-                {nodeData.executionStatus === 'running' ? 'Executing...' :
-                 nodeData.executionStatus === 'success' ? '✓ Executed' : '✗ Failed'}
-              </span>
+              <div className={`flex items-center gap-1.5 ${
+                nodeData.executionStatus === 'running' ? 'text-cyan-400/70' :
+                nodeData.executionStatus === 'success' ? 'text-emerald-400/70' :
+                'text-rose-400/70'
+              }`}>
+                {nodeData.executionStatus === 'running' && <Loader2 size={9} className="animate-spin" />}
+                <span className="text-[8px] font-medium uppercase tracking-wider flex-1">
+                  {nodeData.executionStatus === 'running' ? 'Executing...' :
+                   nodeData.executionStatus === 'success' ? '✓ Executed' : '✗ Failed'}
+                </span>
+                {nodeData.executionResult && nodeData.executionStatus === 'success' && (
+                  <span className="text-[7px] text-emerald-400/40 font-mono">
+                    {nodeData.executionResult.length > 1000
+                      ? `${(nodeData.executionResult.length / 1000).toFixed(1)}k`
+                      : `${nodeData.executionResult.length}`} chars
+                  </span>
+                )}
+              </div>
+              {/* Running shimmer effect */}
+              {nodeData.executionStatus === 'running' && (
+                <div className="mt-1.5 h-[3px] rounded-full bg-cyan-500/[0.08] overflow-hidden">
+                  <div className="h-full w-1/3 rounded-full bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent animate-[shimmer_1.5s_ease-in-out_infinite]" />
+                </div>
+              )}
+              {/* Result preview for success */}
+              {nodeData.executionStatus === 'success' && nodeData.executionResult && (() => {
+                const clean = nodeData.executionResult.replace(/^#+\s*/gm, '').replace(/\*\*/g, '').trim();
+                const lines = clean.split('\n').filter(l => l.trim());
+                const firstLine = lines[0]?.slice(0, 120) || '';
+                const hasMore = clean.length > 120 || lines.length > 1;
+                return (
+                  <div className="mt-1">
+                    <p className="text-[8.5px] text-white/25 leading-relaxed line-clamp-2">{firstLine}</p>
+                    {hasMore && (
+                      <button
+                        className="text-[7.5px] text-cyan-400/40 hover:text-cyan-400/70 mt-0.5 nodrag transition-colors"
+                        onClick={(e) => { e.stopPropagation(); selectNode(id); }}
+                        title="Click to view full result in side panel"
+                      >
+                        ↳ view full result
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
+              {/* Error message */}
+              {nodeData.executionStatus === 'error' && nodeData.executionError && (
+                <p className="text-[8px] text-rose-400/50 mt-1 line-clamp-1">
+                  {nodeData.executionError}
+                </p>
+              )}
             </div>
           )}
 

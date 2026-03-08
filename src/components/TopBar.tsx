@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Bot, Activity, Layers, Circle, Plus, Undo2, Redo2, Search,
   Download, Upload, Heart, FilePlus2,
@@ -12,11 +12,14 @@ import { getAgent } from '@/lib/agents';
 
 const BUILT_IN_TYPES: { category: NodeCategory; label: string }[] = [
   { category: 'input', label: 'Input' },
+  { category: 'trigger', label: 'Trigger' },
   { category: 'state', label: 'State' },
   { category: 'artifact', label: 'Artifact' },
   { category: 'note', label: 'Note' },
   { category: 'cid', label: 'CID Action' },
+  { category: 'action', label: 'Action' },
   { category: 'review', label: 'Review' },
+  { category: 'test', label: 'Test' },
   { category: 'policy', label: 'Policy' },
   { category: 'patch', label: 'Patch' },
   { category: 'dependency', label: 'Dependency' },
@@ -48,17 +51,19 @@ export default function TopBar() {
   const healthScore = getHealthScore();
 
   // Discover custom categories from existing nodes
-  const builtInSet = new Set(BUILT_IN_TYPES.map((t) => t.category));
-  const customCategories = Array.from(new Set(
-    nodes.map((n) => n.data.category).filter((c) => !builtInSet.has(c))
-  ));
-  const allNodeTypes = [
-    ...BUILT_IN_TYPES,
-    ...customCategories.map((cat) => ({
-      category: cat,
-      label: cat.charAt(0).toUpperCase() + cat.slice(1),
-    })),
-  ];
+  const allNodeTypes = useMemo(() => {
+    const builtInSet = new Set(BUILT_IN_TYPES.map((t) => t.category));
+    const customCategories = Array.from(new Set(
+      nodes.map((n) => n.data.category).filter((c) => !builtInSet.has(c))
+    ));
+    return [
+      ...BUILT_IN_TYPES,
+      ...customCategories.map((cat) => ({
+        category: cat,
+        label: cat.charAt(0).toUpperCase() + cat.slice(1),
+      })),
+    ];
+  }, [nodes]);
 
   useEffect(() => {
     if (!showAddMenu) return;

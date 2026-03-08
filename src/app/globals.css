@@ -149,27 +149,10 @@ body {
   box-shadow: none !important;
 }
 
-/* Glass effect helper */
-.glass {
-  background: rgba(12, 12, 20, 0.85);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-}
-
-/* Pulse animation */
-@keyframes pulse-glow {
-  0%, 100% {
-    opacity: 0.4;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.8;
-    transform: scale(1.5);
-  }
-}
-
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
+/* Shimmer animation for execution progress */
+@keyframes shimmer {
+  0% { transform: translateX(-200%); }
+  100% { transform: translateX(400%); }
 }
 
 /* Ambient background glow */

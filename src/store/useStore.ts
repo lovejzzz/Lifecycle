@@ -6,6 +6,12 @@ import type { NodeData, LifecycleEvent, CIDMessage, NodeCategory, CIDMode } from
 import { registerCustomCategory, EDGE_LABEL_COLORS, BUILT_IN_CATEGORIES } from '@/lib/types';
 import { getAgent, getInterviewQuestions, buildEnrichedPrompt } from '@/lib/agents';
 import { buildSystemPrompt, buildMessages } from '@/lib/prompts';
+import {
+  NODE_W, NODE_H, nodesOverlap, findFreePosition, resolveOverlap,
+  topoSort, ANIMATED_LABELS, createStyledEdge, inferEdgeLabel,
+  findNodeByName, CATEGORY_LABELS, markdownToHTML,
+} from '@/lib/graph';
+import { analyzeIntent, buildNodesFromPrompt } from '@/lib/intent';
 
 type Snapshot = { nodes: Node<NodeData>[]; edges: Edge[] };
 
@@ -273,13 +279,26 @@ interface LifecycleStore {
   findBottlenecks: () => string;
 
   // Execution progress tracking
-  executionProgress: { current: number; total: number; currentLabel: string; running: boolean } | null;
+  executionProgress: { current: number; total: number; currentLabel: string; running: boolean; stage?: number; totalStages?: number; succeeded?: number; failed?: number; skipped?: number } | null;
 
   // Context-aware next-step suggestions
   suggestNextSteps: () => string;
 
   // Detailed health breakdown
   healthBreakdown: () => string;
+
+  // Re-run only failed/skipped nodes
+  retryFailed: () => Promise<void>;
+
+  // Clear all execution results for a fresh run
+  clearExecutionResults: () => string;
+
+  // Pre-flight summary before execution
+  getPreFlightSummary: () => string;
+
+  // Compare current vs last execution results
+  lastExecutionSnapshot: Map<string, string>;
+  diffLastRun: () => string;
 }
 
 // ── Agent activity logger — visible in browser console for debugging ──
@@ -427,7 +446,8 @@ function flushSave() {
       nodes: state.nodes,
       edges: state.edges,
       events: state.events,
-      messages: state.messages,
+      // Filter out ephemeral messages (welcome-back greetings) before persisting
+      messages: state.messages.filter(m => !m._ephemeral),
       ...(cidMode !== undefined && { cidMode }),
       cidAIModel: currentAIModel,
     }));
@@ -442,621 +462,18 @@ function saveToStorage(state: Pick<LifecycleStore, 'nodes' | 'edges' | 'events' 
   saveTimer = setTimeout(flushSave, 150);
 }
 
-// ─── Anti-overlap utilities ──────────────────────────────────────────────────
-const NODE_W = 280; // node width + padding
-const NODE_H = 160; // node height + padding
+// Graph utilities (layout, edges, node search) → src/lib/graph.ts
+// Intent analysis & node builder → src/lib/intent.ts
+// Re-exported for backward compat:
+export { resolveOverlap, findNodeByName } from '@/lib/graph';
 
-function nodesOverlap(a: { x: number; y: number }, b: { x: number; y: number }): boolean {
-  return Math.abs(a.x - b.x) < NODE_W && Math.abs(a.y - b.y) < NODE_H;
-}
+// ─── REMOVED: ~650 lines moved to graph.ts and intent.ts ─── //
+// The following was here: nodesOverlap, findFreePosition, resolveOverlap,
+// topoSort, createStyledEdge, inferEdgeLabel, findNodeByName, CATEGORY_LABELS,
+// markdownToHTML, KNOWN_SERVICES, FILE_TYPE_MAP, OUTPUT_FORMATS, analyzeIntent,
+// buildNodesFromPrompt — all now imported from lib modules.
 
-/** Find a non-overlapping position for a new node, starting from the desired position */
-function findFreePosition(desired: { x: number; y: number }, existing: { x: number; y: number }[]): { x: number; y: number } {
-  let pos = { ...desired };
-  let attempts = 0;
-  while (attempts < 50 && existing.some(e => nodesOverlap(pos, e))) {
-    // Spiral outward: try right, then down, expanding
-    const ring = Math.floor(attempts / 4) + 1;
-    const dir = attempts % 4;
-    if (dir === 0) pos = { x: desired.x + ring * NODE_W, y: desired.y };
-    else if (dir === 1) pos = { x: desired.x, y: desired.y + ring * NODE_H };
-    else if (dir === 2) pos = { x: desired.x - ring * NODE_W, y: desired.y };
-    else pos = { x: desired.x + ring * NODE_W, y: desired.y + ring * NODE_H };
-    attempts++;
-  }
-  return pos;
-}
-
-/** Push a dragged node away from others it overlaps with. Returns new position or null if no overlap. */
-export function resolveOverlap(
-  draggedId: string,
-  draggedPos: { x: number; y: number },
-  allNodes: Node<NodeData>[],
-): { x: number; y: number } | null {
-  const others = allNodes.filter(n => n.id !== draggedId).map(n => n.position);
-  const overlapping = others.filter(o => nodesOverlap(draggedPos, o));
-  if (overlapping.length === 0) return null;
-
-  // Find nearest free position
-  return findFreePosition(draggedPos, others);
-}
-
-/** Kahn's topological sort — returns ordered node IDs and per-node levels for parallel grouping.
- *  Reused by executeWorkflow and generatePlan. */
-function topoSort(nodes: Node<NodeData>[], edges: Edge[]): { order: string[]; levels: Map<string, number> } {
-  const inDeg = new Map<string, number>();
-  const adj = new Map<string, string[]>();
-  for (const n of nodes) { inDeg.set(n.id, 0); adj.set(n.id, []); }
-  for (const e of edges) {
-    adj.get(e.source)?.push(e.target);
-    inDeg.set(e.target, (inDeg.get(e.target) || 0) + 1);
-  }
-  const queue: string[] = [];
-  const levels = new Map<string, number>();
-  for (const [id, deg] of inDeg) { if (deg === 0) { queue.push(id); levels.set(id, 0); } }
-  const order: string[] = [];
-  while (queue.length > 0) {
-    const id = queue.shift()!;
-    order.push(id);
-    for (const next of (adj.get(id) || [])) {
-      const newDeg = (inDeg.get(next) || 1) - 1;
-      inDeg.set(next, newDeg);
-      levels.set(next, Math.max(levels.get(next) || 0, (levels.get(id) || 0) + 1));
-      if (newDeg === 0) queue.push(next);
-    }
-  }
-  return { order, levels };
-}
-
-/** Convert markdown text to basic HTML for PDF/HTML export */
-function markdownToHTML(md: string): string {
-  return md
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/^---$/gm, '<hr>')
-    .replace(/^[-*] (.+)$/gm, '<li>$1</li>')
-    .replace(/(<li>.*<\/li>\n?)+/g, (m) => `<ul>${m}</ul>`)
-    .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
-    .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
-    .replace(/\n\n/g, '</p><p>')
-    .replace(/^/, '<p>').replace(/$/, '</p>')
-    .replace(/<p><h([123])>/g, '<h$1>').replace(/<\/h([123])><\/p>/g, '</h$1>')
-    .replace(/<p><ul>/g, '<ul>').replace(/<\/ul><\/p>/g, '</ul>')
-    .replace(/<p><hr><\/p>/g, '<hr>')
-    .replace(/<p><blockquote>/g, '<blockquote>').replace(/<\/blockquote><\/p>/g, '</blockquote>')
-    .replace(/<p>\s*<\/p>/g, '');
-}
-
-/** Fuzzy find a node by name: exact match → includes → reverse includes */
-export function findNodeByName(name: string, nodes: Node<NodeData>[]): Node<NodeData> | undefined {
-  const lower = name.toLowerCase().trim();
-  return nodes.find(n => n.data.label.toLowerCase() === lower) ||
-         nodes.find(n => n.data.label.toLowerCase().includes(lower)) ||
-         nodes.find(n => lower.includes(n.data.label.toLowerCase()));
-}
-
-/** Infer the best edge label from source→target category pair */
-function inferEdgeLabel(srcCat?: string, tgtCat?: string): string {
-  if (!srcCat || !tgtCat) return 'connects';
-  const key = `${srcCat}->${tgtCat}`;
-  const EDGE_INFERENCE: Record<string, string> = {
-    'input->state': 'feeds', 'input->artifact': 'feeds', 'input->cid': 'feeds',
-    'input->note': 'feeds', 'input->output': 'feeds',
-    'state->artifact': 'drives', 'state->review': 'triggers', 'state->output': 'outputs',
-    'state->cid': 'feeds', 'state->state': 'updates',
-    'artifact->review': 'validates', 'artifact->output': 'outputs', 'artifact->artifact': 'refines',
-    'artifact->state': 'updates', 'artifact->cid': 'feeds',
-    'note->artifact': 'drives', 'note->state': 'informs', 'note->cid': 'feeds',
-    'note->note': 'refines',
-    'cid->state': 'monitors', 'cid->artifact': 'drives', 'cid->review': 'validates',
-    'cid->output': 'outputs', 'cid->cid': 'feeds',
-    'review->output': 'approves', 'review->state': 'approves', 'review->artifact': 'refines',
-    'review->cid': 'triggers',
-    'policy->state': 'blocks', 'policy->artifact': 'blocks', 'policy->review': 'requires',
-    'policy->output': 'blocks',
-    'patch->state': 'updates', 'patch->artifact': 'refines', 'patch->review': 'triggers',
-    'dependency->state': 'requires', 'dependency->artifact': 'requires',
-    'output->state': 'informs', 'output->cid': 'triggers',
-  };
-  return EDGE_INFERENCE[key] || 'connects';
-}
-
-const CATEGORY_LABELS: Record<NodeCategory, string> = {
-  input: 'Input',
-  output: 'Output',
-  state: 'New State',
-  artifact: 'New Artifact',
-  note: 'New Note',
-  cid: 'CID Action',
-  review: 'Review Gate',
-  policy: 'Policy Rule',
-  patch: 'Patch',
-  dependency: 'Dependency',
-};
-
-// ── Intent detection helpers for buildNodesFromPrompt ──
-
-interface ServiceInfo {
-  name: string;
-  icon: string;
-  keywords: string[];
-  inputType: 'url' | 'file' | 'text';
-  placeholder?: string;
-}
-
-const KNOWN_SERVICES: ServiceInfo[] = [
-  { name: 'Google Docs', icon: '📄', keywords: ['google doc', 'gdoc', 'google document'], inputType: 'url', placeholder: 'Paste Google Docs link...' },
-  { name: 'Google Sheets', icon: '📊', keywords: ['google sheet', 'gsheet'], inputType: 'url', placeholder: 'Paste Google Sheets link...' },
-  { name: 'Google Slides', icon: '📽️', keywords: ['google slide', 'gslide'], inputType: 'url', placeholder: 'Paste Google Slides link...' },
-  { name: 'Google Drive', icon: '☁️', keywords: ['google drive', 'gdrive'], inputType: 'url', placeholder: 'Paste Google Drive link...' },
-  { name: 'Notion', icon: '📝', keywords: ['notion'], inputType: 'url', placeholder: 'Paste Notion page link...' },
-  { name: 'GitHub', icon: '🐙', keywords: ['github', 'git repo', 'repository'], inputType: 'url', placeholder: 'Paste GitHub URL...' },
-  { name: 'Figma', icon: '🎨', keywords: ['figma'], inputType: 'url', placeholder: 'Paste Figma link...' },
-  { name: 'Airtable', icon: '📋', keywords: ['airtable'], inputType: 'url', placeholder: 'Paste Airtable link...' },
-  { name: 'Slack', icon: '💬', keywords: ['slack'], inputType: 'url', placeholder: 'Paste Slack message link...' },
-  { name: 'Dropbox', icon: '📦', keywords: ['dropbox'], inputType: 'url', placeholder: 'Paste Dropbox link...' },
-  { name: 'YouTube', icon: '▶️', keywords: ['youtube', 'video link'], inputType: 'url', placeholder: 'Paste YouTube URL...' },
-  { name: 'URL', icon: '🔗', keywords: ['url', 'link', 'webpage', 'website'], inputType: 'url', placeholder: 'Paste URL...' },
-];
-
-interface FileTypeInfo {
-  keywords: string[];
-  types: string[];
-  label: string;
-  desc: string;
-}
-
-const FILE_TYPE_MAP: FileTypeInfo[] = [
-  { keywords: ['pdf'], types: ['.pdf'], label: 'PDF Upload', desc: 'Upload PDF files' },
-  { keywords: ['image', 'photo', 'picture', 'img', 'screenshot'], types: ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'], label: 'Image Upload', desc: 'Upload images (.png, .jpg, .gif, .webp, .svg)' },
-  { keywords: ['video', 'movie', 'clip'], types: ['.mp4', '.mov', '.avi', '.webm'], label: 'Video Upload', desc: 'Upload video files (.mp4, .mov, .webm)' },
-  { keywords: ['audio', 'sound', 'music', 'podcast', 'recording'], types: ['.mp3', '.wav', '.m4a', '.ogg'], label: 'Audio Upload', desc: 'Upload audio files (.mp3, .wav, .m4a)' },
-  { keywords: ['spreadsheet', 'excel', 'csv', 'dataset'], types: ['.csv', '.xlsx', '.xls', '.tsv'], label: 'Data Upload', desc: 'Upload data files (.csv, .xlsx, .xls)' },
-  { keywords: ['code', 'source', 'script', 'program'], types: ['.js', '.ts', '.py', '.java', '.cpp', '.go', '.rs'], label: 'Code Upload', desc: 'Upload source code files' },
-  { keywords: ['presentation', 'slide', 'ppt', 'powerpoint'], types: ['.pptx', '.ppt', '.key'], label: 'Presentation Upload', desc: 'Upload presentation files (.pptx, .ppt)' },
-];
-
-// Output file format detection
-interface OutputFormat {
-  format: string;    // e.g. 'pdf', 'docx', 'csv'
-  label: string;     // e.g. 'PDF', 'Word Document'
-  mimeType: string;  // e.g. 'application/pdf'
-  icon: string;
-}
-
-const OUTPUT_FORMATS: OutputFormat[] = [
-  { format: 'pdf', label: 'PDF', mimeType: 'application/pdf', icon: '📄' },
-  { format: 'docx', label: 'Word Document', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', icon: '📝' },
-  { format: 'csv', label: 'CSV', mimeType: 'text/csv', icon: '📊' },
-  { format: 'txt', label: 'Text File', mimeType: 'text/plain', icon: '📃' },
-  { format: 'md', label: 'Markdown', mimeType: 'text/markdown', icon: '📋' },
-  { format: 'json', label: 'JSON', mimeType: 'application/json', icon: '🔧' },
-  { format: 'html', label: 'HTML', mimeType: 'text/html', icon: '🌐' },
-];
-
-// Extract what the user wants to produce from the prompt
-interface IntentAnalysis {
-  inputService: ServiceInfo | null;
-  outputService: ServiceInfo | null;
-  outputFormat: OutputFormat | null;  // e.g. PDF, DOCX — file format output
-  fileInput: FileTypeInfo | null;
-  transformation: string | null;  // e.g. "lesson plan", "syllabus", "summary"
-  sourceType: string | null;      // e.g. "document", "spreadsheet", "video"
-}
-
-function analyzeIntent(prompt: string): IntentAnalysis {
-  const lower = prompt.toLowerCase();
-
-  // 1. Detect input service (check services BEFORE generic file types)
-  let inputService: ServiceInfo | null = null;
-  for (const svc of KNOWN_SERVICES) {
-    if (svc.keywords.some(kw => lower.includes(kw))) {
-      inputService = svc;
-      break;
-    }
-  }
-
-  // Also detect "shared ... link" or "link" patterns as URL input
-  if (!inputService && /\b(?:shared|share)\b.*\b(?:link|url)\b/.test(lower)) {
-    inputService = KNOWN_SERVICES.find(s => s.name === 'URL')!;
-  }
-
-  // 2. Detect output service — look for "export to", "output to", "save to", "send to", "to another/a <service>"
-  let outputService: ServiceInfo | null = null;
-  const outputPatterns = [
-    /\b(?:export|output|save|send|publish|push|write)\s+(?:to|into)\s+(?:an?\s+|another\s+)?(.+?)$/i,
-    /\bto\s+(?:an?\s+|another\s+)(.+?)$/i,
-  ];
-  for (const pat of outputPatterns) {
-    const m = prompt.match(pat);
-    if (m) {
-      const dest = m[1].toLowerCase().trim();
-      for (const svc of KNOWN_SERVICES) {
-        if (svc.keywords.some(kw => dest.includes(kw))) {
-          outputService = svc;
-          break;
-        }
-      }
-      if (outputService) break;
-    }
-  }
-
-  // 3. Detect file-based input (only if no service detected)
-  let fileInput: FileTypeInfo | null = null;
-  if (!inputService) {
-    for (const ft of FILE_TYPE_MAP) {
-      if (ft.keywords.some(kw => lower.includes(kw))) {
-        fileInput = ft;
-        break;
-      }
-    }
-    // Broader file intent
-    if (!fileInput && /\b(?:upload|file|import)\b/.test(lower)) {
-      fileInput = { keywords: [], types: ['.pdf', '.docx', '.txt', '.csv', '.json', '.xlsx'], label: 'File Upload', desc: 'Upload files to process' };
-    }
-  }
-
-  // 4. Detect the transformation target — what are we producing?
-  const transformTargets = [
-    { keywords: ['lesson plan', 'lesson syllabus'], name: 'Lesson Plan' },
-    { keywords: ['syllabus', 'curriculum'], name: 'Course Syllabus' },
-    { keywords: ['course'], name: 'Course Material' },
-    { keywords: ['summary', 'summarize'], name: 'Summary' },
-    { keywords: ['outline'], name: 'Outline' },
-    { keywords: ['transcript', 'transcription'], name: 'Transcript' },
-    { keywords: ['translation', 'translate'], name: 'Translation' },
-    { keywords: ['report'], name: 'Report' },
-    { keywords: ['analysis', 'analyze'], name: 'Analysis' },
-    { keywords: ['blog', 'article', 'post'], name: 'Blog Post' },
-    { keywords: ['email', 'newsletter'], name: 'Email Draft' },
-    { keywords: ['presentation'], name: 'Presentation' },
-    { keywords: ['proposal'], name: 'Proposal' },
-    { keywords: ['resume', 'cv'], name: 'Resume' },
-    { keywords: ['quiz', 'test', 'exam', 'assessment'], name: 'Assessment' },
-    { keywords: ['flashcard'], name: 'Flashcards' },
-    { keywords: ['tutorial', 'guide', 'how-to'], name: 'Tutorial' },
-    { keywords: ['documentation', 'docs'], name: 'Documentation' },
-    { keywords: ['spec', 'specification'], name: 'Specification' },
-    { keywords: ['prd'], name: 'PRD' },
-    { keywords: ['pitch deck', 'pitch'], name: 'Pitch Deck' },
-    { keywords: ['marketing plan'], name: 'Marketing Plan' },
-    { keywords: ['budget'], name: 'Budget Plan' },
-    { keywords: ['roadmap', 'timeline'], name: 'Roadmap' },
-    { keywords: ['design brief', 'design'], name: 'Design Brief' },
-  ];
-  let transformation: string | null = null;
-  for (const t of transformTargets) {
-    if (t.keywords.some(kw => lower.includes(kw))) {
-      transformation = t.name;
-      break;
-    }
-  }
-
-  // 5. Detect source type description
-  let sourceType: string | null = null;
-  const sourceTypeMap = [
-    { keywords: ['document', 'doc'], name: 'document' },
-    { keywords: ['spreadsheet', 'sheet'], name: 'spreadsheet' },
-    { keywords: ['video'], name: 'video' },
-    { keywords: ['audio', 'recording'], name: 'audio' },
-    { keywords: ['image', 'photo'], name: 'image' },
-    { keywords: ['data', 'dataset'], name: 'data' },
-    { keywords: ['code', 'source code'], name: 'code' },
-  ];
-  for (const st of sourceTypeMap) {
-    if (st.keywords.some(kw => lower.includes(kw))) {
-      sourceType = st.name;
-      break;
-    }
-  }
-
-  // If we have an input service that implies a document type
-  if (!sourceType && inputService) {
-    if (['Google Docs', 'Notion'].includes(inputService.name)) sourceType = 'document';
-    if (['Google Sheets', 'Airtable'].includes(inputService.name)) sourceType = 'spreadsheet';
-    if (['Figma'].includes(inputService.name)) sourceType = 'design';
-    if (['YouTube'].includes(inputService.name)) sourceType = 'video';
-  }
-
-  // If we have a file input that implies a document type
-  if (!fileInput && !inputService && sourceType === 'document') {
-    fileInput = { keywords: [], types: ['.pdf', '.docx', '.doc', '.txt', '.rtf'], label: 'Document Upload', desc: 'Upload documents (.pdf, .docx, .doc, .txt, .rtf)' };
-  }
-
-  // 6. Detect output format (PDF, DOCX, etc.)
-  let outputFormat: OutputFormat | null = null;
-  const formatPatterns = [
-    /\b(?:export|output|save|convert|download)\s+(?:to|as|into)\s+(?:a\s+)?(\w+)\b/i,
-    /\bto\s+(?:a\s+)?(\w+)\s*$/i,
-    /\bas\s+(?:a\s+)?(\w+)\s*$/i,
-  ];
-  for (const pat of formatPatterns) {
-    const m = prompt.match(pat);
-    if (m) {
-      const fmt = m[1].toLowerCase().replace(/^\./, '');
-      const found = OUTPUT_FORMATS.find(f => f.format === fmt || f.label.toLowerCase() === fmt);
-      if (found) { outputFormat = found; break; }
-    }
-  }
-  // Also detect standalone mentions like "pdf export" or "as pdf"
-  if (!outputFormat) {
-    for (const fmt of OUTPUT_FORMATS) {
-      if (lower.includes(fmt.format) && /\b(?:export|output|download|save|convert)\b/.test(lower)) {
-        outputFormat = fmt;
-        break;
-      }
-    }
-  }
-
-  return { inputService, outputService, outputFormat, fileInput, transformation, sourceType };
-}
-
-function buildNodesFromPrompt(prompt: string): { nodes: Node<NodeData>[]; edges: Edge[]; events: LifecycleEvent[] } {
-  const lower = prompt.toLowerCase();
-  const newNodes: Node<NodeData>[] = [];
-  const newEdges: Edge[] = [];
-  const newEvents: LifecycleEvent[] = [];
-  const intent = analyzeIntent(prompt);
-  cidLog('analyzeIntent', {
-    inputService: intent.inputService?.name || null,
-    outputService: intent.outputService?.name || null,
-    fileInput: intent.fileInput?.label || null,
-    transformation: intent.transformation,
-    sourceType: intent.sourceType,
-  });
-
-  // Layout constants for left-to-right flow
-  const COL_GAP = NODE_W + 80;
-  const ROW_GAP = NODE_H + 40;
-  let col = 0;
-
-  // ── Column 0: Input node (leftmost) ──
-  const inputId = uid();
-  const inputData: NodeData = {
-    label: 'User Input', category: 'input', status: 'active',
-    description: 'Requirements, data, or prompts from the user',
-    version: 1, lastUpdated: Date.now(),
-  };
-
-  if (intent.inputService) {
-    // URL-based input from a known service
-    inputData.label = `${intent.inputService.name} Source`;
-    inputData.description = `Paste a ${intent.inputService.name} link to import content`;
-    inputData.inputType = 'url';
-    inputData.serviceName = intent.inputService.name;
-    inputData.serviceIcon = intent.inputService.icon;
-    inputData.placeholder = intent.inputService.placeholder;
-  } else if (intent.fileInput) {
-    // File-based input
-    inputData.label = intent.fileInput.label;
-    inputData.description = intent.fileInput.desc;
-    inputData.inputType = 'file';
-    inputData.acceptedFileTypes = intent.fileInput.types;
-  } else if (/\b(?:upload|file|import|convert|transform|parse)\b/.test(lower) || (intent.sourceType && !intent.inputService)) {
-    // Generic file input for conversion prompts
-    inputData.label = 'Document Upload';
-    inputData.description = 'Upload source documents (.pdf, .docx, .doc, .txt, .rtf)';
-    inputData.inputType = 'file';
-    inputData.acceptedFileTypes = ['.pdf', '.docx', '.doc', '.txt', '.rtf'];
-  }
-
-  newNodes.push({ id: inputId, type: 'lifecycleNode', position: { x: col * COL_GAP, y: 80 }, data: inputData });
-  newEvents.push({ id: uid(), type: 'created', message: `${inputData.label} node created`, timestamp: Date.now(), nodeId: inputId, agent: true });
-  col++;
-
-  // ── Next column: Content Extraction / Parsing (for service or file inputs) ──
-  let extractId: string | null = null;
-  if (intent.inputService || intent.fileInput) {
-    extractId = uid();
-    const extractLabel = intent.inputService
-      ? `Fetch from ${intent.inputService.name}`
-      : `Parse ${intent.sourceType || 'Content'}`;
-    const extractDesc = intent.inputService
-      ? `Retrieve and extract content from ${intent.inputService.name}`
-      : `Parse and extract structured content from uploaded ${intent.sourceType || 'files'}`;
-    newNodes.push({
-      id: extractId, type: 'lifecycleNode',
-      position: { x: col * COL_GAP, y: 80 },
-      data: {
-        label: extractLabel, category: 'cid', status: 'generating', description: extractDesc, version: 1, lastUpdated: Date.now(),
-        ...(intent.transformation && {
-          aiPrompt: `Extract and structure the content from the input. Prepare it for generating a ${intent.transformation}. Output clean, organized text.`,
-        }),
-      },
-    });
-    newEdges.push({ id: `e-${inputId}-${extractId}`, source: inputId, target: extractId, animated: true, label: 'feeds', style: { stroke: '#22d3ee', strokeWidth: 2 } });
-    newEvents.push({ id: uid(), type: 'created', message: `${extractLabel} node created`, timestamp: Date.now(), nodeId: extractId, agent: true });
-    col++;
-  }
-
-  // ── Next column: Research Notes (only if explicitly mentioned) ──
-  let noteId: string | null = null;
-  if (/\b(?:note|research|idea)\b/.test(lower) && !intent.transformation) {
-    noteId = uid();
-    newNodes.push({
-      id: noteId, type: 'lifecycleNode',
-      position: { x: col * COL_GAP, y: 80 },
-      data: { label: 'Research Notes', category: 'note', status: 'generating', description: 'Raw notes and ideas', version: 1, lastUpdated: Date.now() },
-    });
-    const prevId = extractId || inputId;
-    newEdges.push({ id: `e-${prevId}-${noteId}`, source: prevId, target: noteId, label: 'feeds', style: { stroke: '#22d3ee', strokeWidth: 2 } });
-    newEvents.push({ id: uid(), type: 'created', message: 'Notes node created for research capture', timestamp: Date.now(), nodeId: noteId, agent: true });
-    col++;
-  }
-
-  // ── Next column: Project State / Content State ──
-  const stateId = uid();
-  const stateLabel = intent.sourceType ? `${intent.sourceType.charAt(0).toUpperCase() + intent.sourceType.slice(1)} Content` : 'Project State';
-  newNodes.push({
-    id: stateId, type: 'lifecycleNode',
-    position: { x: col * COL_GAP, y: 80 },
-    data: {
-      label: stateLabel, category: 'state', status: 'generating',
-      description: intent.transformation
-        ? `Structured content ready for ${intent.transformation} generation`
-        : `Core state extracted from: "${prompt.slice(0, 60)}..."`,
-      version: 1, lastUpdated: Date.now(),
-    },
-  });
-  newEvents.push({ id: uid(), type: 'created', message: `${stateLabel} node created`, timestamp: Date.now(), nodeId: stateId, agent: true });
-  // Connect previous node to state
-  const prevToState = noteId || extractId || inputId;
-  const prevToStateLabel = noteId ? 'refines' : extractId ? 'feeds' : 'feeds';
-  newEdges.push({ id: `e-${prevToState}-${stateId}`, source: prevToState, target: stateId, animated: !!extractId, label: prevToStateLabel, style: { stroke: extractId ? '#10b981' : '#22d3ee', strokeWidth: 2 } });
-  col++;
-
-  // ── Next column: Artifacts (context-aware naming) ──
-  const artifactNames: string[] = [];
-
-  if (intent.transformation) {
-    // Primary artifact is the transformation target
-    artifactNames.push(intent.transformation);
-    // Add supporting artifacts based on the transformation type
-    const educationTypes = ['Lesson Plan', 'Course Syllabus', 'Course Material', 'Assessment', 'Flashcards', 'Tutorial'];
-    if (educationTypes.includes(intent.transformation)) {
-      if (intent.transformation !== 'Lesson Plan' && /\blesson\b/.test(lower)) artifactNames.push('Lesson Plan');
-      if (!artifactNames.includes('Learning Objectives')) artifactNames.push('Learning Objectives');
-    }
-  } else {
-    // Fallback: keyword-based artifact detection (avoiding false matches)
-    if (/\bprd\b/.test(lower)) artifactNames.push('PRD Document');
-    if (/\btech\b|\barchitecture\b|\bapi\b/.test(lower)) artifactNames.push('Technical Spec');
-    if (/\bpitch\b|\bdeck\b/.test(lower)) artifactNames.push('Pitch Deck');
-    if (/\bmarketing\s+plan\b|\bstrategy\b/.test(lower)) artifactNames.push('Marketing Plan');
-    if (/\bdesign\s+(?:brief|spec|system)\b|\bui\b|\bux\b/.test(lower)) artifactNames.push('Design Brief');
-    if (/\blegal\b|\bcompliance\b/.test(lower)) artifactNames.push('Legal Review');
-    if (/\breport\b|\banalysis\b/.test(lower)) artifactNames.push('Analysis Report');
-    if (/\bbudget\b|\bcost\b|\bfinanc/.test(lower)) artifactNames.push('Budget Analysis');
-    if (/\btimeline\b|\broadmap\b|\bmilestone\b/.test(lower)) artifactNames.push('Project Roadmap');
-    if (/\btest\s+plan\b|\bqa\b/.test(lower)) artifactNames.push('Test Plan');
-    if (/\bonboard\b|\bguide\b/.test(lower)) artifactNames.push('Onboarding Guide');
-    if (/\bcompetit\b|\bbenchmark\b/.test(lower)) artifactNames.push('Competitive Analysis');
-
-    // Fallback: extract meaningful words
-    if (artifactNames.length === 0) {
-      const words = prompt.split(/[\s,]+/).filter(w => w.length > 3);
-      const stopWords = new Set(['build', 'create', 'make', 'generate', 'start', 'with', 'that', 'this', 'from', 'have', 'will', 'want', 'need', 'like', 'about', 'some', 'just', 'help', 'workflow', 'turn', 'shared', 'link', 'another', 'export']);
-      const meaningful = words.filter(w => !stopWords.has(w.toLowerCase())).slice(0, 3);
-      if (meaningful.length > 0) {
-        meaningful.forEach(w => artifactNames.push(w.charAt(0).toUpperCase() + w.slice(1) + ' Document'));
-      } else {
-        artifactNames.push('Core Document', 'Supporting Document');
-      }
-    }
-  }
-
-  const artifactCol = col;
-  const totalArtifactHeight = artifactNames.length * ROW_GAP;
-  const artifactStartY = 80 - totalArtifactHeight / 2 + ROW_GAP / 2;
-
-  artifactNames.forEach((name, i) => {
-    const aId = uid();
-    // Generate context-aware sections based on artifact type
-    let sections = [
-      { id: 's1', title: 'Overview', status: 'current' as const },
-      { id: 's2', title: 'Details', status: 'current' as const },
-      { id: 's3', title: 'Summary', status: 'current' as const },
-    ];
-    if (name === 'Lesson Plan') {
-      sections = [
-        { id: 's1', title: 'Learning Objectives', status: 'current' as const },
-        { id: 's2', title: 'Topics & Modules', status: 'current' as const },
-        { id: 's3', title: 'Activities & Exercises', status: 'current' as const },
-        { id: 's4', title: 'Assessment Criteria', status: 'current' as const },
-        { id: 's5', title: 'Resources & Materials', status: 'current' as const },
-      ];
-    } else if (name === 'Course Syllabus') {
-      sections = [
-        { id: 's1', title: 'Course Overview', status: 'current' as const },
-        { id: 's2', title: 'Weekly Schedule', status: 'current' as const },
-        { id: 's3', title: 'Assignments & Grading', status: 'current' as const },
-        { id: 's4', title: 'Required Materials', status: 'current' as const },
-      ];
-    } else if (name === 'Learning Objectives') {
-      sections = [
-        { id: 's1', title: 'Knowledge Goals', status: 'current' as const },
-        { id: 's2', title: 'Skill Outcomes', status: 'current' as const },
-        { id: 's3', title: 'Assessment Alignment', status: 'current' as const },
-      ];
-    }
-    newNodes.push({
-      id: aId, type: 'lifecycleNode',
-      position: { x: artifactCol * COL_GAP, y: artifactStartY + i * ROW_GAP },
-      data: {
-        label: name, category: 'artifact', status: 'generating',
-        description: `Generated artifact: ${name}`, version: 1, lastUpdated: Date.now(),
-        sections,
-        ...(intent.transformation && {
-          aiPrompt: `Generate a complete ${name} based on the structured content provided. Include all sections: ${sections.map(s => s.title).join(', ')}. Be thorough and professional.`,
-        }),
-      },
-    });
-    newEdges.push({ id: `e-${stateId}-${aId}`, source: stateId, target: aId, label: 'drives', style: { stroke: '#06b6d4', strokeWidth: 2 } });
-    newEvents.push({ id: uid(), type: 'created', message: `${name} artifact generated`, timestamp: Date.now(), nodeId: aId, agent: true });
-  });
-  col++;
-
-  // ── Next column: Review Gate ──
-  const revId = uid();
-  newNodes.push({
-    id: revId, type: 'lifecycleNode',
-    position: { x: col * COL_GAP, y: 80 },
-    data: { label: 'Review Gate', category: 'review', status: 'reviewing', description: 'Pending review before finalization', version: 1, lastUpdated: Date.now() },
-  });
-  const artifactNodes = newNodes.filter(n => n.data.category === 'artifact');
-  artifactNodes.forEach(a => {
-    newEdges.push({ id: `e-${a.id}-${revId}`, source: a.id, target: revId, animated: true, label: 'validates', style: { stroke: '#f43f5e', strokeWidth: 2 } });
-  });
-  newEvents.push({ id: uid(), type: 'created', message: 'Review gate added for quality control', timestamp: Date.now(), nodeId: revId, agent: true });
-  col++;
-
-  // ── Next column: CID Monitor ──
-  const propId = uid();
-  newNodes.push({
-    id: propId, type: 'lifecycleNode',
-    position: { x: col * COL_GAP, y: 80 },
-    data: { label: 'CID: Monitor', category: 'cid', status: 'active', description: 'Monitors for changes and triggers propagation', version: 1, lastUpdated: Date.now() },
-  });
-  newEdges.push({ id: `e-${revId}-${propId}`, source: revId, target: propId, label: 'monitors', style: { stroke: '#10b981', strokeWidth: 1.5, strokeDasharray: '4 4' } });
-  newEvents.push({ id: uid(), type: 'created', message: 'CID monitoring node activated', timestamp: Date.now(), nodeId: propId, agent: true });
-  col++;
-
-  // ── Last column: Output node (rightmost) — service-aware ──
-  const outputId = uid();
-  const outputData: NodeData = {
-    label: 'Final Output', category: 'output', status: 'pending',
-    description: 'Deliverables, reports, or deployable results',
-    version: 1, lastUpdated: Date.now(),
-  };
-
-  if (intent.outputFormat) {
-    outputData.label = `Export as ${intent.outputFormat.label}`;
-    outputData.description = `Download final deliverable as ${intent.outputFormat.label} file`;
-    outputData.serviceIcon = intent.outputFormat.icon;
-    outputData.outputFormat = intent.outputFormat.format;
-    outputData.outputMimeType = intent.outputFormat.mimeType;
-    outputData.outputFormatLabel = intent.outputFormat.label;
-  } else if (intent.outputService) {
-    outputData.label = `Export to ${intent.outputService.name}`;
-    outputData.description = `Export final deliverable to ${intent.outputService.name}`;
-    outputData.serviceName = intent.outputService.name;
-    outputData.serviceIcon = intent.outputService.icon;
-  } else if (intent.transformation) {
-    outputData.label = `${intent.transformation} Output`;
-    outputData.description = `Final ${intent.transformation.toLowerCase()} ready for delivery`;
-  }
-
-  newNodes.push({ id: outputId, type: 'lifecycleNode', position: { x: col * COL_GAP, y: 80 }, data: outputData });
-  newEdges.push({ id: `e-${propId}-${outputId}`, source: propId, target: outputId, label: 'outputs', style: { stroke: '#f97316', strokeWidth: 2 } });
-  newEvents.push({ id: uid(), type: 'created', message: `${outputData.label} node created`, timestamp: Date.now(), nodeId: outputId, agent: true });
-
-  return { nodes: newNodes, edges: newEdges, events: newEvents };
-}
+// (old code removed — now in lib/graph.ts and lib/intent.ts)
 
 // ── CID Build Memory — tracks what was built and why for context-aware follow-ups ──
 interface BuildMemoryEntry {
@@ -1102,6 +519,14 @@ function postBuildFinalize(getStore: () => LifecycleStore) {
       s.addMessage({ id: uid(), role: 'cid', content: warn, timestamp: Date.now() });
     }
   }, 2000);
+  // Auto-enrich: generate descriptions for nodes missing them (non-blocking)
+  trackTimeout(() => {
+    const s = getStore();
+    const noDesc = s.nodes.filter(n => !n.data.description);
+    if (noDesc.length > 0 && s.nodes.length >= 3) {
+      s.autoDescribe();
+    }
+  }, 2500);
 }
 
 const persisted = loadFromStorage();
@@ -1143,11 +568,11 @@ export const useLifecycleStore = create<LifecycleStore>((set, get) => ({
   nodes: persisted?.nodes ?? [],
   edges: persisted?.edges ?? [],
   events: persisted?.events ?? [],
+  // Welcome-back messages are ephemeral — appended at init but filtered out before saving
   messages: (() => {
     if (persisted?.messages) {
-      // Add a welcome-back message if returning to a saved workflow
       const wb = buildWelcomeBack(persisted.nodes ?? [], persisted.edges ?? [], persistedMode);
-      return wb ? [...persisted.messages, wb] : persisted.messages;
+      return wb ? [...persisted.messages, { ...wb, _ephemeral: true }] : persisted.messages;
     }
     return [{ id: 'init-1', role: 'cid' as const, content: getAgent(persistedMode).welcome, timestamp: Date.now() }];
   })(),
@@ -1196,7 +621,7 @@ export const useLifecycleStore = create<LifecycleStore>((set, get) => ({
 
     const newAnswers = { ...ctx.answers, [`q${ctx.questionIndex}`]: cardId };
     const nextQ = ctx.questionIndex + 1;
-    const questions = getInterviewQuestions(ctx.originalPrompt);
+    const questions = getInterviewQuestions(ctx.originalPrompt, store.nodes, store.edges);
     const agent = getAgent(store.cidMode);
 
     if (nextQ < questions.length) {
@@ -1340,10 +765,22 @@ export const useLifecycleStore = create<LifecycleStore>((set, get) => ({
 
     const d = node.data;
 
-    // For input nodes, just pass through inputValue as executionResult
+    // Passthrough categories: these don't call the AI API, they pass data downstream
     if (d.category === 'input') {
       const value = d.inputValue || d.content || '';
       store.updateNodeData(nodeId, { executionResult: value, executionStatus: value ? 'success' : 'idle' });
+      return;
+    }
+    if (d.category === 'trigger') {
+      // Triggers are initiators — they pass through their description/content as context
+      const value = d.content || d.description || `Trigger: ${d.label}`;
+      store.updateNodeData(nodeId, { executionResult: value, executionStatus: 'success' });
+      return;
+    }
+    if (d.category === 'dependency') {
+      // Dependencies are prerequisites — pass through as metadata
+      const value = d.content || d.description || `Dependency: ${d.label}`;
+      store.updateNodeData(nodeId, { executionResult: value, executionStatus: 'success' });
       return;
     }
 
@@ -1416,56 +853,86 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       }
     }
 
-    // If no AI prompt and no API key, just pass through upstream content
-    if (!d.aiPrompt && !d.apiKey) {
+    // If node already has rich content and upstream nodes have no execution results
+    // (i.e. content was pre-generated by API), use existing content as execution result
+    const hasUpstreamExecResults = incomingEdges.some(e => {
+      const src = store.nodes.find(n => n.id === e.source);
+      return src?.data.executionResult && src.data.executionResult !== src.data.content;
+    });
+    if (d.content && d.content.length > 50 && !hasUpstreamExecResults && !d.aiPrompt) {
+      store.updateNodeData(nodeId, { executionResult: d.content, executionStatus: 'success' });
+      return;
+    }
+
+    // Build an execution prompt — either from explicit aiPrompt or auto-generated from node context
+    const autoPrompt = d.aiPrompt || (() => {
+      const cat = d.category;
+      const label = d.label;
+      const desc = d.description || '';
+      if (cat === 'cid') return `Process and transform the input content for "${label}". ${desc}`;
+      if (cat === 'artifact') return `Generate detailed, professional content for "${label}". ${desc} Include all relevant sections. Write real content, not placeholders. Use markdown formatting.`;
+      if (cat === 'state') return `Analyze and organize the input content for "${label}". ${desc} Structure the information clearly and extract key points.`;
+      if (cat === 'review') return `Review the following content for quality, completeness, and accuracy. Provide a brief assessment and note any issues. For "${label}": ${desc}`;
+      if (cat === 'note') return `Summarize and organize research notes for "${label}". ${desc} Extract key insights and organize them clearly.`;
+      if (cat === 'policy') return `Define and document the policy rules for "${label}". ${desc}`;
+      if (cat === 'trigger') return `Define the trigger conditions for "${label}". ${desc} Specify what events, schedules, or conditions activate this step.`;
+      if (cat === 'test') return `Design and execute tests for "${label}". ${desc} Define test cases, expected outcomes, and report pass/fail results.`;
+      if (cat === 'action') return `Execute the action for "${label}". ${desc} Describe the operation, its inputs, outputs, and any side effects.`;
+      if (cat === 'patch') return `Generate a patch or fix for "${label}". ${desc} Identify the issue, describe the fix, and provide the corrected content.`;
+      if (cat === 'dependency') return `Analyze and resolve dependencies for "${label}". ${desc} List required dependencies, their status, and any conflicts.`;
+      if (cat === 'output' && !d.outputFormat) return `Prepare the final output for "${label}". ${desc} Format the content for delivery.`;
+      return null;
+    })();
+
+    // If no prompt could be generated, pass through upstream content
+    if (!autoPrompt) {
       const passthrough = upstreamResults.join('\n\n---\n\n') || d.content || '';
       store.updateNodeData(nodeId, { executionResult: passthrough, executionStatus: passthrough ? 'success' : 'idle' });
       return;
     }
 
-    // AI execution — needs apiKey
-    if (!d.apiKey) {
-      store.updateNodeData(nodeId, { executionStatus: 'error', executionError: 'No API key configured. Add your API key in the node detail panel.' });
-      return;
-    }
+    const inputContext = upstreamResults.length > 0
+      ? `Input from upstream nodes:\n\n${upstreamResults.join('\n\n---\n\n')}`
+      : d.content || 'No input provided.';
 
     store.updateNodeData(nodeId, { executionStatus: 'running', executionError: undefined });
     store.updateNodeStatus(nodeId, 'generating');
+    cidLog('executeNode:running', { nodeId, label: d.label, model: store.cidAIModel, upstreamCount: upstreamResults.length });
 
     try {
-      const inputContext = upstreamResults.length > 0
-        ? `Input from upstream nodes:\n\n${upstreamResults.join('\n\n---\n\n')}`
-        : d.content || 'No input provided.';
+      // All AI execution routes through the server-side /api/cid route
+      let output = '';
 
-      const prompt = d.aiPrompt || d.description || `Process the following input for "${d.label}"`;
-      const model = d.aiModel || 'claude-sonnet-4-20250514';
+      {
+        const systemPrompt = `You are a content generator for a workflow node called "${d.label}" (category: ${d.category}). Write detailed, professional content. Return ONLY the content as markdown text. Do not wrap in JSON or code blocks.`;
+        const res = await fetch('/api/cid', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            systemPrompt,
+            model: store.cidAIModel,
+            taskType: 'execute',
+            messages: [{ role: 'user', content: `${autoPrompt}\n\n${inputContext}` }],
+          }),
+        });
 
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': d.apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({
-          model,
-          max_tokens: 4096,
-          messages: [{ role: 'user', content: `${prompt}\n\n${inputContext}` }],
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: { message: res.statusText } }));
-        const errMsg = err?.error?.message || `API error ${res.status}`;
-        store.updateNodeData(nodeId, { executionStatus: 'error', executionError: errMsg });
-        store.updateNodeStatus(nodeId, 'active');
-        return;
+        if (!res.ok) {
+          const errMsg = `CID API error ${res.status}`;
+          store.updateNodeData(nodeId, { executionStatus: 'error', executionError: errMsg });
+          store.updateNodeStatus(nodeId, 'active');
+          return;
+        }
+        const result = await res.json();
+        if (result.error) {
+          store.updateNodeData(nodeId, { executionStatus: 'error', executionError: result.error === 'no_api_key' ? 'No API key configured on server.' : result.message });
+          store.updateNodeStatus(nodeId, 'active');
+          return;
+        }
+        // The response may be parsed JSON or raw text
+        output = result.result?.content || result.result?.message || (typeof result.result === 'string' ? result.result : JSON.stringify(result.result));
       }
 
-      const result = await res.json();
-      const output = result.content?.[0]?.text || '';
-      store.updateNodeData(nodeId, { executionResult: output, executionStatus: 'success', executionError: undefined });
+      store.updateNodeData(nodeId, { executionResult: output, executionStatus: 'success', executionError: undefined, apiKey: undefined });
       store.updateNodeStatus(nodeId, 'active');
       store.addEvent({ id: uid(), type: 'regenerated', message: `Executed "${d.label}" successfully`, timestamp: Date.now(), nodeId, agent: true });
       cidLog('executeNode:success', { nodeId, outputLength: output.length });
@@ -1482,44 +949,180 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     const { nodes, edges } = store;
     cidLog('executeWorkflow', { nodeCount: nodes.length, edgeCount: edges.length });
     if (nodes.length === 0) return;
+    const mode = get().cidMode;
 
-    const { order } = topoSort(nodes, edges);
+    // Save current results as snapshot for diff
+    const snapshot = new Map<string, string>();
+    nodes.forEach(n => {
+      if (n.data.executionResult) snapshot.set(n.id, n.data.executionResult);
+    });
+    set({ lastExecutionSnapshot: snapshot });
 
-    // Execute in topological order with progress tracking
+    // ── Pre-execution validation ──
+    const nodeIds = new Set(nodes.map(n => n.id));
+    const issues: string[] = [];
+
+    // Check for cycles
+    const adj = new Map<string, string[]>();
+    for (const e of edges) {
+      if (!adj.has(e.source)) adj.set(e.source, []);
+      adj.get(e.source)!.push(e.target);
+    }
+    const W = 0, G = 1, B = 2;
+    const clr = new Map<string, number>();
+    nodes.forEach(n => clr.set(n.id, W));
+    let hasCycle = false;
+    const cycleLabels: string[] = [];
+    const dfsCycle = (id: string) => {
+      clr.set(id, G);
+      for (const child of adj.get(id) || []) {
+        if (clr.get(child) === G) {
+          hasCycle = true;
+          const n = nodes.find(nd => nd.id === child);
+          if (n) cycleLabels.push(n.data.label);
+        }
+        if (clr.get(child) === W) dfsCycle(child);
+      }
+      clr.set(id, B);
+    };
+    for (const n of nodes) { if (clr.get(n.id) === W) dfsCycle(n.id); }
+    if (hasCycle) issues.push(`Cycle detected involving: ${cycleLabels.join(', ')}`);
+
+    // Check for orphaned edges
+    const orphaned = edges.filter(e => !nodeIds.has(e.source) || !nodeIds.has(e.target));
+    if (orphaned.length > 0) issues.push(`${orphaned.length} orphaned edge(s)`);
+
+    // Check for disconnected nodes (no edges at all)
+    const connectedIds = new Set<string>();
+    edges.forEach(e => { connectedIds.add(e.source); connectedIds.add(e.target); });
+    const disconnected = nodes.filter(n => !connectedIds.has(n.id));
+    if (disconnected.length > 0 && nodes.length > 1) {
+      issues.push(`${disconnected.length} disconnected node(s): ${disconnected.map(n => n.data.label).join(', ')}`);
+    }
+
+    // Report validation issues (but continue — only cycles are blocking)
+    if (issues.length > 0) {
+      const validationMsg = mode === 'poirot'
+        ? `Attention, mon ami! My little grey cells detect ${issues.length} issue${issues.length > 1 ? 's' : ''} before execution:\n${issues.map(i => `- ${i}`).join('\n')}${hasCycle ? '\n\nThe cycle, it prevents execution. Fix it first!' : '\n\nProceeding despite warnings...'}`
+        : `Pre-flight check: ${issues.length} issue${issues.length > 1 ? 's' : ''} found:\n${issues.map(i => `- ${i}`).join('\n')}${hasCycle ? '\n\nBlocked: fix cycle first.' : '\n\nContinuing.'}`;
+      store.addMessage({ id: uid(), role: 'cid', content: validationMsg, timestamp: Date.now() });
+      if (hasCycle) return;
+    }
+
+    const { order, levels } = topoSort(nodes, edges);
+
+    // ── Group nodes by topological level for parallel execution ──
+    const levelGroups = new Map<number, string[]>();
+    for (const nodeId of order) {
+      const level = levels.get(nodeId) ?? 0;
+      if (!levelGroups.has(level)) levelGroups.set(level, []);
+      levelGroups.get(level)!.push(nodeId);
+    }
+    const sortedLevels = [...levelGroups.keys()].sort((a, b) => a - b);
+
     const startTime = Date.now();
     let successCount = 0;
     let errorCount = 0;
+    let skippedCount = 0;
     const failedNames: string[] = [];
+    const skippedNames: string[] = [];
+    let completed = 0;
 
-    for (let i = 0; i < order.length; i++) {
-      const nodeId = order[i];
-      const nodeLabel = nodes.find(n => n.id === nodeId)?.data.label ?? nodeId;
-      set({ executionProgress: { current: i + 1, total: order.length, currentLabel: nodeLabel, running: true } });
-      await store.executeNode(nodeId);
-      const updated = get().nodes.find(n => n.id === nodeId);
-      if (updated?.data.executionStatus === 'error') {
-        errorCount++;
-        failedNames.push(nodeLabel);
-      } else {
-        successCount++;
+    let stageIdx = 0;
+    for (const level of sortedLevels) {
+      const levelNodeIds = levelGroups.get(level) || [];
+      stageIdx++;
+
+      // Execute all nodes at the same level concurrently
+      const promises = levelNodeIds.map(async (nodeId) => {
+        const nodeLabel = nodes.find(n => n.id === nodeId)?.data.label ?? nodeId;
+        set({ executionProgress: {
+          current: completed, total: order.length, currentLabel: nodeLabel, running: true,
+          stage: stageIdx, totalStages: sortedLevels.length,
+          succeeded: successCount, failed: errorCount, skipped: skippedCount,
+        } });
+
+        // Skip if any upstream dependency failed (cascade skip)
+        const upstreamEdges = edges.filter(e => e.target === nodeId);
+        const hasFailedUpstream = upstreamEdges.some(e => {
+          const src = get().nodes.find(n => n.id === e.source);
+          return src?.data.executionStatus === 'error';
+        });
+        if (hasFailedUpstream) {
+          skippedCount++;
+          skippedNames.push(nodeLabel);
+          store.updateNodeData(nodeId, { executionStatus: 'error', executionError: 'Skipped: upstream dependency failed' });
+          cidLog('executeWorkflow:skip', { nodeId, label: nodeLabel, reason: 'upstream failed' });
+          completed++;
+          return;
+        }
+
+        await store.executeNode(nodeId);
+        completed++;
+        const updated = get().nodes.find(n => n.id === nodeId);
+        if (updated?.data.executionStatus === 'error') {
+          errorCount++;
+          failedNames.push(nodeLabel);
+        } else {
+          successCount++;
+        }
+      });
+
+      await Promise.all(promises);
+
+      // Agent-differentiated behavior between stages
+      if (mode === 'poirot' && stageIdx < sortedLevels.length) {
+        // Poirot validates between stages — reports progress and checks for issues
+        const stageErrors = errorCount;
+        const stageNodes = levelNodeIds.length;
+        if (stageErrors > 0) {
+          store.addMessage({
+            id: uid(), role: 'cid', timestamp: Date.now(),
+            content: `Stage ${stageIdx}/${sortedLevels.length} complete. Hélas! ${stageErrors} node${stageErrors > 1 ? 's' : ''} failed. The investigation continues with caution...`,
+          });
+        } else if (stageNodes > 1) {
+          store.addMessage({
+            id: uid(), role: 'cid', timestamp: Date.now(),
+            content: `Stage ${stageIdx}/${sortedLevels.length}: ${stageNodes} nodes executed successfully. Proceeding to the next stage...`,
+          });
+        }
       }
+      // Rowan: silent execution, no stage reports — just gets it done
     }
 
     set({ executionProgress: null });
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-    const mode = get().cidMode;
+    const parallelNote = sortedLevels.length < order.length ? ` (${sortedLevels.length} parallel stages)` : '';
+
+    // Build actionable next-step suggestions
+    const nextSteps: string[] = [];
+    const currentNodes = get().nodes;
+    const outputNodes = currentNodes.filter(n => n.data.category === 'output' && n.data.executionStatus === 'success');
+    const reviewNodes = currentNodes.filter(n => n.data.category === 'review' && n.data.executionStatus === 'success');
+
+    if (errorCount > 0) nextSteps.push('`retry failed` to re-run failed nodes');
+    if (outputNodes.length > 0) nextSteps.push('Check output nodes for final deliverables');
+    if (reviewNodes.length > 0) nextSteps.push('Review gate results before proceeding');
+    if (errorCount === 0 && skippedCount === 0) nextSteps.push('`diff last run` to compare with previous execution');
+
     let msg: string;
-    if (errorCount === 0) {
+    if (errorCount === 0 && skippedCount === 0) {
       msg = mode === 'poirot'
-        ? `Magnifique! All **${order.length}** nodes executed flawlessly in ${elapsed}s. The workflow, it purrs like a well-oiled machine.`
-        : `Workflow complete. ${order.length} nodes processed in ${elapsed}s. All clear.`;
+        ? `Magnifique! All **${order.length}** nodes executed flawlessly in ${elapsed}s${parallelNote}. The workflow, it purrs like a well-oiled machine.`
+        : `Workflow complete. **${order.length}** nodes processed in ${elapsed}s${parallelNote}. All clear.`;
     } else {
+      const parts = [`**${successCount}** succeeded`];
+      if (errorCount > 0) parts.push(`**${errorCount}** failed (${failedNames.join(', ')})`);
+      if (skippedCount > 0) parts.push(`**${skippedCount}** skipped (${skippedNames.join(', ')})`);
       msg = mode === 'poirot'
-        ? `Execution finished in ${elapsed}s. **${successCount}** succeeded, but **${errorCount}** failed: ${failedNames.join(', ')}. These culprits require investigation, mon ami.`
-        : `Done. ${successCount}/${order.length} succeeded, ${errorCount} failed (${failedNames.join(', ')}). ${elapsed}s total.`;
+        ? `Execution finished in ${elapsed}s${parallelNote}. ${parts.join(', ')}. These culprits require investigation, mon ami.`
+        : `Done in ${elapsed}s${parallelNote}. ${parts.join(', ')}.`;
+    }
+    if (nextSteps.length > 0) {
+      msg += '\n\n**Next:** ' + nextSteps.join(' · ');
     }
     store.addMessage({ id: uid(), role: 'cid', content: msg, timestamp: Date.now() });
-    cidLog('executeWorkflow:complete', { nodesProcessed: order.length, errors: errorCount, elapsed });
+    cidLog('executeWorkflow:complete', { nodesProcessed: order.length, errors: errorCount, skipped: skippedCount, elapsed, parallelStages: sortedLevels.length });
   },
 
   // Undo/Redo
@@ -1735,12 +1338,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         const srcId = isReverse ? bestTarget.id : id;
         const tgtId = isReverse ? id : bestTarget.id;
         const edgeLabel = isReverse ? revLabel : fwdLabel;
-        store.addEdge({
-          id: `e-${srcId}-${tgtId}`, source: srcId, target: tgtId,
-          label: edgeLabel,
-          animated: ['monitors', 'watches', 'validates'].includes(edgeLabel),
-          style: { stroke: EDGE_LABEL_COLORS[edgeLabel] || '#6366f1', strokeWidth: 2 },
-        });
+        store.addEdge(createStyledEdge(srcId, tgtId, edgeLabel));
         store.addEvent({
           id: `ev-${Date.now()}-ac`, type: 'created',
           message: `Auto-connected ${isReverse ? bestTarget.data.label : node.data.label} → ${isReverse ? node.data.label : bestTarget.data.label} (${edgeLabel})`,
@@ -1874,14 +1472,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       const targetNode = s.nodes.find((n) => n.id === connection.target);
       // Auto-infer edge label from source→target category pair
       const label = inferEdgeLabel(sourceNode?.data.category, targetNode?.data.category);
-      const newEdge: Edge = {
-        id: `e-${connection.source}-${connection.target}`,
-        source: connection.source,
-        target: connection.target,
-        label,
-        animated: ['monitors', 'watches', 'validates'].includes(label),
-        style: { stroke: EDGE_LABEL_COLORS[label] || '#6366f1', strokeWidth: 2 },
-      };
+      const newEdge: Edge = createStyledEdge(connection.source, connection.target, label);
       const edges = [...s.edges, newEdge];
       const events = [
         { id: `ev-${Date.now()}`, type: 'created' as const, message: `Connected ${sourceNode?.data.label ?? connection.source} → ${targetNode?.data.label ?? connection.target} (${label})`, timestamp: Date.now() },
@@ -2064,10 +1655,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       });
       // Connect isolated nodes to the hub
       isolatedNodes.forEach((n) => {
-        store.addEdge({
-          id: `e-${connId}-${n.id}`, source: connId, target: n.id,
-          animated: true, label: 'connects', style: { stroke: '#14b8a6', strokeWidth: 2 },
-        });
+        store.addEdge(createStyledEdge(connId, n.id, 'connects', { animated: true }));
       });
       store.addEvent({
         id: `ev-${Date.now()}-conn`, type: 'created',
@@ -2104,10 +1692,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         },
       });
       unvalidatedArtifacts.forEach((n) => {
-        store.addEdge({
-          id: `e-${n.id}-${valId}`, source: n.id, target: valId,
-          animated: true, label: 'validates', style: { stroke: '#a855f7', strokeWidth: 2 },
-        });
+        store.addEdge(createStyledEdge(n.id, valId, 'validates', { animated: true }));
       });
       store.addEvent({
         id: `ev-${Date.now()}-val`, type: 'created',
@@ -2138,10 +1723,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         },
       });
       leafNodes.forEach((n) => {
-        store.addEdge({
-          id: `e-${n.id}-${outId}`, source: n.id, target: outId,
-          label: 'outputs', style: { stroke: '#eab308', strokeWidth: 1.5, strokeDasharray: '4 4' },
-        });
+        store.addEdge(createStyledEdge(n.id, outId, 'outputs', { dashed: true }));
       });
       store.addEvent({
         id: `ev-${Date.now()}-out`, type: 'created',
@@ -2170,10 +1752,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         },
       });
       staleNodes.forEach((n) => {
-        store.addEdge({
-          id: `e-${casId}-${n.id}`, source: casId, target: n.id,
-          animated: true, label: 'updates', style: { stroke: '#f97316', strokeWidth: 2 },
-        });
+        store.addEdge(createStyledEdge(casId, n.id, 'updates', { animated: true }));
       });
       store.addEvent({
         id: `ev-${Date.now()}-cas`, type: 'created',
@@ -2206,10 +1785,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       // Connect to state nodes for monitoring
       const stateNodes = nodes.filter((n) => n.data.category === 'state');
       stateNodes.forEach((n) => {
-        store.addEdge({
-          id: `e-${n.id}-${watchId}`, source: n.id, target: watchId,
-          label: 'watches', style: { stroke: '#22d3ee', strokeWidth: 1.5, strokeDasharray: '4 4' },
-        });
+        store.addEdge(createStyledEdge(n.id, watchId, 'watches', { dashed: true }));
       });
       store.addEvent({
         id: `ev-${Date.now()}-watch`, type: 'created',
@@ -2256,7 +1832,12 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
 
   exportWorkflow: () => {
     const { nodes, edges, events, messages } = get();
-    return JSON.stringify({ _format: 'lifecycle-agent', _version: 1, nodes, edges, events, messages }, null, 2);
+    // Strip sensitive data (API keys) from node data before export
+    const safeNodes = nodes.map(n => ({
+      ...n,
+      data: { ...n.data, apiKey: undefined },
+    }));
+    return JSON.stringify({ _format: 'lifecycle-agent', _version: 1, nodes: safeNodes, edges, events, messages }, null, 2);
   },
 
   importWorkflow: (json) => {
@@ -2335,7 +1916,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     set(s => {
       const edges = s.edges.map(e =>
         e.id === edgeId
-          ? { ...e, label, animated: ['monitors', 'watches', 'validates'].includes(label), style: { ...e.style, stroke: EDGE_LABEL_COLORS[label] || '#6366f1' } }
+          ? { ...e, label, animated: ANIMATED_LABELS.has(label), style: { ...e.style, stroke: EDGE_LABEL_COLORS[label] || '#6366f1' } }
           : e
       );
       saveToStorage({ nodes: s.nodes, edges, events: s.events, messages: s.messages });
@@ -2394,7 +1975,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       const res = await fetch('/api/cid', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ systemPrompt, messages: [{ role: 'user', content: userPrompt }], model: get().cidAIModel }),
+        body: JSON.stringify({ systemPrompt, messages: [{ role: 'user', content: userPrompt }], model: get().cidAIModel, taskType: 'analyze' }),
         signal: controller.signal,
       });
       clearTimeout(timeout);
@@ -2470,7 +2051,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       const res = await fetch('/api/cid', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ systemPrompt, messages, model: get().cidAIModel }),
+        body: JSON.stringify({ systemPrompt, messages, model: get().cidAIModel, taskType: 'analyze' }),
         signal: chatController.signal,
       });
       clearTimeout(chatTimeout);
@@ -2560,14 +2141,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
             // Skip duplicate edges
             const edgeExists = existingEdges.some(ee => ee.source === srcNode.id && ee.target === tgtNode.id);
             if (edgeExists) return;
-            newEdges.push({
-              id: `e-${srcNode.id}-${tgtNode.id}`,
-              source: srcNode.id,
-              target: tgtNode.id,
-              label: e.label || 'drives',
-              animated: ['monitors', 'watches', 'validates'].includes(e.label),
-              style: { stroke: EDGE_LABEL_COLORS[e.label] || '#6366f1', strokeWidth: 2 },
-            });
+            newEdges.push(createStyledEdge(srcNode.id, tgtNode.id, e.label || 'drives'));
           }
         });
 
@@ -2684,7 +2258,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     // Interview mode: agents with interviewEnabled start interview instead of building
     if (agent.interviewEnabled && poirotContext.phase === 'idle') {
       store.addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
-      const questions = getInterviewQuestions(prompt);
+      const questions = getInterviewQuestions(prompt, store.nodes, store.edges);
       set({ poirotContext: { phase: 'interviewing', originalPrompt: prompt, answers: {}, questionIndex: 0 } });
       setTimeout(() => {
         store.addMessage({
@@ -2734,7 +2308,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         const res = await fetch('/api/cid', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ systemPrompt, messages, model: get().cidAIModel }),
+          body: JSON.stringify({ systemPrompt, messages, model: get().cidAIModel, taskType: 'generate' }),
           signal: controller.signal,
         });
         clearTimeout(timeout);
@@ -2781,14 +2355,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
 
         wf.edges?.forEach(e => {
           if (newNodes[e.from] && newNodes[e.to]) {
-            newEdges.push({
-              id: `e-${newNodes[e.from].id}-${newNodes[e.to].id}`,
-              source: newNodes[e.from].id,
-              target: newNodes[e.to].id,
-              label: e.label || 'drives',
-              animated: ['monitors', 'watches', 'validates'].includes(e.label),
-              style: { stroke: EDGE_LABEL_COLORS[e.label] || '#6366f1', strokeWidth: 2 },
-            });
+            newEdges.push(createStyledEdge(newNodes[e.from].id, newNodes[e.to].id, e.label || 'drives'));
           }
         });
 
@@ -2850,7 +2417,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         timestamp: Date.now(), action: 'building',
       });
 
-      const { nodes: newNodes, edges: newEdges, events: newEvents } = buildNodesFromPrompt(prompt);
+      const { nodes: newNodes, edges: newEdges, events: newEvents } = buildNodesFromPrompt(prompt, uid, cidLog);
       const delay = 600;
 
       // Cancel any in-flight animation from a previous generation
@@ -3092,13 +2659,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       },
     }));
 
-    const newEdges: Edge[] = template.edges.map(e => ({
-      id: `e-${newNodes[e.from].id}-${newNodes[e.to].id}`,
-      source: newNodes[e.from].id, target: newNodes[e.to].id,
-      label: e.label,
-      animated: ['monitors', 'watches', 'validates'].includes(e.label),
-      style: { stroke: EDGE_LABEL_COLORS[e.label] || '#6366f1', strokeWidth: 2 },
-    }));
+    const newEdges: Edge[] = template.edges.map(e => createStyledEdge(newNodes[e.from].id, newNodes[e.to].id, e.label));
 
     set({ nodes: [], edges: [] });
     newNodes.forEach((node, i) => {
@@ -3156,14 +2717,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
 
     store.pushHistory();
     const label = edgeLabel || inferEdgeLabel(srcNode.data.category, tgtNode.data.category);
-    const newEdge: Edge = {
-      id: `e-${srcNode.id}-${tgtNode.id}`,
-      source: srcNode.id,
-      target: tgtNode.id,
-      label,
-      animated: ['monitors', 'watches', 'validates'].includes(label),
-      style: { stroke: EDGE_LABEL_COLORS[label] || '#6366f1', strokeWidth: 2 },
-    };
+    const newEdge: Edge = createStyledEdge(srcNode.id, tgtNode.id, label);
     store.addEdge(newEdge);
     store.addEvent({
       id: `ev-${Date.now()}`, type: 'created',
@@ -4185,7 +3739,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
           ...e,
           label: inferred,
           style: { ...e.style, stroke: EDGE_LABEL_COLORS[inferred] || '#6366f1', strokeWidth: 2 },
-          animated: ['monitors', 'watches', 'validates'].includes(inferred),
+          animated: ANIMATED_LABELS.has(inferred),
         };
       }
       return e;
@@ -4468,11 +4022,14 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       const res = await fetch('/api/cid', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ systemPrompt, messages: [{ role: 'user', content: prompt }], model: store.cidAIModel }),
+        body: JSON.stringify({ systemPrompt, messages: [{ role: 'user', content: prompt }], model: store.cidAIModel, taskType: 'execute' }),
       });
       if (!res.ok) throw new Error('API error');
       const data = await res.json();
-      const parsed = JSON.parse(data.response);
+      // API returns { result: { message, workflow } } — text in result.message
+      const rawText = data.result?.message || data.response || '';
+      const cleaned = rawText.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+      const parsed = JSON.parse(cleaned);
       const descriptions = parsed.descriptions || parsed;
       let count = 0;
       for (const node of empty) {
@@ -4770,6 +4327,162 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       ? `\n---\n*A thorough examination, mon ami. ${overallHealth >= 80 ? 'The case is strong.' : 'There are clues that warrant further investigation.'} Use \`suggest\` for recommended actions.*`
       : `\n---\nHealth: ${overallHealth}/100. Run \`suggest\` for recommended actions.`;
     parts.push(tail);
+    return parts.join('\n');
+  },
+
+  retryFailed: async () => {
+    const store = get();
+    const { nodes, edges, cidMode } = store;
+    const failedNodes = nodes.filter(n =>
+      n.data.executionStatus === 'error' && n.data.executionError !== 'Skipped: upstream dependency failed'
+    );
+    if (failedNodes.length === 0) {
+      store.addMessage({ id: uid(), role: 'cid', content: cidMode === 'poirot'
+        ? 'There are no failed nodes to retry, mon ami. The case is clean.'
+        : 'No failed nodes to retry.', timestamp: Date.now() });
+      return;
+    }
+
+    // Clear error status on failed nodes and their downstream skipped nodes
+    const failedIds = new Set(failedNodes.map(n => n.id));
+    const skippedNodes = nodes.filter(n =>
+      n.data.executionStatus === 'error' && n.data.executionError === 'Skipped: upstream dependency failed'
+    );
+    for (const n of [...failedNodes, ...skippedNodes]) {
+      store.updateNodeData(n.id, { executionStatus: 'idle', executionError: undefined, executionResult: undefined });
+    }
+
+    const retryMsg = cidMode === 'poirot'
+      ? `Retrying **${failedNodes.length}** failed node${failedNodes.length > 1 ? 's' : ''} + ${skippedNodes.length} skipped downstream...`
+      : `Retrying ${failedNodes.length} failed, ${skippedNodes.length} skipped.`;
+    store.addMessage({ id: uid(), role: 'cid', content: retryMsg, timestamp: Date.now() });
+
+    // Re-run the full workflow (nodes with successful results will use content bypass)
+    await store.executeWorkflow();
+  },
+
+  clearExecutionResults: () => {
+    const store = get();
+    const { nodes, cidMode } = store;
+    let cleared = 0;
+    for (const n of nodes) {
+      if (n.data.executionStatus || n.data.executionResult || n.data.executionError) {
+        store.updateNodeData(n.id, {
+          executionStatus: 'idle',
+          executionResult: undefined,
+          executionError: undefined,
+        });
+        cleared++;
+      }
+    }
+    cidLog('clearExecutionResults', { cleared });
+    return cidMode === 'poirot'
+      ? `Cleared execution results from **${cleared}** node${cleared !== 1 ? 's' : ''}. The slate is clean, mon ami — ready for a fresh investigation.`
+      : `Cleared ${cleared} node${cleared !== 1 ? 's' : ''}. Ready for re-execution.`;
+  },
+
+  getPreFlightSummary: () => {
+    const { nodes, edges, cidMode } = get();
+    if (nodes.length === 0) return 'No workflow to execute.';
+
+    const { order, levels } = topoSort(nodes, edges);
+    const levelGroups = new Map<number, string[]>();
+    for (const nodeId of order) {
+      const level = levels.get(nodeId) ?? 0;
+      if (!levelGroups.has(level)) levelGroups.set(level, []);
+      levelGroups.get(level)!.push(nodeId);
+    }
+    const stages = [...levelGroups.keys()].sort((a, b) => a - b);
+    const parallelNodes = stages.filter(l => (levelGroups.get(l)?.length ?? 0) > 1).length;
+
+    const inputNodes = nodes.filter(n => n.data.category === 'input');
+    const outputNodes = nodes.filter(n => n.data.category === 'output');
+    const aiNodes = nodes.filter(n => n.data.aiPrompt || ['cid', 'artifact'].includes(n.data.category));
+    const withContent = nodes.filter(n => (n.data.content?.length ?? 0) > 50 && !n.data.aiPrompt);
+
+    const parts = ['### Pre-Flight Summary', ''];
+    parts.push(`**Pipeline:** ${nodes.length} nodes → ${stages.length} stages${parallelNodes > 0 ? ` (${parallelNodes} parallel)` : ' (sequential)'}`);
+    parts.push(`**Inputs:** ${inputNodes.length} · **Outputs:** ${outputNodes.length} · **AI-processed:** ${aiNodes.length}`);
+    if (withContent.length > 0) parts.push(`**Pre-loaded content:** ${withContent.length} nodes (will bypass AI)`);
+
+    // Time estimation: ~5-8s per AI call, parallel stages share the max
+    const stageEstimates: number[] = [];
+    for (const level of stages) {
+      const ids = levelGroups.get(level) || [];
+      const aiCount = ids.filter(id => {
+        const n = nodes.find(nd => nd.id === id);
+        if (!n) return false;
+        const hasRichContent = (n.data.content?.length ?? 0) > 50 && !n.data.aiPrompt;
+        return !hasRichContent && n.data.category !== 'input';
+      }).length;
+      stageEstimates.push(aiCount > 0 ? 7 : 0); // ~7s per AI stage (parallel within stage)
+    }
+    const totalSec = stageEstimates.reduce((a, b) => a + b, 0);
+    if (totalSec > 0) parts.push(`**Est. time:** ~${totalSec}s (${stages.length} stage${stages.length > 1 ? 's' : ''}, AI calls run in parallel within each stage)`);
+    parts.push('');
+
+    parts.push('**Execution order:**');
+    for (const level of stages) {
+      const levelNodeIds = levelGroups.get(level) || [];
+      const labels = levelNodeIds.map(id => {
+        const n = nodes.find(nd => nd.id === id);
+        return n?.data.label ?? id;
+      });
+      if (labels.length === 1) {
+        parts.push(`${level + 1}. ${labels[0]}`);
+      } else {
+        parts.push(`${level + 1}. ${labels.join(' ‖ ')} *(parallel)*`);
+      }
+    }
+
+    const tail = cidMode === 'poirot'
+      ? `\n---\n*Say \`run workflow\` to begin the investigation, mon ami.*`
+      : `\n---\nSay \`run workflow\` to execute.`;
+    parts.push(tail);
+    return parts.join('\n');
+  },
+
+  lastExecutionSnapshot: new Map(),
+
+  diffLastRun: () => {
+    const { nodes, lastExecutionSnapshot, cidMode } = get();
+    if (lastExecutionSnapshot.size === 0) {
+      return cidMode === 'poirot'
+        ? 'No previous execution to compare against, mon ami. Run the workflow first.'
+        : 'No previous run to diff. Run workflow first.';
+    }
+
+    const parts: string[] = ['### Execution Diff (vs last run)', ''];
+    let newResults = 0;
+    let changed = 0;
+    let unchanged = 0;
+    let removed = 0;
+
+    for (const n of nodes) {
+      const current = n.data.executionResult || '';
+      const previous = lastExecutionSnapshot.get(n.id) || '';
+      if (current && !previous) {
+        newResults++;
+        parts.push(`- **${n.data.label}**: ✨ new result (${current.length} chars)`);
+      } else if (current && previous && current !== previous) {
+        changed++;
+        const lenDiff = current.length - previous.length;
+        parts.push(`- **${n.data.label}**: ↔ changed (${lenDiff > 0 ? '+' : ''}${lenDiff} chars)`);
+      } else if (current && previous && current === previous) {
+        unchanged++;
+      } else if (!current && previous) {
+        removed++;
+        parts.push(`- **${n.data.label}**: ✗ result cleared`);
+      }
+    }
+
+    if (newResults === 0 && changed === 0 && removed === 0) {
+      parts.push('No changes detected — all results identical to last run.');
+    } else {
+      parts.push('');
+      parts.push(`**Summary:** ${newResults} new, ${changed} changed, ${unchanged} unchanged, ${removed} cleared`);
+    }
+
     return parts.join('\n');
   },
 }));

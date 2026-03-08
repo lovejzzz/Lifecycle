@@ -12,73 +12,95 @@ import { getAgent } from '@/lib/agents';
 import type { CIDCard } from '@/lib/types';
 import { relativeTime } from '@/lib/types';
 
-const COMMAND_HINTS = [
-  { trigger: 'help', label: 'help — List all commands' },
-  { trigger: 'status', label: 'status — Graph health report' },
-  { trigger: 'explain', label: 'explain — Workflow narrative' },
-  { trigger: 'solve', label: 'solve — Fix structural problems' },
-  { trigger: 'optimize', label: 'optimize — Auto-arrange layout' },
-  { trigger: 'propagate', label: 'propagate — Sync stale nodes' },
-  { trigger: 'connect', label: 'connect X to Y — Create edge' },
-  { trigger: 'disconnect', label: 'disconnect X from Y — Remove edge' },
-  { trigger: 'delete', label: 'delete <name> — Remove node' },
-  { trigger: 'rename', label: 'rename X to Y — Rename node' },
-  { trigger: 'approve all', label: 'approve all — Batch approve' },
-  { trigger: 'unlock all', label: 'unlock all — Batch unlock' },
-  { trigger: 'add', label: 'add <category> called <name>' },
-  { trigger: 'set', label: 'set <name> to <status> — Change status' },
-  { trigger: 'lock', label: 'lock <name> — Lock a node' },
-  { trigger: 'list', label: 'list <category|status|all> — Node inventory' },
-  { trigger: 'focus', label: 'focus <name> — Select & pan to node' },
-  { trigger: 'duplicate', label: 'duplicate <name> — Clone a node' },
-  { trigger: 'describe', label: 'describe <name> as <text> — Set description' },
-  { trigger: 'swap', label: 'swap <A> and <B> — Swap positions' },
-  { trigger: 'content', label: 'content <name>: <text> — Set node content' },
-  { trigger: 'undo', label: 'undo — Revert last change' },
-  { trigger: 'redo', label: 'redo — Reapply undone change' },
-  { trigger: 'group', label: 'group — Arrange nodes by category' },
-  { trigger: 'clear stale', label: 'clear stale — Remove all stale nodes' },
-  { trigger: 'orphans', label: 'orphans — Find unconnected nodes' },
-  { trigger: 'count', label: 'count — Quick node statistics' },
-  { trigger: 'merge', label: 'merge A and B — Combine two nodes' },
-  { trigger: 'deps', label: 'deps <name> — Show dependency chain' },
-  { trigger: 'reverse', label: 'reverse <name> — Flip edge directions' },
-  { trigger: 'save', label: 'save <name> — Save a named snapshot' },
-  { trigger: 'restore', label: 'restore <name> — Restore a snapshot' },
-  { trigger: 'snapshots', label: 'snapshots — List saved snapshots' },
-  { trigger: 'critical', label: 'critical path — Show longest dependency chain' },
-  { trigger: 'isolate', label: 'isolate <name> — Show connected subgraph' },
-  { trigger: 'summarize', label: 'summarize — Executive summary' },
-  { trigger: 'validate', label: 'validate — Check workflow integrity' },
-  { trigger: 'clone', label: 'clone workflow — Duplicate entire workflow' },
-  { trigger: 'what if', label: 'what if remove <name> — Impact analysis' },
-  { trigger: 'why', label: 'why <name> — Explain why a node exists' },
-  { trigger: 'relabel', label: 'relabel all — Re-infer edge labels from categories' },
-  { trigger: 'teach', label: 'teach: <rule> — Teach CID a new rule' },
-  { trigger: 'rules', label: 'rules — List all taught rules' },
-  { trigger: 'forget', label: 'forget <N> — Remove a taught rule' },
-  { trigger: 'progress', label: 'progress — Workflow completion tracker' },
-  { trigger: 'diff', label: 'diff <snapshot> — Compare current vs saved' },
-  { trigger: 'batch', label: 'batch <status> where <field>=<value>' },
-  { trigger: 'plan', label: 'plan — Topological execution plan' },
-  { trigger: 'search', label: 'search <term> — Search chat history' },
-  { trigger: 'save template', label: 'save template <name> — Save workflow as template' },
-  { trigger: 'load template', label: 'load template <name> — Load a custom template' },
-  { trigger: 'templates', label: 'templates — List saved templates' },
-  { trigger: 'auto-describe', label: 'auto-describe — AI-generate descriptions for empty nodes' },
-  { trigger: 'compress', label: 'compress — Remove duplicates, pass-throughs & boilerplate' },
-  { trigger: 'bottlenecks', label: 'bottlenecks — Find choke points, hubs & single points of failure' },
-  { trigger: 'suggest', label: 'suggest — Context-aware next-step recommendations' },
-  { trigger: 'health detail', label: 'health detail — Detailed health breakdown by category' },
-  { trigger: '/export-chat', label: '/export-chat — Export conversation as Markdown' },
-  { trigger: 'run', label: 'run workflow — Execute the pipeline' },
-  { trigger: 'execute', label: 'execute <name> — Run a single node' },
-  { trigger: '/clear', label: '/clear — Clear chat history' },
-  { trigger: '/new', label: '/new — Start a new project' },
-  { trigger: '/export', label: '/export — Export workflow as JSON' },
-  { trigger: '/mode', label: '/mode — Switch agent (Rowan/Poirot)' },
-  { trigger: '/template', label: '/template <name> — Load a workflow template' },
+const COMMAND_HINTS_BY_SECTION: { section: string; hints: { trigger: string; label: string }[] }[] = [
+  { section: '📊 Analysis', hints: [
+    { trigger: 'status', label: 'status — Graph health report' },
+    { trigger: 'explain', label: 'explain — Workflow narrative' },
+    { trigger: 'summarize', label: 'summarize — Executive summary' },
+    { trigger: 'validate', label: 'validate — Check workflow integrity' },
+    { trigger: 'health detail', label: 'health detail — Detailed health breakdown' },
+    { trigger: 'bottlenecks', label: 'bottlenecks — Find choke points & hubs' },
+    { trigger: 'critical', label: 'critical path — Longest dependency chain' },
+    { trigger: 'orphans', label: 'orphans — Find unconnected nodes' },
+    { trigger: 'count', label: 'count — Quick node statistics' },
+    { trigger: 'progress', label: 'progress — Workflow completion tracker' },
+    { trigger: 'why', label: 'why <name> — Explain why a node exists' },
+    { trigger: 'what if', label: 'what if remove <name> — Impact analysis' },
+    { trigger: 'deps', label: 'deps <name> — Show dependency chain' },
+    { trigger: 'suggest', label: 'suggest — Context-aware recommendations' },
+  ]},
+  { section: '🔧 Node Operations', hints: [
+    { trigger: 'add', label: 'add <category> called <name>' },
+    { trigger: 'delete', label: 'delete <name> — Remove node' },
+    { trigger: 'rename', label: 'rename X to Y — Rename node' },
+    { trigger: 'duplicate', label: 'duplicate <name> — Clone a node' },
+    { trigger: 'merge', label: 'merge A and B — Combine two nodes' },
+    { trigger: 'set', label: 'set <name> to <status> — Change status' },
+    { trigger: 'lock', label: 'lock <name> — Lock a node' },
+    { trigger: 'describe', label: 'describe <name> as <text> — Set description' },
+    { trigger: 'content', label: 'content <name>: <text> — Set node content' },
+    { trigger: 'focus', label: 'focus <name> — Select & pan to node' },
+    { trigger: 'list', label: 'list <category|status|all> — Node inventory' },
+    { trigger: 'auto-describe', label: 'auto-describe — AI-generate descriptions' },
+  ]},
+  { section: '🔗 Edges & Layout', hints: [
+    { trigger: 'connect', label: 'connect X to Y — Create edge' },
+    { trigger: 'disconnect', label: 'disconnect X from Y — Remove edge' },
+    { trigger: 'reverse', label: 'reverse <name> — Flip edge directions' },
+    { trigger: 'relabel', label: 'relabel all — Re-infer edge labels' },
+    { trigger: 'swap', label: 'swap <A> and <B> — Swap positions' },
+    { trigger: 'optimize', label: 'optimize — Auto-arrange layout' },
+    { trigger: 'group', label: 'group — Arrange nodes by category' },
+    { trigger: 'isolate', label: 'isolate <name> — Show connected subgraph' },
+  ]},
+  { section: '▶️ Execution', hints: [
+    { trigger: 'run workflow', label: 'run workflow — Execute entire pipeline' },
+    { trigger: 'run', label: 'run workflow — Execute the pipeline' },
+    { trigger: 'execute', label: 'execute <name> — Run a single node' },
+    { trigger: 'preflight', label: 'preflight — Pre-execution summary & plan' },
+    { trigger: 'plan', label: 'plan — Topological execution plan' },
+    { trigger: 'retry failed', label: 'retry failed — Re-run failed nodes' },
+    { trigger: 'clear results', label: 'clear results — Reset execution state' },
+    { trigger: 'diff last run', label: 'diff last run — Compare vs previous run' },
+  ]},
+  { section: '🛠 Batch & Fix', hints: [
+    { trigger: 'solve', label: 'solve — Fix structural problems' },
+    { trigger: 'propagate', label: 'propagate — Sync stale nodes' },
+    { trigger: 'compress', label: 'compress — Remove duplicates & boilerplate' },
+    { trigger: 'approve all', label: 'approve all — Batch approve' },
+    { trigger: 'unlock all', label: 'unlock all — Batch unlock' },
+    { trigger: 'clear stale', label: 'clear stale — Remove all stale nodes' },
+    { trigger: 'batch', label: 'batch <status> where <field>=<value>' },
+  ]},
+  { section: '💾 Save & History', hints: [
+    { trigger: 'save', label: 'save <name> — Save a named snapshot' },
+    { trigger: 'restore', label: 'restore <name> — Restore a snapshot' },
+    { trigger: 'snapshots', label: 'snapshots — List saved snapshots' },
+    { trigger: 'diff', label: 'diff <snapshot> — Compare current vs saved' },
+    { trigger: 'clone', label: 'clone workflow — Duplicate entire workflow' },
+    { trigger: 'save template', label: 'save template <name> — Save as template' },
+    { trigger: 'load template', label: 'load template <name> — Load a template' },
+    { trigger: 'templates', label: 'templates — List saved templates' },
+    { trigger: 'undo', label: 'undo — Revert last change' },
+    { trigger: 'redo', label: 'redo — Reapply undone change' },
+    { trigger: 'search', label: 'search <term> — Search chat history' },
+  ]},
+  { section: '🤖 Agent', hints: [
+    { trigger: 'help', label: 'help — List all commands' },
+    { trigger: 'teach', label: 'teach: <rule> — Teach CID a new rule' },
+    { trigger: 'rules', label: 'rules — List all taught rules' },
+    { trigger: 'forget', label: 'forget <N> — Remove a taught rule' },
+    { trigger: '/mode', label: '/mode — Switch agent (Rowan/Poirot)' },
+    { trigger: '/clear', label: '/clear — Clear chat history' },
+    { trigger: '/new', label: '/new — Start a new project' },
+    { trigger: '/export', label: '/export — Export workflow as JSON' },
+    { trigger: '/export-chat', label: '/export-chat — Export conversation as Markdown' },
+    { trigger: '/template', label: '/template <name> — Load a workflow template' },
+  ]},
 ];
+
+// Flat list for autocomplete matching
+const COMMAND_HINTS = COMMAND_HINTS_BY_SECTION.flatMap(s => s.hints);
 
 const QUICK_ACTIONS = [
   { label: 'Solve problems', icon: Wrench, prompt: 'Analyze the workflow and solve any problems you find' },
@@ -88,9 +110,9 @@ const QUICK_ACTIONS = [
 ];
 
 const AI_MODELS = [
-  { id: 'deepseek-chat', label: 'DeepSeek V3', desc: 'Active — fast & capable' },
+  { id: 'deepseek-chat', label: 'DeepSeek V3', desc: 'Fast & capable' },
   { id: 'deepseek-reasoner', label: 'DeepSeek R1', desc: 'Deep reasoning' },
-  { id: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4', desc: 'Fast & capable' },
+  { id: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4', desc: 'Balanced' },
   { id: 'claude-opus-4-20250514', label: 'Claude Opus 4', desc: 'Most intelligent' },
   { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5', desc: 'Fastest' },
 ];
@@ -151,6 +173,59 @@ function renderMarkdown(text: string, nodeNames?: Map<string, string>, onNodeCli
       return;
     }
 
+    // Horizontal rule
+    if (/^---+$/.test(line.trim()) || /^\*\*\*+$/.test(line.trim())) {
+      elements.push(<hr key={i} className="border-white/[0.08] my-2" />);
+      return;
+    }
+
+    // Blockquote
+    if (line.startsWith('> ')) {
+      elements.push(
+        <div key={i} className="border-l-2 border-cyan-500/40 pl-2.5 ml-1 text-white/50 italic">
+          {inlineFormat(line.slice(2), nodeNames, onNodeClick)}
+        </div>
+      );
+      return;
+    }
+
+    // Table row detection — collect consecutive table lines
+    if (line.includes('|') && line.trim().startsWith('|')) {
+      // Look ahead to collect full table
+      const tableLines: string[] = [line];
+      let j = i + 1;
+      while (j < lines.length && lines[j].includes('|') && lines[j].trim().startsWith('|')) {
+        tableLines.push(lines[j]);
+        j++;
+      }
+      // Skip separator rows and already-processed rows
+      if (tableLines.length >= 2) {
+        const parseRow = (r: string) => r.split('|').slice(1, -1).map(c => c.trim());
+        const isSeparator = (r: string) => /^\|[\s\-:|]+\|$/.test(r.trim());
+        const headerRow = parseRow(tableLines[0]);
+        const dataRows = tableLines.slice(1).filter(r => !isSeparator(r)).map(parseRow);
+        elements.push(
+          <div key={i} className="overflow-x-auto my-1.5">
+            <table className="text-[10px] border-collapse w-full">
+              <thead>
+                <tr>{headerRow.map((h, hi) => <th key={hi} className="border border-white/[0.08] px-2 py-1 text-left text-white/70 bg-white/[0.04] font-semibold">{h}</th>)}</tr>
+              </thead>
+              <tbody>
+                {dataRows.map((row, ri) => (
+                  <tr key={ri}>{row.map((c, ci) => <td key={ci} className="border border-white/[0.06] px-2 py-1 text-white/50">{inlineFormat(c, nodeNames, onNodeClick)}</td>)}</tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+        // Skip ahead past the table lines we consumed (forEach will still iterate but we mark them)
+        for (let k = i + 1; k < j; k++) lines[k] = '\x00TABLE_CONSUMED';
+        return;
+      }
+    }
+    // Skip consumed table rows
+    if (line === '\x00TABLE_CONSUMED') return;
+
     // Empty line = spacing
     if (!line.trim()) { elements.push(<div key={i} className="h-1.5" />); return; }
 
@@ -174,6 +249,14 @@ function inlineFormat(text: string, nodeNames?: Map<string, string>, onNodeClick
       if (codeMatch[1]) parts.push(<React.Fragment key={key++}>{codeMatch[1]}</React.Fragment>);
       parts.push(<code key={key++} className="bg-white/[0.08] px-1 py-px rounded text-[10px] font-mono text-cyan-300/80">{codeMatch[2]}</code>);
       remaining = codeMatch[3];
+      continue;
+    }
+    // Markdown link [text](url)
+    const linkMatch = remaining.match(/^([\s\S]*?)\[([^\]]+)\]\((https?:\/\/[^)]+)\)([\s\S]*)/);
+    if (linkMatch) {
+      if (linkMatch[1]) parts.push(<React.Fragment key={key++}>{linkMatch[1]}</React.Fragment>);
+      parts.push(<a key={key++} href={linkMatch[3]} target="_blank" rel="noopener noreferrer" className="text-cyan-400/80 hover:text-cyan-300 underline underline-offset-2 decoration-cyan-400/30">{linkMatch[2]}</a>);
+      remaining = linkMatch[4];
       continue;
     }
     // Bold
@@ -241,6 +324,7 @@ export default function CIDPanel() {
     exportChatMarkdown, autoDescribe,
     compressWorkflow, findBottlenecks,
     suggestNextSteps, healthBreakdown,
+    retryFailed, clearExecutionResults, getPreFlightSummary, diffLastRun,
   } = useLifecycleStore();
   const [input, setInput] = useState('');
   const [editingMsgId, setEditingMsgId] = useState<string | null>(null);
@@ -254,9 +338,26 @@ export default function CIDPanel() {
   const cleanupRef = useRef<(() => void) | null>(null);
   const pendingSuggestionRef = useRef<string | null>(null);
 
-  const matchingHints = input.length >= 2 && !isProcessing
-    ? COMMAND_HINTS.filter(h => h.trigger.startsWith(input.toLowerCase().trim())).slice(0, 4)
-    : [];
+  const matchingHintsGrouped = React.useMemo(() => {
+    if (input.length < 2 || isProcessing) return [];
+    const query = input.toLowerCase().trim();
+    // Group matching hints by section for better discoverability
+    const results: { section?: string; trigger: string; label: string }[] = [];
+    let lastSection = '';
+    for (const sec of COMMAND_HINTS_BY_SECTION) {
+      const matches = sec.hints.filter(h => h.trigger.startsWith(query));
+      for (const h of matches) {
+        if (sec.section !== lastSection && results.length < 6) {
+          results.push({ section: sec.section, ...h });
+          lastSection = sec.section;
+        } else if (results.length < 6) {
+          results.push(h);
+        }
+      }
+    }
+    return results.slice(0, 6);
+  }, [input, isProcessing]);
+  const matchingHints = matchingHintsGrouped;
 
   // Build node name map for clickable references (sorted longest-first to match longest names first)
   const nodeNameMap = React.useMemo(() => {
@@ -616,16 +717,22 @@ export default function CIDPanel() {
       dispatchCommand(prompt, () => cloneWorkflow());
     } else if (/^(?:what\s*if|impact|without)\b/i.test(prompt)) {
       dispatchCommand(prompt, () => whatIf(prompt));
+    } else if (/^(?:pre\s*flight|flight\s*check|dry\s*run|plan\s+run|execution\s+plan)\s*$/i.test(prompt)) {
+      dispatchCommand(prompt, () => getPreFlightSummary());
+    } else if (/^(?:retry|rerun|re-run)\s+(?:failed|errors?|skipped)\s*$/i.test(prompt)) {
+      addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
+      setProcessing(true);
+      setTimeout(async () => {
+        await retryFailed();
+        setProcessing(false);
+      }, 300);
+    } else if (/^(?:clear|reset)\s+(?:results?|execution|output)\s*$/i.test(prompt)) {
+      dispatchCommand(prompt, () => clearExecutionResults(), 200, undefined, true, true);
+    } else if (/^(?:diff\s+(?:last|prev(?:ious)?)|compare\s+(?:run|execution)s?)\s*$/i.test(prompt)) {
+      dispatchCommand(prompt, () => diffLastRun());
     } else if (/^(?:run|execute|start)\s+(?:workflow|all|pipeline|everything)\s*$/i.test(prompt)) {
       addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
       setProcessing(true);
-      // Check if any AI nodes have API keys
-      const aiNodes = nodes.filter(n => ['cid'].includes(n.data.category) && n.data.aiPrompt);
-      const keyed = aiNodes.filter(n => n.data.apiKey);
-      if (aiNodes.length > 0 && keyed.length === 0) {
-        setTimeout(() => sendStreamingResponse('Some AI nodes have prompts but no API keys configured. Select an AI node and add your API key in the detail panel, then try again.'), 300);
-        return;
-      }
       setTimeout(async () => {
         await executeWorkflow();
         setProcessing(false);
@@ -728,8 +835,12 @@ export default function CIDPanel() {
         '- `templates` — List all saved custom templates',
         '',
         '**Execution**',
-        '- `run workflow` — Execute all nodes in topological order',
+        '- `run workflow` — Execute pipeline (parallel where possible)',
         '- `run/execute <name>` — Execute a single node',
+        '- `preflight` — Pre-execution summary with stage plan',
+        '- `retry failed` — Re-run only failed/skipped nodes',
+        '- `clear results` — Reset all execution state for fresh run',
+        '- `diff last run` — Compare current vs previous execution results',
         '',
         '**Slash Commands**',
         '- `/clear` — Clear chat history',
@@ -1231,14 +1342,20 @@ export default function CIDPanel() {
         {/* Autocomplete hints */}
         {matchingHints.length > 0 && (
           <div className="absolute bottom-full left-4 right-4 mb-1 rounded-lg border border-white/[0.08] bg-[#0e0e18]/95 backdrop-blur-xl overflow-hidden shadow-xl z-10">
-            {matchingHints.map(h => (
-              <button
-                key={h.trigger}
-                onClick={() => { setInput(h.trigger + ' '); inputRef.current?.focus(); }}
-                className="w-full text-left px-3 py-1.5 text-[11px] text-white/50 hover:text-white/80 hover:bg-white/[0.05] transition-colors"
-              >
-                {h.label}
-              </button>
+            {matchingHints.map((h, i) => (
+              <div key={h.trigger + i}>
+                {'section' in h && h.section && (
+                  <div className="px-3 py-1 text-[8px] text-white/20 uppercase tracking-wider font-medium border-t border-white/[0.04] first:border-t-0">
+                    {h.section}
+                  </div>
+                )}
+                <button
+                  onClick={() => { setInput(h.trigger + ' '); inputRef.current?.focus(); }}
+                  className="w-full text-left px-3 py-1.5 text-[11px] text-white/50 hover:text-white/80 hover:bg-white/[0.05] transition-colors"
+                >
+                  {h.label}
+                </button>
+              </div>
             ))}
           </div>
         )}
