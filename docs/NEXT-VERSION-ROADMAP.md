@@ -1527,6 +1527,361 @@ Each item includes specific files, implementation steps, acceptance criteria, an
 
 ---
 
+### 26. Parallel Branch Execution in Preview and Workflow Runner
+**Status:** [ ] Not started
+**Version target:** 1.26.0
+**Inspiration:** Dify's parallel branch execution (up to 10 simultaneous branches, total time = longest branch not sum of all) and LangGraph's fan-out/fan-in pattern where independent nodes run concurrently. n8n's multi-agent parallel execution also applies this pattern.
+**Complexity:** Medium (2-3 hours)
+
+**Problem:** Both `executeWorkflow()` in `src/store/useStore.ts` (line ~1260+) and `PreviewPanel.tsx` (line 105) execute nodes sequentially with a `for...of` loop over the topological order. When a workflow has parallel branches (e.g., after a "Design Complete" node, both "Frontend Dev" and "Backend Dev" start), they still execute one at a time. For the Chatbot template with 5 LLM calls, this means 10-25 seconds of serial waiting. If Intent Detection and Context & Knowledge were independent, they could run in parallel (~50% speedup). Dify explicitly advertises parallel execution as a headline feature. Our prompts encourage parallel branches (line 71 of `src/lib/prompts.ts`) but our execution engine doesn't honor them.
+
+**Implementation:**
+
+1. **File: `src/lib/graph.ts`** — Add a `getParallelGroups(order: string[], edges: Edge[]): string[][]` function:
+   - Takes the topological order and edge list
+   - Groups nodes into "levels" — nodes at the same level have all their dependencies satisfied by previous levels
+   - Level 0: nodes with in-degree 0 (inputs/triggers)
+   - Level N: nodes whose ALL incoming edges come from nodes in levels < N
+   - Return array of arrays: `[['input'], ['nodeA', 'nodeB'], ['mergeNode'], ['output']]`
+
+2. **File: `src/store/useStore.ts`** — Modify `executeWorkflow()` to use parallel groups:
+   ```typescript
+   const levels = getParallelGroups(order, store.edges);
+   for (const level of levels) {
+     // Execute all nodes in this level concurrently
+     await Promise.all(level.map(nodeId => store.executeNode(nodeId)));
+   }
+   ```
+   - Keep the existing sequential fallback if `getParallelGroups` returns single-node levels
+
+3. **File: `src/components/PreviewPanel.tsx`** — Same pattern in the `handleSend` execution loop (line 105):
+   ```typescript
+   const levels = getParallelGroups(order, edges);
+   for (const level of levels) {
+     const levelNodes = level.filter(id => {
+       const n = useLifecycleStore.getState().nodes.find(x => x.id === id);
+       return n && n.data.category !== 'note' && n.data.category !== 'input';
+     });
+     setActiveNodeId(levelNodes[0] || null); // Show first running node
+     await Promise.all(levelNodes.map(id => executeNode(id)));
+   }
+   ```
+
+4. **File: `src/components/PreviewPanel.tsx`** — Update the active node indicator (line 232-247) to show multiple running nodes:
+   - Change `activeNodeId: string | null` to `activeNodeIds: string[]`
+   - Show "Running 2 nodes: Intent Detection, Context & Knowledge"
+
+**Acceptance criteria:**
+- [ ] Nodes with no dependency on each other execute concurrently via `Promise.all`
+- [ ] Nodes that depend on prior results still wait (level ordering)
+- [ ] Chatbot template Preview speed improves measurably (3-5 LLM calls → 2-3 parallel rounds)
+- [ ] `executeWorkflow()` in store and `PreviewPanel` both use parallel execution
+- [ ] Active node indicator shows all concurrently running nodes
+- [ ] No race conditions — upstream `executionResult` is set before downstream reads it
+- [ ] Eval scores remain >= 98%
+
+---
+
+### 27. Upstream-Aware Execution Prompts with Typed Data Flow
+**Status:** [ ] Not started
+**Version target:** 1.27.0
+**Inspiration:** LangGraph's typed state with reducer functions (each node receives/returns typed state, not raw strings). Rivet's typed port connections where each edge carries a specific data type (text, JSON, number, boolean). CrewAI's task delegation where each agent receives structured context about what the previous agent produced and why.
+**Complexity:** Medium (2-3 hours)
+
+**Problem:** When `executeNode()` runs a CID/action/review/etc. node, the auto-prompt is generic: `"Process and transform the input content for 'Intent Detection'"` (line 1182 of `src/store/useStore.ts`). The upstream context is injected as a raw string dump: `"Input from upstream nodes:\n\n${upstreamResults.join('\n\n---\n\n')}"` (line 1204-1206). The LLM has no idea which upstream node produced which content, what the edge relationship means, or what data type to expect. For a workflow like Chatbot where Safety Check receives output from Response Generation via a "validates" edge, the prompt should say "Review and validate the following response (from 'Response Generation')" — not the generic "Define and document the policy rules for 'Safety Check'".
+
+**Implementation:**
+
+1. **File: `src/store/useStore.ts`** — Refactor the `inputContext` builder (lines 1204-1206) to include source metadata:
+   ```typescript
+   const inputContext = incomingEdges.map(e => {
+     const src = store.nodes.find(n => n.id === e.source);
+     const edgeLabel = e.label || e.data?.label || 'connects';
+     const srcResult = src?.data.executionResult || src?.data.content || '';
+     return `## From "${src?.data.label}" (${edgeLabel})\n${srcResult}`;
+   }).join('\n\n---\n\n') || d.content || 'No input provided.';
+   ```
+
+2. **File: `src/store/useStore.ts`** — Refactor auto-prompt generation (lines 1178-1194) to incorporate edge semantics:
+   ```typescript
+   // Build edge-aware prompt suffix
+   const edgeContext = incomingEdges.map(e => {
+     const src = store.nodes.find(n => n.id === e.source);
+     const label = e.label || e.data?.label || 'connects';
+     return { from: src?.data.label, relationship: label };
+   });
+   const relationshipHint = edgeContext.length > 0
+     ? ` You receive input via: ${edgeContext.map(e => `"${e.relationship}" from "${e.from}"`).join(', ')}.`
+     : '';
+   ```
+   - Append `relationshipHint` to each category's auto-prompt string
+   - For `review` nodes with "validates" edges: override to "Review and validate the content received from upstream"
+   - For `policy` nodes with "monitors" edges: override to "Check the content against policy rules"
+   - For `action` nodes with "triggers" edges: override to "Execute this action triggered by upstream"
+
+3. **File: `src/store/useStore.ts`** — Add downstream awareness to the system prompt (line 1217):
+   ```typescript
+   const outgoingEdges = store.edges.filter(e => e.source === nodeId);
+   const downstreamHint = outgoingEdges.length > 0
+     ? ` Your output will be used by: ${outgoingEdges.map(e => {
+         const tgt = store.nodes.find(n => n.id === e.target);
+         return `"${tgt?.data.label}" (${e.label || 'next step'})`;
+       }).join(', ')}. Tailor your output format accordingly.`
+     : '';
+   const systemPrompt = `You are a content generator for a workflow node called "${d.label}" (category: ${d.category}).${downstreamHint} Write detailed, professional content. Return ONLY the content as markdown text.`;
+   ```
+
+**Acceptance criteria:**
+- [ ] Each node's execution prompt includes which upstream nodes fed it and via which edge label
+- [ ] Review nodes receiving "validates" edges get validation-specific prompts
+- [ ] Policy nodes receiving "monitors" edges get compliance-specific prompts
+- [ ] System prompt tells the node what downstream consumers expect
+- [ ] Chatbot template produces more focused per-node output (Safety Check actually validates, not just restates)
+- [ ] Eval scores improve or stay stable (upstream context helps LLM focus)
+- [ ] No regression on existing templates
+
+---
+
+### 28. CrewAI-Style Planning Agent for Auto-Workflow Generation
+**Status:** [ ] Not started
+**Version target:** 1.28.0
+**Inspiration:** CrewAI's dedicated planning agent that auto-generates task sequences from high-level goals before any work begins. Also inspired by AutoGen's `SelectorGroupChat` where an LLM dynamically decides the next agent/step, and OpenAI Agents SDK's AgentKit Agent Builder that lets users describe a goal and auto-scaffolds the agent graph.
+**Complexity:** Large (4-5 hours)
+
+**Problem:** Currently, workflow generation relies on the LLM interpreting the CRITICAL RULES block in `src/lib/prompts.ts` (lines 43-74) to produce good graph structure. The rules are static and verbose (~2000 chars of constraints). Despite this, the LLM still frequently produces linear chains, misuses categories, or generates thin content — which is why item #1 (Self-Correcting Retry Loop) exists. The root cause is that we ask one LLM call to simultaneously: (1) understand user intent, (2) decompose into phases, (3) pick categories, (4) write 300+ char content per node, (5) design edge architecture, and (6) format as valid JSON. CrewAI's insight is to separate planning from execution: a lightweight planning call determines the graph skeleton, then a heavier content-generation pass fills in the nodes.
+
+**Implementation:**
+
+1. **File: `src/lib/prompts.ts`** — Add a `buildPlanningPrompt(userMessage: string, canvasState: string): string` function:
+   ```typescript
+   export function buildPlanningPrompt(userMessage: string, canvasState: string): string {
+     return `You are a workflow architect. Given the user's goal, produce a workflow SKELETON (no content, just structure).
+
+   Return JSON:
+   {
+     "phases": [
+       { "label": "Phase Name", "category": "input|cid|action|review|test|policy|output|...", "purpose": "one-line why this phase exists" }
+     ],
+     "edges": [
+       { "from": 0, "to": 1, "label": "feeds|drives|validates|..." }
+     ],
+     "architecture": "linear|branching|feedback-loop|parallel-merge"
+   }
+
+   Rules:
+   - 5-10 phases. Start with input/trigger, end with output.
+   - Include review/test gates for quality workflows.
+   - Use parallel branches when phases are independent.
+   - Add feedback loops (refines edges) when review can reject.
+
+   Canvas: ${canvasState}
+   User goal: ${userMessage}`;
+   }
+   ```
+
+2. **File: `src/store/useStore.ts`** — In `chatWithCID()` (or a new `planAndGenerate()` method), add a two-phase generation:
+   - **Phase 1 (Planning)**: Call `/api/cid` with `buildPlanningPrompt()`, `taskType: 'analyze'` (temperature 0.4)
+   - Parse the skeleton response to get phases + edges + architecture type
+   - **Phase 2 (Content Generation)**: For each phase, call `/api/cid` with a focused prompt:
+     ```
+     Generate detailed content (300+ chars, markdown) for the workflow node "${phase.label}" (category: ${phase.category}).
+     Purpose: ${phase.purpose}
+     Architecture: ${skeleton.architecture}
+     Upstream: ${upstreamPhaseLabels}
+     Downstream: ${downstreamPhaseLabels}
+     ```
+   - Phase 2 calls can run in parallel (using `Promise.all` for independent nodes) for speed
+
+3. **File: `src/store/useStore.ts`** — Gate this behind a complexity threshold:
+   - Simple requests (< 15 words, single domain): use existing single-call generation
+   - Complex requests (15+ words, multiple domains, or user explicitly says "detailed"): use two-phase planning
+   - Add `cidPlanningEnabled: boolean` to store settings with toggle in UI
+
+4. **File: `src/app/api/cid/route.ts`** — No changes needed; the planning call uses existing infrastructure with `taskType: 'analyze'`
+
+**Acceptance criteria:**
+- [ ] Complex workflow requests produce better-structured graphs (more edges than nodes-1, proper gates)
+- [ ] Two-phase generation produces richer node content (each node gets a focused prompt)
+- [ ] Simple requests (< 15 words) still use single-call for speed
+- [ ] Planning phase is fast (analyze temperature 0.4, small payload)
+- [ ] Content generation phases can run in parallel for independent nodes
+- [ ] Total latency for two-phase is within 1.5x of single-call (parallelism compensates)
+- [ ] Eval scores for workflow quality improve by 5%+
+- [ ] Feature can be disabled via settings toggle
+
+---
+
+### 29. Glassmorphic Node Cards with Contextual Micro-Animations
+**Status:** [ ] Not started
+**Version target:** 1.29.0
+**Inspiration:** ComfyUI's mature node-based canvas with rich visual feedback during execution. Rivet's real-time execution visualization with spinners on running nodes and data flowing through connections. Dify's polished visual canvas with clean node cards and visual debugging. Also inspired by modern design systems like Linear's glassmorphic UI and Vercel's dashboard micro-interactions.
+**Complexity:** Medium (2-3 hours)
+
+**Problem:** Currently, `LifecycleNode` in `src/components/LifecycleNode.tsx` renders nodes as flat cards with category-colored left borders and small status badges. During execution, running nodes show a spinner and success nodes show a checkmark — but there is no visual "energy" or data-flow animation. The edges are static `smoothstep` paths (`src/components/Canvas.tsx`, line 38-40) with no indication of data movement. Competitor tools like Rivet show animated particles flowing along edges during execution, and ComfyUI shows real-time progress within each node. Our current nodes look identical whether idle or actively processing data, making it hard to visually understand workflow execution at a glance. The node cards also lack depth — they're opaque rectangles without the glassmorphic layering that modern dark-theme UIs use.
+
+**Implementation:**
+
+1. **File: `src/components/LifecycleNode.tsx`** — Upgrade node card styling with glassmorphism:
+   ```typescript
+   // Replace flat bg with glass effect
+   className={`
+     backdrop-blur-md bg-white/[0.03] border border-white/[0.08]
+     rounded-xl shadow-lg shadow-black/20
+     ${isRunning ? 'ring-1 ring-cyan-500/30 shadow-cyan-500/10' : ''}
+     ${isSuccess ? 'ring-1 ring-emerald-500/20' : ''}
+     ${isError ? 'ring-1 ring-rose-500/30' : ''}
+     transition-all duration-300
+   `}
+   ```
+   - Add a subtle category-colored glow on hover: `hover:shadow-${categoryColor}/10`
+   - Replace the flat left border with a top gradient accent bar (4px tall, category gradient)
+
+2. **File: `src/components/LifecycleNode.tsx`** — Add execution micro-animations:
+   - **Running state**: Pulsing glow ring around the node using Framer Motion:
+     ```typescript
+     {isRunning && (
+       <motion.div
+         className="absolute inset-0 rounded-xl border border-cyan-500/20"
+         animate={{ opacity: [0.3, 0.7, 0.3] }}
+         transition={{ duration: 2, repeat: Infinity }}
+       />
+     )}
+     ```
+   - **Success state**: Brief green flash on completion (300ms), then settle to subtle green ring
+   - **Error state**: Red pulse on failure, then settle to red ring with error icon
+
+3. **File: `src/components/Canvas.tsx`** — Add animated edge particles during execution:
+   - When `executionProgress.running === true`, find edges where source is `success` and target is `running`
+   - Apply an animated SVG marker (small circle) that travels along the edge path using CSS `offset-path`:
+     ```css
+     .edge-particle {
+       offset-path: path('...');
+       animation: flowParticle 1.5s linear infinite;
+     }
+     @keyframes flowParticle {
+       from { offset-distance: 0%; opacity: 0; }
+       10% { opacity: 1; }
+       90% { opacity: 1; }
+       to { offset-distance: 100%; opacity: 0; }
+     }
+     ```
+   - Use React Flow's custom edge component to render this alongside the existing `smoothstep` edge
+
+4. **File: `src/components/LifecycleNode.tsx`** — Add a progress bar inside the node during execution:
+   - A thin bar at the bottom of the node card that fills from 0-100% while the node is executing
+   - Since we don't know actual progress, use an indeterminate animation (shimmer effect)
+   - On completion, snap to 100% with category color, then fade out after 1s
+
+**Acceptance criteria:**
+- [ ] Node cards use glassmorphic styling (backdrop-blur, semi-transparent background)
+- [ ] Running nodes have animated glow rings (not just a spinner icon)
+- [ ] Completed nodes flash green briefly on success
+- [ ] Failed nodes flash red on error
+- [ ] Edges show animated particles during workflow execution (source→target direction)
+- [ ] Particles only appear on active edges (source=success, target=running)
+- [ ] Animations are smooth (60fps) and don't cause layout shifts
+- [ ] Animations respect `prefers-reduced-motion` media query
+- [ ] Visual hierarchy is clear: running nodes are most prominent, idle nodes recede
+- [ ] No performance regression with 10+ nodes executing
+
+---
+
+### 30. Conversation Threading with Collapsible Workflow Context
+**Status:** [ ] Not started
+**Version target:** 1.30.0
+**Inspiration:** AutoGen Studio's real-time message flow visualization that maps agent communication paths visually. Slack's threaded conversations that group related messages. ChatGPT's artifact panel that separates generated content from conversation flow. Also inspired by Cursor's inline diff view where code changes appear contextually within the conversation.
+**Complexity:** Medium-Large (3-4 hours)
+
+**Problem:** The CIDPanel (`src/components/CIDPanel.tsx`) renders all messages in a flat chronological list. When CID generates a workflow, the response contains a terse message ("Done. 8 nodes.") and the workflow appears on the canvas — but the chat shows no visual record of WHAT was generated. When CID modifies a workflow, the chat shows the text response but no diff of what changed. Over a long session (20+ messages), it becomes hard to find which message triggered which workflow change. The streaming word-by-word display (35ms/word at line ~860) is charming but makes long responses feel slow. Competitor tools like AutoGen Studio show structured agent action logs (not just text), and ChatGPT's artifact panel separates generated content from conversation, keeping the chat focused.
+
+**Implementation:**
+
+1. **File: `src/components/CIDPanel.tsx`** — Add collapsible workflow summary cards inline in chat:
+   - When a CID response includes `workflow` data, render an inline card below the text message:
+     ```typescript
+     {msg.workflowGenerated && (
+       <button onClick={() => toggleExpanded(msg.id)}
+         className="mt-2 w-full text-left px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.05] transition-colors">
+         <div className="flex items-center justify-between">
+           <span className="text-[10px] text-white/40">
+             <Sparkles size={10} className="inline mr-1" />
+             Generated {msg.workflowGenerated.nodeCount} nodes, {msg.workflowGenerated.edgeCount} edges
+           </span>
+           <ChevronRight size={10} className={`text-white/20 transition-transform ${expanded[msg.id] ? 'rotate-90' : ''}`} />
+         </div>
+         {expanded[msg.id] && (
+           <div className="mt-2 text-[9px] text-white/30 space-y-1">
+             {msg.workflowGenerated.nodeLabels.map((label, i) => (
+               <div key={i} className="flex items-center gap-1">
+                 <span className={`w-1.5 h-1.5 rounded-full bg-${msg.workflowGenerated.nodeCategories[i]}-400/40`} />
+                 {label}
+               </div>
+             ))}
+           </div>
+         )}
+       </button>
+     )}
+     ```
+
+2. **File: `src/components/CIDPanel.tsx`** — Add modification diff cards:
+   - When a CID response includes `modifications`, render an inline diff:
+     ```typescript
+     {msg.modifications && (
+       <div className="mt-2 px-3 py-2 rounded-lg bg-white/[0.02] border border-white/[0.04] text-[9px]">
+         {msg.modifications.added?.map(n => (
+           <div key={n} className="text-emerald-400/60">+ {n}</div>
+         ))}
+         {msg.modifications.removed?.map(n => (
+           <div key={n} className="text-rose-400/60">- {n}</div>
+         ))}
+         {msg.modifications.updated?.map(n => (
+           <div key={n} className="text-amber-400/60">~ {n}</div>
+         ))}
+       </div>
+     )}
+     ```
+
+3. **File: `src/store/useStore.ts`** — In `chatWithCID()` (line ~2370+), when adding the CID response message, attach workflow metadata:
+   ```typescript
+   // After applying workflow or modifications, attach summary to message
+   const cidMsg = {
+     ...baseMessage,
+     workflowGenerated: result.workflow ? {
+       nodeCount: result.workflow.nodes.length,
+       edgeCount: result.workflow.edges.length,
+       nodeLabels: result.workflow.nodes.map(n => n.label),
+       nodeCategories: result.workflow.nodes.map(n => n.category),
+     } : undefined,
+     modifications: result.modifications ? {
+       added: result.modifications.add_nodes?.map(n => n.label) || [],
+       removed: result.modifications.remove_nodes || [],
+       updated: result.modifications.update_nodes?.map(n => n.label) || [],
+     } : undefined,
+   };
+   ```
+
+4. **File: `src/lib/types.ts`** — Extend `CIDMessage` type to include optional `workflowGenerated` and `modifications` summary fields.
+
+5. **File: `src/components/CIDPanel.tsx`** — Add adaptive streaming speed:
+   - Current: fixed 35ms/word for all messages
+   - New: Scale based on response length:
+     - < 50 words: 35ms/word (current, feels snappy)
+     - 50-150 words: 20ms/word (moderate responses stay brisk)
+     - 150+ words: 10ms/word (long responses don't drag)
+   - Add a "skip animation" button (double-click or press Enter) to instantly reveal full message
+
+**Acceptance criteria:**
+- [ ] Workflow generation messages show collapsible node summary cards
+- [ ] Modification messages show inline diff (added/removed/updated nodes)
+- [ ] Clicking a node name in the summary card focuses that node on the canvas
+- [ ] Streaming speed adapts to response length (longer = faster per word)
+- [ ] Users can skip streaming animation by pressing Enter or double-clicking
+- [ ] Workflow metadata persists in message history (survives page reload)
+- [ ] Chat remains performant with 50+ messages including summary cards
+- [ ] Cards don't break the existing message pinning feature
+
+---
+
 ## Completed
 
 _(Move items here after implementation)_
