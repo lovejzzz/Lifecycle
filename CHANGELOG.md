@@ -1,5 +1,25 @@
 # Changelog
 
+### 2026-03-08 — ArtifactPanel: Edit & Sync Hardened + Eval Coverage
+
+**Edit/Sync fixes:**
+- Save in split view no longer exits edit mode — both panes stay visible
+- Save auto-marks downstream nodes stale (no manual sync needed for simple edits)
+- Sync button upgraded to "Sync & Run" — marks stale then re-executes immediate downstream nodes
+- Sync button shows spinner + disabled state during execution
+- Find & Replace in preview mode auto-switches to edit mode on replace (so changes are saveable)
+
+**7 new eval tests for ArtifactPanel quality:**
+- `artifact-edit-api-spec`: API spec with markdown tables + code blocks
+- `artifact-edit-runbook`: Incident runbook with SQL queries and shell commands
+- `artifact-edit-checklist`: Security audit checklist with markdown checkboxes
+- `artifact-sync-data-pipeline`: Schema change cascading through pipeline nodes
+- `artifact-sync-contract-review`: Contract edit invalidating legal/compliance/approval
+- `artifact-minimal-standup`: Daily standup template — concise, under 800 chars
+- `artifact-minimal-decision-log`: Decision log entry — minimal, under 600 chars
+
+**New eval checks:** `mustMentionInContent` (regex patterns against content), `maxContentLen` (penalizes bloated output).
+
 ### 2026-03-08 — ArtifactPanel: 5 Editor Improvements
 
 Transformed the preview window into a strong editor tool:

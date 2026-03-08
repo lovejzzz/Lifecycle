@@ -804,6 +804,68 @@ const POOL = [
     prompt: 'Everything is falling apart. The team is burnt out, deadlines keep slipping, and I don\'t even know what to prioritize anymore. Help.',
     expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 200 },
   },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ARTIFACT PANEL — Edit, Sync, Content Quality Tests
+  // Tests content that will live in the ArtifactPanel editor:
+  //   - Well-structured markdown (headers, lists, code blocks)
+  //   - Editable sections that make sense when modified
+  //   - Content with clear downstream dependencies (sync scenarios)
+  //   - Minimal, convenient output — not bloated
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // ─── Edit-focused: Content must be well-structured markdown ─────────────
+  {
+    id: 'artifact-edit-api-spec',
+    agent: 'rowan', taskType: 'execute',
+    systemPromptOverride: 'You are a content generator for a workflow node called "API Specification" (category: artifact). Write a clean, well-structured API spec in markdown. Use headers, tables, and code blocks. Return ONLY the content as markdown text. No JSON wrapping.',
+    prompt: 'Write an API specification for a user authentication service. Include endpoints for signup, login, password reset, and token refresh. For each endpoint: method, path, request body (with types), response codes, and example curl command. Keep it minimal — no fluff, just the spec.',
+    expect: { hasContent: true, minContentLen: 800, mustMentionInContent: ['POST|GET|PUT|DELETE', 'signup|register', 'login|auth', 'password|reset', '```'] },
+  },
+  {
+    id: 'artifact-edit-runbook',
+    agent: 'rowan', taskType: 'execute',
+    systemPromptOverride: 'You are a content generator for a workflow node called "Incident Runbook" (category: artifact). Write a clear, actionable runbook in markdown. Use headers, numbered steps, and code blocks. Return ONLY the content as markdown text. No JSON wrapping.',
+    prompt: 'Write a runbook for handling a database connection pool exhaustion incident on PostgreSQL. Include: detection (what alerts fire), diagnosis (queries to run), mitigation (immediate fixes), resolution (root cause fix), and follow-up. Include actual SQL queries and shell commands.',
+    expect: { hasContent: true, minContentLen: 600, mustMentionInContent: ['SELECT|pg_stat|connection', 'pool|max_connections', '```'] },
+  },
+  {
+    id: 'artifact-edit-checklist',
+    agent: 'poirot', taskType: 'execute',
+    systemPromptOverride: 'You are a content generator for a workflow node called "Security Audit Checklist" (category: policy). Write a thorough checklist in markdown. Use checkbox-style lists (- [ ]). Return ONLY the content as markdown text. No JSON wrapping.',
+    prompt: 'Write a security audit checklist for a web application before production launch. Cover: authentication, authorization, input validation, API security, data encryption, logging, dependency scanning, and infrastructure. Use markdown checkboxes. Be specific — name actual tools and techniques.',
+    expect: { hasContent: true, minContentLen: 500, mustMentionInContent: ['\\[|checkbox|\\- \\[', 'auth|authentication', 'encrypt|TLS|HTTPS', 'injection|XSS|CSRF'] },
+  },
+
+  // ─── Sync-focused: Workflows where edits cascade to downstream nodes ────
+  {
+    id: 'artifact-sync-data-pipeline',
+    agent: 'rowan', taskType: 'generate',
+    prompt: 'Build a data pipeline workflow where a schema change in the source definition must propagate to transformation, validation, and output nodes. I need to be able to edit the schema and have downstream steps know they\'re stale.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['input', 'test', 'output'], mustMentionInNodes: ['schema|source|definition', 'transform|etl|process', 'validat|test|check'] },
+  },
+  {
+    id: 'artifact-sync-contract-review',
+    agent: 'poirot', taskType: 'generate',
+    prompt: 'Design a contract review workflow. When someone edits the contract draft, it should invalidate the legal review, compliance check, and client approval — they all need to re-run. The workflow should make the dependency chain obvious.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['review', 'artifact'], mustMentionInNodes: ['contract|draft', 'legal|review', 'approv|sign'] },
+  },
+
+  // ─── Minimal & Convenient: Content that respects editor UX ──────────────
+  {
+    id: 'artifact-minimal-standup',
+    agent: 'rowan', taskType: 'execute',
+    systemPromptOverride: 'You are a content generator for a workflow node called "Daily Standup Template" (category: artifact). Write a minimal, reusable template. Return ONLY the content as markdown. No JSON wrapping. Keep it SHORT — this is a daily-use template, not a document.',
+    prompt: 'Write a daily standup template I can fill in every day. Sections: what I did yesterday, what I\'m doing today, blockers. Keep it under 20 lines — it should be fast to fill in, not a chore.',
+    expect: { hasContent: true, minContentLen: 100, maxContentLen: 800 },
+  },
+  {
+    id: 'artifact-minimal-decision-log',
+    agent: 'poirot', taskType: 'execute',
+    systemPromptOverride: 'You are a content generator for a workflow node called "Decision Log Entry" (category: artifact). Write a single decision log entry template. Return ONLY the content as markdown. No JSON wrapping. Minimal — this gets filled in repeatedly.',
+    prompt: 'Write a decision log entry template. Fields: decision title, date, context (why this came up), options considered, decision made, rationale, owner, review date. Make it a clean markdown template I can duplicate and fill in.',
+    expect: { hasContent: true, minContentLen: 100, maxContentLen: 600 },
+  },
 ];
 
 // ─── Agent System Prompts (synced with src/lib/prompts.ts) ─────────────────
@@ -1059,6 +1121,29 @@ function scoreResponse(test, data) {
     const content = result?.content || message || (typeof result === 'string' ? result : '') || '';
     if (content.length >= exp.minContentLen) { score += 5; checks.push(`✓ Content length: ${content.length} ≥ ${exp.minContentLen}`); }
     else { checks.push(`✗ Content too short: ${content.length} < ${exp.minContentLen}`); }
+  }
+  if (exp.maxContentLen) {
+    maxScore += 5;
+    const content = result?.content || message || (typeof result === 'string' ? result : '') || '';
+    if (content.length <= exp.maxContentLen) { score += 5; checks.push(`✓ Content concise: ${content.length} ≤ ${exp.maxContentLen}`); }
+    else { checks.push(`✗ Content too long: ${content.length} > ${exp.maxContentLen} (should be minimal)`); }
+  }
+  if (exp.mustMentionInContent) {
+    const content = (result?.content || message || (typeof result === 'string' ? result : '') || '').toLowerCase();
+    const found = [];
+    const missing = [];
+    for (const pattern of exp.mustMentionInContent) {
+      const regex = new RegExp(pattern, 'i');
+      if (regex.test(content)) { found.push(pattern); } else { missing.push(pattern); }
+    }
+    maxScore += 10;
+    if (missing.length === 0) {
+      score += 10; checks.push(`✓ Content mentions: ${found.join(', ')}`);
+    } else {
+      const partialScore = Math.round(10 * found.length / (found.length + missing.length));
+      score += partialScore;
+      checks.push(`⚡ Content missing: ${missing.join(', ')} (has: ${found.join(', ')})`);
+    }
   }
 
   // 9. Personality markers

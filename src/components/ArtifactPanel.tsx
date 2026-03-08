@@ -134,9 +134,11 @@ function VersionHistory({
 function DownstreamImpact({
   downstream,
   onSync,
+  isSyncing,
 }: {
   downstream: Array<{ id: string; label: string; category: string }>;
   onSync: () => void;
+  isSyncing?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -155,10 +157,15 @@ function DownstreamImpact({
         </button>
         <button
           onClick={onSync}
-          className="flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-400/70 hover:bg-amber-500/20 transition-colors"
+          disabled={isSyncing}
+          className={`flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-md border transition-colors ${
+            isSyncing
+              ? 'bg-amber-500/5 border-amber-500/10 text-amber-400/40 cursor-wait'
+              : 'bg-amber-500/10 border-amber-500/20 text-amber-400/70 hover:bg-amber-500/20'
+          }`}
         >
-          <ArrowRight size={9} />
-          Sync
+          {isSyncing ? <Loader2 size={9} className="animate-spin" /> : <ArrowRight size={9} />}
+          {isSyncing ? 'Syncing...' : 'Sync & Run'}
         </button>
       </div>
       <AnimatePresence>
@@ -400,7 +407,7 @@ export default function ArtifactPanel() {
     nodes, activeArtifactNodeId, artifactPanelTab, artifactPanelMode,
     artifactVersions, closeArtifactPanel, setArtifactTab, setArtifactMode,
     saveArtifactVersion, restoreArtifactVersion, rewriteArtifactSelection,
-    getDownstreamNodes, updateNodeData, updateNodeStatus,
+    getDownstreamNodes, updateNodeData, updateNodeStatus, executeNode,
     addEvent, pushHistory, selectNode,
   } = useLifecycleStore();
 
@@ -409,6 +416,7 @@ export default function ArtifactPanel() {
   const [copied, setCopied] = useState(false);
   const [selectionToolbar, setSelectionToolbar] = useState<{ x: number; y: number; text: string } | null>(null);
   const [isRewriting, setIsRewriting] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isSplitView, setIsSplitView] = useState(false);
   const [showFindReplace, setShowFindReplace] = useState(false);
@@ -420,7 +428,6 @@ export default function ArtifactPanel() {
   const currentText = node
     ? (artifactPanelTab === 'result' ? (node.data.executionResult || '') : (node.data.content || ''))
     : '';
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- sync draft with source content on mode/tab/node change
   useEffect(() => { setEditDraft(currentText); }, [currentText, artifactPanelMode, artifactPanelTab]);
 
   // Keyboard shortcuts: Ctrl+F (find), Ctrl+B/I (format), Escape (close fullscreen)
@@ -518,7 +525,12 @@ export default function ArtifactPanel() {
       nodeId: activeArtifactNodeId,
       agent: false,
     });
-    setArtifactMode('preview');
+    // In split view, stay in edit mode — both panes are always visible
+    if (!isSplitView) setArtifactMode('preview');
+    // Auto-mark downstream nodes stale after save
+    if (downstream.length > 0) {
+      for (const d of downstream) updateNodeStatus(d.id, 'stale');
+    }
   };
 
   const handleCopy = () => {
@@ -535,10 +547,10 @@ export default function ArtifactPanel() {
     setSelectionToolbar(null);
   };
 
-  const handleSync = () => {
-    for (const d of downstream) {
-      updateNodeStatus(d.id, 'stale');
-    }
+  const handleSync = async () => {
+    setIsSyncing(true);
+    // Mark all downstream stale first
+    for (const d of downstream) updateNodeStatus(d.id, 'stale');
     addEvent({
       id: `ev-${Date.now()}`,
       type: 'propagated',
@@ -547,6 +559,15 @@ export default function ArtifactPanel() {
       nodeId: activeArtifactNodeId,
       agent: false,
     });
+    // Re-execute immediate downstream nodes (1 level deep — they'll cascade)
+    const immediateDown = downstream.filter(d => {
+      const store = useLifecycleStore.getState();
+      return store.edges.some(e => e.source === activeArtifactNodeId && e.target === d.id);
+    });
+    for (const d of immediateDown) {
+      try { await executeNode(d.id); } catch { /* node execution handles its own errors */ }
+    }
+    setIsSyncing(false);
   };
 
   return (
@@ -661,8 +682,12 @@ export default function ArtifactPanel() {
       <AnimatePresence>
         {showFindReplace && (
           <FindReplace
-            text={artifactPanelMode === 'edit' ? editDraft : activeText}
-            onReplace={(newText) => setEditDraft(newText)}
+            text={isSplitView || artifactPanelMode === 'edit' ? editDraft : activeText}
+            onReplace={(newText) => {
+              // Switch to edit mode on replace so changes are editable/saveable
+              if (artifactPanelMode !== 'edit' && !isSplitView) setArtifactMode('edit');
+              setEditDraft(newText);
+            }}
             onClose={() => setShowFindReplace(false)}
             contentRef={contentRef}
           />
@@ -791,6 +816,7 @@ export default function ArtifactPanel() {
         <DownstreamImpact
           downstream={downstream}
           onSync={handleSync}
+          isSyncing={isSyncing}
         />
       </div>
     </motion.div>
