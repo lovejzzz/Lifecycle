@@ -726,6 +726,22 @@ const POOL = [
     prompt: 'Write an RFC proposing that our team adopt trunk-based development instead of our current GitFlow branching strategy. We have 8 developers, deploy 3 times per week, and our feature branches currently live for 2-3 weeks on average. Include problem statement, proposed solution, migration plan, risks, and alternatives considered.',
     expect: { hasWorkflow: false, hasContent: true, minContentLen: 2000 },
   },
+
+  // Agriculture / farming — completely new industry vertical
+  {
+    id: 'agriculture-crop-management',
+    agent: 'poirot', taskType: 'generate',
+    prompt: 'Build a workflow for managing a 500-acre corn and soybean crop rotation. Steps: soil testing, seed selection, planting schedule, irrigation monitoring, pest scouting, fertilizer application, harvest coordination, and post-harvest grain storage. We use precision agriculture with GPS-guided equipment and satellite imagery.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustMentionInNodes: ['soil|seed', 'plant|irrigat', 'pest|fertil', 'harvest|storage'] },
+  },
+
+  // Multi-turn ambiguity — question with embedded build intent
+  {
+    id: 'edge-question-with-build-intent',
+    agent: 'rowan', taskType: 'generate',
+    prompt: 'Should I have a separate staging environment, or is it enough to test in dev? Actually, just build me a deployment pipeline with proper environments.',
+    expect: { hasWorkflow: true, minNodes: 4, maxNodes: 10, mustMentionInNodes: ['deploy|staging|prod', 'test|qa'] },
+  },
 ];
 
 // ─── Agent System Prompts (synced with src/lib/prompts.ts) ─────────────────

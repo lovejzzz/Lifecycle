@@ -1,5 +1,22 @@
 # Changelog
 
+### 2026-03-08 — Round 105: 100% Reasoner — Marketing-Advice Fixed + Pool 86→88
+
+**Eval results: 100% (6/6 passed, 365/365 points) — DeepSeek Reasoner**
+
+**Key finding: Reasoner fixes the Poirot-advice-brevity problem.** `marketing-advice` hit 364c (vs Chat's chronic 220-232c fail). Reasoner's chain-of-thought produces more substantive advice because it reasons before generating.
+
+Quality highlights:
+- `startup-advice-growth` (Poirot, 509c): Consultancy-grade counsel — names LinkedIn Sales Navigator, Amplitude, CAC/LTV metrics. Advises "run a B2B validation sprint before deciding" rather than binary yes/no.
+- `education-online-course-creation` (Rowan, 938c avg): 9 nodes with parallel start (curriculum + platform), dual feedback loops from beta testing, exact budget allocation ($20k/$15k/$10k/$5k = $50k). Named tools: OBS Studio, Teachable, SurveyMonkey.
+- `media-content-multiformat` (Poirot, 741c avg): Dual independent review gates (written + video), each with own `refines` feedback loop. Perfect parallel architecture.
+
+**No code changes needed** — system at peak quality across both models.
+
+**Pool: 86 → 88 tests:** `agriculture-crop-management` (precision farming, new industry vertical), `edge-question-with-build-intent` (question that pivots to build mid-sentence — tests intent parsing).
+
+**Build:** Clean — 0 lint warnings, typecheck passes, production build succeeds.
+
 ### 2026-03-08 — Round 104: 100% (6/6) — Peak Quality, Pool 84→86
 
 **Eval results: 100% (6/6 passed, 320/320 points) — DeepSeek Chat**

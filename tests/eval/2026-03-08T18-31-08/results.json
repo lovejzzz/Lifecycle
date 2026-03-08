@@ -1,0 +1,402 @@
+{
+  "timestamp": "2026-03-08T18-31-08",
+  "overall": 100,
+  "testsRun": [
+    "marketing-advice",
+    "execute-job-description",
+    "personality-poirot-empty",
+    "startup-advice-growth",
+    "education-online-course-creation",
+    "media-content-multiformat"
+  ],
+  "poolSize": 86,
+  "results": [
+    {
+      "id": "marketing-advice",
+      "status": "ok",
+      "elapsed": 13129,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Our email open rates dropped from 35% to 12% over the last quarter. What could be wrong?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, mon ami, a dramatic drop from 35% to 12%—this is a case for the little grey cells! We must investigate three primary culprits: deliverability (are your emails even reaching the inbox?), content relevance (has your subject line strategy grown stale?), and list health (has engagement decayed or list fatigue set in?). Let us examine the evidence systematically.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (364 chars)",
+          "✓ Message length: 364 ≥ 250"
+        ]
+      }
+    },
+    {
+      "id": "execute-job-description",
+      "status": "ok",
+      "elapsed": 43263,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Write a job description for a Senior Full-Stack Engineer at a Series B fintech startup. Tech stack is React, Node.js, PostgreSQL, AWS. Remote-first, competitive equity.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "**Job Description: Senior Full-Stack Engineer**\n\n**Location:** Remote-First (Global)\n**Company:** [Startup Name], a Series B Fintech Innovator\n**Compensation:** Competitive Salary + Meaningful Equity Package + Comprehensive Benefits\n\n### About Us\n\nAt [Startup Name], we're on a mission to democratize financial services and build the future of [e.g., embedded finance, wealth management, payment infrastructure]. Having successfully secured our Series B funding, we are scaling our product and engineering team to tackle complex challenges at the intersection of finance and technology. We are a distributed, passionate team that values ownership, innovation, and the tangible impact of our work on millions of users.\n\n### The Opportunity\n\nWe are seeking a seasoned and versatile Senior Full-Stack Engineer to be a cornerstone of our product development. You will architect, build, and scale critical features across our entire platform. This is a high-impact role where you will own significant pieces of our product, mentor other engineers, and influence technical and product strategy. You will work closely with product managers, designers, and other engineers to deliver secure, reliable, and user-centric financial products.\n\n### What You'll Do\n\n*   **Own & Build:** Lead the end-to-end development of new product features and core platform capabilities, from conception and design through implementation, testing, deployment, and monitoring.\n*   **Architect for Scale:** Design and implement robust, scalable, and maintainable backend services and APIs using Node.js, ensuring they meet the high-security and compliance standards required in fintech.\n*   **Craft Intuitive UIs:** Develop dynamic, responsive, and accessible user interfaces with React, creating seamless and engaging experiences for our customers.\n*   **Data & Systems Design:** Model data and write complex, efficient queries for our PostgreSQL databases. Design systems with data integrity and performance as first-class concerns.\n*   **Cloud Infrastructure:** Build, deploy, and optimize applications within our AWS ecosystem, utilizing services like EC2, Lambda, RDS, S3, and others to ensure high availability and resilience.\n*   **Collaborate & Mentor:** Work collaboratively in an agile, remote-first environment. Provide technical guidance, conduct code reviews, and help elevate the skills of fellow engineers.\n*   **Champion Best Practices:** Advocate for and implement engineering best practices in testing (unit, integration, e2e), code quality, security, observability, and CI/CD.\n\n### What We're Looking For\n\n*   **5+ years** of professional software development experience with a proven track record of building and shipping scalable web applications.\n*   **Deep Expertise** in our core stack: **React** (with modern hooks, state management), **Node.js** (Express, NestJS, or similar), **PostgreSQL** (including schema design and query optimization), and **AWS** (hands-on experience with core services).\n*   **Strong Full-Stack Mentality:** You are equally comfortable discussing API contracts, database locking, and React component lifecycle. You understand how the pieces fit together from the UI to the data layer.\n*   **Fintech or High-Stakes Domain Experience:** A strong plus. You understand the importance of security, data privacy, audit trails, and building fault-tolerant systems in a regulated environment.\n*   **Architectural Acumen:** Experience designing service-oriented or microservice architectures. You think in terms of systems, boundaries, and contracts.\n*   **Ownership & Proactive Mindset:** You are self-directed, identify problems and opportunities, and drive solutions without waiting for instruction. You care deeply about the product and our users.\n*   **Excellent Remote Collaboration:** Outstanding written and verbal communication skills. You thrive in an asynchronous environment and know how to collaborate effectively across time zones.\n\n### Bonus Points For\n\n*   Experience with TypeScript throughout the stack.\n*   Knowledge of containerization (Docker) and orchestration (Kubernetes, ECS).\n*   Familiarity with infrastructure-as-code (Terraform, CDK).\n*   Background in financial services, banking APIs (Plaid, etc.), or payment processing.\n*   Open-source contributions or a public portfolio of projects.\n\n### What We Offer\n\n*   **Competitive Salary & Significant Equity:** Share directly in the success you help build.\n*   **Fully Remote Culture:** Work from anywhere with a supportive, async-first environment.\n*   **Health & Wellness:** Comprehensive medical, dental, and vision insurance.\n*   **Unlimited PTO:** We trust you to take the time you need to recharge.\n*   **Home Office Stipend:** Set up your perfect workspace.\n*   **Learning & Development Budget:** Annual allowance for courses, conferences, and books.\n*   **Team Offsites:** Regular in-person gatherings to connect and collaborate.\n*   **The Opportunity:** To make a foundational impact at a critical stage of growth, solving real problems in a massive industry.\n\n**Ready to build the future of finance with us?**\n\nApply today with your resume and a note about a challenging technical problem you solved and are proud of.\n\n*[Startup Name] is an equal opportunity employer. We celebrate diversity and are committed to creating an inclusive environment for all employees.*",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (5365 chars)",
+          "✓ Content length: 5365 ≥ 200"
+        ]
+      }
+    },
+    {
+      "id": "personality-poirot-empty",
+      "status": "ok",
+      "elapsed": 15703,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, mon ami! The case file is empty—no nodes or edges to examine yet. We must start with the first clue; perhaps you'd like to build a workflow or share your objectives for investigation?",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (187 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "startup-advice-growth",
+      "status": "ok",
+      "elapsed": 19724,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We are a pre-seed startup with $150k in the bank, 2 founders, and a working MVP with 50 beta users. Our MRR is $800. We have interest from an angel who wants to invest $500k at a $5M valuation but wants us to pivot from B2C to B2B. Our users love the product. Should we take the money and pivot, or try to grow organically?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, a delicate case of investor temptation versus user devotion! Before deciding, mon ami, conduct a rapid B2B validation sprint: use tools like LinkedIn Sales Navigator to target 20 potential enterprise clients, measure their intent with a Calendly-powered demo funnel, and calculate the projected CAC and LTV. Compare this to your B2C organic growth metrics—track cohort retention via Amplitude and viral coefficient with referral loops—to see which path aligns with your $150k runway and founder strengths.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (509 chars)",
+          "✓ Message length: 509 ≥ 250"
+        ]
+      }
+    },
+    {
+      "id": "education-online-course-creation",
+      "status": "ok",
+      "elapsed": 154627,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Build a workflow for creating and launching a 12-week online coding bootcamp. Steps: curriculum design, instructor recruitment, platform setup (LMS), content recording, beta testing with 20 students, marketing and enrollment, live cohort delivery, and student outcomes tracking. Budget is $50k and we need 100 students for the first cohort.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Bootcamp workflow deployed.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Project Kickoff",
+              "category": "trigger",
+              "description": "Initiate the 12-week online coding bootcamp project with budget allocation and goal setting",
+              "content": "This node triggers the entire bootcamp creation process. Start by defining project scope: 12-week duration, $50k budget, target of 100 students for first cohort. Assemble core team including project manager, curriculum lead, and marketing head. Tools: Use project management software like Asana or Trello for task tracking, and financial tools like QuickBooks for budget monitoring. Steps: 1. Conduct stakeholder alignment meeting to confirm objectives and constraints. 2. Draft project charter with milestones: curriculum design by week 2, instructor hire by week 3, LMS setup by week 4, beta test by week 6, enrollment start by week 8, live delivery from week 10. 3. Allocate budget: $20k for platform and content, $15k for marketing, $10k for instructor fees, $5k contingency. 4. Set up communication channels (Slack, email lists) and regular check-ins. Success criteria: All team members briefed, budget documented, and timeline approved within first week."
+            },
+            {
+              "label": "Curriculum Development",
+              "category": "action",
+              "description": "Design and create the coding bootcamp curriculum and recorded content",
+              "content": "Develop a comprehensive 12-week curriculum focused on in-demand tech skills like full-stack web development. Steps: 1. Research job market trends using tools like LinkedIn Learning or Indeed to identify key technologies (e.g., JavaScript, Python, React). 2. Define weekly modules with learning objectives, hands-on projects, and assessments. 3. Create content: record video lectures using OBS Studio or Camtasia, develop coding exercises on platforms like Codecademy or LeetCode, and write documentation in Markdown. 4. Ensure accessibility: add captions, provide transcripts, and use inclusive language. 5. Collaborate with potential instructors for feedback during creation. Tools: GitHub for version control, Google Docs for collaborative editing, and LMS integration for content upload. Criteria: Curriculum must align with industry standards, include at least 50 hours of video, and pass peer review for clarity. Budget allocation: $10k for content creation tools and freelancers."
+            },
+            {
+              "label": "Platform and Team Setup",
+              "category": "action",
+              "description": "Set up the Learning Management System (LMS) and recruit instructors",
+              "content": "Establish the technical and human infrastructure for the bootcamp. Steps: 1. Select and configure LMS: Evaluate options like Teachable, Thinkific, or custom Moodle setup; prioritize features for coding (e.g., code editors, live chat, progress tracking). Configure user roles, payment gateways, and analytics dashboards. 2. Instructor recruitment: Draft job descriptions focusing on experience in coding and online teaching. Use platforms like LinkedIn or AngelList to hire 3-5 instructors; conduct interviews with coding challenges and teaching demos. Onboard instructors with training on LMS tools and curriculum alignment. 3. Set up supporting tools: Integrate Zoom for live sessions, Discord for community building, and analytics tools like Google Analytics for engagement tracking. Budget: Allocate $15k for LMS subscription, instructor stipends, and software licenses. Success metrics: LMS fully functional within 4 weeks, instructors hired and trained, and all systems tested for scalability."
+            },
+            {
+              "label": "Beta Testing",
+              "category": "test",
+              "description": "Conduct beta testing with 20 students to validate curriculum and platform",
+              "content": "Execute a controlled test phase to gather feedback and ensure quality. Steps: 1. Recruit 20 beta students via early sign-ups or partnerships with coding communities; offer discounted or free access. 2. Run a 2-week condensed version of the bootcamp, monitoring engagement through LMS analytics and weekly surveys. 3. Test all components: video playback, assignment submissions, instructor responsiveness, and technical support. Tools: Use SurveyMonkey for feedback forms, Hotjar for user behavior analysis, and bug tracking with Jira. 4. Define pass/fail criteria: At least 80% completion rate, average satisfaction score of 4/5, and no critical bugs in platform. 5. Collect qualitative feedback through focus groups; document issues like content gaps or usability problems. If criteria not met, iterate on curriculum or platform before proceeding. Budget: $5k for student incentives and testing tools."
+            },
+            {
+              "label": "Launch Approval Review",
+              "category": "review",
+              "description": "Human review gate to approve bootcamp launch based on beta test results",
+              "content": "This node involves stakeholder approval before moving to marketing. Steps: 1. Compile beta test report including metrics (completion rates, feedback scores), identified issues, and mitigation plans. 2. Present findings to review panel: project manager, curriculum lead, and external advisor. 3. Approval criteria: All critical bugs resolved, curriculum adjustments made based on feedback, and confidence that platform can scale to 100 students. 4. Review process: Schedule a meeting within one week of beta end; use decision matrix to evaluate risks. If not approved, escalate to senior management for additional resources or timeline adjustments. Tools: Google Slides for presentations, decision logs in Confluence. SLA: Decision within 3 business days. Escalation path defined if deadlock occurs. This gate ensures quality control and aligns with budget constraints."
+            },
+            {
+              "label": "Marketing and Enrollment",
+              "category": "action",
+              "description": "Execute marketing campaigns to enroll 100 students for the first cohort",
+              "content": "Drive student acquisition through targeted marketing efforts. Steps: 1. Develop marketing strategy: Identify target audience (career changers, recent graduates) and channels (social media, email campaigns, partnerships with coding forums). 2. Create assets: landing pages using Unbounce or WordPress, promotional videos, and testimonials from beta testers. 3. Run paid ads on platforms like Facebook Ads or Google AdWords, with A/B testing for copy and visuals. 4. Implement enrollment funnel: from lead capture to payment processing via Stripe or PayPal; set up automated emails for nurturing. 5. Track metrics: Cost per acquisition (CPA), conversion rates, and enrollment progress; adjust campaigns weekly. Budget: $15k allocated, with goal to achieve CPA under $150. Tools: HubSpot for CRM, Google Analytics for tracking. Success defined by reaching 100 paid enrollments before live start date."
+            },
+            {
+              "label": "Live Cohort Delivery",
+              "category": "action",
+              "description": "Conduct the 12-week online bootcamp for the enrolled cohort",
+              "content": "Manage the live execution of the bootcamp with ongoing support. Steps: 1. Kickoff session: Orient students to platform, schedule, and community guidelines using Zoom live stream. 2. Weekly delivery: Release pre-recorded videos on Monday, host live Q&A sessions on Wednesdays, and assign coding projects due Fridays. 3. Monitor engagement: Use LMS dashboards to track participation, assignment submissions, and forum activity; intervene with at-risk students via personalized emails. 4. Instructor management: Ensure instructors are available for office hours and grading; use Slack for real-time support. 5. Handle issues: Technical troubleshooting via helpdesk (Zendesk), content updates based on student feedback. Tools: Calendar integrations, attendance tracking software. Criteria: Maintain student satisfaction above 4/5, with at least 90% active participation weekly. Budget oversight to stay within remaining $5k for contingencies."
+            },
+            {
+              "label": "Outcomes Tracking",
+              "category": "action",
+              "description": "Track student outcomes post-bootcamp to measure success and inform improvements",
+              "content": "Implement a system to monitor long-term student achievements and program efficacy. Steps: 1. Define metrics: Job placement rates within 6 months, salary increases, project portfolio development, and alumni satisfaction. 2. Set up tracking tools: Use surveys via Typeform sent at graduation, 3-month, and 6-month intervals; integrate with LinkedIn for job verification. 3. Analyze data: Compile reports using Tableau or Google Data Studio to identify trends, such as which curriculum modules correlate with success. 4. Feedback loop: Share insights with curriculum and marketing teams for iterative improvements to future cohorts. 5. Maintain alumni network: Create a private LinkedIn group or Discord channel for ongoing support and networking. Tools: CRM for alumni management, analytics platforms. Success criteria: At least 70% job placement rate and positive net promoter score (NPS). Budget included in initial allocation for survey tools and reporting."
+            },
+            {
+              "label": "Bootcamp Launch Report",
+              "category": "output",
+              "description": "Final deliverable summarizing bootcamp launch, metrics, and learnings",
+              "content": "Produce a comprehensive report to close the project and guide future iterations. Steps: 1. Compile data from all phases: budget spend vs. $50k, enrollment numbers (target 100 vs. actual), student outcomes, and feedback scores. 2. Document lessons learned: Challenges in beta testing, marketing effectiveness, platform performance during live delivery. 3. Create report sections: Executive summary, detailed metrics by phase, financial analysis, recommendations for scale. 4. Format: Use Google Docs or PDF with visualizations (charts, graphs); include appendices with raw data and team reflections. 5. Distribute to stakeholders: Investors, team members, and potential partners via email and presentation. Tools: Canva for design, Slack for sharing. Success metrics: Report completed within 2 weeks of cohort end, with actionable insights approved by review panel. This output serves as artifact for compliance and strategic planning."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "drives"
+            },
+            {
+              "from": 0,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "validates"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "approves"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "triggers"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "drives"
+            },
+            {
+              "from": 7,
+              "to": 8,
+              "label": "outputs"
+            },
+            {
+              "from": 3,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 3,
+              "to": 2,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 110,
+        "maxScore": 110,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 9 (min: 5)",
+          "✓ Node count: 9 ≤ 10",
+          "✓ Has \"review\" category",
+          "✓ All 11 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 938c, no thin nodes",
+          "✓ Architecture covers: curriculum, instructor, platform, enroll",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (11 edges, 9 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "media-content-multiformat",
+      "status": "ok",
+      "elapsed": 126646,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We record a weekly 1-hour podcast episode (MP3). Build a workflow that repurposes each episode into: a full written transcript (DOCX), a 2000-word blog post (Markdown), 5 short video clips for social media (MP4 with captions), an email newsletter summary (HTML), and a YouTube video with chapter markers. Each format has different requirements and review gates.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! Mon ami, I have constructed a meticulous workflow to repurpose your podcast episode—each clue from the audio will blossom into multiple formats. With my little grey cells, I've designed parallel paths for written and video content, ensuring no detail escapes. Très intéressant, let us proceed!",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Podcast Episode MP3",
+              "category": "input",
+              "description": "The raw weekly podcast audio file that triggers the repurposing workflow",
+              "content": "This node represents the initial 1-hour MP3 podcast episode, serving as the primary input. To ensure quality, record using tools like Audacity or Adobe Audition with a sample rate of 44.1kHz and bitrate of 192kbps. Store the file in a cloud service like Dropbox or Google Drive with version control. Include metadata such as episode title, date, and guest names. Before proceeding, verify audio clarity, remove background noise using Krisp or similar, and ensure it's edited for pauses and errors. This MP3 will feed into transcription and video extraction processes, so maintain a backup and log the file details for tracking. Establish a naming convention like 'YYYY-MM-DD_EpisodeTitle.mp3' to streamline workflow integration."
+            },
+            {
+              "label": "Transcribe Audio to Text",
+              "category": "action",
+              "description": "Convert the MP3 into a accurate written transcript for further content creation",
+              "content": "Use AI-powered transcription tools like Otter.ai, Rev.com, or Descript to generate a draft transcript from the MP3. Aim for 95%+ accuracy by uploading the audio in a quiet format. After automatic transcription, manually review and correct errors using text editors like Google Docs or Microsoft Word. Timestamp key moments for chapter markers and clip extraction. Format the transcript with speaker labels, paragraph breaks, and mark timestamps every 2-5 minutes. Export as DOCX with styles for headings. Validate against the original audio by listening to random 10% segments. This transcript becomes the foundation for blog posts, emails, and video scripts, so ensure it's polished and saved in a shared folder like Notion or Airtable."
+            },
+            {
+              "label": "Develop Written Content",
+              "category": "action",
+              "description": "Create the blog post and email newsletter from the transcript, optimizing for engagement",
+              "content": "Leverage the transcript to craft a 2000-word blog post in Markdown and an HTML email summary. For the blog post, use tools like Grammarly for grammar checks and Hemingway App for readability. Structure with an introduction, key takeaways, bullet points, and a call-to-action. Incorporate SEO by researching keywords with Ahrefs or SEMrush, and add internal links. For the email, extract the most compelling 500-word summary, design with HTML templates via Mailchimp or ConvertKit, and include clickable links and images. Both pieces should align with brand voice—review tone consistency using a style guide. Save drafts in a content management system like WordPress or Ghost, and prepare for review with a checklist covering clarity, accuracy, and compliance."
+            },
+            {
+              "label": "Produce Video Content",
+              "category": "action",
+              "description": "Generate video clips and a YouTube video with captions and chapter markers from the audio and transcript",
+              "content": "Using the MP3 and transcript, create 5 short social media clips (MP4 with captions) and a full YouTube video. Tools like Descript for audio-synced editing, Adobe Premiere Pro for video compositing, and Canva for graphics. Extract engaging 30-60 second clips based on transcript highlights, add auto-captions with Rev.ai or manually via Subtitle Edit, and ensure MP4 format at 1080p. For the YouTube video, compile the full audio with static or dynamic visuals, insert chapter markers every 5-10 minutes using YouTube's timestamp feature, and embed subtitles in SRT format. Validate video quality with checks on aspect ratio, audio levels, and caption accuracy. Store files in a cloud storage with organized folders for easy access."
+            },
+            {
+              "label": "Approve Written Content",
+              "category": "review",
+              "description": "Human review gate for the blog post and email newsletter before publication",
+              "content": "Conduct a thorough review of the blog post (Markdown) and email (HTML) against predefined criteria. Use a checklist: accuracy compared to transcript, grammatical errors (run through ProWritingAid), SEO optimization score (aim for 80+ via Yoast SEO), brand voice consistency, and legal compliance (e.g., copyright checks). Assign a reviewer—likely an editor or team lead—to provide feedback via comments in Google Docs or a project management tool like Asana. If revisions are needed, send back to the development step with specific notes; if approved, mark as ready for distribution. This gate ensures quality and prevents errors, with a turnaround time of 24 hours. Document approval status in a log for audit trails."
+            },
+            {
+              "label": "Approve Video Content",
+              "category": "review",
+              "description": "Human review gate for the video clips and YouTube video before distribution",
+              "content": "Review the 5 MP4 clips and YouTube video for quality and compliance. Criteria include video resolution (minimum 720p), audio sync, caption accuracy (test with a W3C validator), chapter marker correctness, and adherence to platform specs (e.g., YouTube's guidelines). Use tools like VLC Media Player for playback checks and a caption review tool like Amara. Have a video editor or producer assess engagement factors—clip length, hook effectiveness, and visual appeal. If issues are found, provide timestamped feedback and route back to production; if approved, confirm ready for upload. Maintain a review log with notes on any adjustments. This step mitigates risks of poor performance on social media or YouTube."
+            },
+            {
+              "label": "Publish and Distribute All Formats",
+              "category": "output",
+              "description": "Final step to release all repurposed content across designated channels",
+              "content": "Package and distribute the approved formats: upload the transcript DOCX to a shared drive or CMS, publish the blog post on the website via WordPress or similar, schedule the email newsletter through Mailchimp or SendGrid, post the 5 video clips on social media platforms (Facebook, Instagram, TikTok) using scheduling tools like Buffer or Hootsuite, and upload the YouTube video with optimized title, description, and tags. Ensure cross-promotion by linking formats—e.g., include blog link in email and video descriptions. Monitor initial engagement with analytics from Google Analytics, YouTube Studio, and social media insights. Archive all files in a central repository like Notion for future reference. This node delivers the final value, transforming the podcast into a multi-channel content suite."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "validates"
+            },
+            {
+              "from": 3,
+              "to": 5,
+              "label": "validates"
+            },
+            {
+              "from": 4,
+              "to": 6,
+              "label": "approves"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "approves"
+            },
+            {
+              "from": 4,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 110,
+        "maxScore": 110,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ Has \"review\" category",
+          "✓ All 9 edges valid",
+          "✓ Starts with input",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 741c, no thin nodes",
+          "✓ Architecture covers: transcript, blog, video, email",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (9 edges, 7 nodes)"
+        ]
+      }
+    }
+  ]
+}
