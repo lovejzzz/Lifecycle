@@ -230,12 +230,12 @@ function CanvasInner() {
   const [searchSelectedIndex, setSearchSelectedIndex] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const matchingNodes = searchQuery
+  const matchingNodes = useMemo(() => searchQuery
     ? nodes.filter(n =>
         n.data.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (n.data.description ?? '').toLowerCase().includes(searchQuery.toLowerCase())
       )
-    : [];
+    : [], [searchQuery, nodes]);
 
   // Node hover tooltip state
   const [tooltip, setTooltip] = useState<{ nodeId: string; x: number; y: number } | null>(null);
@@ -467,12 +467,12 @@ function CanvasInner() {
       if ((e.metaKey || e.ctrlKey) && e.key === '0') {
         e.preventDefault();
         if (selectedNodeId) {
-          // BFS to find connected subgraph
+          const currentEdges = useLifecycleStore.getState().edges;
           const visited = new Set<string>([selectedNodeId]);
           const q = [selectedNodeId];
           while (q.length > 0) {
             const cur = q.shift()!;
-            for (const edge of edges) {
+            for (const edge of currentEdges) {
               if (edge.source === cur && !visited.has(edge.target)) { visited.add(edge.target); q.push(edge.target); }
               if (edge.target === cur && !visited.has(edge.source)) { visited.add(edge.source); q.push(edge.source); }
             }
@@ -497,13 +497,14 @@ function CanvasInner() {
       // Arrow key navigation between connected nodes
       if (selectedNodeId && ['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
         e.preventDefault();
-        const currentNode = nodes.find(n => n.id === selectedNodeId);
+        const { nodes: currentNodes, edges: currentEdges } = useLifecycleStore.getState();
+        const currentNode = currentNodes.find(n => n.id === selectedNodeId);
         if (!currentNode) return;
         // ArrowRight/ArrowDown: follow outgoing edges; ArrowLeft/ArrowUp: follow incoming
         const isForward = e.key === 'ArrowRight' || e.key === 'ArrowDown';
         const neighbors = isForward
-          ? edges.filter(ed => ed.source === selectedNodeId).map(ed => nodes.find(n => n.id === ed.target)).filter(Boolean)
-          : edges.filter(ed => ed.target === selectedNodeId).map(ed => nodes.find(n => n.id === ed.source)).filter(Boolean);
+          ? currentEdges.filter(ed => ed.source === selectedNodeId).map(ed => currentNodes.find(n => n.id === ed.target)).filter(Boolean)
+          : currentEdges.filter(ed => ed.target === selectedNodeId).map(ed => currentNodes.find(n => n.id === ed.source)).filter(Boolean);
         if (neighbors.length > 0) {
           // Pick the neighbor closest in the arrow direction
           const sorted = [...neighbors].sort((a, b) => {
@@ -529,19 +530,21 @@ function CanvasInner() {
       }
 
       if ((e.key === 'Delete' || e.key === 'Backspace') && edgePicker) {
-        deleteEdge(edgePicker.edgeId);
+        useLifecycleStore.getState().deleteEdge(edgePicker.edgeId);
         setEdgePicker(null);
         return;
       }
       if ((e.key === 'Delete' || e.key === 'Backspace') && multiSelectedIds.size > 1) {
-        const names = nodes.filter(n => multiSelectedIds.has(n.id)).map(n => n.data.label).join(', ');
+        const currentNodes = useLifecycleStore.getState().nodes;
+        const names = currentNodes.filter(n => multiSelectedIds.has(n.id)).map(n => n.data.label).join(', ');
         if (!window.confirm(`Delete ${multiSelectedIds.size} nodes (${names})?`)) return;
         deleteMultiSelected();
         return;
       }
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedNodeId) {
-        const node = nodes.find(n => n.id === selectedNodeId);
-        const connCount = edges.filter(e => e.source === selectedNodeId || e.target === selectedNodeId).length;
+        const { nodes: currentNodes, edges: currentEdges } = useLifecycleStore.getState();
+        const node = currentNodes.find(n => n.id === selectedNodeId);
+        const connCount = currentEdges.filter(e => e.source === selectedNodeId || e.target === selectedNodeId).length;
         if (connCount > 0 && !window.confirm(`Delete "${node?.data.label ?? selectedNodeId}"? This will remove ${connCount} connection${connCount > 1 ? 's' : ''}.`)) return;
         deleteNode(selectedNodeId);
         return;
@@ -559,7 +562,7 @@ function CanvasInner() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [selectedNodeId, deleteNode, undo, redo, showCIDPanel, toggleCIDPanel, showSearch, showShortcuts, showPalette, setSearchQuery, edgePicker, pendingEdge, selectNode, setPendingEdge, searchSelectedIndex, matchingNodes, multiSelectedIds, deleteMultiSelected, edges, fitView]);
+  }, [selectedNodeId, deleteNode, undo, redo, showCIDPanel, toggleCIDPanel, showSearch, showShortcuts, showPalette, setSearchQuery, edgePicker, pendingEdge, selectNode, setPendingEdge, searchSelectedIndex, matchingNodes, multiSelectedIds, deleteMultiSelected, fitView]);
 
   const minimapNodeColor = useCallback((node: any) => {
     const data = node.data as NodeData;

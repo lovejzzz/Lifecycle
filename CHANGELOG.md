@@ -1,5 +1,28 @@
 # Changelog
 
+### 2026-03-08 — Round 96: ZERO Lint Warnings + 100% Reasoner Eval — Pool Expansion (70 tests)
+
+**Lint cleanup: 1 → 0 warnings — CLEAN CODEBASE**
+
+Session trajectory: `23 → 14 → 9 → 6 → 3 → 1 → 0`
+
+Final fix: Keyboard handler in `Canvas.tsx` refactored to use `useLifecycleStore.getState()` for `nodes`, `edges`, and `deleteEdge` inside event handlers instead of closing over them. This is the Zustand-recommended pattern for accessing latest state in callbacks without re-registering effects. Also wrapped `matchingNodes` in `useMemo` to stabilize the dependency array. Removed `edges` from the effect dep array entirely.
+
+**Eval results: 100% (6/6 passed, 410/410 points) — DeepSeek Reasoner, eleventh consecutive perfect score**
+
+**Quality highlights from deep evaluation:**
+- `ops-product-launch` (Rowan): **8 nodes, 11 edges, 687c avg.** Textbook fan-out/converge: trigger → 4 parallel tracks (Engineering, Design, Marketing, Legal) → Pre-Launch Integration (state) → Launch Gate (review). State node has explicit transitions (in-progress/blocked/ready). RACI matrix, GDPR/CCPA, FTC compliance.
+- `realestate-tenant-screening` (Poirot): **942c avg** — richest content this round. AppFolio, Buildium, Experian, Equifax, Checkr, GoodHire, Truework, Plaid. FCRA guidelines, 7-year archive. Credit+Financial and Background+Reference checks run in parallel, converge at Screening Committee.
+- `execute-adr` (Rowan): **8909 chars** — production-quality ADR. 6 decision drivers, pros/cons for both options, PCI-DSS CDE scoping, Saga pattern, mTLS, Istio/Linkerd, 5-point mitigation plan.
+- `culture-advice-remote-team` (Poirot): **472 chars** — "Forcing the office return would be like arresting the wrong suspect." Identifies psychological safety, virtual leadership gaps, isolation. Reasoner significantly richer than Chat's 286c on same prompt.
+- `edge-build-looks-like-question` (Rowan): Correctly detected "Can you set up..." as build intent. Dual test nodes with refines feedback loops. Great Expectations, Apache Beam, BigQuery partitioning.
+
+**Test pool: 68 → 70 tests:**
+- `manufacturing-quality-control` — Rowan, new domain (manufacturing/electronics), tests policy+test-heavy workflow with 5,000 PCBs/day throughput
+- `eng-advice-tech-debt` — Poirot, tests strategic analysis for legacy codebase modernization (rewrite vs incremental)
+
+**Audit updated:** Code Quality A → A+ (zero lint warnings). Architecture stays A (CommandPalette + keyboard handler properly structured).
+
 ### 2026-03-08 — Round 95: Lint 3→1 (CommandPalette Extraction + Derived State) — Audit Refresh
 
 **Lint cleanup: 3 → 1 warning (2 fixed, 1 suppressed with eslint-disable):**

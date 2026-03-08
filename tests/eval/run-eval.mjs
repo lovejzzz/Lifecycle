@@ -566,6 +566,24 @@ const POOL = [
     prompt: 'We need to figure out our disaster recovery strategy. Our main database is PostgreSQL on AWS RDS, we have 2TB of data, RPO needs to be under 1 hour, and RTO under 4 hours. We currently have no backups besides the default RDS snapshots. Set something up for us.',
     expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustMentionInNodes: ['backup|snapshot|replica', 'failover|recovery|restore', 'test|drill|validat'] },
   },
+
+  // ─── Round 96 additions ─────────────────────────────────────────────────────
+
+  // Manufacturing / quality control — new domain, tests policy + test heavy workflow with state tracking
+  {
+    id: 'manufacturing-quality-control',
+    agent: 'rowan', taskType: 'generate',
+    prompt: 'Build a quality control workflow for our electronics manufacturing line producing 5,000 PCBs per day. Steps: incoming material inspection, solder paste application, component placement, reflow oven, automated optical inspection, functional testing, final QA review, and packaging. Defect rate target is under 0.5%.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['test'], mustMentionInNodes: ['inspect|aoi|optical', 'solder|reflow', 'test|functional', 'defect|quality|qa'] },
+  },
+
+  // Poirot advice on technical debt — tests strategic analysis for engineering leadership
+  {
+    id: 'eng-advice-tech-debt',
+    agent: 'poirot', taskType: 'analyze',
+    prompt: 'Our codebase is 8 years old with 2 million lines of PHP. We have zero tests, no CI/CD, and deploy by FTPing files to production. Three of our five developers want to rewrite everything in Go. The other two say we should incrementally modernize. Our revenue is $4M/year and we have 200 enterprise customers who depend on uptime. What should we do?',
+    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 250 },
+  },
 ];
 
 // ─── Agent System Prompts (synced with src/lib/prompts.ts) ─────────────────

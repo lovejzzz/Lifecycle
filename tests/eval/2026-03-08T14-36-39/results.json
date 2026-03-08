@@ -1,0 +1,473 @@
+{
+  "timestamp": "2026-03-08T14-36-39",
+  "overall": 100,
+  "testsRun": [
+    "edge-build-looks-like-question",
+    "personality-poirot-empty",
+    "ops-product-launch",
+    "realestate-tenant-screening",
+    "culture-advice-remote-team",
+    "execute-adr"
+  ],
+  "poolSize": 68,
+  "results": [
+    {
+      "id": "edge-build-looks-like-question",
+      "status": "ok",
+      "elapsed": 156561,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Can you set up a data pipeline for me? I have CSVs coming from 3 vendors daily and need them in BigQuery by morning.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Setting up the data pipeline workflow.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Daily Schedule Trigger",
+              "category": "trigger",
+              "description": "Automated trigger to initiate the data pipeline each morning.",
+              "content": "Configure a cloud-based scheduler (e.g., Google Cloud Scheduler, AWS EventBridge) to trigger the pipeline daily at a specified time (e.g., 2 AM UTC). The event payload should include metadata such as execution timestamp and pipeline version. Set up webhook endpoints or pub/sub topics to notify downstream components. Ensure retry logic for failed triggers with exponential backoff. Use environment variables for configuration to handle different environments (dev, prod). Monitor trigger logs for anomalies and set up alerts for missed executions. Tools: Cloud Scheduler API, cron expressions, logging with Stackdriver or CloudWatch. Steps: 1. Define schedule and timezone. 2. Create trigger with JSON payload. 3. Integrate with authentication (OAuth2, service accounts). 4. Test trigger manually before automation. 5. Implement error handling for network issues or quota limits."
+            },
+            {
+              "label": "CSV Ingestion from Vendors",
+              "category": "action",
+              "description": "Fetch and consolidate CSVs from three vendor sources.",
+              "content": "For each vendor, establish secure connections using protocols like SFTP, HTTPS, or S3 APIs. Steps: 1. Configure credentials and endpoints for Vendor A (e.g., FTP server), Vendor B (e.g., REST API with API keys), and Vendor C (e.g., cloud storage bucket). 2. Use Python scripts with libraries (requests, boto3, paramiko) to download files concurrently to optimize time. 3. Implement error handling: retry failed downloads (max 3 attempts), log failures with vendor-specific details, and move to dead-letter queue if persistent. 4. Store raw CSVs in a temporary storage (Google Cloud Storage bucket) with timestamped folders for audit. 5. Validate file existence and size before proceeding. Owner: Data Engineer. Tools: Apache Airflow DAGs, Google Cloud Functions, or AWS Lambda. Schedule ingestion to run immediately after trigger."
+            },
+            {
+              "label": "Data Quality Validation",
+              "category": "test",
+              "description": "Validate CSV files for schema, completeness, and anomalies.",
+              "content": "Perform automated checks on each vendor's CSV. Steps: 1. Schema validation: Ensure columns match predefined schemas (use JSON schema or Great Expectations). 2. Data quality: Check for nulls in key fields, duplicates, and out-of-range values (e.g., dates in future). 3. File integrity: Verify file format (CSV delimiters, encoding UTF-8) and row counts against expected ranges. Tools: Python with pandas for basic checks, Great Expectations for advanced validation, or custom SQL queries. Pass criteria: All checks pass with zero critical errors; fail criteria: Any critical error (e.g., missing required column) triggers remediation. Log results to a dashboard (e.g., Data Studio) and set up alerts for failures. If validation fails, the pipeline refines ingestion by flagging issues for manual review or retry."
+            },
+            {
+              "label": "Data Transformation",
+              "category": "action",
+              "description": "Clean and transform raw data into BigQuery-compatible format.",
+              "content": "Process validated CSVs through transformation logic. Steps: 1. Data cleaning: Remove duplicates, handle missing values (impute or flag), standardize formats (e.g., dates to YYYY-MM-DD). 2. Transformation: Apply business rules (e.g., calculate derived fields, aggregate vendor-specific data into common schema). 3. Use Apache Beam with Dataflow Runner for scalable processing, or Python scripts with pandas for smaller datasets. 4. Output transformed data to intermediate storage (Parquet files in GCS) for efficient loading. 5. Implement idempotency to handle reruns without duplication. Tools: SQL for logic definition, dbt for transformations if applicable. Owner: Data Engineer. Error handling: Log transformation errors and send to monitoring system (e.g., Prometheus)."
+            },
+            {
+              "label": "BigQuery Loading",
+              "category": "action",
+              "description": "Load transformed data into BigQuery tables.",
+              "content": "Load data from intermediate storage to BigQuery. Steps: 1. Configure BigQuery dataset and tables with partitioning (e.g., by date) and clustering for performance. 2. Use bq load command or BigQuery API with job configuration (write disposition WRITE_APPEND or WRITE_TRUNCATE based on requirements). 3. Handle large datasets with batch loading, and monitor job status via BigQuery API. 4. Implement error recovery: retry failed loads, with fallback to manual intervention if needed. 5. Update metadata (e.g., last_updated timestamp) in a control table. Tools: Google Cloud SDK, Python client library. Owner: Data Engineer. Ensure compliance with data governance policies, and set up alerts for load failures using Cloud Monitoring."
+            },
+            {
+              "label": "Load Verification",
+              "category": "test",
+              "description": "Verify that data is correctly loaded and accessible in BigQuery.",
+              "content": "Perform post-load checks to ensure data integrity. Steps: 1. Run SQL queries to compare row counts between source (transformed files) and target (BigQuery tables), with tolerance for minor discrepancies. 2. Validate data consistency: Check for referential integrity if applicable, and ensure no data corruption (e.g., via checksums). 3. Performance check: Ensure queries run within SLA (e.g., under 5 minutes). Tools: BigQuery SQL, automated scripts with pytest for testing. Pass criteria: All verification queries return expected results; fail criteria: Any mismatch triggers a refinement of the loading step. Log results to a verification report and notify stakeholders via email or Slack if issues arise. Schedule this test to run immediately after loading."
+            },
+            {
+              "label": "Pipeline Completion Report",
+              "category": "output",
+              "description": "Final output with metrics and notifications for pipeline success.",
+              "content": "Generate a comprehensive report upon pipeline completion. Steps: 1. Compile metrics: Execution time, data volume processed, success/failure status for each vendor, and any errors encountered. 2. Format report as a JSON or Markdown document stored in a cloud storage bucket (e.g., GCS) with timestamp. 3. Distribute report via email (using SendGrid or Gmail API) to stakeholders (e.g., data analysts, product managers), and post to a Slack channel. 4. Update a dashboard (e.g., Google Data Studio) with real-time pipeline health indicators. 5. Archive logs for compliance and audit trails. Success metrics: All data loaded by 6 AM local time, 99.9% uptime. Tools: Python for report generation, cron for scheduling distribution. Owner: Data Operations Team."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "drives"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "outputs"
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 4,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 90,
+        "maxScore": 90,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 4)",
+          "✓ All 8 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 791c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (8 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "personality-poirot-empty",
+      "status": "ok",
+      "elapsed": 25255,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, but the canvas is pristine, mon ami – we have no clues or connections yet! The investigation board is empty, awaiting the first piece of evidence to set our little grey cells in motion. Let us begin by sketching out the initial nodes, for every great case starts with a single clue.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (286 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "ops-product-launch",
+      "status": "ok",
+      "elapsed": 169747,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We're launching a new product in 6 weeks. Engineering needs to finish the API, design needs to finalize the landing page, marketing needs press kit and launch emails, legal needs to review terms. All teams work in parallel but we need a single launch gate. Build me a cross-team launch workflow.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building cross-team launch workflow.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Launch Project Kickoff",
+              "category": "trigger",
+              "description": "Formal initiation of the product launch project with timeline and scope",
+              "content": "**Event:** Scheduled kickoff meeting with all team leads (Engineering, Design, Marketing, Legal) at project start. **Payload:** Product requirements document (PRD), 6-week timeline, resource allocation, and key milestones. **Config:** Use project management tool (e.g., Jira or Asana) to create epics for each team, set dependencies, and establish communication channels (Slack for daily syncs). **Webhook Setup:** Integrate calendar alerts for weekly check-ins and deadline reminders. **Steps:** 1. Share PRD and timeline via Confluence. 2. Assign team leads and define RACI matrix. 3. Set up shared dashboards for progress tracking. 4. Establish risk log for blockers. **Tools:** Zoom for meetings, Google Docs for collaborative editing, and automated status reports via Zapier."
+            },
+            {
+              "label": "Engineering: API Development",
+              "category": "action",
+              "description": "Complete backend API development with testing and documentation",
+              "content": "**Steps:** 1. Finalize API specification using OpenAPI 3.0, covering endpoints for core product features. 2. Develop RESTful endpoints with Node.js/Python, implementing authentication (JWT) and rate limiting. 3. Unit and integration testing using Jest/Pytest with >90% code coverage. 4. Performance testing with LoadRunner for 1000+ concurrent users. 5. Document API with Swagger UI, including examples and error codes. **Tools:** GitHub for version control, Postman for manual testing, CI/CD pipeline via Jenkins. **Error Handling:** Implement retry logic, logging with ELK stack, and alerting via PagerDuty for critical failures. **Owner:** Engineering Lead, with bi-weekly code reviews and sprint demos."
+            },
+            {
+              "label": "Design: Landing Page Finalization",
+              "category": "action",
+              "description": "Finalize user-facing landing page with responsive design and content",
+              "content": "**Steps:** 1. Conduct user research to validate wireframes using Figma prototypes. 2. Develop high-fidelity mockups with brand guidelines (colors, typography). 3. Implement frontend with HTML/CSS/React, ensuring mobile responsiveness and ADA compliance. 4. A/B test CTAs and layouts using Optimizely. 5. Integrate analytics (Google Analytics) for post-launch tracking. **Tools:** Figma for design, GitHub for code, Vercel for staging deployments. **Criteria:** Load time <3 seconds, cross-browser compatibility, and SEO optimization with meta tags. **Owner:** Design Lead, with feedback loops from marketing and user testing sessions."
+            },
+            {
+              "label": "Marketing: Launch Assets Creation",
+              "category": "action",
+              "description": "Create press kit and launch email campaigns for product promotion",
+              "content": "**Steps:** 1. Develop press kit including product fact sheet, high-res images, CEO quote, and media contacts. 2. Write launch email sequences for different segments (e.g., existing customers, prospects) with Mailchimp templates. 3. Plan social media calendar with posts for LinkedIn, Twitter, and Facebook. 4. Coordinate with influencers for early access reviews. 5. Set up tracking UTM parameters for campaign analytics. **Tools:** Canva for graphics, HubSpot for email automation, Google Ads for paid campaigns. **Metrics:** Target open rate >25%, click-through rate >5%, and media pickup from 5+ outlets. **Owner:** Marketing Lead, with legal review for compliance."
+            },
+            {
+              "label": "Legal: Terms and Compliance Review",
+              "category": "action",
+              "description": "Review and approve product terms, privacy policy, and regulatory compliance",
+              "content": "**Steps:** 1. Draft terms of service and privacy policy aligned with GDPR and CCPA requirements. 2. Review API data handling for PII protection with security team. 3. Assess marketing claims for FTC compliance to avoid false advertising. 4. Finalize NDAs for beta testers and partners. 5. Document compliance checklist and obtain sign-off from legal counsel. **Tools:** Legal.io for document management, encryption for sensitive files, and audit trails. **Criteria:** No high-risk clauses, all user consent mechanisms in place, and regulatory filings completed. **Owner:** Legal Lead, with escalation to external counsel if needed."
+            },
+            {
+              "label": "Pre-Launch Integration",
+              "category": "state",
+              "description": "Consolidate all team outputs into a unified launch-ready state",
+              "content": "**States:** Integration in progress, blocked, ready for review. **Transitions:** Triggered when all team feeds are received; if blocked, notify relevant teams via Slack and update dashboard. **Steps:** 1. Merge API with landing page via staging environment, ensuring endpoints are live and functional. 2. Validate marketing assets are linked correctly (e.g., emails point to correct URLs). 3. Conduct cross-team smoke test: simulate user sign-up flow, check email deliverability, and verify legal disclaimers are displayed. 4. Update central launch checklist in Confluence with status indicators. **Tools:** Docker for containerization, Selenium for automated UI tests, and status meetings every 48 hours."
+            },
+            {
+              "label": "Launch Gate Approval",
+              "category": "review",
+              "description": "Single human gate to approve launch after verifying all criteria",
+              "content": "**Approval Criteria:** 1. API passes all integration tests with zero critical bugs. 2. Landing page has no visual defects and meets performance benchmarks. 3. Marketing assets are approved by legal and ready for distribution. 4. Compliance documents are signed and filed. **Who Reviews:** Cross-functional committee including Product Manager, Engineering Lead, Design Lead, Marketing Lead, and Legal Lead. **Escalation:** If rejected, provide detailed feedback and reassign to relevant teams with 24-hour SLA for fixes. **SLA:** Review within 4 hours of integration completion, with decision communicated via email and project tool."
+            },
+            {
+              "label": "Product Launch Execution",
+              "category": "output",
+              "description": "Final launch activation with monitoring and post-launch support",
+              "content": "**Deliverable Format:** Live product accessible to users, with all systems operational. **Distribution:** Flip DNS to production servers, activate email campaigns, and publish press releases via PR Newswire. **Success Metrics:** Monitor real-time dashboards for uptime (target 99.9%), user sign-ups (goal 1000 in first week), and error rates (<0.1%). **Steps:** 1. Execute launch playbook with rollback plan in case of issues. 2. Engage customer support team with predefined FAQs and troubleshooting guides. 3. Collect initial feedback via surveys and adjust as needed. 4. Schedule post-mortem meeting after 7 days to review lessons learned. **Tools:** Datadog for monitoring, Zendesk for support, and Google Analytics for traffic analysis."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 0,
+              "to": 2,
+              "label": "triggers"
+            },
+            {
+              "from": 0,
+              "to": 3,
+              "label": "triggers"
+            },
+            {
+              "from": 0,
+              "to": 4,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "validates"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "approves"
+            },
+            {
+              "from": 6,
+              "to": 5,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 110,
+        "maxScore": 110,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 5)",
+          "✓ Node count: 8 ≤ 10",
+          "✓ Has \"review\" category",
+          "✓ All 11 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 687c, no thin nodes",
+          "✓ Architecture covers: api, design, marketing, legal",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (11 edges, 8 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "realestate-tenant-screening",
+      "status": "ok",
+      "elapsed": 157732,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Build a tenant screening workflow for our property management company. We manage 200 units. Steps: receive application, credit check, background check, employment verification, landlord references, income verification, and lease signing. Need to screen 30 applicants per month efficiently.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! Mon ami, I have constructed a meticulous workflow for your tenant screening, designed to handle 30 applicants monthly with the precision of a detective on a case. Voilà—parallel checks and feedback loops ensure no clue is missed, from credit reports to landlord whispers.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Application Submission",
+              "category": "trigger",
+              "description": "Initial trigger where tenant applications are received and logged",
+              "content": "This node initiates the screening process upon receiving a rental application through digital portals (e.g., AppFolio, Buildium) or physical forms. Steps: 1) Collect and verify application fee payment via integrated gateways like Stripe or PayPal, ensuring compliance with local laws. 2) Require signed consent forms for background and credit checks, stored securely in cloud systems like Google Drive with encryption. 3) Input applicant data into the property management database, assigning a unique ID and triggering automated acknowledgment emails. Criteria: Applications must include full name, contact details, rental history, employment info, and income documentation; incomplete submissions are flagged for follow-up within 24 hours. Tools: Use API integrations for real-time data capture, and set up validation rules to catch errors. Checklist: Confirm fair housing adherence, log timestamps for audit trails, and prioritize applications based on submission date to manage the 30-applicant monthly load efficiently."
+            },
+            {
+              "label": "Initial Application Review",
+              "category": "action",
+              "description": "Quick screening for completeness and basic eligibility",
+              "content": "This phase involves a manual or automated review to filter applications before deeper checks. Steps: 1) Assess completeness by verifying all required fields are filled, using checklist templates in tools like Trello or Asana. 2) Perform initial eligibility screening based on predefined criteria: minimum income (e.g., 3x monthly rent), no immediate red flags like eviction history in preliminary databases. 3) Document findings in a centralized system, noting any missing information for follow-up requests via automated SMS or email. Tools: Leverage AI-powered screening software like RentPrep or TransUnion SmartMove for quick scans. Criteria: Applications passing this stage move to parallel verification; others are rejected or put on hold with detailed reasons logged. Checklist: Ensure consistency across reviewers, maintain a rejection log for compliance, and set SLAs for response within 48 hours to keep pace with monthly volume."
+            },
+            {
+              "label": "Credit & Financial Check",
+              "category": "test",
+              "description": "Evaluates credit score and income stability",
+              "content": "This node conducts thorough financial assessments to gauge tenant reliability. Steps: 1) Pull credit reports from agencies like Experian or Equifax using APIs, focusing on scores (aim for 650+), debt-to-income ratios (below 40%), and payment histories. 2) Verify income through recent pay stubs, tax returns, or bank statements, using tools like Truework for employment income or Plaid for bank verification. 3) Calculate affordability by comparing monthly income to rent and other debts, applying formulas in spreadsheet software or custom dashboards. Criteria: Approve if credit score ≥650 and income ≥3x rent; flag for review if borderline. Tools: Integrate with screening platforms for automated reports, and set alerts for discrepancies. Checklist: Document all sources, ensure applicant consent is on file, and archive reports for 7 years for legal compliance, streamlining the 30-applicant flow."
+            },
+            {
+              "label": "Background & Reference Check",
+              "category": "test",
+              "description": "Assesses criminal history, employment, and landlord references",
+              "content": "This node performs comprehensive background verification to uncover any risks. Steps: 1) Conduct criminal background checks via services like Checkr or GoodHire, scanning national databases for felonies or violent crimes within the past 7 years. 2) Verify employment by contacting employers directly or using verification services, confirming job tenure, salary, and stability. 3) Contact previous landlords for references, asking about payment punctuality, property damage, and lease compliance via structured phone or email templates. Criteria: Reject applicants with severe criminal records or negative references; note minor issues for committee review. Tools: Use batch processing for efficiency, and maintain communication logs in CRM systems. Checklist: Adhere to FCRA guidelines, document all contact attempts, and cross-reference data with application details to prevent fraud, ensuring thorough screening within monthly targets."
+            },
+            {
+              "label": "Screening Committee Review",
+              "category": "review",
+              "description": "Human approval gate consolidating all verification results",
+              "content": "This is a critical decision point where a property manager or committee reviews all gathered evidence. Steps: 1) Compile reports from credit and background checks into a unified dashboard using tools like Monday.com or custom PDF summaries. 2) Evaluate overall risk by weighing financial stability against background findings, using scoring matrices (e.g., green/yellow/red flags). 3) Make approval, rejection, or conditional approval decisions, documenting rationale in the system with timestamps and reviewer signatures. Criteria: Approve if all checks pass thresholds; if conflicts arise, escalate to senior staff or request additional info. Tools: Implement electronic signature platforms like DocuSign for audit trails. Checklist: Ensure consensus among reviewers, schedule weekly review meetings to handle volume, and set up automated notifications for applicants, with a feedback loop to refine earlier steps if needed."
+            },
+            {
+              "label": "Lease Signing & Onboarding",
+              "category": "output",
+              "description": "Final step executing lease agreement and tenant move-in",
+              "content": "This node delivers the approved tenant into the leasing phase with all legal and operational closure. Steps: 1) Generate lease documents using templates in software like DotLoop or LegalZoom, customizing terms based on screening outcomes. 2) Coordinate signing via e-signature platforms, sending reminders and collecting security deposits and first month's rent through integrated payment systems. 3) Conduct move-in orientation, including property walkthroughs, key handovers, and utility setup instructions, documented in checklists. Criteria: Ensure all prior approvals are locked in, and lease terms align with local regulations. Tools: Use property management APIs to update tenant records and trigger welcome emails. Checklist: Verify all financial transactions, archive signed leases securely, and schedule follow-up inspections, finalizing the screening workflow for up to 30 applicants monthly with robust efficiency."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "validates"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "validates"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "approves"
+            },
+            {
+              "from": 4,
+              "to": 1,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 105,
+        "maxScore": 105,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 6 (min: 5)",
+          "✓ Node count: 6 ≤ 10",
+          "✓ All 7 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 942c, no thin nodes",
+          "✓ Architecture covers: credit, employ, landlord, lease",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (7 edges, 6 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "culture-advice-remote-team",
+      "status": "ok",
+      "elapsed": 16910,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We went fully remote 6 months ago. Team velocity is down 30%, people skip standups, Slack is dead silent, and two senior engineers are about to quit. The CEO thinks forcing everyone back to the office will fix it. What should we actually do?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, mon ami, this is not a case of geography but of culture and systems. The silence in Slack and skipped standups are merely symptoms—clues pointing to eroded psychological safety, unclear expectations, and poor virtual leadership. Forcing the office return would be like arresting the wrong suspect; we must investigate the root causes: inadequate remote rituals, missing feedback loops, and unaddressed isolation. Let us examine the evidence with the little grey cells.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (472 chars)",
+          "✓ Message length: 472 ≥ 250"
+        ]
+      }
+    },
+    {
+      "id": "execute-adr",
+      "status": "ok",
+      "elapsed": 80385,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Write an Architecture Decision Record (ADR) for choosing between a monolithic and microservices architecture for a fintech payment processing platform. The system needs to handle 10,000 transactions per second, maintain PCI-DSS compliance, and support 5 development teams working independently. Include context, decision drivers, options considered, decision outcome, and consequences.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "**Architecture Decision Record (ADR) 001: Backend Application Architecture Selection**\n\n**Status:** Accepted\n\n**Date:** 2023-10-26\n\n**Decision:** Adopt a microservices architecture for the fintech payment processing platform.\n\n---\n\n### **Context**\n\nWe are initiating the development of a new, high-volume payment processing platform. The core functional requirements include payment initiation, authorization, fraud scoring, settlement, and reporting. The system must be capable of processing 10,000 financial transactions per second (TPS) at peak, with sub-second latency for authorization requests. As a financial service handling sensitive cardholder data, the platform is subject to Payment Card Industry Data Security Standard (PCI-DSS) compliance, necessitating rigorous security controls, data encryption, and audit trails. Furthermore, to accelerate development and deployment, five cross-functional development teams must be able to work on distinct features (e.g., fraud engine, ledger, reporting API) with minimal coordination overhead and conflicting dependencies.\n\nThe foundational architectural choice for the backend system will determine our ability to meet these scalability, compliance, and organizational goals.\n\n### **Decision Drivers**\n\n1.  **Scalability & Performance:** The architecture must support elastic, fine-grained scaling to meet the 10,000 TPS target and handle unpredictable traffic spikes, particularly in payment authorization flows.\n2.  **Independent Team Autonomy:** Five development teams must be able to develop, test, deploy, and scale their components independently, without being blocked by other teams' release cycles or codebase integration issues.\n3.  **Resilience & Fault Isolation:** A failure in one subsystem (e.g., the reporting module) must not cascade and bring down critical transaction processing paths (e.g., payment authorization).\n4.  **PCI-DSS Compliance & Security:** The architecture must facilitate clear security boundaries, simplify the scope of compliance audits, and enable targeted security controls for modules handling sensitive cardholder data (CHD).\n5.  **Technology Heterogeneity:** Different subsystems have different optimal technology stacks (e.g., real-time fraud detection may use streaming frameworks, while ledgering may use a strong ACID database).\n6.  **Operational Complexity & Maturity:** The chosen architecture must align with the organization's operational maturity in areas like DevOps, container orchestration, monitoring, and distributed tracing.\n\n### **Options Considered**\n\n#### **Option 1: Monolithic Architecture**\n\nA single, unified codebase and deployment artifact containing all payment processing functionality (API layer, business logic for authorization, fraud, settlement, etc.) connected to a centralized database or a set of closely coupled databases.\n\n*   **Pros:**\n    *   **Simpler Development & Deployment:** Single codebase simplifies initial development, debugging, and testing. A single deployment pipeline.\n    *   **Simpler Transactions:** ACID transactions across different business functions (e.g., debit account and create ledger entry) are straightforward with a shared database.\n    *   **Reduced Operational Overhead:** A single application to monitor, log, and secure. Network latency between components is minimal.\n*   **Cons:**\n    *   **Impedes Team Autonomy:** All teams commit to the same codebase, leading to merge conflicts, coordinated release schedules, and difficulty in adopting new technologies per team.\n    *   **Barrier to Scaling:** The entire application must be scaled as a single unit, even if only the authorization service is under load, leading to inefficient resource utilization.\n    *   **Poor Fault Isolation:** A bug in a non-critical module can crash the entire application, halting all payment processing.\n    *   **Complex Compliance Scope:** The entire monolithic application and its data stores fall within the PCI-DSS audit scope, increasing cost and complexity.\n    *   **Technology Lock-in:** The entire system is tied to a single technology stack.\n\n#### **Option 2: Microservices Architecture**\n\nThe system is decomposed into a set of loosely coupled, independently deployable services, each encapsulating a specific business capability (e.g., `Payment-Authorization-Service`, `Fraud-Detection-Service`, `Transaction-Ledger-Service`). Services communicate via well-defined, lightweight APIs (e.g., gRPC, REST over HTTPS) and own their private data stores.\n\n*   **Pros:**\n    *   **Enables Team Autonomy:** Each service can be owned and managed by a single team, with independent development and deployment lifecycles.\n    *   **Fine-Grained, Elastic Scaling:** Each service can be scaled independently based on its specific load (e.g., scale the fraud service independently of the reporting service).\n    *   **Enhanced Fault Isolation:** A failure in one service can be contained. Circuit breakers and fallbacks can be implemented to maintain partial system functionality.\n    *   **Simplified Compliance Scoping:** PCI-DSS compliance can be more tightly scoped to only the services that store, process, or transmit CHD (e.g., the tokenization service), reducing the audit surface area.\n    *   **Technology Flexibility:** Each service can use the technology stack best suited to its problem domain.\n*   **Cons:**\n    *   **Increased Complexity:** Introduces challenges in distributed data management, inter-service communication, network latency, and eventual consistency.\n    *   **Operational Overhead:** Requires sophisticated DevOps, container orchestration (Kubernetes), service discovery, centralized logging, distributed tracing, and API gateway management.\n    *   **Distributed Transactions:** Implementing business transactions spanning multiple services (e.g., Saga pattern) is complex compared to ACID transactions in a monolith.\n    *   **Testing & Debugging:** End-to-end testing and debugging a request flow across multiple services is more challenging.\n\n### **Decision Outcome**\n\nWe have decided to adopt a **Microservices Architecture**.\n\nWhile the monolithic approach offers initial simplicity, it fundamentally conflicts with our primary drivers of **independent team scalability** and **team autonomy** at our target transaction volume. The microservices model, despite its inherent complexity, is the only viable path to achieve:\n1.  The elastic, component-level scaling required for 10,000 TPS.\n2.  The decoupled development cycles needed for five teams to operate productively in parallel.\n3.  The resilience required for a critical financial system, where a fault in a reporting feature must not impact core payment flows.\n\nWe accept the associated costs in operational maturity and will invest upfront in a robust platform team and tooling (Kubernetes, service mesh, observability stack) to mitigate these complexities.\n\n### **Consequences**\n\n**Positive Consequences:**\n*   Development teams can own their services end-to-end, leading to faster feature development and innovation.\n*   The system can scale cost-effectively by targeting resources to bottleneck services.\n*   The failure of a non-critical service does not equate to a total system outage.\n*   PCI-DSS compliance efforts and audits can be focused on a limited set of \"cardholder data environment\" (CDE) microservices.\n\n**Negative Consequences / Risks:**\n*   **Increased Operational Burden:** Requires a dedicated platform/infrastructure team to manage the Kubernetes cluster, service mesh, monitoring, and deployment pipelines.\n*   **Data Consistency Challenges:** Will need to implement the Saga pattern for business transactions (like payment capture and settlement) and embrace eventual consistency where appropriate.\n*   **Network Latency & Reliability:** Service calls over the network add latency and introduce a new point of failure. Requires implementation of retries, timeouts, and circuit breakers.\n*   **Security Complexity:** The network attack surface increases. Requires strict service-to-service authentication (mTLS), fine-grained authorization, and rigorous API security at the gateway.\n*   **Initial Development Slowdown:** Significant upfront investment is required in foundational infrastructure before business logic development reaches full velocity.\n\n**Mitigation Plan:**\n1.  Establish a core platform team to provision and manage the cloud-native toolchain.\n2.  Define and enforce strict API contracts and service maturity standards from the start.\n3.  Implement a comprehensive service mesh (e.g., Istio, Linkerd) to handle cross-cutting concerns like mTLS, observability, and traffic management.\n4.  Design services around business capabilities and data domains to minimize chatty inter-service communication.\n5.  Adopt a phased rollout, starting with a bounded context like the fraud detection service, to build organizational competency.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (8909 chars)",
+          "✓ Content length: 8909 ≥ 1500"
+        ]
+      }
+    }
+  ]
+}
