@@ -25,9 +25,9 @@ function LifecycleNode({ data, id }: NodeProps) {
   const colors = getNodeColors(category);
   const statusInfo = STATUS_INDICATOR[status] || STATUS_INDICATOR.active;
   const StatusIcon = statusInfo.icon;
-  const selectNode = useLifecycleStore((s) => s.selectNode);
   const isSelected = useLifecycleStore((s) => s.selectedNodeId === id);
   const updateNodeData = useLifecycleStore((s) => s.updateNodeData);
+  const openArtifactPanel = useLifecycleStore((s) => s.openArtifactPanel);
   const updateNodeStatus = useLifecycleStore((s) => s.updateNodeStatus);
   const addEvent = useLifecycleStore((s) => s.addEvent);
   const isMultiSelected = useLifecycleStore((s) => s.multiSelectedIds.has(id));
@@ -324,10 +324,10 @@ function LifecycleNode({ data, id }: NodeProps) {
                     {hasMore && (
                       <button
                         className="text-[7.5px] text-cyan-400/40 hover:text-cyan-400/70 mt-0.5 nodrag transition-colors"
-                        onClick={(e) => { e.stopPropagation(); selectNode(id); }}
-                        title="Click to view full result in side panel"
+                        onClick={(e) => { e.stopPropagation(); openArtifactPanel(id); }}
+                        title="Open artifact preview"
                       >
-                        ↳ view full result
+                        ↳ preview result
                       </button>
                     )}
                   </div>
@@ -377,6 +377,16 @@ function LifecycleNode({ data, id }: NodeProps) {
                 </span>
               )}
               <span className="text-[8px] text-white/20 capitalize tracking-wide">{status}</span>
+              {/* Preview button — visible on hover */}
+              {(nodeData.content || nodeData.executionResult) && (
+                <button
+                  className="opacity-0 group-hover:opacity-100 text-white/20 hover:text-cyan-400/70 transition-all nodrag"
+                  onClick={(e) => { e.stopPropagation(); openArtifactPanel(id); }}
+                  title="Open artifact preview"
+                >
+                  <Eye size={10} />
+                </button>
+              )}
             </div>
           </div>
         </div>

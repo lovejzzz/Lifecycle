@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, Lock, Unlock, CheckCircle2, RefreshCw, Clock, Trash2,
-  Pencil, Check,
+  Pencil, Check, Eye,
   Plus, Trash, ChevronDown, Copy, Bot,
 } from 'lucide-react';
 import { useLifecycleStore } from '@/store/useStore';
@@ -340,7 +340,7 @@ function SectionEditor({
 // ─── Main Panel ──────────────────────────────────────────────────────────────
 
 export default function NodeDetailPanel() {
-  const { nodes, edges, selectedNodeId, selectNode, lockNode, approveNode, updateNodeStatus, updateNodeData, deleteNode, deleteEdge, addEvent, askCIDAboutNode, executeNode } = useLifecycleStore();
+  const { nodes, edges, selectedNodeId, selectNode, lockNode, approveNode, updateNodeStatus, updateNodeData, deleteNode, deleteEdge, addEvent, askCIDAboutNode, executeNode, openArtifactPanel } = useLifecycleStore();
   const node = nodes.find((n) => n.id === selectedNodeId);
 
   // Track which node the editing state belongs to — auto-resets when selectedNodeId changes (no useEffect needed)
@@ -731,15 +731,24 @@ export default function NodeDetailPanel() {
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-[10px] text-white/35 uppercase tracking-wider">Execution Result</span>
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(data.executionResult!);
-                    }}
-                    className="text-white/20 hover:text-white/50 transition-colors"
-                    title="Copy result"
-                  >
-                    <Copy size={9} />
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => openArtifactPanel(node.id)}
+                      className="text-white/20 hover:text-cyan-400/60 transition-colors"
+                      title="Open in preview"
+                    >
+                      <Eye size={9} />
+                    </button>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(data.executionResult!);
+                      }}
+                      className="text-white/20 hover:text-white/50 transition-colors"
+                      title="Copy result"
+                    >
+                      <Copy size={9} />
+                    </button>
+                  </div>
                 </div>
                 <div className="text-[10px] text-emerald-300/60 bg-emerald-500/[0.03] rounded-lg px-3 py-2 border border-emerald-500/10 max-h-[120px] overflow-y-auto whitespace-pre-wrap font-mono">
                   {data.executionResult.slice(0, 1000)}{data.executionResult.length > 1000 ? '...' : ''}

@@ -24,6 +24,7 @@ import NodeDetailPanel from './NodeDetailPanel';
 import ActivityPanel from './ActivityPanel';
 import CIDPanel from './CIDPanel';
 import NodeContextMenu from './NodeContextMenu';
+import ArtifactPanel from './ArtifactPanel';
 import { getNodeColors, EDGE_LABEL_COLORS } from '@/lib/types';
 import type { NodeData, NodeCategory } from '@/lib/types';
 import { getAgent } from '@/lib/agents';
@@ -191,6 +192,7 @@ function CanvasInner() {
     pendingEdge, setPendingEdge, updateEdgeLabel,
     addNode, addEvent, breadcrumbs, clearBreadcrumbs,
     duplicateNode, updateNodeStatus, askCIDAboutNode,
+    activeArtifactNodeId,
   } = useLifecycleStore();
   const fitViewCounter = useLifecycleStore((s) => s.fitViewCounter);
   const executionProgress = useLifecycleStore((s) => s.executionProgress);
@@ -1387,6 +1389,9 @@ function CanvasInner() {
         {mounted && !isEmpty && <NodeDetailPanel />}
         {mounted && !isEmpty && <ActivityPanel />}
         {mounted && contextMenu && <NodeContextMenu />}
+        <AnimatePresence>
+          {mounted && activeArtifactNodeId && <ArtifactPanel />}
+        </AnimatePresence>
       </div>
 
       {/* CID Panel */}
