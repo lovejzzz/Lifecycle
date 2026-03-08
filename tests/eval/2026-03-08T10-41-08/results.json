@@ -1,0 +1,517 @@
+{
+  "timestamp": "2026-03-08T10-41-08",
+  "overall": 99,
+  "testsRun": [
+    "pm-advice-prioritize",
+    "personality-poirot-empty",
+    "education-course-launch",
+    "ops-product-launch",
+    "execute-api-design",
+    "event-conference-planning"
+  ],
+  "poolSize": 48,
+  "results": [
+    {
+      "id": "pm-advice-prioritize",
+      "status": "ok",
+      "elapsed": 26200,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "I have 47 feature requests from customers and my CEO wants everything done by Q3. How do I prioritize?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Aha! A classic case of prioritization under pressure, mon ami. First, employ the RICE framework—scoring each feature on Reach, Impact, Confidence, and Effort—to quantify value objectively; then, cross-reference with a Kano model to identify delighters versus basics. Très intéressant: involve stakeholders in a weighted scoring session to align on business goals, and for Q3, focus on high-impact, low-effort wins while proposing a phased rollout to manage expectations elegantly.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (480 chars)",
+          "✓ Message length: 480 ≥ 250"
+        ]
+      }
+    },
+    {
+      "id": "personality-poirot-empty",
+      "status": "ok",
+      "elapsed": 7506,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, mon ami, the canvas is blank! No clues, no evidence, no intricate web of nodes and edges yet. But fear not, my little grey cells are ready to investigate your first case. What shall we build or analyze?",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (206 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "education-course-launch",
+      "status": "ok",
+      "elapsed": 157496,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "I'm creating an online course on data analytics. I need a workflow: outline curriculum, record videos, build exercises, set up LMS, beta test with students, launch and market.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! The case of the data analytics course unfolds, mon ami. Let me assemble the clues into a meticulous workflow for your investigation. Très intéressant!",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Course Initiation",
+              "category": "trigger",
+              "description": "Decision and strategic planning to launch the data analytics course",
+              "content": "Begin by defining the core objectives: identify the target audience (e.g., beginners with basic Excel or programming knowledge), set key performance indicators like completion rates and student satisfaction scores above 4.5/5. Conduct market research using tools like Google Trends or Udemy insights to validate demand. Draft a project charter with timelines, budget allocation for tools (e.g., Camtasia for recording, Thinkific for LMS), and team roles. Establish success criteria: at least 100 enrollments in the first month. Use a SWOT analysis to assess strengths, weaknesses, opportunities, and threats. Document everything in a shared drive like Notion or Asana for collaboration. This phase sets the foundation; without clear goals, the course risks misalignment with learner needs."
+            },
+            {
+              "label": "Curriculum Design",
+              "category": "action",
+              "description": "Structuring the course content, modules, and learning outcomes",
+              "content": "Outline a comprehensive curriculum starting with learning objectives based on Bloom's taxonomy (e.g., 'Students will analyze datasets using Python pandas'). Break into 6-8 modules: Introduction to Data Analytics, Data Collection Methods (APIs, web scraping), Data Cleaning with Pandas, Exploratory Data Analysis (visualization with Matplotlib/Seaborn), Statistical Inference (hypothesis testing), and a Capstone Project. Each module should include video lectures (2-3 hours total), hands-on exercises, quizzes, and supplementary readings. Use tools like Miro for mind mapping or Google Docs for collaborative outlining. Align with industry standards by referencing frameworks from IBM Data Science Professional Certificate. Include practical projects using real-world datasets from Kaggle. Estimate time commitments: 4-6 hours per module. Review with subject matter experts to ensure accuracy and relevance, incorporating feedback loops for updates."
+            },
+            {
+              "label": "Video Production",
+              "category": "action",
+              "description": "Recording and editing instructional video content for the course",
+              "content": "Produce high-quality videos by scripting each lecture with clear learning points. Use equipment like a Blue Yeti microphone and Logitech webcam for recording; software like Camtasia or OBS Studio for capture and editing. Follow best practices: keep videos under 10 minutes, include captions for accessibility, and use visual aids like slides or live coding screens. Record in a quiet environment with good lighting. Edit for clarity, adding annotations, transitions, and background music. Export in multiple formats (MP4, WebM) for compatibility. Store raw and edited files in cloud storage like Google Drive with version control. Integrate tools like Descript for transcript generation. Plan a shooting schedule: 2-3 videos per week, with buffer time for reshoots. Quality check each video for audio sync and content accuracy before proceeding."
+            },
+            {
+              "label": "Exercise Development",
+              "category": "action",
+              "description": "Creating interactive exercises, assignments, and practice datasets",
+              "content": "Design hands-on exercises to reinforce concepts: start with guided tutorials using Jupyter Notebooks for Python-based tasks, then progress to open-ended assignments. Include datasets from sources like UCI Machine Learning Repository or government open data. Develop multiple-choice quizzes with platforms like Typeform or built-in LMS tools. Create capstone projects where students analyze a real business case, e.g., sales data forecasting. Ensure exercises are scaffolded: beginner-friendly with hints, advanced with minimal guidance. Use tools like GitHub for code sharing and feedback. Incorporate peer review mechanisms to foster collaboration. Test all exercises internally for clarity and difficulty level; adjust based on trial runs. Document solutions and rubrics for grading. Aim for 3-5 exercises per module, with varying formats to cater to different learning styles."
+            },
+            {
+              "label": "LMS Configuration",
+              "category": "action",
+              "description": "Setting up the Learning Management System with course materials and structure",
+              "content": "Configure the LMS (e.g., Teachable, Thinkific, or Moodle) by uploading all content: videos, exercises, quizzes, and supplementary resources. Organize modules sequentially with clear titles and descriptions. Set up user roles (admin, instructor, student) and permissions. Enable features like discussion forums, progress tracking, and certificate issuance upon completion. Integrate payment gateways (Stripe, PayPal) for monetization. Customize the interface with branding elements: logo, color scheme, and welcome messages. Test all links, downloads, and interactive elements for functionality. Use analytics tools within the LMS to monitor student engagement. Implement accessibility standards (WCAG 2.1) for inclusive design. Schedule a dry run with dummy accounts to ensure smooth navigation. Backup the configuration regularly to avoid data loss."
+            },
+            {
+              "label": "Beta Testing",
+              "category": "test",
+              "description": "Piloting the course with a select group of students to gather feedback",
+              "content": "Recruit 10-20 beta testers from the target audience via platforms like Reddit or LinkedIn. Provide access to the full course for 2-4 weeks. Use surveys (Google Forms, SurveyMonkey) to collect quantitative data on content clarity, pace, and technical issues. Conduct qualitative interviews for in-depth insights. Monitor analytics: completion rates, time spent per module, and quiz scores. Set success criteria: at least 80% of testers report positive learning outcomes and identify fewer than 5 critical bugs. Document all feedback in a shared spreadsheet categorized by module (e.g., video quality, exercise difficulty). Schedule review sessions to discuss findings with the team. This phase is crucial for iterative improvement; be prepared to make significant refinements based on evidence."
+            },
+            {
+              "label": "Launch Preparation",
+              "category": "action",
+              "description": "Finalizing marketing strategies and launch logistics for the course",
+              "content": "Develop a marketing plan: create a launch timeline with pre-launch activities (email campaigns, social media teasers on LinkedIn and Twitter), launch day events (webinars, discounts), and post-launch follow-ups. Craft compelling copy for sales pages, highlighting unique selling points like hands-on projects or expert instructors. Use tools like Canva for graphics and Buffer for social media scheduling. Set up email automation with Mailchimp for nurturing leads. Prepare press releases and reach out to influencers in the data analytics community. Coordinate with the LMS team to ensure scalability for expected traffic. Plan a contingency budget for ads (Google Ads, Facebook Ads) if initial uptake is slow. Review all materials for consistency and brand alignment. This step ensures a smooth rollout and maximizes visibility."
+            },
+            {
+              "label": "Course Launch",
+              "category": "output",
+              "description": "The course is officially live, marketed, and available for enrollment",
+              "content": "Execute the launch by making the course publicly accessible on the LMS, with all marketing channels active. Monitor real-time metrics: website traffic via Google Analytics, enrollment numbers, and social media engagement. Provide immediate support through a dedicated helpdesk (Zendesk) or community forum. Send welcome emails to new students with onboarding guides. Continuously gather feedback via post-launch surveys to identify areas for future updates. Plan for ongoing maintenance: update content quarterly based on industry trends, fix any emerging technical issues, and engage with students through live Q&A sessions. Measure success against KPIs: aim for 500+ enrollments in the first quarter and maintain a student satisfaction score above 4.7/5. Document lessons learned for iterative improvements in subsequent course versions."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "triggers"
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 4,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "approves"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "outputs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 105,
+        "maxScore": 105,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 5)",
+          "✓ Node count: 8 ≤ 10",
+          "✓ All 11 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 847c, no thin nodes",
+          "✓ Architecture covers: curriculum, record, exercise, lms",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (11 edges, 8 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "ops-product-launch",
+      "status": "ok",
+      "elapsed": 135709,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We're launching a new product in 6 weeks. Engineering needs to finish the API, design needs to finalize the landing page, marketing needs press kit and launch emails, legal needs to review terms. All teams work in parallel but we need a single launch gate. Build me a cross-team launch workflow.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building cross-team launch workflow with parallel execution and central gate.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Launch Kick-off",
+              "category": "trigger",
+              "description": "Initiates the 6-week launch preparation cycle",
+              "content": "This node represents the formal start of the product launch process, triggered by product management or leadership. Event: Scheduled kick-off meeting with all stakeholders (Engineering, Design, Marketing, Legal) at T-6 weeks. Payload: Launch timeline document (using tools like Google Sheets or Asana), product specifications, and success metrics. Configuration: Set up shared project management board (e.g., Jira, Trello) with epics for each team, assign owners, and establish communication channels (Slack #launch). Steps: 1. Distribute launch brief including goals, target audience, and key dates. 2. Confirm resource allocation and dependencies. 3. Schedule weekly syncs to monitor progress. Tools: Calendar invites, project management software, document collaboration (Notion). Error handling: If delays occur, adjust timeline and escalate to stakeholders within 24 hours."
+            },
+            {
+              "label": "Engineering API Finalization",
+              "category": "action",
+              "description": "Completes API development, testing, and deployment",
+              "content": "This node covers the end-to-end API readiness for launch. Steps: 1. Finalize API specifications using OpenAPI/Swagger, ensuring all endpoints are documented and versioned. 2. Conduct unit and integration tests with frameworks like Jest or Pytest, targeting 95% code coverage. 3. Perform load testing with tools like k6 or Locust to handle expected traffic spikes. 4. Deploy to staging environment, using CI/CD pipelines (GitHub Actions, Jenkins) with rollback plans. 5. Security audit: scan for vulnerabilities with OWASP ZAP or Snyk. Owner: Engineering lead. Tools: Git for version control, Docker for containerization, cloud platforms (AWS, GCP). Error handling: If tests fail, rerun within 4 hours; if deployment issues arise, use blue-green deployment to minimize downtime. Success criteria: API responds with <200ms latency and 99.9% uptime in staging."
+            },
+            {
+              "label": "Design Landing Page Completion",
+              "category": "action",
+              "description": "Finalizes landing page design, content, and user experience",
+              "content": "This node ensures the landing page is visually appealing, functional, and optimized for conversions. Steps: 1. Complete high-fidelity mockups in Figma or Sketch, incorporating brand guidelines and mobile responsiveness. 2. Develop front-end code using HTML/CSS/JavaScript frameworks (React, Tailwind CSS), with A/B testing setup for headlines and CTAs. 3. Integrate analytics tools (Google Analytics, Hotjar) to track user behavior post-launch. 4. Conduct usability testing with 5-10 target users via UserTesting.com, iterating based on feedback. 5. Final copywriting and SEO optimization, including meta tags and keyword placement. Owner: Design lead. Tools: Design collaboration (Figma), version control (Git), CMS if applicable (Webflow). Error handling: If feedback indicates major issues, schedule rapid redesign sprint within 48 hours. Success criteria: Page loads in <3 seconds, conversion rate >5% in tests."
+            },
+            {
+              "label": "Marketing Launch Materials Prep",
+              "category": "action",
+              "description": "Creates press kit, launch emails, and promotional content",
+              "content": "This node handles all marketing assets for the launch campaign. Steps: 1. Develop press kit including product press release, high-res images, founder quotes, and media contact list, stored in a shared drive (Google Drive). 2. Craft launch email sequences for different segments (e.g., existing customers, prospects) using tools like Mailchimp or HubSpot, with personalization tokens and scheduling. 3. Create social media posts and ad copies for platforms (LinkedIn, Twitter, Facebook), with UTM tracking for analytics. 4. Coordinate with influencers or partners for co-marketing, using outreach tools (Hunter.io). 5. Set up landing page tracking for campaign performance (CTR, conversions). Owner: Marketing lead. Tools: Email marketing software, graphic design (Canva), CRM. Error handling: If content approval delays, use placeholder versions with final updates 72 hours pre-launch. Success criteria: Email open rate >20%, press kit distributed to 50+ media outlets."
+            },
+            {
+              "label": "Legal Terms Review",
+              "category": "review",
+              "description": "Reviews and approves terms of service, privacy policy, and compliance",
+              "content": "This node involves legal scrutiny to ensure all launch materials meet regulatory standards. Approval criteria: 1. Terms of Service must include liability disclaimers, user rights, and dispute resolution clauses, reviewed against GDPR/CCPA if applicable. 2. Privacy Policy should detail data collection, usage, and third-party sharing, with consent mechanisms. 3. Marketing claims must be substantiated to avoid false advertising (FTC guidelines). 4. Contract review for any partnerships or integrations. Who reviews: Legal team lead, with escalation to external counsel if needed. SLA: Review completed within 7 days of submission. Tools: Document management (DocuSign), compliance checklists. Escalation: If issues arise, hold emergency legal sync and update documents within 24 hours. Exceptions: Minor edits can be approved via email; major changes require re-review."
+            },
+            {
+              "label": "Launch Gate Approval",
+              "category": "review",
+              "description": "Central gate where all team deliverables are reviewed for launch readiness",
+              "content": "This node is the final checkpoint before launch, conducted as a go/no-go meeting. Approval criteria: 1. All previous nodes (Engineering, Design, Marketing, Legal) must have passed their internal reviews and provided sign-off documents. 2. Checklist: API deployed and tested, landing page live and functional, marketing materials ready, legal documents signed. 3. Risk assessment: Identify any blockers (e.g., technical debt, legal pending items) and mitigation plans. Who reviews: Cross-functional committee (Product Manager, Engineering Lead, Design Lead, Marketing Lead, Legal Representative). SLA: Meeting scheduled 3 days pre-launch, decision within 4 hours. Tools: Shared dashboard (Geckoboard), video conferencing (Zoom). Escalation: If not approved, assign action items with 24-hour deadlines and reconvene. Success metrics: Zero critical issues, all stakeholders aligned."
+            },
+            {
+              "label": "Product Launch Execution",
+              "category": "output",
+              "description": "Executes the product launch and monitors initial performance",
+              "content": "This node represents the final launch action and post-launch monitoring. Deliverable format: Live product announcement across channels (website, email, social media). Steps: 1. Activate landing page and API endpoints for public access at scheduled launch time. 2. Send launch emails and press releases via distribution lists. 3. Monitor real-time metrics using dashboards (Datadog for tech, Google Analytics for traffic). 4. Customer support ramp-up: prepare FAQ and staff helpdesk (Zendesk). 5. Collect early feedback via surveys (Typeform) and social listening (Brandwatch). Distribution: Notify all internal teams and stakeholders via Slack/email. Success metrics: First-hour sign-ups >500, system uptime >99.5%, social media engagement rate >5%. Post-launch: Schedule debrief meeting within 48 hours to review lessons learned."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 0,
+              "to": 2,
+              "label": "triggers"
+            },
+            {
+              "from": 0,
+              "to": 3,
+              "label": "triggers"
+            },
+            {
+              "from": 0,
+              "to": 4,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "outputs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 107,
+        "maxScore": 110,
+        "pct": 97,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ Has \"review\" category",
+          "✓ All 9 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 885c, no thin nodes",
+          "✓ Architecture covers: api, design, marketing, legal",
+          "✓ Flow: path exists from first to last node",
+          "⚡ Architecture: has parallel branches (9 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "execute-api-design",
+      "status": "ok",
+      "elapsed": 90620,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Design a REST API for a multi-tenant task management system. Include endpoints for workspaces, projects, tasks, and comments. Show URL patterns, HTTP methods, request/response bodies, auth scheme, pagination, and error codes. Support role-based access (admin, member, viewer).",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# TaskFlow API Design Document\n**Version:** 1.0  \n**System:** Multi-Tenant Task Management  \n**Last Updated:** [Current Date]\n\n---\n\n## 1. Overview\n\nThe TaskFlow API provides a RESTful interface for managing a multi-tenant task management system. The API supports hierarchical data organization (Workspace → Project → Task → Comment) with strict tenant isolation and role-based access control (RBAC).\n\n### 1.1 Base URL\n```\nhttps://api.taskflow.com/v1\n```\n\n### 1.2 Authentication\n**Scheme:** Bearer Token (JWT)  \n**Header:** `Authorization: Bearer <tenant_user_token>`\n\nEach JWT contains claims for:\n- `tenant_id` – Tenant identifier for data isolation\n- `user_id` – Unique user identifier\n- `role` – User role within the tenant (`admin`, `member`, `viewer`)\n- `workspace_access` – Optional array of workspace IDs for granular access\n\nTokens are obtained via a separate authentication service endpoint (`POST /auth/login`).\n\n### 1.3 Media Type\nAll requests and responses use **JSON** (`Content-Type: application/json`).\n\n### 1.4 Pagination\nAll list endpoints support cursor-based pagination:\n- **Query Parameters:** `limit` (default: 20, max: 100), `cursor` (opaque string)\n- **Response Header:** `X-Next-Cursor` (present if more results exist)\n- **Response Body:** `pagination` object with `next_cursor`, `has_more`\n\n---\n\n## 2. Role-Based Access Control\n\n| Role | Workspace | Project | Task | Comment |\n|------|-----------|---------|------|---------|\n| **Admin** | CRUD all | CRUD all in accessible workspaces | CRUD all in accessible projects | CRUD all |\n| **Member** | Read accessible; Create with limits | CRUD in assigned projects | CRUD assigned tasks | CRUD own |\n| **Viewer** | Read accessible | Read accessible | Read accessible | Read only |\n\n*Note: Tenant admins automatically have Admin role across all workspaces.*\n\n---\n\n## 3. Resource Endpoints\n\n### 3.1 Workspaces\nA workspace is the top-level container for projects within a tenant.\n\n#### **List Workspaces**\n```\nGET /workspaces\n```\n**Query Parameters:** `limit`, `cursor`  \n**Required Role:** Any authenticated user  \n**Response:**\n```json\n{\n  \"data\": [\n    {\n      \"id\": \"ws_abc123\",\n      \"name\": \"Engineering\",\n      \"description\": \"Engineering department workspace\",\n      \"created_at\": \"2024-01-15T10:30:00Z\",\n      \"updated_at\": \"2024-01-15T10:30:00Z\",\n      \"project_count\": 5,\n      \"member_count\": 12\n    }\n  ],\n  \"pagination\": {\n    \"next_cursor\": \"eyJpZCI6InN0cmluZyJ9\",\n    \"has_more\": true\n  }\n}\n```\n\n#### **Create Workspace**\n```\nPOST /workspaces\n```\n**Required Role:** Admin  \n**Request:**\n```json\n{\n  \"name\": \"Marketing\",\n  \"description\": \"Marketing campaigns and initiatives\"\n}\n```\n**Response:** `201 Created` with workspace object\n\n#### **Get Workspace**\n```\nGET /workspaces/{workspace_id}\n```\n**Required Role:** Viewer+ for that workspace  \n**Response:** `200 OK` with single workspace object\n\n#### **Update Workspace**\n```\nPATCH /workspaces/{workspace_id}\n```\n**Required Role:** Admin for that workspace  \n**Request:** (partial updates allowed)\n```json\n{\n  \"name\": \"Marketing & Communications\",\n  \"description\": \"Updated description\"\n}\n```\n\n#### **Delete Workspace**\n```\nDELETE /workspaces/{workspace_id}\n```\n**Required Role:** Admin for that workspace  \n**Response:** `204 No Content`\n\n---\n\n### 3.2 Projects\nProjects exist within workspaces and contain tasks.\n\n#### **List Projects in Workspace**\n```\nGET /workspaces/{workspace_id}/projects\n```\n**Query Parameters:** `status` (active, archived, all), `limit`, `cursor`  \n**Required Role:** Viewer+ for the workspace  \n**Response:** Array of project objects with pagination\n\n#### **Create Project**\n```\nPOST /workspaces/{workspace_id}/projects\n```\n**Required Role:** Member+ for the workspace  \n**Request:**\n```json\n{\n  \"name\": \"Q2 Product Launch\",\n  \"description\": \"Launch new product features\",\n  \"status\": \"active\",\n  \"start_date\": \"2024-04-01\",\n  \"due_date\": \"2024-06-30\",\n  \"tags\": [\"launch\", \"priority\"],\n  \"members\": [\"user_123\", \"user_456\"]\n}\n```\n\n#### **Get Project**\n```\nGET /projects/{project_id}\n```\n**Required Role:** Viewer+ for the project's workspace  \n**Response:** Project object with task count and member details\n\n#### **Update Project**\n```\nPATCH /projects/{project_id}\n```\n**Required Role:** Member+ for the project's workspace  \n**Request:** Partial project updates\n\n#### **Delete Project**\n```\nDELETE /projects/{project_id}\n```\n**Required Role:** Admin for the project's workspace  \n**Response:** `204 No Content`\n\n---\n\n### 3.3 Tasks\nTasks belong to projects and support assignment and status tracking.\n\n#### **List Tasks in Project**\n```\nGET /projects/{project_id}/tasks\n```\n**Query Parameters:** \n- `status` (todo, in_progress, review, done, archived)\n- `assignee_id` – Filter by assigned user\n- `due_before`, `due_after` – Date filters (ISO format)\n- `limit`, `cursor`\n\n**Required Role:** Viewer+ for the project's workspace  \n**Response:** Array of task objects\n\n#### **Create Task**\n```\nPOST /projects/{project_id}/tasks\n```\n**Required Role:** Member+ for the project's workspace  \n**Request:**\n```json\n{\n  \"title\": \"Design homepage mockup\",\n  \"description\": \"Create Figma mockups for new homepage\",\n  \"status\": \"todo\",\n  \"priority\": \"high\",\n  \"assignee_id\": \"user_789\",\n  \"due_date\": \"2024-02-20\",\n  \"tags\": [\"design\", \"frontend\"],\n  \"estimated_hours\": 8\n}\n```\n\n#### **Get Task**\n```\nGET /tasks/{task_id}\n```\n**Required Role:** Viewer+ for the task's workspace  \n**Response:** Task object with subtask list and comment count\n\n#### **Update Task**\n```\nPATCH /tasks/{task_id}\n```\n**Required Role:** Member+ for the task's workspace (or assignee for own tasks)  \n**Request:** Partial task updates\n\n#### **Delete Task**\n```\nDELETE /tasks/{task_id}\n```\n**Required Role:** Admin for the task's workspace  \n**Response:** `204 No Content`\n\n#### **Bulk Update Tasks**\n```\nPOST /tasks/bulk/update\n```\n**Required Role:** Member+ for all affected workspaces  \n**Request:**\n```json\n{\n  \"task_ids\": [\"task_1\", \"task_2\"],\n  \"updates\": {\n    \"status\": \"in_progress\",\n    \"priority\": \"medium\"\n  }\n}\n```\n\n---\n\n### 3.4 Comments\nComments are attached to tasks and support threaded discussions.\n\n#### **List Comments on Task**\n```\nGET /tasks/{task_id}/comments\n```\n**Query Parameters:** `limit`, `cursor`, `include_threads` (boolean)  \n**Required Role:** Viewer+ for the task's workspace  \n**Response:** Array of comment objects (threaded if requested)\n\n#### **Create Comment**\n```\nPOST /tasks/{task_id}/comments\n```\n**Required Role:** Member+ for the task's workspace  \n**Request:**\n```json\n{\n  \"content\": \"This design looks great! Can we add more padding here?\",\n  \"parent_comment_id\": \"comment_abc\",  // Optional: for replies\n  \"mentions\": [\"user_123\", \"user_456\"]  // User IDs mentioned\n}\n```\n**Response:** `201 Created` with comment object\n\n#### **Update Comment**\n```\nPATCH /comments/{comment_id}\n```\n**Required Role:** Member+ for the comment's workspace (only own comments unless admin)  \n**Request:** Partial updates (only `content` allowed)\n\n#### **Delete Comment**\n```\nDELETE /comments/{comment_id}\n```\n**Required Role:** Admin for the comment's workspace (or own comments for members)  \n**Response:** `204 No Content`\n\n---\n\n## 4. Error Handling\n\n### 4.1 HTTP Status Codes\n\n| Code | Description |\n|------|-------------|\n| `200` | Successful GET, PATCH, or bulk operation |\n| `201` | Resource created successfully |\n| `204` | Resource deleted successfully |\n| `400` | Invalid request parameters or body |\n| `401` | Authentication required or invalid token |\n| `403` | Insufficient permissions for the operation |\n| `404` | Resource not found or not accessible to user |\n| `409` | Resource conflict (e.g., duplicate name) |\n| `422` | Business rule validation failed |\n| `429` | Rate limit exceeded |\n| `500` | Internal server error |\n\n### 4.2 Error Response Format\n```json\n{\n  \"error\": {\n    \"code\": \"RESOURCE_NOT_FOUND\",\n    \"message\": \"The requested workspace was not found\",\n    \"details\": {\n      \"resource_type\": \"workspace\",\n      \"resource_id\": \"ws_missing123\"\n    },\n    \"request_id\": \"req_abc123xyz\"\n  }\n}\n```\n\n### 4.3 Common Error Codes\n- `TENANT_MISMATCH` – Token tenant doesn't match resource tenant\n- `INSUFFICIENT_PERMISSION` – Role doesn't allow operation\n- `WORKSPACE_ACCESS_DENIED` – User lacks access to workspace\n- `VALIDATION_ERROR` – Request body fails validation\n- `RATE_LIMITED` – Too many requests\n\n---\n\n## 5. Rate Limiting\n\n- **Default:** 100 requests per minute per tenant\n- **Burst:** 150 requests allowed with exponential backoff\n- **Headers:** \n  - `X-RateLimit-Limit` – Total requests per window\n  - `X-RateLimit-Remaining` – Remaining requests\n  - `X-RateLimit-Reset` – UTC epoch seconds when limit resets\n\n---\n\n## 6. Webhooks (Optional Extension)\n\nAvailable webhook events:\n- `task.created`, `task.updated`, `task.deleted`\n- `comment.created`, `comment.updated`\n- `project.archived`\n\n**Endpoint:** `POST /webhooks` (management endpoint)  \n**Delivery:** HTTPS POST with JSON payload and `X-TaskFlow-Signature` header\n\n---\n\n## 7. Versioning\n\nAPI version specified in URL path (`/v1/`).  \nBackward-incompatible changes require new version.  \nDeprecated versions supported for 12 months after deprecation announcement.\n\n---\n\n*This API design provides a scalable, secure foundation for a multi-tenant task management system with clear access control boundaries and comprehensive resource management capabilities.*",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (9393 chars)",
+          "✓ Content length: 9393 ≥ 1500"
+        ]
+      }
+    },
+    {
+      "id": "event-conference-planning",
+      "status": "ok",
+      "elapsed": 83020,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We're organizing a 500-person tech conference in 4 months. Build a workflow covering venue booking, speaker management, sponsorship sales, marketing campaign, registration system, A/V setup, catering, and day-of logistics.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building a 500-person tech conference battle plan with parallel execution lanes and hard dependencies.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Conference Kick-off & Master Timeline",
+              "category": "trigger",
+              "description": "Initial event trigger and master project plan creation",
+              "content": "This node is activated by the formal decision to host the conference, locking in the 4-month deadline. The core artifact created here is the Master Conference Plan. This is a living document (e.g., in Notion or Confluence) containing: 1) The non-negotiable project timeline with milestones (e.g., 'Venue Contract Signed by Day 30', 'Speaker Lineup Locked by Day 75'). 2) Budget allocation across all workstreams (venue, catering, A/V, marketing, contingencies). 3) Defined roles and owners for each major track (Logistics Lead, Sponsorship Sales, Content Chair). 4) Key success metrics (attendance target, sponsorship revenue goal, NPS score). The plan must be socialized with all stakeholders and serve as the single source of truth, triggering all parallel workstreams."
+            },
+            {
+              "label": "Venue & Core Logistics Secured",
+              "category": "action",
+              "description": "Secure physical venue, catering, and base A/V requirements",
+              "content": "This is a critical path action. Steps: 1) Issue an RFP to 3-5 shortlisted venues capable of hosting 500+ with breakout rooms. Must negotiate not just rental cost, but also in-house catering exclusivity clauses, A/V partner requirements, and cancellation terms. 2) Simultaneously, work with the shortlisted venues' preferred caterers to draft menu options (accounting for dietary restrictions) and pricing per head. 3) Engage with the venue's A/V partner or an external provider to get quotes for base room sound, lighting, projection, and high-speed internet backbone for all attendees. 4) Finalize and sign the master venue contract, which includes annexes for catering and base A/V. Owner: Logistics Lead. Tools: RFP software (like Loopio), contract management (DocuSign), budget tracker."
+            },
+            {
+              "label": "Sponsorship Sales & Speaker Curation",
+              "category": "action",
+              "description": "Parallel tracks to secure funding and build the conference agenda",
+              "content": "Two parallel, interconnected actions. **Sponsorship**: 1) Develop tiered sponsorship packages (Platinum, Gold, Silver) with clear benefits (booth size, speaking slots, logo placement). 2) Create a target prospect list of 100+ companies. 3) Launch outbound sales campaign, using a CRM like HubSpot to track touches, proposals sent, and negotiations. 4) Aim to have 70% of sponsorship revenue target locked by Month 2. **Speaker Curation**: 1) Form a content committee to define conference tracks (e.g., AI, Security, DevOps). 2) Open a public Call for Papers (CFP) using Sessionize. 3) Proactively recruit 5-7 high-profile keynote speakers via direct outreach. 4) Committee reviews all submissions using a blind scoring rubric. These tracks feed each other—sponsors may request speaking slots, and confirmed speakers make the prospectus stronger for sales."
+            },
+            {
+              "label": "Marketing & Registration Launch",
+              "category": "action",
+              "description": "Execute multi-channel campaign and open ticket registration",
+              "content": "Action steps: 1) Build the conference website (using a platform like Webflow or specialized tool like Hopin) featuring the venue, confirmed keynote speakers, and sponsorship prospectus. 2) Develop a 12-week content calendar for email, social media (LinkedIn/Twitter), and paid ads (Google/LinkedIn). Content includes speaker announcements, sponsor spotlights, and 'why attend' pieces. 3) Integrate a registration system (like TicketTailor or Eventbrite) with capacity management and early-bird pricing tiers. Ensure it collects dietary preferences and accessibility requirements. 4) Launch the website and open registration, driving traffic via the marketing channels. Monitor conversion rates weekly. Owner: Marketing Lead. Tools: Marketing automation (Mailchimp), social scheduling (Buffer), analytics (Google Analytics)."
+            },
+            {
+              "label": "Production & Run-of-Show Finalization",
+              "category": "artifact",
+              "description": "Create the master event production bible and detailed schedules",
+              "content": "This artifact consolidates all planning into an executable plan. It includes: 1) **The Run-of-Show**: A minute-by-minute schedule for all stages, green rooms, and A/V cues from load-in through tear-down. 2) **The Production Sheet**: Detailed contacts for all vendors (A/V, catering, security, floral), their load-in times, and point-person on our team. 3) **The Floor Plan**: Finalized layout for main stage, breakout rooms, sponsor expo, registration desks, and catering stations. 4) **The Staff & Volunteer Plan**: Roles, responsibilities, shift schedules, and communication protocol (likely using a walkie-talkie app like Zello). This document is distributed to all internal staff and key vendors two weeks prior for a mandatory review."
+            },
+            {
+              "label": "Pre-Event Dry-Run & Compliance Review",
+              "category": "review",
+              "description": "Executive walkthrough and safety/contract compliance sign-off",
+              "content": "A mandatory gate review before the event. The review committee includes the event lead, legal, finance, and head of security. **Criteria for Approval**: 1) All vendor contracts have been signed, insurance certificates received, and 50% deposits paid. 2) A full technical dry-run at the venue has been completed, testing A/V, registration check-in flow, and internet load. 3) Safety plans (fire evacuation, medical emergency response, crowd control) have been reviewed by venue security and signed off. 4) Final budget check confirms no major overruns. 5) Registration numbers have hit the minimum viable threshold (e.g., 400 paid attendees). If any criteria fail, the review blocks execution and issues are logged for immediate remediation by the respective action owners. SLA: Review must be completed 7 days prior to event."
+            },
+            {
+              "label": "Day-of-Event Command Execution",
+              "category": "state",
+              "description": "Live operational state managed by the on-site command center",
+              "content": "This is the active, dynamic state of the conference day. The system is in this state from 6 AM on Day 1 until the last attendee leaves. **Key States & Transitions**: 1) **Setup & Load-in**: Triggered by vendor arrival; monitored via checklists. 2) **Attendant Registration & Welcome**: Triggered at doors open; monitored via queue length and badge printer status. 3) **Session Flow**: Triggered by the Run-of-Show; stage managers drive transitions between talks, breaks, and meals. 4) **Issue Resolution**: A dedicated 'war room' triages incidents (e.g., A/V failure, catering shortage) using a priority matrix (Attendee Safety > Session Disruption > Inconvenience). **Tools**: Real-time communication via Slack/Teams channels for each track, live crowd monitoring via venue WiFi analytics, and a physical command center with the Run-of-Show and vendor contacts displayed."
+            },
+            {
+              "label": "Post-Conference Deliverables & Retrospective",
+              "category": "output",
+              "description": "Final reporting, financial reconciliation, and lessons learned",
+              "content": "The final deliverable package, distributed within 14 days post-event. **Components**: 1) **Financial Report**: Full reconciliation of all income (ticket sales, sponsorship) against expenses (venue, catering, marketing spend), calculating final ROI. 2) **Attendee Report**: Analysis of registration data, post-event survey results (sent via SurveyMonkey), and net promoter score (NPS). Includes demographic and feedback summaries. 3) **Sponsor Fulfillment Report**: Document delivered to all sponsors detailing the delivered benefits (impressions, leads scanned) and any make-goods required. 4) **Retrospective Document**: A candid internal review using the 'Start, Stop, Continue' framework, identifying process improvements for the next event. This output is sent to company leadership and key stakeholders, and archived as the official record of the conference."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "drives"
+            },
+            {
+              "from": 0,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "requires"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "triggers"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "outputs"
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "label": "blocks"
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "label": "blocks"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 105,
+        "maxScore": 105,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 6)",
+          "✓ Node count: 8 ≤ 10",
+          "✓ All 12 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 817c, no thin nodes",
+          "✓ Architecture covers: venue, speaker, sponsor, registr",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (12 edges, 8 nodes)"
+        ]
+      }
+    }
+  ]
+}

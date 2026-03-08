@@ -1,7 +1,7 @@
 import type {
-  HabitLayer, HabitPattern, DomainExpertise, WorkflowPreference,
-  CommunicationStyle, GenerationContext, ExpressionModifiers,
-  GenerationLayer, ReflectionLayer, ReflectionAction, GrowthEdge,
+  HabitLayer, HabitPattern,
+  GenerationContext, ExpressionModifiers,
+  GenerationLayer, ReflectionLayer, ReflectionAction,
   DrivingForceLayer, Drive,
 } from './types';
 
@@ -10,7 +10,7 @@ import type {
 const MAX_DOMAINS = 20;
 const MAX_PREFERENCES = 10;
 const MAX_GROWTH_EDGES = 5;
-const MAX_LEGACY_PATTERNS = 10;
+const _MAX_LEGACY_PATTERNS = 10;
 const DRIVE_ADJUST_CAP = 0.1;
 
 // ─── Layer 4: Generation Context Computation ────────────────────────────────
@@ -105,7 +105,7 @@ function assessMomentum(recentMsgs: string[], currentMsg: string): GenerationCon
 export function computeExpressionModifiers(
   context: GenerationContext,
   habits: HabitLayer,
-  drives: DrivingForceLayer,
+  _drives: DrivingForceLayer,
 ): ExpressionModifiers {
   let verbosityShift = 0;
   let urgencyLevel = 0;

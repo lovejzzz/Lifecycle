@@ -1,0 +1,442 @@
+{
+  "timestamp": "2026-03-08T10-20-26",
+  "overall": 97,
+  "testsRun": [
+    "founder-fundraising",
+    "eng-advice-scaling",
+    "hr-hiring",
+    "freelancer-advice",
+    "execute-sow",
+    "personality-poirot-empty"
+  ],
+  "poolSize": 46,
+  "results": [
+    {
+      "id": "founder-fundraising",
+      "status": "ok",
+      "elapsed": 105434,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We're raising our Series A. I need to manage the whole fundraising process — investor outreach, pitch deck prep, due diligence, term sheet negotiation. Build me a workflow for this.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! The case of the elusive Series A—a most delicate investigation. I shall assemble a workflow with the precision of a detective mapping the clues, mon ami. Voilà!",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Fundraising Kickoff",
+              "category": "trigger",
+              "description": "Internal decision to launch Series A fundraising with defined goals and timeline.",
+              "content": "This phase formalizes the fundraising initiative. Begin by setting clear targets: amount to raise ($5-15M typical), valuation expectations, and use of funds (e.g., 40% engineering, 30% sales, 20% marketing, 10% operations). Assemble the core team: CEO, CFO (or financial lead), and key board members. Draft an internal memo with timelines (3-6 months target), key metrics to highlight (ARR, growth rate, burn, CAC/LTV), and roles. Use tools like Notion or Coda to track progress. Establish weekly checkpoints. Critical: ensure financials (P&L, cap table, projections) are audit-ready and data room basics are prepared. Define ideal investor profile: lead VC firm size (e.g., $200-500M fund), sector focus (SaaS, fintech), and value-add (operational expertise, network)."
+            },
+            {
+              "label": "Pitch Deck & Narrative",
+              "category": "artifact",
+              "description": "Crafting the master story deck and supporting materials for investor conversations.",
+              "content": "Develop a 12-15 slide deck following the Sequoia pitch framework. Slides must include: 1) Vision/Title (one-liner), 2) Problem (pain points with data), 3) Solution (product demo link), 4) Market Size (TAM/SAM/SOM with credible sources), 5) Business Model (pricing, unit economics), 6) Traction (metrics graph—30% MoM growth, retention >110%), 7) Competition (positioning matrix), 8) Team (bios with relevant exits), 9) Financials (projections 3-year), 10) Ask (terms, use of funds). Use design tools like Pitch or Canva for polish. Create a one-pager executive summary and a live demo script. Practice delivery to time (20 minutes). Gather social proof: customer testimonials, analyst reports. Store all in a secure folder (Google Drive) with version control. Update based on feedback from trusted advisors."
+            },
+            {
+              "label": "Target Investor List",
+              "category": "artifact",
+              "description": "Curated list of potential investors with outreach strategy and warm introductions.",
+              "content": "Build a list of 50-100 target investors using Crunchbase, PitchBook, and LinkedIn. Categorize by tier: Tier 1 (top-tier VCs like a16z, Sequoia—10 names), Tier 2 (specialist firms—20 names), Tier 3 (strategic/corporate VCs—20 names). For each, research recent investments (check size, stage), partner focus areas, and portfolio conflicts. Map your network via LinkedIn Sales Navigator for warm intros—aim for a mutual connection ≤2 degrees. Prepare a personalized outreach email template highlighting fit (mention their portfolio company X). Track outreach in a CRM (HubSpot, Affinity) with columns: contact, firm, intro source, status (pending, meeting set, passed). Schedule bi-weekly review to prune non-responders and add new leads. Prioritize based on response rate and strategic alignment."
+            },
+            {
+              "label": "Investor Outreach & Meetings",
+              "category": "action",
+              "description": "Executing the outreach campaign, scheduling pitches, and conducting initial meetings.",
+              "content": "Launch outreach in waves: start with Tier 2 for practice, then Tier 1. Send personalized emails with deck attached (PDF) and Calendly link for scheduling. Follow up within 5 days if no response. Conduct first meetings (30-45 minutes) via Zoom: start with problem-solution, show traction, engage with Q&A. Assign a note-taker to capture feedback and objections (e.g., 'concerned about market size'). Use a meeting scorecard to rate investor interest (1-5 scale). Schedule follow-ups within 48 hours with requested data (e.g., unit economics deep-dive). Aim for 3-5 meetings per week. Parallelly, attend industry events (virtually or in-person) for networking. Update CRM after each interaction. Key metric: conversion rate from outreach to first meeting (target 15-20%). Adjust messaging based on recurring questions."
+            },
+            {
+              "label": "Due Diligence Preparation",
+              "category": "action",
+              "description": "Organizing the data room and responding to investor diligence requests.",
+              "content": "Prepare a comprehensive virtual data room (using DocSend, DealRoom, or Google Drive with permissions). Structure folders: 1) Corporate (certificates, cap table, patents), 2) Financials (audited statements, projections, tax returns), 3) Legal (contracts, employee agreements, litigation), 4) Product (roadmap, technical architecture, security audits), 5) Sales (pipeline, customer contracts, churn analysis), 6) Team (resumes, references). Index all documents with a master checklist. Assign team members as liaisons for each category (e.g., CTO for product). Anticipate common requests: customer reference calls, technical debt assessment, competitive analysis. Conduct mock diligence with your board. Respond to investor queries within 24 hours. Track all Q&A in a shared log. Update data room weekly as new materials emerge. Ensure all sensitive data is watermarked and access is logged."
+            },
+            {
+              "label": "Term Sheet Drafting",
+              "category": "artifact",
+              "description": "Creating the initial term sheet based on investor interest and negotiation parameters.",
+              "content": "Draft a term sheet leveraging standard NVCA templates. Key clauses to define: 1) Valuation (pre-money $X, option pool 10-15%), 2) Liquidation Preference (1x non-participating), 3) Board Composition (2 founders, 1 investor, 1 independent), 4) Protective Provisions (list of investor veto rights), 5) Anti-dilution (broad-based weighted average), 6) Vesting (founder 4-year with 1-year cliff). Collaborate with your legal counsel (e.g., Wilson Sonsini) to tailor. Prepare a term sheet comparison matrix if multiple offers emerge. Highlight trade-offs: higher valuation vs. stronger controls. Share draft with trusted advisors for review. Document rationale for each term based on market benchmarks (e.g., SaaS average 20-30% dilution). Use tools like Carta for modeling impact on cap table. Aim to have a clean, founder-friendly sheet ready before serious negotiations."
+            },
+            {
+              "label": "Term Sheet Negotiation",
+              "category": "action",
+              "description": "Active negotiation with lead investor(s) to finalize terms and secure commitment.",
+              "content": "Engage in negotiations with the top 1-2 interested investors. Schedule a negotiation call with key points: valuation, board seats, liquidation preference. Use a BATNA (Best Alternative to Negotiated Agreement) strategy—know your walk-away terms. Present data to justify position: comparable financings, growth metrics. Concede on lower-priority items (e.g., observation rights) to gain on high-priority (e.g., valuation). Involve legal counsel in real-time via shared document editing (Google Docs). Document all verbal agreements in writing immediately after calls. Aim to wrap negotiations within 2-3 weeks to avoid fatigue. If multiple term sheets exist, leverage them carefully (without burning bridges). Finalize with a signed term sheet (non-binding except exclusivity/no-shop clause). Communicate decision to other investors professionally. Update cap table projections post-negotiation."
+            },
+            {
+              "label": "Final Due Diligence & Sign-off",
+              "category": "review",
+              "description": "Investor's final diligence review and internal approval for investment.",
+              "content": "This is the investor's final review gate before wiring funds. They will conduct deep diligence: reference checks (3-5 customers, 2-3 former employees), technical audit (code review, security penetration test), financial verification (bank statements, invoice sampling). Your role: facilitate smoothly. Provide references with talking points and schedule calls. Coordinate with your tech team for audit access (read-only environments). Address any last-minute concerns in writing (e.g., explain a customer churn spike). The investor's partnership will hold a formal investment committee meeting—prepare a one-page summary for them. Once approved, you'll receive a formal approval email. Then, finalize legal documents (definitive agreements) via law firms. Use a checklist to ensure all conditions precedent are met (e.g., employee agreements signed). Expect this phase to take 3-4 weeks. Maintain weekly syncs with the investor lead."
+            },
+            {
+              "label": "Funds Received & Investor Onboarding",
+              "category": "output",
+              "description": "Closing the round: funds wired, announcements made, and investor integrated.",
+              "content": "The final deliverable: money in bank and investor onboarded. Coordinate closing with lawyers: sign definitive agreements (Stock Purchase Agreement, Investors' Rights Agreement) via DocuSign. Ensure wire instructions are accurate and send to investor. Confirm funds receipt (typically within 24 hours of signing). Update cap table in Carta or equivalent. Issue new stock certificates. Draft a press release (optional) and internal announcement to team. Schedule a kickoff board meeting with new investor director within 30 days. Share quarterly reporting package template (financials, metrics, updates) with investor. Set up regular investor updates (monthly email, quarterly calls). Add investor to your email distribution list and data room for ongoing transparency. Finally, celebrate—but also document lessons learned from the fundraising process for next round. Archive all materials in the company wiki."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 0,
+              "to": 2,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "informs"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "drives"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "informs"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "requires"
+            },
+            {
+              "from": 7,
+              "to": 8,
+              "label": "approves"
+            },
+            {
+              "from": 7,
+              "to": 6,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 100,
+        "maxScore": 100,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 9 (min: 5)",
+          "✓ Node count: 9 ≤ 10",
+          "✓ Has \"review\" category",
+          "✓ All 10 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 853c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (10 edges, 9 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "eng-advice-scaling",
+      "status": "ok",
+      "elapsed": 26097,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Our API is hitting 500ms response times at 1000 concurrent users. Database is PostgreSQL. What should I look at first?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Zero in on PostgreSQL first: run `EXPLAIN ANALYZE` on queries hitting >100ms via pg_stat_statements, check index usage with pg_stat_all_indexes, and verify connection pool limits aren't maxing out—adjust pgBouncer if needed. Profile API endpoints for N+1 queries using tools like New Relic or Pyroscope, and measure I/O wait times on database disks with iostat.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (361 chars)",
+          "✓ Message length: 361 ≥ 250"
+        ]
+      }
+    },
+    {
+      "id": "hr-hiring",
+      "status": "ok",
+      "elapsed": 193023,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We need to hire 5 engineers in the next 2 months. Our current process is just posting on LinkedIn and hoping. Build me a proper hiring pipeline.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Deploying structured hiring pipeline to secure 5 engineers within 2 months.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Hiring Goal Trigger",
+              "category": "trigger",
+              "description": "Initiates the hiring pipeline based on business need for 5 engineers in 2 months",
+              "content": "This node represents the formal approval and kickoff of the hiring initiative. It includes defining the hiring mandate with specific roles (e.g., backend, frontend, full-stack), timelines, and resources. Steps: 1. Assemble a hiring committee comprising HR, engineering leads, and finance stakeholders to draft a business case. 2. Document hiring objectives, budget allocation (including salary bands, recruitment tools, and agency fees), and success metrics like time-to-hire and quality-of-hire. 3. Secure executive approval via signed documentation or digital workflow entry in systems like Jira or Asana. 4. Configure recruitment tools such as an Applicant Tracking System (ATS) like Greenhouse or Lever, setting up webhooks for real-time updates and integrating with communication platforms like Slack for alerts. Payload includes job titles, required start dates, and compliance checks. Tools: Project management software (e.g., Trello), HR platforms, and analytics dashboards for tracking progress. Configuration involves setting up automated triggers to move candidates through stages and ensuring data privacy standards are met from the outset."
+            },
+            {
+              "label": "Job Requirement Definition",
+              "category": "action",
+              "description": "Defines detailed job descriptions, skills, and cultural fit criteria for engineer roles",
+              "content": "This node involves creating comprehensive job requirements to attract and evaluate candidates effectively. Steps: 1. Collaborate with engineering teams to list technical skills (e.g., proficiency in Python, React, cloud services), experience levels (junior to senior), and soft skills like communication and teamwork. 2. Draft job descriptions using tools like Google Docs or ATS templates, including sections on responsibilities, qualifications, benefits, and company culture to enhance appeal. 3. Incorporate diversity and inclusion criteria by using gender-neutral language and highlighting equal opportunity policies. 4. Validate requirements with stakeholders through review cycles, ensuring alignment with business goals and budget constraints. Tools: ATS for JD storage, LinkedIn Recruiter for market benchmarking, and surveys for team input. Checklist: Include must-have vs. nice-to-have skills, legal compliance (e.g., FLSA classification), and metrics for candidate sourcing efficiency. Error handling involves revisiting criteria if initial sourcing yields low-quality applicants, with an owner (e.g., HR manager) overseeing updates."
+            },
+            {
+              "label": "Multi-Channel Candidate Sourcing",
+              "category": "action",
+              "description": "Executes a diversified sourcing strategy to attract candidates beyond LinkedIn",
+              "content": "This node implements proactive candidate sourcing across multiple channels to meet hiring targets. Steps: 1. Leverage job boards like Indeed, Glassdoor, and specialized tech sites (e.g., Stack Overflow Jobs) with optimized postings using SEO keywords. 2. Utilize LinkedIn Recruiter with advanced filters for experience and location, supplemented by Boolean searches for passive candidates. 3. Launch an employee referral program with incentives (e.g., bonuses) and promote it via internal communications. 4. Engage with recruitment agencies or headhunters for hard-to-fill roles, negotiating contracts and SLAs. 5. Attend virtual or in-person tech events, hackathons, and university career fairs to build talent pipelines. Tools: ATS for tracking applications, sourcing tools like SeekOut or Hiretual, and CRM platforms for candidate engagement. Metrics: Number of applications per source, response rates, and cost-per-hire. Error handling includes A/B testing ad copies and adjusting channels based on performance data, with weekly reviews by the sourcing team."
+            },
+            {
+              "label": "Resume Screening and Initial Contact",
+              "category": "review",
+              "description": "Human-led review of resumes and initial outreach to qualify candidates",
+              "content": "This node involves manual and assisted screening to filter candidates based on predefined criteria. Steps: 1. Use ATS features like keyword matching and scoring to prioritize resumes, but ensure human review to avoid bias. 2. Reviewers (HR coordinators or hiring managers) evaluate resumes against job requirements, focusing on experience, education, and project relevance. 3. Conduct initial phone screens (15-20 minutes) using standardized questions to assess communication skills and interest. 4. Document feedback in the ATS with ratings (e.g., 1-5 scale) and notes for consistency. Approval criteria: Candidates must meet at least 80% of must-have skills and show cultural alignment. Who reviews: A panel of two reviewers to reduce subjectivity, with escalation to senior managers for borderline cases. SLA: Respond to applicants within 48 hours, with automated emails for rejections. Tools: Calendly for scheduling, video platforms like Zoom, and checklists to ensure compliance with anti-discrimination laws."
+            },
+            {
+              "label": "Technical Skills Assessment",
+              "category": "test",
+              "description": "Evaluates candidates' technical abilities through standardized tests or challenges",
+              "content": "This node administers technical assessments to validate coding and problem-solving skills. Steps: 1. Design or select assessment tools such as HackerRank, Codility, or custom coding challenges tailored to role-specific tasks (e.g., API development, algorithm solving). 2. Define pass/fail criteria: e.g., minimum score of 70% on coding tests, with additional evaluation for code quality, efficiency, and documentation. 3. Schedule assessments via email invitations with clear instructions and time limits (e.g., 2 hours). 4. Review results using rubrics, with multiple evaluators to ensure objectivity and provide detailed feedback to candidates. Tools: Assessment platforms, version control like GitHub for code review, and collaboration tools for evaluator discussions. What to test: Language proficiency, system design knowledge, and debugging skills. Coverage: Ensure assessments align with job requirements and are unbiased (e.g., blind grading). Error handling includes retakes for technical issues and appeals process for candidate disputes."
+            },
+            {
+              "label": "Cultural Fit and Final Interview",
+              "category": "review",
+              "description": "Final interview stage to assess cultural alignment and make hire/no-hire decisions",
+              "content": "This node involves structured interviews to evaluate candidates' fit with team dynamics and company values. Steps: 1. Form an interview panel including hiring managers, team members, and diversity advocates to conduct behavioral and situational interviews. 2. Use standardized question sets based on company values (e.g., collaboration, innovation) and role-specific scenarios, with evaluation rubrics scoring responses on a scale. 3. Incorporate practical exercises like pair programming or case studies for real-time interaction assessment. 4. Hold calibration meetings to discuss candidate performance, ensure consensus, and document decisions in the ATS. Approval criteria: Candidates must receive positive ratings from at least 75% of panelists and demonstrate alignment with core values. Who reviews: Panel leads with final sign-off from department heads. Escalation: Disagreements are resolved through additional interviews or executive review. SLA: Complete within one week of assessment to maintain candidate engagement."
+            },
+            {
+              "label": "Offer Management and Negotiation",
+              "category": "action",
+              "description": "Handles offer creation, negotiation, and final acceptance for selected candidates",
+              "content": "This node manages the end-to-offer process to secure candidate acceptances. Steps: 1. Draft offer letters using templates in ATS or DocuSign, including compensation (base salary, bonuses, equity), benefits, start date, and contingencies like background checks. 2. Benchmark offers against market data using tools like Levels.fyi or Payscale to ensure competitiveness. 3. Initiate negotiations via phone or email, prepared with negotiation ranges and fallback options, while maintaining positive candidate experience. 4. Coordinate with legal and finance teams for approval on exceptions or special terms. 5. Send formal offers, track acceptance timelines, and manage counter-offers with clear communication. Tools: ATS for automation, CRM for candidate follow-up, and survey tools for feedback. Error handling: Have backup candidates ready if negotiations fail, and document lessons for future improvements. Owner: Recruiter or HR business partner with weekly updates to hiring managers."
+            },
+            {
+              "label": "Successful Engineer Hires",
+              "category": "output",
+              "description": "Final deliverable of hired engineers integrated into the onboarding pipeline",
+              "content": "This node represents the completion of the hiring pipeline with successful hires. Deliverable format: A report detailing hired engineers (names, roles, start dates) and metrics such as time-to-fill (target under 2 months), quality-of-hire (based on initial performance reviews), and diversity ratios. Steps: 1. Compile hire data from ATS into a dashboard using tools like Tableau or Google Sheets for stakeholder review. 2. Schedule onboarding sessions with IT, HR, and team leads to ensure smooth transition, including equipment setup and training plans. 3. Distribute the report to executives, hiring managers, and recruitment team via email or shared drives, highlighting successes and areas for improvement. 4. Conduct post-hire surveys with new hires and hiring teams to gather feedback for pipeline optimization. Success metrics: Number of hires (5 engineers), cost-per-hire within budget, and candidate satisfaction scores. Continuous monitoring involves tracking early retention rates and adjusting future hiring strategies."
+            },
+            {
+              "label": "Hiring Compliance and Diversity Policy",
+              "category": "policy",
+              "description": "Ensures adherence to legal standards and diversity goals throughout the hiring process",
+              "content": "This node sets enforceable rules to maintain compliance and promote diversity. Numbered rules: 1. All job postings must use inclusive language and be posted on diverse job boards (e.g., DiversityJobs) to reach underrepresented groups. 2. Implement blind resume screening where possible to reduce unconscious bias, with regular audits using ATS analytics. 3. Require mandatory anti-bias training for all interviewers, covering topics like stereotype threat and equitable evaluation. 4. Adhere to data privacy regulations (e.g., GDPR, CCPA) by securing candidate data and obtaining consent for processing. 5. Set diversity targets (e.g., 40% female candidates in pipeline) and monitor progress with quarterly reports. Enforcement: Automated checks in ATS for policy violations, with manual reviews by HR compliance officers. Exceptions: Documented justifications for deviations, approved by legal team. Tools: Compliance software like ComplyRight, diversity analytics platforms, and regular policy updates based on legal changes."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "requires"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "validates"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "approves"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "outputs"
+            },
+            {
+              "from": 3,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 4,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 8,
+              "to": 1,
+              "label": "monitors"
+            },
+            {
+              "from": 8,
+              "to": 2,
+              "label": "monitors"
+            },
+            {
+              "from": 8,
+              "to": 3,
+              "label": "monitors"
+            },
+            {
+              "from": 8,
+              "to": 4,
+              "label": "monitors"
+            },
+            {
+              "from": 8,
+              "to": 5,
+              "label": "monitors"
+            },
+            {
+              "from": 8,
+              "to": 6,
+              "label": "monitors"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 90,
+        "maxScore": 100,
+        "pct": 90,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 9 (min: 5)",
+          "✓ Node count: 9 ≤ 10",
+          "✓ Has \"review\" category",
+          "✓ All 16 edges valid",
+          "✓ Starts with trigger",
+          "✗ Last node is \"policy\", expected output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 1055c, no thin nodes",
+          "✗ Flow: no path from first node to last node (unreachable)",
+          "✓ Architecture: has feedback loops AND parallel branches (16 edges, 9 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "freelancer-advice",
+      "status": "ok",
+      "elapsed": 26734,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "I'm charging $50/hour for web development and I'm always booked but barely making rent. What am I doing wrong?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Aha! Mon ami, the clue lies in your hourly rate—$50 is far too modest for a fully booked web developer. Investigate your true costs with tools like FreshBooks to track expenses and calculate your net profit; then, gradually raise rates to $75-$100 or shift to value-based pricing for projects, ensuring your revenue aligns with market demands.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (343 chars)",
+          "✓ Message length: 343 ≥ 250"
+        ]
+      }
+    },
+    {
+      "id": "execute-sow",
+      "status": "ok",
+      "elapsed": 52536,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Write a statement of work for a 3-month web application redesign project. Client is a mid-size e-commerce company. Budget is $85,000. Include scope, deliverables, timeline, and payment terms.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Statement of Work (SOW): E-Commerce Web Application Redesign\n\n**Project Title:** Horizon Redesign – Modernization of AcmeStore's E-Commerce Platform\n**Client:** [Client Company Name, a mid-size e-commerce company]\n**Vendor:** [Your Agency/Consultancy Name]\n**Effective Date:** [Date]\n**Project Duration:** 3 Months (12 Weeks)\n**Total Project Budget:** $85,000 USD\n\n---\n\n### **1. Project Overview & Objectives**\n\nThis Statement of Work outlines the agreement for a comprehensive redesign of the Client's existing e-commerce web application. The primary goal is to modernize the user interface (UI), enhance the user experience (UX), improve site performance, and increase conversion rates. The project will focus on creating a responsive, accessible, and brand-aligned digital storefront that meets contemporary customer expectations and supports business growth.\n\n**Key Objectives:**\n- **Increase User Engagement:** Reduce bounce rate and improve average session duration.\n- **Improve Conversion Rate:** Streamline the checkout process and product discovery.\n- **Enhance Brand Perception:** Deliver a modern, trustworthy, and premium digital experience.\n- **Ensure Technical Performance:** Achieve core web vitals targets (LCP, FID, CLS) for better SEO and user satisfaction.\n- **Establish a Scalable Foundation:** Implement a component-based design system for future updates.\n\n### **2. Scope of Work**\n\nThe project will be executed in four primary phases:\n\n**Phase 1: Discovery & Strategy (Weeks 1-3)**\n- Conduct stakeholder interviews and user persona workshops.\n- Perform a heuristic evaluation and competitive analysis of 3 key competitors.\n- Audit existing analytics, user feedback, and tech stack.\n- Define core user journeys (browse, search, product page, cart, checkout).\n- Develop a comprehensive UX strategy and sitemap.\n\n**Phase 2: UX/UI Design (Weeks 4-7)**\n- Create low-fidelity wireframes for all key templates (Homepage, PLP, PDP, Cart, Checkout, Account).\n- Develop a visual design direction (mood boards, style tiles) for Client approval.\n- Design high-fidelity, interactive prototypes for primary user flows.\n- Build a comprehensive UI component library (Design System) including buttons, forms, cards, and navigation elements.\n- Conduct two (2) internal usability testing rounds on the prototypes.\n\n**Phase 3: Front-End Development (Weeks 8-11)**\n- Convert approved high-fidelity designs into clean, semantic HTML, CSS (Sass), and JavaScript.\n- Ensure fully responsive implementation (mobile, tablet, desktop).\n- Integrate with the Client's existing back-end/CMS via approved APIs (development environment).\n- Implement core front-end functionality (dynamic cart, form validation, filters).\n- Optimize for performance (image optimization, code splitting, lazy loading).\n- Conduct cross-browser and device testing.\n\n**Phase 4: Testing, Launch & Transition (Week 12)**\n- Perform User Acceptance Testing (UAT) with the Client team.\n- Address and remediate all Priority 1 & 2 bugs identified during UAT.\n- Deploy the redesigned application to the staging environment for final sign-off.\n- Coordinate and execute the live launch.\n- Provide post-launch support for two (2) business days to monitor stability.\n- Deliver all project documentation and assets.\n\n### **3. Deliverables**\n\n- **Strategy Documents:** User Personas, UX Strategy Report, Competitive Analysis, Sitemap.\n- **Design Artifacts:** Wireframe Set (PDF), Interactive Prototype (Figma/Adobe XD link), Full Design System with Component Library.\n- **Developed Application:** Fully functional, responsive front-end codebase, integrated with staging environment.\n- **Documentation:** Technical handoff notes, style guide, asset library, and a simple maintenance guide.\n\n### **4. Project Timeline & Milestones**\n\nThe project will commence on **[Start Date]** and conclude on **[End Date, 12 weeks later]**.\n\n- **Milestone 1: Discovery Complete** – End of Week 3\n- **Milestone 2: UX/UI Designs Approved** – End of Week 7\n- **Milestone 3: Development Complete (Staging Ready)** – End of Week 11\n- **Milestone 4: Project Launch & Closure** – End of Week 12\n\nA detailed week-by-week project plan will be maintained in the project management tool (e.g., Asana, Jira).\n\n### **5. Assumptions & Exclusions**\n\n**Assumptions:**\n- Client will provide timely feedback (within 3 business days) at each review stage.\n- Client will provide necessary access to analytics, staging environments, and relevant APIs.\n- Client's existing back-end/CMS is stable and provides required data endpoints.\n- All copywriting and final product imagery/media will be provided by the Client.\n\n**Out of Scope (Exclusions):**\n- Back-end development, database changes, or CMS migrations.\n- Third-party payment gateway integration development.\n- Creation of marketing content (new copy, product photography, video).\n- Post-launch marketing campaigns or ongoing maintenance beyond the 2-day support window.\n- Extensive changes to approved designs or scope after sign-off (will be handled via Change Order).\n\n### **6. Payment Terms**\n\nTotal Fixed Project Fee: **$85,000 USD**.\n\nPayments are tied to project milestones:\n\n- **Payment 1 (25% - $21,250):** Due upon SOW signing to initiate project.\n- **Payment 2 (35% - $29,750):** Due upon Client approval of UX/UI Designs (Milestone 2).\n- **Payment 3 (35% - $29,750):** Due upon delivery of the completed application to staging (Milestone 3).\n- **Payment 4 (5% - $4,250):** Due upon successful project launch and closure (Milestone 4).\n\nAll invoices are payable within **15 days** of receipt. Late payments may result in a pause of project work.\n\n### **7. Acceptance**\n\nThis Statement of Work, when signed by both parties, represents a mutual agreement of the project scope, deliverables, timeline, and budget.\n\n**For [Client Company Name]:**\n___________________________\nPrinted Name & Title\nDate\n\n**For [Your Agency/Consultancy Name]:**\n___________________________\nPrinted Name & Title\nDate",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (5975 chars)",
+          "✓ Content length: 5975 ≥ 300"
+        ]
+      }
+    },
+    {
+      "id": "personality-poirot-empty",
+      "status": "ok",
+      "elapsed": 9823,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Mon ami, the case file is currently empty—we have no visual workflow yet. But do not despair! With the little grey cells, we can build a brilliant investigation. What mystery shall we solve today?",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (196 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    }
+  ]
+}

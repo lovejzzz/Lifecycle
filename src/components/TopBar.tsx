@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useLifecycleStore } from '@/store/useStore';
 import type { NodeCategory } from '@/lib/types';
-import { getNodeColors, getCategoryIcon, BUILT_IN_CATEGORIES } from '@/lib/types';
+import { getNodeColors, getCategoryIcon } from '@/lib/types';
 import { getAgent } from '@/lib/agents';
 
 const BUILT_IN_TYPES: { category: NodeCategory; label: string }[] = [
@@ -27,7 +27,7 @@ const BUILT_IN_TYPES: { category: NodeCategory; label: string }[] = [
 ];
 
 export default function TopBar() {
-  const { nodes, edges, toggleCIDPanel, toggleActivityPanel, showCIDPanel, showActivityPanel, createNewNode, undo, redo, history, future, cidMode, exportWorkflow, importWorkflow, newProject, messages, getHealthScore } = useLifecycleStore();
+  const { nodes, toggleCIDPanel, toggleActivityPanel, showCIDPanel, showActivityPanel, createNewNode, undo, redo, history, future, cidMode, exportWorkflow, importWorkflow, newProject, messages, getHealthScore } = useLifecycleStore();
   const agent = getAgent(cidMode);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showAddMenu, setShowAddMenu] = useState(false);

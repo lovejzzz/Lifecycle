@@ -1,0 +1,510 @@
+{
+  "timestamp": "2026-03-08T10-04-47",
+  "overall": 96,
+  "testsRun": [
+    "founder-advice",
+    "eng-deploy-process",
+    "pm-user-research",
+    "creator-youtube",
+    "personality-poirot-empty",
+    "execute-api-design"
+  ],
+  "poolSize": 44,
+  "results": [
+    {
+      "id": "founder-advice",
+      "status": "ok",
+      "elapsed": 28730,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We're burning $50k/month and have 6 months of runway. What should I prioritize?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Prioritize immediate cost reduction and revenue acceleration. Conduct a 48-hour expense audit using Xero to identify and cut non-essential spend, aiming to lower monthly burn by 40% to $30k. Simultaneously, focus engineering efforts on features with proven ROI, track daily sales metrics like CAC and LTV, and draft a 3-month fundraising plan.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (343 chars)",
+          "✓ Message length: 343 ≥ 250"
+        ]
+      }
+    },
+    {
+      "id": "eng-deploy-process",
+      "status": "ok",
+      "elapsed": 172539,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "My team pushes to production by SSH-ing into the server and running git pull. We need a real deployment process. We use React, Node, and PostgreSQL on AWS.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building automated CI/CD pipeline for your stack.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Code Push to Main Branch",
+              "category": "trigger",
+              "description": "Webhook event that initiates the deployment pipeline on git push",
+              "content": "Configure a webhook in your GitHub or GitLab repository to trigger on pushes to the main branch (e.g., master or main). Set the payload URL to your CI/CD tool (e.g., AWS CodePipeline webhook endpoint or Jenkins trigger). Include secret tokens for security validation. Details: Use GitHub Actions with workflow_dispatch or push events, or set up AWS CodePipeline with source stage from CodeCommit or GitHub. Ensure the webhook captures all necessary metadata (commit hash, branch, author). Test the webhook with a dummy push to verify connectivity and payload handling. Tools: GitHub webhooks, AWS CloudWatch Events for monitoring, or third-party services like CircleCI. Steps: 1. Navigate to repo settings > Webhooks. 2. Add payload URL (e.g., https://your-cicd-tool.com/hook). 3. Set secret and event types (push only). 4. Verify with ping test and initial push. 5. Log events for debugging. This ensures automatic pipeline start on code changes, reducing manual SSH steps."
+            },
+            {
+              "label": "Automated Testing Suite",
+              "category": "test",
+              "description": "Execute comprehensive tests for React frontend and Node backend",
+              "content": "Run automated tests to validate code quality and functionality before deployment. For React: Use Jest with React Testing Library for unit tests on components, aiming for >80% coverage. Configure with npm scripts (e.g., npm test). For Node: Use Mocha with Chai for API integration tests, and Supertest for HTTP assertions. Include end-to-end tests with Cypress for full user flows. Steps: 1. Set up test environments with environment variables (e.g., test database). 2. Run frontend tests: npm run test:ci for headless execution. 3. Run backend tests: npm run test with database seeding. 4. Execute E2E tests in CI environment with mocked services. 5. Define pass/fail criteria: all tests must pass, coverage thresholds met (e.g., 80% line coverage), no critical bugs. On failure, halt pipeline and send notifications to Slack/email with detailed reports. Tools: Jest config files, .mocharc.js, Cypress dashboard. Error handling: Retry flaky tests, archive logs to S3."
+            },
+            {
+              "label": "Application Build and Package",
+              "category": "action",
+              "description": "Compile and package the application into deployable artifacts",
+              "content": "Build the React frontend and Node backend for production readiness. Steps: 1. Frontend: Run npm run build to generate optimized static files (HTML, CSS, JS) using Webpack or Create React App. Minify assets, set environment variables via .env.production. 2. Backend: Transpile TypeScript/ES6 with npm run build, bundle dependencies, and prepare server files. 3. Package artifacts: Create Docker images for both frontend and backend, push to AWS ECR, or package as ZIP files stored in S3. Include Dockerfile for Node app (FROM node:alpine) and Nginx for React. 4. Database: Generate migration scripts if using PostgreSQL with tools like Knex or Sequelize, but defer execution to deployment. 5. Validation: Verify build outputs with checksums and size limits. Tools: Docker CLI, AWS CLI for ECR pushes, npm scripts. Owner: DevOps team. Error handling: Rollback on build failure, notify with build logs."
+            },
+            {
+              "label": "Security and Compliance Check",
+              "category": "policy",
+              "description": "Enforce security rules and compliance standards before deployment",
+              "content": "Apply policy checks to ensure deployment safety and regulatory compliance. Rules: 1. Static code analysis: Run ESLint with security plugins (e.g., eslint-plugin-security) and SonarQube for code smells. 2. Vulnerability scanning: Use Snyk or npm audit to detect dependency vulnerabilities; block if high-risk issues found. 3. Secrets detection: Scan for hardcoded credentials with git-secrets or AWS Secrets Manager checks. 4. Database compliance: Ensure migration scripts are idempotent and reviewed for data loss risks. 5. AWS policy: Verify IAM roles and network security groups meet least privilege. Enforcement: Integrate with CI/CD via AWS CodePipeline policies or GitHub Actions. If any rule fails, block deployment and alert security team with detailed reports. Exceptions: Documented waivers with approval. Tools: OWASP ZAP for penetration testing, AWS Config for compliance monitoring."
+            },
+            {
+              "label": "Production Release Approval",
+              "category": "review",
+              "description": "Manual approval gate for production deployment sign-off",
+              "content": "Human review step to ensure business and technical readiness before going live. Criteria: All tests passed, policy checks cleared, change log updated with user-impacting changes, performance benchmarks met. Approval process: Designated approvers (e.g., lead developer, product manager) review via GitHub Pull Request review or AWS CodePipeline manual approval action. SLA: Respond within 2 business hours; escalate to backup approver if delayed. Steps: 1. Notify approvers via Slack/email with deployment summary. 2. Provide access to test reports and artifact details. 3. Conduct a brief sync if risks identified. 4. On approval, proceed; on rejection, provide feedback and revert changes. Tools: Jira for ticket linking, Confluence for documentation. Ensure audit trail with timestamps and comments."
+            },
+            {
+              "label": "AWS Deployment Execution",
+              "category": "action",
+              "description": "Deploy the application to AWS production environment",
+              "content": "Execute deployment to AWS using best practices for zero downtime and reliability. Steps: 1. For EC2: Use AWS CodeDeploy with blue-green deployment, update instances in an Auto Scaling Group, run health checks with ELB. 2. For ECS: Update service task definition to new Docker image from ECR, adjust desired count, monitor with CloudWatch. 3. For serverless: Deploy Lambda functions with SAM or Serverless Framework, update API Gateway. 4. Database: Apply PostgreSQL migrations cautiously using AWS RDS, with rollback scripts ready. 5. Post-deploy: Run smoke tests to verify endpoints, update DNS if needed, invalidate CloudFront cache for React assets. Tools: AWS CLI commands, Terraform for infrastructure, and scripts for rollback on failure (e.g., revert to previous version). Owner: DevOps team. Monitor with CloudWatch alarms during deployment."
+            },
+            {
+              "label": "Deployment Verification and Metrics",
+              "category": "output",
+              "description": "Final output confirming successful deployment and providing operational metrics",
+              "content": "Verify deployment success and document outcomes for monitoring and improvement. Steps: 1. Health checks: Ping application endpoints (e.g., /health) to ensure 200 OK responses, check database connectivity. 2. Logs and monitoring: Review CloudWatch logs for errors, set up dashboards for response time, error rate, and uptime. 3. Notifications: Send success alerts to Slack channel and email stakeholders with deployment summary, including version hash and changelog. 4. Metrics collection: Track key performance indicators (KPIs) like deployment frequency, lead time, and mean time to recovery (MTTR) using tools like Datadog or AWS DevOps Guru. 5. Documentation: Update runbooks and post-mortem templates if issues arise. Deliverable: Deployment report in markdown format, stored in S3 or Confluence. Success criteria: Application live with no critical issues for 24 hours."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 0,
+              "to": 3,
+              "label": "monitors"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "validates"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "requires"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "approves"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "outputs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 102,
+        "maxScore": 105,
+        "pct": 97,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ Has \"test\" category",
+          "✓ Has \"action\" category",
+          "✓ All 8 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 894c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "⚡ Architecture: has parallel branches (8 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "pm-user-research",
+      "status": "ok",
+      "elapsed": 106743,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We're redesigning our onboarding flow. I want to do proper user research — recruit users, run interviews, analyze findings, create recommendations, test prototypes. Build this for me.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! The case of the clunky onboarding flow—let us investigate with the little grey cells. Voilà, I have crafted a workflow to uncover user clues and design an elegant solution, mon ami.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Project Initiation & Goals",
+              "category": "trigger",
+              "description": "Kick off the onboarding redesign by defining clear research objectives and success metrics.",
+              "content": "Begin by assembling a cross-functional team including product managers, designers, and developers to outline the scope. Define specific research questions: e.g., 'What are the top three drop-off points in the current flow?' and 'What emotional responses do users have during onboarding?' Set measurable goals like improving completion rates by 20% or reducing time-to-value to under 5 minutes. Tools: Use collaborative platforms like Miro for brainstorming and Confluence for documentation. Steps: 1) Conduct a stakeholder alignment workshop to agree on priorities. 2) Draft a research plan with timelines and resources. 3) Establish key performance indicators (KPIs) such as user satisfaction scores and task success rates. This phase ensures everyone is on the same page and sets the foundation for focused user research."
+            },
+            {
+              "label": "User Recruitment Strategy",
+              "category": "action",
+              "description": "Recruit a diverse set of users for interviews based on defined personas and criteria.",
+              "content": "Develop detailed user personas targeting new users, power users, and those who abandoned onboarding. Criteria: Include demographics like age, tech-savviness, and use cases. Tools: Leverage platforms like UserInterviews.com, Respondent.io, or internal databases if available. Steps: 1) Create a screener survey with 5-7 questions to filter participants. 2) Reach out via email campaigns or social media, offering incentives like gift cards. 3) Aim for 8-12 participants per persona for qualitative insights. 4) Schedule sessions using Calendly to streamline logistics. Checklist: Ensure diversity in backgrounds, avoid bias by including users with varying experience levels, and confirm availability for follow-up tests. This ensures rich, representative data for uncovering pain points."
+            },
+            {
+              "label": "Conduct User Interviews",
+              "category": "action",
+              "description": "Run structured interviews to gather deep insights on user experiences and pain points.",
+              "content": "Prepare a semi-structured interview guide with open-ended questions focusing on the current onboarding journey. Tools: Use recording software like Zoom or Otter.ai for transcription, and note-taking apps like Notion. Steps: 1) Start with warm-up questions to build rapport. 2) Ask about first impressions, specific steps in the flow, and emotional highs/lows. 3) Use techniques like the 'Think Aloud' method during task completion. 4) Each session should last 45-60 minutes. Post-interview: Immediately debrief with the team to highlight initial themes. Criteria: Look for patterns in frustrations, misunderstandings, and moments of delight. This phase generates raw qualitative data essential for analysis."
+            },
+            {
+              "label": "Analyze Interview Findings",
+              "category": "action",
+              "description": "Synthesize interview data to identify key themes, pain points, and opportunities.",
+              "content": "Transcribe and code interview recordings using qualitative analysis tools like Dovetail or Airtable. Steps: 1) Upload transcripts and tag quotes with codes such as 'confusion at step X' or 'positive feedback on feature Y'. 2) Conduct affinity diagramming sessions with the team to group codes into themes like 'clarity issues' or 'missing guidance'. 3) Quantify findings where possible, e.g., 70% of users struggled with account setup. 4) Create journey maps to visualize emotional and functional touchpoints. Tools: Utilize Miro for collaborative mapping and Tableau for data visualization. Output: A detailed report highlighting top 3-5 pain points and evidence-backed insights to drive redesign decisions."
+            },
+            {
+              "label": "Design Recommendations & Prototypes",
+              "category": "action",
+              "description": "Translate analysis into actionable redesign recommendations and create initial prototypes.",
+              "content": "Based on analysis, draft specific recommendations such as simplifying form fields or adding tooltips. Steps: 1) Prioritize recommendations using a framework like RICE (Reach, Impact, Confidence, Effort). 2) Sketch low-fidelity wireframes using Figma or Balsamiq, focusing on high-impact changes. 3) Develop interactive prototypes for key flows, e.g., the sign-up process. 4) Document each recommendation with rationale, expected impact on KPIs, and implementation notes. Tools: Use Figma for design, Jira for tracking tasks. Checklist: Ensure recommendations address identified pain points, are technically feasible, and align with brand guidelines. This phase bridges research into tangible design solutions."
+            },
+            {
+              "label": "Prototype Usability Testing",
+              "category": "test",
+              "description": "Test prototypes with users to validate design recommendations and gather feedback.",
+              "content": "Conduct usability tests to evaluate the effectiveness of prototypes. Steps: 1) Recruit 5-8 users from the initial pool or new participants. 2) Create test scenarios, such as 'Complete the onboarding in under 3 minutes' or 'Find a specific feature'. 3) Use moderated sessions via UserTesting.com or Lookback, observing completion rates and time-on-task. 4) Collect qualitative feedback through post-test surveys using Typeform. Metrics: Measure success rates, error counts, and System Usability Scale (SUS) scores. Tools: Record sessions for analysis, and use A/B testing if multiple designs exist. This phase identifies usability issues before full implementation, ensuring the redesign meets user needs."
+            },
+            {
+              "label": "Stakeholder Review & Approval",
+              "category": "review",
+              "description": "Human review of findings and redesign plan for alignment and sign-off.",
+              "content": "Present the research insights, recommendations, and test results to stakeholders for approval. Steps: 1) Schedule a review meeting with key decision-makers like product leads and executives. 2) Prepare a comprehensive presentation including data visualizations, prototype demos, and a cost-benefit analysis. 3) Discuss potential risks, such as development timelines or resource constraints. 4) Use a collaborative tool like Google Slides for real-time feedback. Criteria: Ensure all recommendations are backed by evidence, and address any concerns raised. Outcome: Secure formal sign-off to proceed with implementation, or iterate if revisions are needed. This gate ensures organizational buy-in and resource allocation."
+            },
+            {
+              "label": "Final Onboarding Redesign Deliverable",
+              "category": "output",
+              "description": "Deliver the finalized redesign plan, assets, and implementation roadmap.",
+              "content": "Compile all outputs into a cohesive deliverable for the development team. Steps: 1) Create a detailed specification document with annotated designs, user flows, and copy. 2) Include the research report, test results, and stakeholder approval records. 3) Develop an implementation roadmap with phased rollouts, using tools like Asana for project management. 4) Provide assets such as Figma files, style guides, and code snippets if applicable. Checklist: Ensure all elements are version-controlled, accessible to the team, and linked to KPIs for post-launch tracking. Tools: Use Confluence for documentation and GitHub for versioning. This final output enables seamless execution and sets the stage for continuous improvement through monitoring."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "drives"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 5,
+              "to": 4,
+              "label": "refines"
+            },
+            {
+              "from": 4,
+              "to": 6,
+              "label": "requires"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "approves"
+            },
+            {
+              "from": 3,
+              "to": 6,
+              "label": "informs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 95,
+        "maxScore": 95,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 5)",
+          "✓ Node count: 8 ≤ 10",
+          "✓ All 9 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 738c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (9 edges, 8 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "creator-youtube",
+      "status": "ok",
+      "elapsed": 144496,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "I want to start a YouTube channel. Build me a production workflow for each video — topic research, scripting, filming, editing, thumbnail, SEO, upload, promotion.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! Mon ami, the mystery of video production shall be solved with this elegant workflow. Voilà—a meticulous blueprint to craft and promote each YouTube episode, engaging the little grey cells at every step.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Video Concept Trigger",
+              "category": "trigger",
+              "description": "Initiates the video production cycle based on data-driven insights or creative sparks.",
+              "content": "Begin by analyzing audience analytics from YouTube Studio to identify gaps or trending topics; use tools like Google Trends, TubeBuddy, or Ahrefs for keyword research. Set clear objectives: aim for topics with high search volume (e.g., 10k+ monthly searches) and low competition. Brainstorm ideas in a structured session—consider seasonal trends, viewer comments, or competitor analysis. Document each concept with a brief pitch, target audience, and potential SEO score. Tools: Trello for idea boards, BuzzSumo for content trends. Criteria: Select concepts that align with channel niche, have monetization potential, and can be produced within 2-4 weeks. This phase outputs a prioritized list of 3-5 video ideas, ready for scripting."
+            },
+            {
+              "label": "Research and Script Development",
+              "category": "action",
+              "description": "Conduct in-depth research and craft a detailed script for the video.",
+              "content": "Dive into topic research using authoritative sources like academic papers, industry reports, or expert interviews to ensure accuracy. Structure the script with a compelling hook (first 15 seconds), main content divided into key points (use timestamps), and a strong call-to-action (CTA). Incorporate SEO keywords naturally—aim for 1-2% keyword density without stuffing. Tools: Notion for scriptwriting, Hemingway App for readability, VidIQ for SEO suggestions. Steps: 1) Outline the narrative flow, 2) Write draft with visual cues for filming, 3) Review for clarity and engagement (target length 8-12 minutes for optimal retention), 4) Finalize with peer feedback. Criteria: Script must pass a readability score of Grade 8 or below and include at least 3 data points or examples."
+            },
+            {
+              "label": "Filming Production",
+              "category": "action",
+              "description": "Record high-quality video footage based on the script and production plan.",
+              "content": "Set up filming with proper equipment: DSLR or mirrorless camera (e.g., Sony A7 III), lavalier microphone for clear audio, and softbox lighting to avoid shadows. Follow a shot list derived from the script—include B-roll sequences (30% of footage) for dynamic editing. Techniques: Use rule of thirds for framing, maintain consistent white balance (5500K), and shoot in 4K at 24fps for cinematic quality. Checklist: Test audio levels (-12dB peak), ensure stable tripod use, and capture multiple takes for key segments. Tools: DaVinci Resolve for live monitoring, clapperboard for sync. Criteria: Footage must have no audio distortions, sharp focus throughout, and backup files stored immediately post-shoot."
+            },
+            {
+              "label": "Editing Post-Production",
+              "category": "action",
+              "description": "Edit raw footage into a polished video with effects, sound, and pacing.",
+              "content": "Import footage into editing software like Adobe Premiere Pro or Final Cut Pro. Follow a structured edit: 1) Rough cut assembling clips per script, 2) Fine-cut for pacing (aim for cuts every 3-5 seconds to maintain interest), 3) Add B-roll, transitions (e.g., cross-dissolve), and text overlays for key points. Enhance audio with noise reduction (using Audacity) and background music (from Epidemic Sound, ensuring royalty-free). Color grade to a consistent palette—use LUTs for style. Tools: Premiere Pro for editing, After Effects for motion graphics. Criteria: Final video should be 8-15 minutes, with audio levels normalized to -6dB, no jump cuts, and subtitles added for accessibility (use Rev.com or auto-caption tools)."
+            },
+            {
+              "label": "Quality Review Gate",
+              "category": "review",
+              "description": "Human review to approve video quality before proceeding to thumbnail and SEO.",
+              "content": "Conduct a thorough review using a checklist: 1) Content accuracy against script, 2) Visual quality (no blur, consistent lighting), 3) Audio clarity (no echoes or distortions), 4) Pacing and engagement (watch retention simulated via tools like Wistia). Involve a peer or editor for feedback—schedule a 30-minute review session. Criteria for approval: Video must score above 80% on a rubric covering storytelling, technical aspects, and brand alignment. If issues arise, document specific timestamps for revisions. Tools: Frame.io for collaborative feedback, YouTube Unlisted upload for private testing. Outcome: Approved video moves forward; if rejected, provide detailed notes for refinement back to editing."
+            },
+            {
+              "label": "Thumbnail Design",
+              "category": "action",
+              "description": "Create an eye-catching thumbnail to maximize click-through rate (CTR).",
+              "content": "Design thumbnails using principles of contrast, emotion, and clarity. Tools: Canva or Photoshop with templates (1280x720 pixels). Steps: 1) Select a compelling frame from the video (high emotion or curiosity gap), 2) Add bold text (max 5 words, large font like Impact), 3) Use vibrant colors (e.g., reds/yellows for attention), 4) Incorporate branding (logo corner). Test multiple versions via A/B testing tools like Thumbnail Test. Criteria: Thumbnail should have a CTR potential of >5% based on historical data—avoid clutter, ensure readability on mobile. Save files in PNG format with descriptive filenames for SEO. Example: 'how-to-bake-cake-thumbnail-v1.png'."
+            },
+            {
+              "label": "SEO and Metadata Optimization",
+              "category": "action",
+              "description": "Optimize video title, description, tags, and other metadata for YouTube search.",
+              "content": "Perform keyword research using TubeBuddy or VidIQ to identify high-volume, low-competition keywords (e.g., long-tail phrases). Craft a title under 60 characters, including primary keyword at the beginning. Write a description of 200+ words with keyword naturally placed in first two sentences, plus timestamps and links to resources. Tags: Use 10-15 relevant tags mixing broad and specific terms. Enable end screens and cards for engagement. Tools: Ahrefs for competition analysis, YouTube Keyword Planner. Criteria: Aim for a SEO score of 80+ on TubeBuddy; ensure metadata aligns with video content to avoid misleading clicks. Preview search snippet via YouTube Studio before finalizing."
+            },
+            {
+              "label": "YouTube Upload and Setup",
+              "category": "action",
+              "description": "Upload the final video to YouTube and configure all platform settings.",
+              "content": "Upload the edited video file (MP4 format, H.264 codec) via YouTube Studio. During upload, input optimized metadata from previous step. Configure settings: 1) Set visibility (public, private, or scheduled), 2) Add to relevant playlists, 3) Enable monetization (if eligible), 4) Set audience restrictions (e.g., not made for kids). Use advanced features like chapters with timestamps, subtitles upload (SRT file), and custom thumbnail selection. Tools: YouTube Studio desktop app for batch processing. Criteria: Double-check all fields for accuracy, test video playback at 1080p, and ensure compliance with YouTube policies (no copyright strikes). Schedule upload for optimal posting time (e.g., weekdays 2-4 PM EST based on audience analytics)."
+            },
+            {
+              "label": "Promotion and Performance Analytics",
+              "category": "output",
+              "description": "Promote the video across channels and monitor analytics for insights.",
+              "content": "Execute a multi-channel promotion strategy: share on social media (Twitter, Instagram, Facebook) with tailored posts, embed in blog or newsletter, and engage in relevant online communities (Reddit, Discord). Use paid promotion sparingly (e.g., YouTube ads targeting lookalike audiences). Monitor performance via YouTube Analytics: track metrics like watch time (aim for >50% retention), CTR (>5%), and engagement (likes, comments). Set up Google Data Studio for weekly reports. Tools: Hootsuite for scheduling, TubeBuddy for real-time alerts. Criteria: After 7 days, assess if video meets KPIs (e.g., 1k views for new channels); use insights to refine future workflows—e.g., if CTR low, revisit thumbnail design. This outputs a performance report and informs next video cycle."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "validates"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "approves"
+            },
+            {
+              "from": 4,
+              "to": 6,
+              "label": "approves"
+            },
+            {
+              "from": 5,
+              "to": 7,
+              "label": "feeds"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "feeds"
+            },
+            {
+              "from": 7,
+              "to": 8,
+              "label": "outputs"
+            },
+            {
+              "from": 4,
+              "to": 3,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 95,
+        "maxScore": 95,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 9 (min: 5)",
+          "✓ Node count: 9 ≤ 10",
+          "✓ All 10 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 725c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (10 edges, 9 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "personality-poirot-empty",
+      "status": "ok",
+      "elapsed": 10514,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, mon ami, the case is fresh! The evidence board is empty, awaiting the first clue. Shall we describe the scene of the crime, or shall we begin a new investigation?",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (166 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "execute-api-design",
+      "status": "ok",
+      "elapsed": 64082,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Design a REST API for a multi-tenant task management system. Include endpoints for workspaces, projects, tasks, and comments. Show URL patterns, HTTP methods, request/response bodies, auth scheme, pagination, and error codes. Support role-based access (admin, member, viewer).",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "data": [
+          {
+            "id": "ws_123",
+            "name": "Acme Corp",
+            "description": "Main workspace",
+            "created_at": "2024-01-15T10:30:00Z",
+            "user_role": "admin"
+          }
+        ],
+        "pagination": {
+          "page": 1,
+          "limit": 20,
+          "total_count": 45,
+          "total_pages": 3
+        }
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 40,
+        "pct": 63,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✗ Missing message",
+          "✗ Message too short: 0 < 2000"
+        ]
+      }
+    }
+  ]
+}

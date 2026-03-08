@@ -1,0 +1,350 @@
+{
+  "timestamp": "2026-03-08T12-06-47",
+  "overall": 100,
+  "testsRun": [
+    "support-escalation",
+    "execute-sow",
+    "edge-build-looks-like-question",
+    "personality-poirot-empty",
+    "edge-conflicting-advice",
+    "edge-rant-extraction"
+  ],
+  "poolSize": 56,
+  "results": [
+    {
+      "id": "support-escalation",
+      "status": "ok",
+      "elapsed": 103163,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Customers keep complaining their tickets go into a black hole. Design an escalation workflow — ticket comes in, auto-classify priority, route to right team, SLA tracking, escalate if overdue.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! The case of the vanishing tickets—my little grey cells see it clearly: an escalation workflow is required! Voilà, I have designed a system that auto-classifies, routes, tracks SLA breaches, and escalates with precision, ensuring no ticket ever disappears again.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Ticket Submission Trigger",
+              "category": "trigger",
+              "description": "New customer support ticket enters the system via any channel (email, web form, chat).",
+              "content": "This trigger activates whenever a new support ticket is created across integrated platforms like Zendesk, Freshdesk, or Jira Service Management. Configure webhooks or API listeners to capture ticket metadata: customer tier (from CRM), subject line, description, attachments, and submission timestamp. Use middleware like Zapier or custom scripts to standardize the data payload into JSON format with fields {id, customer_id, subject, body, channel, timestamp}. Initial validation checks for duplicates by hashing content and comparing against recent tickets in a Redis cache. Log the trigger event to an audit trail (e.g., AWS CloudWatch) for traceability. This node is the starting point—every investigation begins with the initial clue!"
+            },
+            {
+              "label": "Auto-Priority Classifier",
+              "category": "action",
+              "description": "Automatically assigns priority (P0-Critical, P1-High, P2-Medium, P3-Low) using NLP and business rules.",
+              "content": "Deploy a hybrid classification system combining rule-based logic and machine learning. First, run keyword matching against a predefined list: 'outage', 'down', 'urgent' → P0; 'error', 'broken', 'not working' → P1; 'question', 'how to' → P2/P3. Then, use a fine-tuned NLP model (e.g., spaCy or MonkeyLearn) to analyze ticket description sentiment and intent—integrate with historical resolution times to predict severity. Factors include customer tier (enterprise customers auto-bump one priority level), time of submission (after-hours may elevate), and linked incidents (check PagerDuty for active outages). Output a confidence score and priority label; if confidence <80%, flag for manual review. Update ticket metadata in the database and trigger alerts for P0/P1 via Slack/MS Teams."
+            },
+            {
+              "label": "Intelligent Router",
+              "category": "action",
+              "description": "Routes ticket to appropriate team (Engineering, Billing, Support) based on priority, topic, and team capacity.",
+              "content": "Implement a routing engine using decision tables and real-time team load. Parse ticket subject/body with topic modeling (LDA or BERT) to detect domain: 'payment', 'invoice' → Billing; 'bug', 'API' → Engineering; 'access', 'how-to' → Support. Cross-reference with team availability from calendar APIs (e.g., Google Calendar) and current queue lengths (polling from Helpdesk software). Apply business rules: P0 tickets always go to Engineering's on-call queue; P1 tickets to senior support agents; P2/P3 to general pools. Use round-robin or least-busy algorithm for distribution. If no agent is available within 5 minutes, trigger fallback to a backup team. Log routing decision with timestamp and assignee ID; send assignment notification via email and push notification. Update ticket state to 'assigned'."
+            },
+            {
+              "label": "SLA Tracking Dashboard",
+              "category": "state",
+              "description": "Real-time monitoring of SLA deadlines per priority level with visual alerts and breach detection.",
+              "content": "Maintain a stateful dashboard (built with Grafana or Datadog) that tracks each ticket's SLA timeline based on priority: P0 = 1 hour response, 4 hour resolve; P1 = 4 hours/1 day; P2 = 1 day/3 days; P3 = 3 days/7 days. Calculate deadlines using business hours (9-5 weekdays) and holidays (configurable in a Google Sheet). Continuously poll ticket database for status changes and update countdown timers. Implement proactive alerts at 50%, 80%, and 100% of SLA time via colored indicators (green → yellow → red). Integrate with escalation engine to automatically trigger when a deadline is breached. Provide metrics: SLA compliance %, average breach time, top breaching teams. Use WebSocket pushes to update UI in real-time for managers."
+            },
+            {
+              "label": "Escalation Engine",
+              "category": "action",
+              "description": "Automatically escalates overdue tickets to higher-tier support or managers via predefined rules.",
+              "content": "When SLA Tracking Dashboard signals a breach, this engine executes escalation protocols. First, check escalation history to avoid duplicates. Then, apply rules: P0 breach → immediately page on-call manager via PagerDuty and create a critical incident in Jira; P1 breach → reassign to team lead and send SMS/email alert; P2/P3 breach → notify supervisor and bump priority. Escalation steps include: 1) Update ticket with 'escalated' flag and timestamp, 2) Add internal note with breach details, 3) Assign to escalation queue (e.g., 'L2_Support'), 4) Trigger automated follow-up to customer (e.g., 'We’re prioritizing your issue'). Use exponential backoff for repeated breaches—after 3 breaches, escalate to director level. Log all actions to audit trail for post-mortem analysis."
+            },
+            {
+              "label": "Manager Escalation Review",
+              "category": "review",
+              "description": "Human intervention point where managers assess escalated tickets, adjust assignments, or approve resolutions.",
+              "content": "Managers receive escalated tickets in a dedicated review queue (e.g., a filtered view in Jira or a custom dashboard). Required actions: 1) Validate escalation reason (review SLA breach metrics and ticket history), 2) Reassign if wrong team (with a note explaining correction), 3) Approve exceptional resolution (e.g., waive fee, offer credit), 4) Flag for root cause analysis if pattern detected. Use a checklist: 'Is this truly critical?', 'Has customer been updated?', 'Are resources blocked?'. Managers can also adjust SLA deadlines with justification (logged). If ticket is resolved, mark as closed; if not, send back to Intelligent Router with refined parameters (e.g., higher priority, different team). This gate ensures accountability—no escalation goes unnoticed!"
+            },
+            {
+              "label": "Resolution & Reporting Output",
+              "category": "output",
+              "description": "Final ticket closure with customer feedback and generation of weekly escalation reports for continuous improvement.",
+              "content": "When ticket is resolved (via Manager Review or direct agent action), this node produces deliverables: 1) Send resolution summary to customer via email with satisfaction survey (using Delighted or SurveyMonkey), 2) Close ticket in Helpdesk system and archive with all logs, 3) Generate weekly PDF/Excel report covering: total tickets, escalation count, average resolution time, top breach reasons, team performance scores. Use templates in Google Sheets or Power BI. Automate report distribution to stakeholders via email and Slack. Additionally, feed data back into Auto-Priority Classifier for model retraining—every resolved ticket is a new clue for better future classification. This output ensures the workflow is a self-improving system, mon ami!"
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "triggers"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "triggers"
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "approves"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 100,
+        "maxScore": 100,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ Has \"trigger\" category",
+          "✓ All 7 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 766c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (7 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "execute-sow",
+      "status": "ok",
+      "elapsed": 60784,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Write a statement of work for a 3-month web application redesign project. Client is a mid-size e-commerce company. Budget is $85,000. Include scope, deliverables, timeline, and payment terms.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Statement of Work: E-Commerce Web Application Redesign\n\n**Project Title:** Comprehensive Redesign of [Client Name] E-Commerce Web Application\n**Client:** [Client Name], A Mid-Size E-Commerce Company\n**Vendor:** [Your Company/Agency Name]\n**Effective Date:** [Date]\n**Project Duration:** 3 Months (Approximately 12 Weeks)\n**Total Project Budget:** $85,000.00 USD\n\n---\n\n### **1.0 Project Overview & Objectives**\n\nThis Statement of Work (SOW) outlines the agreement between [Client Name] (\"Client\") and [Your Company Name] (\"Vendor\") for the strategic redesign of the Client's primary e-commerce web application. The project aims to modernize the user experience, improve site performance and conversion rates, refresh the visual brand identity online, and establish a scalable technical foundation. Success will be measured by enhanced user engagement, increased mobile conversion, and improved core web vitals metrics.\n\n### **2.0 Scope of Work**\n\nThe Vendor will provide services encompassing discovery, design, front-end development, and implementation support. The scope is broken into four primary phases:\n\n**Phase 1: Discovery & Strategy (Weeks 1-3)**\n*   **Stakeholder Workshops:** Conduct collaborative sessions to define business goals, user personas, and key success metrics.\n*   **Heuristic Evaluation & Analytics Review:** Audit the existing application for usability issues and analyze current traffic and conversion data.\n*   **Competitive & Market Analysis:** Review leading e-commerce sites to identify industry best practices and opportunities for differentiation.\n*   **Technical Assessment:** Review the current technology stack and identify constraints and opportunities for the redesign.\n*   **Creation of Project Foundation Documents:** Including a Creative Brief, UX Strategy Document, and a refined sitemap/user flow.\n\n**Phase 2: User Experience (UX) & Interface (UI) Design (Weeks 4-7)**\n*   **Low-Fidelity Wireframing:** Create wireframes for all key templates (Homepage, Product Listing Pages, Product Detail Pages, Cart, Checkout, Account Dashboard).\n*   **Interactive Prototyping:** Develop a clickable, mid-fidelity prototype to validate user flows and functionality.\n*   **High-Fidelity UI Design:** Apply the visual brand identity to create polished, pixel-perfect designs for all screen states (desktop, tablet, mobile).\n*   **Design System Foundation:** Establish a core set of reusable UI components (buttons, forms, cards, etc.) to ensure consistency and speed future development.\n*   **Client Reviews & Revisions:** Two rounds of formal feedback and revision are included for this phase.\n\n**Phase 3: Front-End Development & Implementation (Weeks 8-11)**\n*   **Component-Based Development:** Translate approved high-fidelity designs into clean, semantic HTML, CSS (using a preprocessor like SASS), and JavaScript.\n*   **Responsive Implementation:** Ensure flawless performance and presentation across all modern browsers and devices (mobile-first approach).\n*   **Performance Optimization:** Implement best practices for fast loading (image optimization, code minification, lazy loading).\n*   **Accessibility (A11y) Compliance:** Develop to meet WCAG 2.1 AA standards to ensure accessibility for all users.\n*   **Integration Support:** Work collaboratively with the Client's development/backend team to integrate the new front-end code with the existing e-commerce platform/CMS. *Note: Deep back-end development or platform migration is out of scope.*\n\n**Phase 4: Quality Assurance, Launch & Transition (Week 12)**\n*   **Cross-Browser & Device Testing:** Rigorous testing on a staged development environment.\n*   **User Acceptance Testing (UAT) Support:** Provide a testing protocol and assist the Client during their UAT period.\n*   **Bug Fixing:** Address and resolve any critical or high-priority bugs identified during testing.\n*   **Launch Support:** Provide oversight and technical support during the go-live deployment.\n*   **Project Documentation & Knowledge Transfer:** Deliver final assets and documentation, and conduct a handoff session with the Client's team.\n\n### **3.0 Deliverables**\n\n*   **Strategy & Planning:**\n    *   Project Creative Brief & UX Strategy Document\n    *   Sitemap & User Flow Diagrams\n*   **Design Artifacts:**\n    *   Complete set of low and mid-fidelity wireframes (PDF/Prototype Tool Link)\n    *   Interactive prototype for key user journeys\n    *   Full suite of high-fidelity UI mockups for desktop, tablet, and mobile\n    *   Basic Design System/UI Component Library (Figma/Sketch file)\n*   **Development Assets:**\n    *   Fully developed, responsive front-end code (HTML, CSS, JS)\n    *   Optimized image and icon assets\n    *   Performance and accessibility audit report\n*   **Project Closure:**\n    *   Final project archive with all source files and documentation\n    *   Launch readiness report\n\n### **4.0 Project Timeline & Milestones**\n\nThe project will commence on **[Start Date]** and is scheduled for completion by **[End Date, 3 Months Later]**.\n\n*   **Kick-off & Project Initiation:** Week 1\n*   **Milestone 1: Completion of Discovery & Strategy (Payment Trigger):** End of Week 3\n*   **Milestone 2: Approval of Final UI Designs (Payment Trigger):** End of Week 7\n*   **Milestone 3: Completion of Front-End Development & Staging Ready (Payment Trigger):** End of Week 11\n*   **Project Launch & Final Sign-off (Final Payment Trigger):** End of Week 12\n\n### **5.0 Payment Terms**\n\nThe total fixed project fee is **$85,000.00 USD**. Payments are tied to project milestones as follows:\n\n*   **Payment 1 (Upon SOW Signing):** $17,000 (20% Retainer)\n*   **Payment 2 (Upon Milestone 1 Completion):** $17,000 (20%)\n*   **Payment 3 (Upon Milestone 2 Completion):** $21,250 (25%)\n*   **Payment 4 (Upon Milestone 3 Completion):** $21,250 (25%)\n*   **Payment 5 (Upon Project Launch/Final Sign-off):** $8,500 (10%)\n\nAll invoices are payable net 15 days from receipt. A late payment fee of 1.5% per month will be applied to overdue balances.\n\n### **6.0 Assumptions & Exclusions**\n\n**Assumptions:**\n*   Client will provide timely feedback and approvals at each milestone (within 5 business days).\n*   Client will assign a single point of contact for project decisions and feedback.\n*   Client will provide necessary access to analytics, brand assets, and staging environments.\n*   Client's backend/development team will be available for integration coordination during Phase 3.\n\n**Out of Scope (Exclusions):**\n*   Copywriting or content creation (existing content will be used).\n*   Photography or videography production.\n*   Back-end development, database architecture, or e-commerce platform migrations.\n*   Third-party software licensing fees.\n*   Post-launch marketing, maintenance, or hosting.\n*   Significant changes to the approved scope (\"scope creep\"). Any requested changes will be managed through a formal Change Order process.\n\n---\n\n**Approval:**\n\n**Client:** [Client Name]\nSignature: _________________________\nName: _________________________\nTitle: _________________________\nDate: _________________________\n\n**Vendor:** [Your Company Name]\nSignature: _________________________\nName: _________________________\nTitle: _________________________\nDate: _________________________",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (7259 chars)",
+          "✓ Content length: 7259 ≥ 300"
+        ]
+      }
+    },
+    {
+      "id": "edge-build-looks-like-question",
+      "status": "ok",
+      "elapsed": 158159,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Can you set up a data pipeline for me? I have CSVs coming from 3 vendors daily and need them in BigQuery by morning.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building your data pipeline workflow.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Daily CSV Arrival Trigger",
+              "category": "trigger",
+              "description": "Event that initiates the pipeline when CSV files arrive from vendors",
+              "content": "This trigger node handles the daily arrival of CSV files from three vendors. Set up a Google Cloud Storage (GCS) bucket as the landing zone, configured with object change notifications to publish events to a Cloud Pub/Sub topic upon file uploads. If vendors use APIs or SFTP, implement Cloud Scheduler cron jobs (e.g., at 2:00 AM daily) to poll for new files, with authentication via service accounts or API keys. Define strict file naming conventions (e.g., vendor_name_YYYYMMDD.csv) for automated parsing. Include error handling for missing files, network timeouts, or unauthorized access, with retry logic (exponential backoff) and alerts sent to Slack or email via Cloud Functions. Tools: Google Cloud Storage, Cloud Pub/Sub, Cloud Scheduler, Python scripts with google-cloud-storage library. Steps: 1. Create a GCS bucket with uniform bucket-level access and enable versioning for backup. 2. Configure IAM roles to grant write access to vendors or use signed URLs for secure uploads. 3. Set up bucket notifications to send events to a Pub/Sub topic named 'csv-arrivals'. 4. Deploy a Cloud Function triggered by the Pub/Sub topic to log arrivals and initiate ingestion. 5. For API-based vendors, write a Cloud Scheduler job that calls a Cloud Function to fetch files and upload to GCS. 6. Implement logging with Cloud Logging, including metadata like file size and timestamp for audit trails."
+            },
+            {
+              "label": "Ingest and Stage Data",
+              "category": "action",
+              "description": "Move and store CSV files in a staging area for processing",
+              "content": "This action node ingests the arrived CSV files into a staging environment. Upon trigger from the Pub/Sub topic, a Cloud Function or Dataflow job copies files from the GCS landing bucket to a staging bucket, preserving folder structure (e.g., /staging/vendor/date/). Validate file integrity using checksums (e.g., MD5) to detect corruption. For large files, use parallel processing with Apache Beam in Dataflow to handle throughput. Steps: 1. In the Cloud Function, parse the Pub/Sub message to get file metadata (bucket, object name). 2. Use the Google Cloud Storage client library to download and re-upload the file to the staging bucket. 3. Implement error handling for failed copies, with retries (up to 3 attempts) and dead-letter queue for problematic files sent to a quarantine bucket. 4. Log each ingestion event with details (file size, duration, status) to Cloud Logging. 5. Optionally, convert CSV to Parquet format in staging for better compression and query performance in BigQuery. Tools: Google Cloud Functions with Python, Cloud Dataflow, Apache Beam, gsutil commands. Owner: Data engineering team. SLA: Complete within 30 minutes of trigger."
+            },
+            {
+              "label": "Validate Data Quality",
+              "category": "test",
+              "description": "Check CSV data for schema, completeness, and business rules",
+              "content": "This test node validates the staged CSV files for quality before further processing. Define validation rules: schema conformity (column names, data types), null value thresholds (e.g., <5% nulls per column), data range checks (e.g., dates within valid range), and business logic (e.g., total sums match vendor reports). Use a Cloud Dataflow job with Apache Beam to run validations in parallel across files. Steps: 1. Load each CSV from the staging bucket into a Pandas DataFrame or Beam PCollection. 2. Apply validation functions: check column count matches expected schema (defined in a JSON config file), validate data types (e.g., integers, strings), and run custom rules (e.g., revenue >= 0). 3. Set pass/fail criteria: if >95% of rows pass all checks, mark as valid; otherwise, fail. 4. On failure, trigger alerts via Cloud Pub/Sub to a Slack channel and move the file to a 'failed' bucket for manual review. 5. On success, output a validation report (JSON format) to Cloud Storage. Tools: Apache Beam with Python, Pandas for small files, Cloud Dataflow for scaling. Coverage: Aim for 100% of rows tested."
+            },
+            {
+              "label": "Transform and Prepare Data",
+              "category": "action",
+              "description": "Clean, enrich, and format data for BigQuery loading",
+              "content": "This action node transforms the validated data into a BigQuery-compatible format. If validation passes, process the CSV files: clean data (remove duplicates, handle missing values with imputation), standardize formats (e.g., dates to YYYY-MM-DD), and enrich with additional fields (e.g., add a 'processed_date' timestamp). Use a Cloud Dataflow job with SQL-like transformations via Beam, or run SQL queries directly in BigQuery after staging. Steps: 1. Read the validated CSVs from the staging bucket into a Dataflow pipeline. 2. Apply transformations: standardize column names to lowercase with underscores, convert data types (e.g., strings to integers where applicable), and join with reference data (e.g., vendor mappings stored in a separate BigQuery table). 3. Aggregate data if needed (e.g., daily summaries by vendor). 4. Output the transformed data to a new GCS bucket in Avro or Parquet format for efficient BigQuery loading. 5. Handle errors in transformation (e.g., type conversion failures) by logging to a separate table and continuing processing. Tools: Cloud Dataflow, Apache Beam, BigQuery SQL for simple transforms. Owner: Data engineer on-call."
+            },
+            {
+              "label": "Load to BigQuery",
+              "category": "action",
+              "description": "Insert transformed data into BigQuery tables",
+              "content": "This action node loads the transformed data into BigQuery for analytics. Use BigQuery load jobs (batch) for efficiency, configured to append or overwrite data in partitioned tables by date. Steps: 1. From the transformed data in GCS (Avro/Parquet format), initiate a BigQuery load job via the BigQuery API or bq command-line tool. 2. Specify the target dataset and table, with partitioning on a date column (e.g., ingestion_date) and clustering on key fields (e.g., vendor_id) for query performance. 3. Set up error handling: monitor job status via Cloud Monitoring, and on failure (e.g., schema mismatch), retry with exponential backoff or fallback to a staging table for investigation. 4. After successful load, update metadata in a control table (e.g., last_load_timestamp) in BigQuery. 5. Optimize costs by using streaming inserts only if real-time data is required, otherwise stick to daily batches. Tools: Google BigQuery, bq CLI, Python BigQuery client library. SLA: Complete by 6:00 AM daily."
+            },
+            {
+              "label": "Pipeline Completion and Monitoring",
+              "category": "output",
+              "description": "Final deliverable with logs, metrics, and alerts",
+              "content": "This output node represents the completion of the data pipeline, providing deliverables like success reports and monitoring dashboards. After BigQuery load, generate a summary report (CSV or JSON) stored in GCS, including metrics: number of files processed, rows loaded, error counts, and processing time. Set up Cloud Monitoring dashboards to track pipeline health: latency (trigger to load), data volume trends, and error rates. Configure alerts via Cloud Alerting for anomalies (e.g., load time > 1 hour) sent to PagerDuty or email. Steps: 1. Use Cloud Logging to aggregate logs from all pipeline steps and export to BigQuery for analysis. 2. Create a Cloud Function to send a daily success notification to stakeholders via Slack, including a link to the BigQuery table. 3. Update a metadata table in BigQuery with pipeline run status and timestamps. 4. Schedule a daily Data Studio report for business users showing data freshness and quality scores. Tools: Cloud Monitoring, Cloud Logging, Data Studio, Slack API. Success metrics: 99.9% uptime, data available by 7:00 AM daily."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "drives"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "outputs"
+            },
+            {
+              "from": 5,
+              "to": 0,
+              "label": "monitors"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 90,
+        "maxScore": 90,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 6 (min: 4)",
+          "✓ All 7 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 1151c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (7 edges, 6 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "personality-poirot-empty",
+      "status": "ok",
+      "elapsed": 7653,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Mon ami, we have nothing but a clean slate—no clues, no evidence, no tangled threads to follow. The case is fresh, awaiting your first move. Shall we begin an investigation?",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (173 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "edge-conflicting-advice",
+      "status": "ok",
+      "elapsed": 28676,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We need to ship a critical security patch ASAP but our QA team is on vacation for 2 weeks. The CEO wants it live today. What do we do?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Mission: Deploy with extreme caution. Implement an emergency QA bypass: 1) Run automated security scans using OWASP ZAP and Snyk for CVE detection, 2) Conduct thorough peer code review with at least two senior developers focusing on patch logic, 3) Deploy to a staging environment with canary testing (e.g., 5% traffic) using Kubernetes or similar, and monitor with Datadog for anomalies, 4) Prepare an instant rollback plan via blue-green deployment. Success metrics: zero new vulnerabilities, >90% unit test coverage from existing suites, and no regression in key user flows. Document all steps and risks for audit trail.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (623 chars)",
+          "✓ Message length: 623 ≥ 250"
+        ]
+      }
+    },
+    {
+      "id": "edge-rant-extraction",
+      "status": "ok",
+      "elapsed": 16791,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Everything is on fire. Our CI takes 45 minutes, staging is always broken, nobody writes tests, the PM keeps changing requirements mid-sprint, and our best engineer just quit. I don't even know where to start.",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Mon ami, the crime scene is indeed crowded — but we shall examine each clue systematically. First, we must triage: the burning platform is staging instability and engineer attrition. Let us apply the little grey cells to find the single highest-leverage intervention, then create order from this chaos with evidence-based prioritization.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (337 chars)",
+          "✓ Message length: 337 ≥ 250"
+        ]
+      }
+    }
+  ]
+}

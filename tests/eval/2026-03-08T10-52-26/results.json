@@ -1,0 +1,476 @@
+{
+  "timestamp": "2026-03-08T10-52-26",
+  "overall": 100,
+  "testsRun": [
+    "marketing-campaign",
+    "eng-oncall",
+    "support-advice",
+    "personality-poirot-empty",
+    "execute-api-design",
+    "manufacturing-quality-control"
+  ],
+  "poolSize": 50,
+  "results": [
+    {
+      "id": "marketing-campaign",
+      "status": "ok",
+      "elapsed": 146165,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "I need to launch a Black Friday campaign across email, social media, and Google Ads. Budget is $10k. Make me a workflow that covers everything from creative to post-campaign analysis.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building comprehensive Black Friday campaign workflow with budget allocation and multi-channel execution.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Campaign Kickoff",
+              "category": "trigger",
+              "description": "Initiation event for Black Friday campaign with $10k budget",
+              "content": "Trigger: Annual Black Friday campaign planning session. Event details: Stakeholder meeting to define objectives, timeline (e.g., 4-week pre-campaign, 1-week execution), and budget allocation of $10k. Payload: Campaign brief including goals (e.g., 20% sales increase, 5,000 new email subscribers), target audience (demographics, past purchasers), and key dates (launch on Black Friday week). Configuration: Use project management tools like Asana or Trello to create tasks, assign owners (marketing lead, creative team, ads manager), and set up budget tracking in Google Sheets. Steps: 1. Schedule kickoff meeting with agenda. 2. Document campaign goals and success metrics (ROI, engagement rates). 3. Allocate budget: propose $4k for Google Ads, $3k for social media ads, $2k for email marketing tools, $1k for creative assets. 4. Set up communication channels (Slack, weekly check-ins). Tools: Calendar invites, shared documents, budget spreadsheets."
+            },
+            {
+              "label": "Strategic Planning & Creative Dev",
+              "category": "action",
+              "description": "Develop campaign strategy and creative assets for all channels",
+              "content": "Action: Execute strategic planning and creative development. Steps: 1. Conduct audience research using Google Analytics and customer surveys to refine segments. 2. Define messaging themes (e.g., 'Doorbuster Deals', limited-time offers) and value propositions. 3. Create creative briefs for design and copy: email templates, social media graphics (carousels, stories), ad creatives (banners, video snippets). 4. Develop content calendar with daily posts and email sends. 5. Tools: Use Canva or Adobe Creative Suite for design; Google Docs for copywriting; collaboration via Figma or InVision. 6. Error handling: Ensure brand consistency with style guides; backup creatives for A/B testing. Owner: Creative lead. Criteria: Assets must be optimized for each platform (sizes, formats), include clear CTAs, and align with budget. Deliverables: Finalized creatives by [date], reviewed for compliance with ad policies."
+            },
+            {
+              "label": "Multi-Channel Setup",
+              "category": "action",
+              "description": "Configure and set up email, social media, and Google Ads campaigns",
+              "content": "Action: Setup and configure all marketing channels. Steps for each: 1. Email: Use Klaviyo or Mailchimp to segment lists (e.g., VIP customers, inactive subscribers), design automated flows (welcome series, cart abandonment), and schedule Black Friday blasts. 2. Social Media: Create ad accounts on Facebook/Instagram; use Hootsuite or Buffer to schedule organic posts; set up ad sets with targeting (interests, lookalike audiences), budgets per ad ($500-$1000), and creative uploads. 3. Google Ads: Perform keyword research with Google Keyword Planner; create search campaigns with negative keywords; set up display campaigns with remarketing lists; configure conversion tracking via Google Analytics. Tools: Platform dashboards, UTM parameters for tracking. Budget allocation: Monitor spend daily to stay within $10k. Owner: Channel managers. Checklist: Test all links, preview ads, and ensure landing pages are optimized."
+            },
+            {
+              "label": "Campaign Launch & Monitoring",
+              "category": "action",
+              "description": "Execute campaign and monitor real-time performance across channels",
+              "content": "Action: Launch campaign and implement continuous monitoring. Steps: 1. Launch all channels simultaneously on Black Friday start date. 2. Monitor key metrics in real-time: email open rates (goal >20%), click-through rates; social media engagement (likes, shares, comments); Google Ads CTR (target >2%), conversion rates, and cost per click. 3. Use tools: Google Analytics for web traffic, platform insights (Facebook Ads Manager, Google Ads dashboard), and alert systems (e.g., setting up thresholds for spend or performance drops). 4. Daily actions: Adjust bids based on performance, pause underperforming ads, scale successful ones, and post engaging social content. 5. Error handling: Have backup creatives ready; troubleshoot tracking issues immediately. Owner: Operations team. SLA: Respond to anomalies within 2 hours. Data logging: Maintain daily reports in a shared drive."
+            },
+            {
+              "label": "Mid-Campaign Performance Review",
+              "category": "review",
+              "description": "Human-led review to assess performance and optimize campaign",
+              "content": "Review: Conduct mid-campaign performance analysis after 3-4 days. Approval criteria: Check if ROI is on track (e.g., >200%), engagement rates meet benchmarks, and budget utilization is efficient (not overspending). Who reviews: Marketing lead, data analyst, and finance representative. Steps: 1. Gather data from all channels into a consolidated dashboard. 2. Evaluate against pre-set goals: sales volume, new leads, cost per acquisition. 3. Identify bottlenecks: e.g., low ad relevance scores, email unsubscribe spikes. 4. Decision points: Approve continuance as-is, recommend optimizations (e.g., reallocate budget to top-performing channels, update ad copy), or escalate if major issues. Escalation path: Notify senior management if ROI drops below 150%. SLA: Review within 24 hours of data collection. Output: Action plan with specific changes to implement."
+            },
+            {
+              "label": "Post-Campaign Analysis",
+              "category": "action",
+              "description": "Comprehensive analysis after campaign concludes to gather insights",
+              "content": "Action: Perform detailed post-campaign analysis. Steps: 1. Collect final data from all sources: email platforms, social media analytics, Google Ads, and sales databases. 2. Calculate key metrics: total revenue generated, overall ROI, channel-specific performance (e.g., Google Ads CPA vs. social media CPA), customer acquisition cost. 3. Use tools: Excel for data aggregation, Tableau or Google Data Studio for visualization, statistical analysis for significance testing. 4. Compare results to goals: Identify successes (e.g., email drove 40% of sales) and failures (e.g., social ads had low conversion). 5. Conduct sentiment analysis on social mentions and customer feedback. 6. Document learnings: What worked well (specific creatives, timing), what didn't (audience targeting issues). Owner: Analytics team. Timeline: Complete within 1 week post-campaign. Deliverable: Draft analysis report for review."
+            },
+            {
+              "label": "Final Insights & Recommendations Report",
+              "category": "output",
+              "description": "Deliverable report with campaign outcomes and future recommendations",
+              "content": "Output: Compile and distribute final campaign report. Format: PDF or PowerPoint presentation with sections: Executive Summary (key results), Methodology (data sources), Performance Metrics (tables and charts), Insights (deep dives per channel), Recommendations (actionable steps for next campaign). Content details: Include specific numbers like total spend ($10k), revenue generated, ROI percentage, top-performing creatives, and audience segments. Distribution: Share with stakeholders (marketing team, executives, finance) via email or presentation meeting. Success metrics: Report completion rate, stakeholder satisfaction survey scores. Steps: 1. Review and incorporate feedback from post-campaign analysis. 2. Design report using tools like Canva or Google Slides. 3. Schedule debrief meeting to present findings. 4. Archive report in company knowledge base for future reference. Ensure recommendations are prioritized (e.g., increase budget for Google Ads next year, improve email segmentation)."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "triggers"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "validates"
+            },
+            {
+              "from": 4,
+              "to": 3,
+              "label": "refines"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "outputs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 95,
+        "maxScore": 95,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ All 7 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 919c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (7 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "eng-oncall",
+      "status": "ok",
+      "elapsed": 123052,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We just got paged at 3am for the third time this week. We need an incident response process. Currently it's just chaos — whoever sees Slack first tries to fix it.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! Mon ami, the case of the chaotic midnight pages is a classic one—too many cooks in the kitchen, as they say. Voilà, I shall design a detective-worthy incident response workflow to bring order from this disarray, with careful steps to ensure no clue is missed.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Alert Detection & Trigger",
+              "category": "trigger",
+              "description": "Initial alert or page that signals an incident has occurred",
+              "content": "This node represents the moment an incident is detected via monitoring tools such as PagerDuty, Datadog, Prometheus alerts, or custom scripts. Steps include: 1. Configure alert sources with severity levels (e.g., P1-critical, P2-major, P3-minor) and automatic routing based on on-call schedules using tools like Opsgenie or VictorOps. 2. Ensure alerts include rich context: error messages, metrics dashboards, recent deployment logs, and environment details to speed up triage. 3. Set up escalation policies with timeouts (e.g., 5 minutes for no acknowledgment) to prevent alerts from being missed. 4. Integrate with communication channels like Slack or Microsoft Teams for immediate notifications. This foundational step ensures incidents are caught early and routed correctly, minimizing response time and chaos."
+            },
+            {
+              "label": "Incident Triage & Assessment",
+              "category": "action",
+              "description": "Initial assessment to categorize and prioritize the incident",
+              "content": "Upon alert receipt, this node involves rapid triage to determine impact and urgency. Steps: 1. Assemble the initial response team using predefined roles (e.g., incident commander, communications lead) via tools like Jira Service Management or FireHydrant. 2. Assess severity based on criteria: user impact (e.g., downtime percentage), revenue loss, and system degradation. 3. Create an incident ticket with details: timeline, affected services, and initial hypotheses. 4. Use collaborative platforms like Confluence or Notion for shared documentation. 5. Activate incident war rooms in Slack or Zoom for real-time coordination. This phase sets the stage for effective investigation by establishing clear ownership and priorities."
+            },
+            {
+              "label": "Root Cause Investigation",
+              "category": "action",
+              "description": "Deep dive to identify the underlying cause of the incident",
+              "content": "This node focuses on systematic investigation to pinpoint the root cause. Steps: 1. Gather evidence from logs (using ELK stack or Splunk), metrics (Grafana dashboards), and traces (Jaeger or Zipkin). 2. Conduct hypothesis testing with tools like Fishbone diagrams or the 5 Whys technique. 3. Collaborate using shared documents or Miro boards to map dependencies and recent changes (from Git history or deployment logs). 4. Engage subject matter experts and use debugging tools like debuggers or profilers for code-level analysis. 5. Document findings in real-time to avoid knowledge loss. This thorough investigation ensures accurate diagnosis and informs mitigation strategies."
+            },
+            {
+              "label": "Mitigation & Resolution Actions",
+              "category": "action",
+              "description": "Steps taken to contain and resolve the incident",
+              "content": "Here, actionable steps are executed to fix the issue. Steps: 1. Implement immediate mitigations: rollback deployments (using Kubernetes or Terraform), toggle feature flags (LaunchDarkly), or apply hotfixes. 2. Validate fixes with automated tests (unit, integration) and canary deployments to ensure stability. 3. Use incident management tools to track resolution progress and assign tasks (e.g., via Jira or Asana). 4. Monitor system health post-fix with tools like New Relic or AppDynamics to confirm recovery. 5. Document all changes in version control and change management systems. This phase ensures the incident is resolved effectively with minimal recurrence risk."
+            },
+            {
+              "label": "Stakeholder Communication",
+              "category": "action",
+              "description": "Ongoing communication with internal and external stakeholders",
+              "content": "This node manages all communication during and after the incident. Steps: 1. Establish communication channels: internal updates via Slack channels or email, external notifications via status pages (Statuspage or Atlassian Statuspage). 2. Define update frequency (e.g., hourly for critical incidents) and templates for consistency. 3. Assign a communications lead to craft messages, ensuring transparency and reducing speculation. 4. Use tools like PagerDuty Response or Incident.io to automate status broadcasts. 5. Post-resolution, send a summary to stakeholders with key takeaways. Effective communication builds trust and keeps everyone informed, reducing panic and misinformation."
+            },
+            {
+              "label": "Post-Incident Review & Analysis",
+              "category": "review",
+              "description": "Human-led review to learn from the incident and prevent recurrence",
+              "content": "After resolution, this node involves a blameless post-mortem to extract lessons. Steps: 1. Schedule a review meeting within 24-48 hours with all involved parties. 2. Use frameworks like the STAR method (Situation, Task, Action, Result) to document the incident timeline and decisions. 3. Identify root causes, contributing factors, and action items using tools like Retrium or Miro for collaborative brainstorming. 4. Assign owners and deadlines for action items (e.g., code improvements, process updates). 5. Share findings broadly via internal wikis or all-hands meetings to foster a learning culture. This review ensures continuous improvement and accountability."
+            },
+            {
+              "label": "Incident Report & Documentation",
+              "category": "output",
+              "description": "Final compiled report and archived documentation of the incident",
+              "content": "This node produces the official incident report as the final deliverable. Steps: 1. Compile all data: alert logs, triage notes, investigation details, resolution steps, and review outcomes into a structured document using templates from resources like Google Docs or Confluence. 2. Include metrics: MTTR (Mean Time to Resolution), impact duration, and cost analysis. 3. Distribute the report to relevant teams (engineering, product, leadership) and archive it in a searchable repository (e.g., GitHub Wiki or dedicated incident database). 4. Update runbooks and playbooks based on lessons learned. 5. Schedule follow-ups to track action item completion. This output ensures knowledge retention and process refinement for future incidents."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 5,
+              "label": "requires"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "outputs"
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "label": "informs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 110,
+        "maxScore": 110,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ Has \"trigger\" category",
+          "✓ All 8 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 711c, no thin nodes",
+          "✓ Architecture covers: alert, triage, communicat, postmortem",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (8 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "support-advice",
+      "status": "ok",
+      "elapsed": 28147,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Our CSAT score dropped to 3.2 out of 5. Average first response time is 8 hours. What should we fix first?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Drop everything and hammer the first response time—8 hours is killing you. Prioritize tickets using a triage system with tools like Zendesk or Intercom, set a hard SLA of under 1 hour, and deploy chatbots for instant replies to common issues; this will directly spike CSAT as speed is the primary pain point.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (308 chars)",
+          "✓ Message length: 308 ≥ 250"
+        ]
+      }
+    },
+    {
+      "id": "personality-poirot-empty",
+      "status": "ok",
+      "elapsed": 8908,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, but we have nothing at all, mon ami! The canvas is blank—a fresh case awaiting our first clue. Shall we begin the investigation? My little grey cells are ready to map out your grand design.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (193 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "execute-api-design",
+      "status": "ok",
+      "elapsed": 74445,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Design a REST API for a multi-tenant task management system. Include endpoints for workspaces, projects, tasks, and comments. Show URL patterns, HTTP methods, request/response bodies, auth scheme, pagination, and error codes. Support role-based access (admin, member, viewer).",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Multi-Tenant Task Management System - REST API Design Document\n\n## 1. Overview\nA multi-tenant REST API for managing workspaces, projects, tasks, and comments with role-based access control (RBAC). Each tenant operates in complete isolation with their own data and user management.\n\n## 2. Authentication & Authorization\n**Scheme:** Bearer Token (JWT)\n**Header:** `Authorization: Bearer {jwt_token}`\n**Tenant Isolation:** Token includes `tenant_id` and `user_role` claims\n\n## 3. Base URL & Versioning\n```\nhttps://api.taskmanager.com/v1\n```\n\n## 4. Resource Endpoints\n\n### 4.1 Workspace Management\n\n#### List Workspaces\n```\nGET /workspaces\n```\n**Query Parameters:**\n- `page`: Page number (default: 1)\n- `limit`: Items per page (default: 20, max: 100)\n- `sort`: `created_at`, `name` (default: `created_at`)\n- `order`: `asc`, `desc` (default: `desc`)\n\n**Response (200):**\n```json\n{\n  \"data\": [\n    {\n      \"id\": \"ws_123\",\n      \"name\": \"Marketing Team\",\n      \"description\": \"Marketing department workspace\",\n      \"created_by\": \"user_456\",\n      \"created_at\": \"2024-01-15T10:30:00Z\",\n      \"updated_at\": \"2024-01-15T10:30:00Z\"\n    }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"limit\": 20,\n    \"total\": 45,\n    \"pages\": 3\n  }\n}\n```\n\n#### Create Workspace\n```\nPOST /workspaces\n```\n**Request:**\n```json\n{\n  \"name\": \"Engineering Team\",\n  \"description\": \"Software engineering workspace\"\n}\n```\n\n**Response (201):**\n```json\n{\n  \"id\": \"ws_789\",\n  \"name\": \"Engineering Team\",\n  \"description\": \"Software engineering workspace\",\n  \"created_by\": \"user_456\",\n  \"created_at\": \"2024-01-15T10:30:00Z\",\n  \"updated_at\": \"2024-01-15T10:30:00Z\"\n}\n```\n\n#### Get Workspace\n```\nGET /workspaces/{workspace_id}\n```\n**Permissions:** Admin, Member, Viewer\n\n#### Update Workspace\n```\nPATCH /workspaces/{workspace_id}\n```\n**Permissions:** Admin only\n**Request:** Partial updates allowed\n\n#### Delete Workspace\n```\nDELETE /workspaces/{workspace_id}\n```\n**Permissions:** Admin only\n\n### 4.2 Project Management\n\n#### List Projects in Workspace\n```\nGET /workspaces/{workspace_id}/projects\n```\n**Permissions:** Admin, Member, Viewer\n**Query Parameters:** Same as workspaces plus `status` filter\n\n#### Create Project\n```\nPOST /workspaces/{workspace_id}/projects\n```\n**Permissions:** Admin, Member\n**Request:**\n```json\n{\n  \"name\": \"Q2 Product Launch\",\n  \"description\": \"Launch new product features\",\n  \"start_date\": \"2024-04-01\",\n  \"end_date\": \"2024-06-30\",\n  \"status\": \"planned\"\n}\n```\n\n#### Update Project\n```\nPATCH /workspaces/{workspace_id}/projects/{project_id}\n```\n**Permissions:** Admin, Member (owner)\n\n### 4.3 Task Management\n\n#### List Tasks in Project\n```\nGET /workspaces/{workspace_id}/projects/{project_id}/tasks\n```\n**Query Parameters:**\n- `status`: `todo`, `in_progress`, `review`, `done`\n- `assignee_id`: Filter by assignee\n- `priority`: `low`, `medium`, `high`, `critical`\n\n#### Create Task\n```\nPOST /workspaces/{workspace_id}/projects/{project_id}/tasks\n```\n**Permissions:** Admin, Member\n**Request:**\n```json\n{\n  \"title\": \"Design API endpoints\",\n  \"description\": \"Design REST API for task management\",\n  \"assignee_id\": \"user_789\",\n  \"priority\": \"high\",\n  \"due_date\": \"2024-02-15\",\n  \"labels\": [\"api\", \"backend\", \"design\"]\n}\n```\n\n#### Bulk Update Tasks\n```\nPATCH /workspaces/{workspace_id}/projects/{project_id}/tasks\n```\n**Permissions:** Admin, Member\n**Request:**\n```json\n{\n  \"task_ids\": [\"task_123\", \"task_456\"],\n  \"updates\": {\n    \"status\": \"in_progress\",\n    \"priority\": \"medium\"\n  }\n}\n```\n\n### 4.4 Comment Management\n\n#### List Comments on Task\n```\nGET /workspaces/{workspace_id}/projects/{project_id}/tasks/{task_id}/comments\n```\n**Permissions:** Admin, Member, Viewer\n\n#### Create Comment\n```\nPOST /workspaces/{workspace_id}/projects/{project_id}/tasks/{task_id}/comments\n```\n**Permissions:** Admin, Member\n**Request:**\n```json\n{\n  \"content\": \"Please review the API design by EOD\",\n  \"mentions\": [\"user_123\", \"user_456\"]\n}\n```\n\n#### Update Comment\n```\nPATCH /workspaces/{workspace_id}/projects/{project_id}/tasks/{task_id}/comments/{comment_id}\n```\n**Permissions:** Admin, Member (author only)\n\n## 5. Role-Based Access Control\n\n| Resource | Action | Admin | Member | Viewer |\n|----------|--------|-------|--------|--------|\n| Workspace | Create | ✓ | ✓ | ✗ |\n| Workspace | Read | ✓ | ✓ | ✓ |\n| Workspace | Update | ✓ | ✗ | ✗ |\n| Workspace | Delete | ✓ | ✗ | ✗ |\n| Project | Create | ✓ | ✓ | ✗ |\n| Project | Update | ✓ | ✓ (owner) | ✗ |\n| Task | Create | ✓ | ✓ | ✗ |\n| Task | Update | ✓ | ✓ (assignee/creator) | ✗ |\n| Comment | Create | ✓ | ✓ | ✗ |\n| Comment | Update | ✓ | ✓ (author) | ✗ |\n\n## 6. Pagination\nAll list endpoints implement cursor-based pagination:\n```\nGET /workspaces?cursor={base64_encoded_cursor}&limit=50\n```\n**Response includes:**\n```json\n{\n  \"data\": [...],\n  \"next_cursor\": \"base64_encoded_string\",\n  \"has_more\": true\n}\n```\n\n## 7. Error Handling\n\n### HTTP Status Codes\n- `200` OK - Successful GET/PATCH\n- `201` Created - Successful POST\n- `204` No Content - Successful DELETE\n- `400` Bad Request - Invalid input/parameters\n- `401` Unauthorized - Missing/invalid authentication\n- `403` Forbidden - Insufficient permissions\n- `404` Not Found - Resource doesn't exist\n- `409` Conflict - Resource conflict (duplicate, constraint violation)\n- `422` Unprocessable Entity - Business rule violation\n- `429` Too Many Requests - Rate limit exceeded\n- `500` Internal Server Error - Server error\n\n### Error Response Format\n```json\n{\n  \"error\": {\n    \"code\": \"RESOURCE_NOT_FOUND\",\n    \"message\": \"Workspace not found\",\n    \"details\": {\n      \"workspace_id\": \"ws_999\"\n    },\n    \"request_id\": \"req_123456789\"\n  }\n}\n```\n\n### Common Error Codes\n- `AUTH_REQUIRED` - Authentication required\n- `INSUFFICIENT_PERMISSIONS` - User lacks required role\n- `TENANT_MISMATCH` - Resource belongs to different tenant\n- `VALIDATION_ERROR` - Request validation failed\n- `RATE_LIMITED` - Too many requests\n\n## 8. Request/Response Headers\n\n**Required:**\n- `Authorization: Bearer {token}`\n- `Content-Type: application/json`\n\n**Optional:**\n- `X-Request-ID` - Client-generated request ID for tracing\n- `X-Idempotency-Key` - For idempotent POST/PATCH requests\n\n## 9. Rate Limiting\n- **Per Tenant:** 1000 requests per minute\n- **Per User:** 100 requests per minute\n- Headers included in all responses:\n  - `X-RateLimit-Limit`\n  - `X-RateLimit-Remaining`\n  - `X-RateLimit-Reset`\n\n## 10. Search & Filtering\n```\nGET /workspaces/{workspace_id}/tasks/search?q=urgent&status=todo,in_progress&assignee=user_123\n```\nSupports full-text search on titles and descriptions with status/assignee filtering.\n\n## 11. Webhooks (Optional Extension)\n```\nPOST /workspaces/{workspace_id}/webhooks\n```\nEvents: `task.created`, `task.updated`, `comment.added`, `project.completed`\n\nThis design provides a scalable, secure foundation for a multi-tenant task management system with clear boundaries between tenants and granular access control.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (6883 chars)",
+          "✓ Content length: 6883 ≥ 1500"
+        ]
+      }
+    },
+    {
+      "id": "manufacturing-quality-control",
+      "status": "ok",
+      "elapsed": 196605,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Build a quality control workflow for a consumer electronics manufacturer. Cover incoming material inspection, assembly line checks, burn-in testing, final QA, packaging verification, and shipping release. We ship 10,000 units/month and our defect rate needs to drop from 3% to under 0.5%.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building QC workflow to slash defect rate from 3% to under 0.5%.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Incoming Materials Arrival",
+              "category": "trigger",
+              "description": "Trigger for quality control workflow upon receipt of raw materials and components.",
+              "content": "This trigger activates the QC workflow when raw materials and components arrive at the manufacturing facility. Configure it to initiate via automated barcode scanning systems integrated with ERP software like SAP or Oracle, or through manual entry in a digital log for smaller shipments. Payload includes supplier details (name, ID), material types (e.g., PCBs, casings, connectors), quantities, purchase order references, and arrival timestamps. Set up webhook notifications to alert the QC team via dashboards (e.g., using tools like Tableau or custom Slack/Teams bots) for immediate action. Implement a standard operating procedure: scan all pallets within 2 hours of receipt, categorize by priority (critical vs. non-critical), and assign inspection batches based on ANSI/ASQ Z1.4 AQL sampling plans tailored for a throughput of 10,000 units/month. Include checks for documentation compliance (certificates of analysis, MSDS) and visual signs of damage during transit. Log all data in a centralized database (e.g., PostgreSQL with audit trails) for traceability and real-time inventory updates."
+            },
+            {
+              "label": "Incoming Material Inspection",
+              "category": "test",
+              "description": "Thorough inspection of all incoming materials for defects and compliance.",
+              "content": "Execute a detailed inspection protocol for all incoming materials to identify defects early. Use a combination of tools: digital calipers and micrometers for dimensional checks, microscopes (e.g., Keyence or Olympus) for surface integrity, and LCR meters for electrical component validation. Follow a sampling plan based on AQL levels: for critical components, use tightened inspection (AQL 0.65), and for non-critical, use normal inspection (AQL 1.5). Steps: 1) Unpack and log each batch with unique IDs, 2) Perform visual inspection for physical damages, 3) Conduct functional tests on random samples (e.g., 2% of batch), 4) Verify material certifications against specifications, 5) Document findings in a QC software (like Qualio or MasterControl) with photos and notes. Defect criteria include tolerances beyond ±0.1mm, discoloration, or incorrect markings. For failures, quarantine materials and trigger supplier notification via automated email with evidence. Aim for inspection turnaround time of 4 hours per batch to maintain production flow."
+            },
+            {
+              "label": "Assembly Line Quality Checks",
+              "category": "action",
+              "description": "Real-time quality checks during the assembly process to prevent defects.",
+              "content": "Implement in-line quality checks at key assembly stations to catch errors during production. Steps: 1) Set up automated optical inspection (AOI) systems (e.g., from Omron or Cognex) at solder paste application, component placement, and reflow stages to detect misalignments or soldering defects. 2) Use torque sensors and force gauges for mechanical assembly verification. 3) Integrate manual checkpoints where operators perform spot checks every 50 units, following a digital checklist on tablets (using apps like Tulip or FlexSim). 4) Establish andon cords or light systems to halt production if defects exceed threshold (e.g., 2 defects per hour). Tools include statistical process control (SPC) software like Minitab for real-time data analysis, with control charts tracking parameters like voltage output or fit tolerance. Error handling: immediate rework for minor issues, or escalation to line supervisor for major faults. Assign owners to each station with clear roles, and conduct daily calibration of equipment. Target first-pass yield of 98% to reduce rework time."
+            },
+            {
+              "label": "Burn-in and Stress Testing",
+              "category": "test",
+              "description": "Extended testing under simulated conditions to identify early failures.",
+              "content": "Conduct burn-in and stress tests on assembled units to ensure reliability under operational conditions. What to test: power cycling (on/off 100 times), thermal stress (from -10°C to 60°C in environmental chambers like Tenney or ESPEC), vibration testing (per ISTA standards), and extended run-time (48 hours at full load). Use automated test equipment (ATE) like National Instruments PXI systems for data acquisition. Pass/fail criteria: no functional failures, parameter drifts within ±5% (e.g., voltage, current), and no physical degradation. Tools include oscilloscopes, multimeters, and custom test jigs programmed with LabVIEW or Python scripts. Steps: 1) Randomly select 5% of daily production (scaled for 10,000 units/month), 2) Log each unit with serial numbers, 3) Execute test sequences, 4) Monitor real-time data dashboards for anomalies, 5) Document results in a test management system like TestRail. For failures, root cause analysis (RCA) is performed using 5 Whys or fishbone diagrams, and feedback is looped to assembly. Aim for a mean time between failures (MTBF) increase of 20% post-testing."
+            },
+            {
+              "label": "Final QA Review",
+              "category": "review",
+              "description": "Human review and approval of products before packaging.",
+              "content": "Perform a comprehensive final quality assurance review by trained inspectors to approve products for packaging. Approval criteria: zero critical defects (safety hazards), minor defects below 0.5% per batch, and compliance with all specifications (dimensional, functional, cosmetic). Who reviews: a team of 3-4 senior QA technicians, with one lead approving each batch. Use a digital sign-off system in a platform like Jira or Quality Center, requiring dual authentication. Steps: 1) Random sample 10% of each production lot, 2) Conduct detailed inspection including functionality tests (e.g., button response, display clarity), 3) Review all prior test reports, 4) Hold a review meeting for borderline cases, 5) Escalate to QA manager if defect rate trends above 0.5%. SLA: complete review within 8 hours per batch. Defect analysis involves Pareto charts to identify top issues, and findings are documented in a report shared with production teams. If rejected, units are sent back to assembly for rework, with a refines edge to update processes."
+            },
+            {
+              "label": "Packaging Verification",
+              "category": "action",
+              "description": "Verification of packaging integrity and labeling accuracy.",
+              "content": "Ensure all packaging meets quality standards before shipping to prevent damage and compliance issues. Steps: 1) Inspect packaging materials (boxes, inserts, foam) for durability using drop tests per ISTA 1A, 2) Verify labeling accuracy (serial numbers, barcodes, regulatory marks like CE/FCC) with barcode scanners (e.g., Zebra or Honeywell), 3) Check inclusion of all accessories (manuals, cables) against a packing list, 4) Conduct seal integrity tests for moisture resistance. Tools include weight scales to detect missing items, vision systems for label alignment, and checklists in mobile apps. Error handling: immediate repackaging for failures, with logs updated in the WMS (Warehouse Management System). Owner: packaging supervisor with daily audits. Compliance: adhere to shipping standards like Amazon Frustration-Free Packaging or retail requirements. Aim for packaging defect rate under 0.1%, with automated alerts for any discrepancies. Process 100% of units, with random audits on 5% of packed cartons."
+            },
+            {
+              "label": "Defect Rate Compliance Policy",
+              "category": "policy",
+              "description": "Policy to enforce defect rate below 0.5% with continuous monitoring.",
+              "content": "Establish and enforce a policy to maintain defect rates under 0.5% across all QC stages. Numbered rules: 1) All inspection data must be logged in real-time using IoT sensors and QC software, 2) Weekly reviews of defect trends with action plans if rate exceeds 0.3%, 3) Mandatory root cause analysis for any defect spike, 4) Supplier scorecards with penalties for consistent material failures, 5) Employee training on error prevention every quarter. Enforcement: automated alerts via monitoring tools like Grafana or Datadog, with dashboards tracking defect rates per stage. Exceptions: allow for engineering changes with documented approvals, and temporary waivers for force majeure events. Tools include statistical analysis with Python or R scripts to predict failures. Connect this policy to monitor inspection, testing, and review nodes via edges, ensuring proactive adjustments. Aim for continuous improvement with Six Sigma methodologies, targeting reduction to 0.2% within six months."
+            },
+            {
+              "label": "Shipping Release",
+              "category": "output",
+              "description": "Final output: products approved for shipping with documentation.",
+              "content": "Deliver the final approved products for shipping, ensuring all documentation and metrics are in place. Deliverable format: shipped units with accompanying digital paperwork (packing slips, certificates of conformity, shipping manifests) in PDF/EDI formats, distributed via email to logistics partners and customers. Success metrics: track defect rate post-shipping (target <0.5%), on-time delivery rate (goal 99%), and customer return rates. Use tools like Salesforce or ShipStation for integration with carriers (FedEx, DHL). Steps: 1) Conduct final scan of all cartons against shipping orders, 2) Generate and attach shipping labels, 3) Update inventory systems to mark as shipped, 4) Send automated notifications to stakeholders, 5) Archive all QC data in a centralized repository (e.g., AWS S3) for audit trails. Monitor key performance indicators (KPIs) weekly, with reports shared in monthly reviews. Aim for zero shipping errors, with a feedback loop to packaging if issues arise."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "drives"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "validates"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "approves"
+            },
+            {
+              "from": 5,
+              "to": 7,
+              "label": "outputs"
+            },
+            {
+              "from": 4,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 6,
+              "to": 1,
+              "label": "monitors"
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "label": "monitors"
+            },
+            {
+              "from": 6,
+              "to": 4,
+              "label": "monitors"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 110,
+        "maxScore": 110,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 5)",
+          "✓ Node count: 8 ≤ 10",
+          "✓ Has \"test\" category",
+          "✓ All 10 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 1047c, no thin nodes",
+          "✓ Architecture covers: inspect, assembl, test, ship",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (10 edges, 8 nodes)"
+        ]
+      }
+    }
+  ]
+}

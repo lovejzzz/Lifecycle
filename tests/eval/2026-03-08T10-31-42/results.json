@@ -1,0 +1,501 @@
+{
+  "timestamp": "2026-03-08T10-31-42",
+  "overall": 99,
+  "testsRun": [
+    "personality-rowan-empty",
+    "personality-poirot-empty",
+    "education-course-launch",
+    "finance-audit-readiness",
+    "edge-ultra-terse",
+    "execute-runbook"
+  ],
+  "poolSize": 48,
+  "results": [
+    {
+      "id": "personality-rowan-empty",
+      "status": "ok",
+      "elapsed": 8701,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Graph is empty, soldier. No active workflows. If you're scouting for a mission, give me coordinates—build something or ask for tactical analysis.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (145 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "personality-poirot-empty",
+      "status": "ok",
+      "elapsed": 9478,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, mon ami! The case is fresh — the canvas is empty, the clues yet to be discovered. But my little grey cells are ready! Present me with your mystery: what system shall we design, what process shall we unravel?",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (211 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "education-course-launch",
+      "status": "ok",
+      "elapsed": 167735,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "I'm creating an online course on data analytics. I need a workflow: outline curriculum, record videos, build exercises, set up LMS, beta test with students, launch and market.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! Mon ami, the case of the data analytics course is cracked! I have constructed a workflow with meticulous nodes and edges, ensuring every step is investigated and refined. Voilà!",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Course Creation Trigger",
+              "category": "trigger",
+              "description": "Initiates the online data analytics course development process",
+              "content": "This node represents the initial decision and planning phase to create the course. Begin by conducting thorough market research using tools like Google Trends, SEMrush, or SurveyMonkey to analyze demand and competitor offerings. Define the target audience—such as beginners, professionals, or career changers—and establish clear learning objectives using SMART criteria. Draft a project charter outlining scope, timeline, budget, and resource allocation. Steps: 1. Perform a SWOT analysis to identify strengths, weaknesses, opportunities, and threats. 2. Gather input from potential learners via surveys or focus groups to pinpoint pain points. 3. Set up a project management board in Trello or Asana with milestones. Criteria: Ensure alignment with industry trends, feasibility based on available expertise, and preliminary approval from stakeholders. Tools: Miro for brainstorming, Google Analytics for web traffic insights, and financial forecasting software."
+            },
+            {
+              "label": "Curriculum Design",
+              "category": "artifact",
+              "description": "Creating the detailed course outline and structure",
+              "content": "Here, we design the curriculum backbone for the data analytics course. Break down the subject into logical modules: Introduction to Data Concepts, Statistical Foundations, Data Visualization with Tableau or Power BI, Python for Data Analysis, SQL for Database Management, and Capstone Projects. Use backward design principles: first, define specific learning outcomes (e.g., students can clean datasets, create dashboards), then develop assessments and content. Tools: MindMeister for mind mapping, Google Docs for collaborative writing, and Bloom's Taxonomy for cognitive level alignment. Steps: 1. List all core concepts and skills, prioritizing based on industry relevance. 2. Sequence modules from foundational to advanced, ensuring gradual complexity. 3. Integrate practical exercises, case studies from real-world datasets (e.g., Kaggle), and project-based learning. 4. Review with subject matter experts and incorporate feedback. Criteria: Coverage of essential tools like Excel, R, and machine learning basics, adherence to educational standards, and scalability for future updates."
+            },
+            {
+              "label": "Video Production",
+              "category": "action",
+              "description": "Recording and editing instructional video content",
+              "content": "This node involves producing high-quality video lessons for the course. Start by scripting each video based on the curriculum, ensuring clarity and engagement. Use tools like Camtasia or OBS Studio for recording, with a focus on visual aids like slides, screen captures, and animations. Steps: 1. Set up a recording environment with good lighting, audio (e.g., Blue Yeti microphone), and background. 2. Record videos in batches, keeping each under 10 minutes for learner retention. 3. Edit using software like Adobe Premiere Pro or DaVinci Resolve to add captions, graphics, and interactive elements. 4. Optimize videos for different platforms (e.g., YouTube, LMS) with proper encoding. Criteria: Video quality (1080p minimum), accessibility with closed captions, and alignment with learning objectives. Tools: Trello for tracking progress, Canva for thumbnails, and cloud storage for backup. Ensure consistency in tone and pacing, and conduct peer reviews for feedback."
+            },
+            {
+              "label": "Exercise Development",
+              "category": "action",
+              "description": "Building practical exercises and assessments",
+              "content": "In this phase, create hands-on exercises and assessments to reinforce learning. Design a variety of activities: multiple-choice quizzes, coding challenges in Python or R, data analysis projects with real datasets, and peer-reviewed assignments. Tools: Jupyter Notebooks for interactive coding, Google Forms for quizzes, and GitHub for version control. Steps: 1. Map exercises to specific learning outcomes from the curriculum. 2. Develop progressive difficulty levels, starting with guided tutorials and moving to open-ended problems. 3. Integrate automated grading where possible using tools like NBGrader or custom scripts. 4. Test exercises internally for clarity and technical issues. Criteria: Ensure exercises are realistic, provide immediate feedback, and cover key data analytics skills like data cleaning, visualization, and statistical inference. Include rubrics for subjective assessments and consider scalability for large cohorts."
+            },
+            {
+              "label": "LMS Configuration",
+              "category": "action",
+              "description": "Setting up the Learning Management System for course delivery",
+              "content": "This node involves configuring the LMS to host and manage the course content. Choose a platform like Moodle, Teachable, or Coursera, and set up the course structure with modules, sections, and resources. Steps: 1. Import or create course pages, uploading videos, exercises, and supplementary materials (e.g., PDFs, links). 2. Configure user roles (instructors, students), enrollment settings, and payment gateways if monetized. 3. Set up communication tools like forums, announcements, and email notifications. 4. Integrate third-party tools for analytics (e.g., Google Analytics), certificates, and gamification. Criteria: Ensure the LMS is mobile-responsive, secure, and compliant with accessibility standards (WCAG). Tools: LMS admin panels, API documentation for integrations, and testing environments. Conduct a dry run to check functionality, such as quiz submissions and video playback, before beta testing."
+            },
+            {
+              "label": "Beta Testing Phase",
+              "category": "test",
+              "description": "Conducting beta tests with a small group of students",
+              "content": "Here, the course is tested with a select group of beta students to gather feedback and identify issues. Recruit 20-50 participants representing the target audience, using platforms like UserTesting or social media. Steps: 1. Provide access to the LMS and all course materials, setting a timeline for completion (e.g., 2-4 weeks). 2. Collect quantitative data via surveys (Tools: SurveyMonkey, Typeform) on engagement, difficulty, and satisfaction. 3. Gather qualitative insights through interviews or focus groups on content clarity, technical problems, and overall experience. 4. Monitor analytics for dropout rates, quiz scores, and time spent. Criteria: Identify critical bugs, content gaps, and usability issues. Tools: Hotjar for heatmaps, LMS dashboards for tracking. Based on results, prioritize fixes and enhancements, documenting all feedback for refinement."
+            },
+            {
+              "label": "Launch Approval",
+              "category": "review",
+              "description": "Human review and approval based on beta test results",
+              "content": "This node involves a formal review by stakeholders to decide on course launch. Compile beta testing reports, highlighting key metrics like completion rates, feedback summaries, and any unresolved issues. Steps: 1. Present findings to a review committee including instructors, marketing team, and management. 2. Discuss whether the course meets quality standards, learning outcomes, and market readiness. 3. Make decisions on necessary changes: approve as-is, require minor tweaks, or delay launch for major revisions. 4. Document approval with sign-offs and update project plans accordingly. Criteria: Ensure all critical feedback is addressed, compliance with educational policies, and alignment with business goals. Tools: Google Slides for presentations, Confluence for documentation, and email for communication. This gate ensures confidence before full-scale launch."
+            },
+            {
+              "label": "Course Launch",
+              "category": "output",
+              "description": "Final launch and marketing of the online course",
+              "content": "This node marks the official launch and marketing efforts to promote the course. Execute a multi-channel marketing strategy: create landing pages with tools like WordPress or Unbounce, run targeted ads on Google Ads and social media (Facebook, LinkedIn), and leverage email campaigns via Mailchimp. Steps: 1. Set launch date and coordinate with sales teams for enrollment openings. 2. Develop promotional content: blog posts, webinars, and testimonials from beta testers. 3. Monitor initial performance metrics: conversion rates, student feedback, and revenue. 4. Plan post-launch support: FAQs, community forums, and update schedules. Criteria: Achieve enrollment targets, maintain positive reviews, and ensure smooth technical operations. Tools: CRM systems for customer management, analytics platforms for tracking KPIs. Continuously iterate based on early adopters' input to sustain long-term success."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "informs"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "informs"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "triggers"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "validates"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "approves"
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 105,
+        "maxScore": 105,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 5)",
+          "✓ Node count: 8 ≤ 10",
+          "✓ All 10 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 940c, no thin nodes",
+          "✓ Architecture covers: curriculum, record, exercise, lms",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (10 edges, 8 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "finance-audit-readiness",
+      "status": "ok",
+      "elapsed": 181783,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We have a SOC 2 audit in 90 days. Build me a workflow to get audit-ready: evidence collection, access reviews, policy documentation, vulnerability scanning, and vendor risk assessment. We have never done this before.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building SOC 2 audit readiness workflow with parallel tracks and feedback loops.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Audit Announcement",
+              "category": "trigger",
+              "description": "Initial notification of SOC 2 Type II audit scheduled in 90 days",
+              "content": "Event: Formal notification from auditing firm confirming SOC 2 Type II audit with 90-day timeline. Payload: Audit scope includes all five Trust Services Criteria (security, availability, processing integrity, confidentiality, privacy) for in-scope systems and processes. Configuration: Assign a dedicated audit lead (e.g., Compliance Officer), set up project management tool (Jira or Asana with SOC 2 template), establish Slack channel #soc2-audit for communication. Steps: 1. Confirm exact audit dates, scope, and auditor contacts via email; document in Confluence. 2. Schedule kickoff meeting with internal stakeholders (IT, security, legal, HR). 3. Define high-level timeline with milestones: evidence collection by day 60, reviews by day 75, final package by day 85. Tools: Calendar invites, audit management software like AuditBoard for tracking. Error handling: If scope is ambiguous, escalate to CISO for clarification within 48 hours. Success metric: Clear RACI matrix and project charter signed off."
+            },
+            {
+              "label": "Plan and Scope Definition",
+              "category": "action",
+              "description": "Develop detailed audit plan, control objectives, and resource allocation",
+              "content": "1. Conduct stakeholder workshop to map business processes and identify in-scope systems (e.g., AWS infrastructure, SaaS apps like Salesforce). 2. Define control objectives using AICPA's SOC 2 criteria; document gaps in a risk register. 3. Create detailed project plan with Gantt chart: weeks 1-4 for policy updates, weeks 5-8 for evidence gathering, weeks 9-12 for validation. 4. Assign owners: IT lead for technical controls, HR for access reviews, compliance for documentation. 5. Set up evidence repository (e.g., SharePoint or Google Drive with folder structure per control). Tools: Microsoft Project for timeline, Lucidchart for process maps, risk assessment templates. Owner: Audit Manager. Error handling: If resource constraints arise, prioritize critical controls and report to steering committee weekly. Metrics: 100% scope definition signed off by day 10."
+            },
+            {
+              "label": "Policy Documentation",
+              "category": "action",
+              "description": "Create, update, and formalize policies required for SOC 2 compliance",
+              "content": "1. Inventory existing policies (security, access, incident response) using tools like PolicyTech or manual spreadsheets. 2. Perform gap analysis against SOC 2 criteria; identify missing policies (e.g., data classification, change management). 3. Draft policies: Use templates from frameworks like NIST SP 800-53 or ISO 27001; ensure each includes purpose, scope, procedures, enforcement. 4. Incorporate feedback from legal and department heads via review cycles; document approvals. 5. Store final versions in centralized repository with version control (e.g., Confluence with approval workflows). Tools: Google Docs for collaboration, DocuSign for signatures, automated policy distribution. Owner: Compliance Officer. Steps: Schedule policy training sessions for employees, track acknowledgment rates (target 95% within 30 days). Error handling: If policies are non-compliant, revise within one week and re-circulate."
+            },
+            {
+              "label": "Security Assessments",
+              "category": "action",
+              "description": "Execute access reviews and vulnerability scanning for technical controls",
+              "content": "1. Access Reviews: a. Extract user lists from Active Directory, Okta, and cloud platforms (AWS IAM). b. Define review criteria: privileged access (admin roles) reviewed quarterly, standard users annually. c. Automate with tools like SailPoint IdentityIQ; generate reports for managers to approve/revoke access. d. Document exceptions and justifications in access log. 2. Vulnerability Scanning: a. Schedule weekly scans using Tenable Nessus or Qualys; cover all in-scope IPs and applications. b. Prioritize findings by CVSS score ≥7.0 as critical; assign remediation to sysadmins. c. Track patching via Jira tickets; require closure within 15 days for critical vulns. Tools: SIEM (Splunk) for log correlation, dashboards for real-time monitoring. Owner: Security Team. Error handling: If scans fail, troubleshoot network permissions and rescan within 24 hours."
+            },
+            {
+              "label": "Vendor Risk Management",
+              "category": "action",
+              "description": "Assess third-party vendors for SOC 2 compliance and risk mitigation",
+              "content": "1. Identify all vendors handling sensitive data or critical services (e.g., AWS, Slack, payroll providers) via procurement records. 2. Categorize by risk: high (data processors), medium (support tools), low (non-sensitive). 3. Send standardized questionnaires (CAIQ or SIG Lite) to high-risk vendors; request SOC 2 reports or equivalent certs. 4. Evaluate responses using risk scoring matrix (scale 1-5); document gaps and mitigation plans. 5. Maintain vendor risk register in tool like ProcessUnity; update annually or upon contract renewal. Tools: Spreadsheets for tracking, RSA Archer for automation, contract management systems. Owner: Vendor Risk Manager. Steps: Escalate high-risk vendors without SOC 2 to legal for contract amendments; target 100% assessment completion by day 60. Error handling: If vendors are non-responsive, initiate backup assessments or find alternatives."
+            },
+            {
+              "label": "Internal Audit Review",
+              "category": "review",
+              "description": "Human review and approval of all compliance materials before audit",
+              "content": "Approval criteria: Policies are complete and signed, evidence samples (e.g., access logs, scan reports) cover audit period, no critical gaps in vendor assessments. Who reviews: Cross-functional committee including CISO, IT Director, Compliance Officer, Legal Counsel. Process: 1. Schedule bi-weekly review meetings; use checklist aligned with SOC 2 control domains. 2. Present findings from action nodes; discuss discrepancies and remediation timelines. 3. Escalate unresolved issues to CEO with recommended actions within 48 hours. SLA: Review and sign-off within 5 business days of submission. Documentation: Meeting minutes in Confluence, approval forms in DocuSign. If issues found, provide specific feedback (e.g., 'Policy missing incident response steps') and route back to relevant teams via Jira tickets for refinement."
+            },
+            {
+              "label": "Compliance Validation",
+              "category": "test",
+              "description": "Test evidence samples and perform gap analysis against SOC 2 requirements",
+              "content": "What to test: Random samples from each control area—e.g., 10% of access review records, vulnerability patch logs, policy acknowledgment certificates. Pass/fail criteria: Evidence must be authentic, cover entire audit period (6-12 months), and align with stated policies; gaps must have remediation plans. Tools: Use AuditBoard for evidence tracking, automated testing scripts for log integrity. Steps: 1. Select samples using stratified random sampling; document selections in test workbook. 2. Verify evidence (e.g., confirm timestamps in SIEM logs match policy dates). 3. Identify gaps (e.g., missing vendor assessments) and log in issue tracker with severity levels. 4. Achieve 95% evidence coverage across all criteria. Coverage: Ensure all Trust Services Criteria are tested; report findings to review team weekly. Error handling: If tests fail, re-sample or escalate for immediate remediation."
+            },
+            {
+              "label": "SOC 2 Readiness Package",
+              "category": "output",
+              "description": "Final compiled deliverable for external auditors, including all evidence and reports",
+              "content": "Deliverable format: Single PDF or secure portal package containing: executive summary, audit plan, policy documents, evidence summaries (with indexes), assessment results, vendor risk reports, gap analysis, and control matrix. Distribution: Provide to auditors via encrypted email or shared portal (e.g., Box or Auditoria); schedule pre-audit walkthrough. Success metrics: Zero critical findings in pre-audit, 100% control mapping completed, auditor acceptance within 5 days. Steps: 1. Compile all artifacts from repository into structured folders per AICPA guidelines. 2. Create an index with hyperlinks for easy navigation. 3. Obtain final internal sign-off from CISO and Compliance Officer. 4. Conduct dry run with mock audit questions. Tools: Adobe Acrobat for PDF compilation, document management systems. Ensure confidentiality via password protection and access logs."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "approves"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "validates"
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 4,
+              "label": "refines"
+            },
+            {
+              "from": 6,
+              "to": 5,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 110,
+        "maxScore": 115,
+        "pct": 96,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 5)",
+          "✓ Node count: 8 ≤ 10",
+          "✗ Missing \"policy\" category (found: trigger, action, review, test, output)",
+          "✓ Has \"review\" category",
+          "✓ All 13 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 892c, no thin nodes",
+          "✓ Architecture covers: evidence, access, policy, vulnerab",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (13 edges, 8 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "edge-ultra-terse",
+      "status": "ok",
+      "elapsed": 115052,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Bug triage workflow.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! The case of the pesky bug, mon ami. Let us construct a meticulous workflow to triage these digital miscreants, using the little grey cells to ensure no clue is overlooked.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Bug Report Submission",
+              "category": "trigger",
+              "description": "New bug report enters the system, triggering the triage process.",
+              "content": "When a bug is reported, it must be captured through standardized channels such as JIRA, GitHub Issues, or a custom ticketing system. Ensure each report includes: a clear title, detailed steps to reproduce, expected versus actual behavior, environment details (OS, browser, app version), and any attachments like logs or screenshots. Implement validation rules to flag incomplete reports—for example, require a severity self-assessment from the reporter. Tools like webhooks can automate ingestion, and initial filters can categorize bugs as security-related, performance, or UI/UX. This step is critical; a well-documented report saves hours of investigation later. Always acknowledge receipt to the reporter to maintain transparency and trust."
+            },
+            {
+              "label": "Initial Bug Analysis",
+              "category": "action",
+              "description": "Analyze the bug report for completeness, categorization, and initial assessment.",
+              "content": "Begin by reviewing the bug report against a checklist: is the description unambiguous? Are reproduction steps logical? Check for duplicates using tools like issue trackers with fuzzy matching or semantic search. Categorize the bug by component (e.g., backend API, frontend UI) and assign initial tags such as 'blocker', 'regression', or 'feature-request'. Assess severity based on impact—consider factors like data loss, security vulnerabilities, or user experience degradation. Use metrics like affected user count or business risk. Document findings in a shared note or system, and if gaps exist, engage the reporter for clarification. This analysis sets the stage for deeper investigation and prioritization."
+            },
+            {
+              "label": "Reproduction Verification",
+              "category": "test",
+              "description": "Attempt to reproduce the bug in a controlled environment to confirm its validity.",
+              "content": "Set up a test environment that mirrors the reported conditions—same OS, software versions, and data state. Use automated testing frameworks (e.g., Selenium for web apps, unit tests for APIs) or manual testing by QA engineers. Document each attempt: input data, steps taken, and observed outcomes. If reproduction succeeds, log the frequency and consistency; if it fails, investigate possible causes like environment discrepancies or user error. Incorporate tools like screen recorders or debug logs to capture evidence. Define success criteria: the bug must be reproducible in at least 80% of attempts. This step validates the bug's existence and provides concrete evidence for further action."
+            },
+            {
+              "label": "Severity and Priority Assessment",
+              "category": "review",
+              "description": "Human review to assign final severity and priority based on business impact and resources.",
+              "content": "Convene a triage meeting with key stakeholders: product managers, lead developers, and support teams. Use a structured matrix to evaluate severity (Critical, High, Medium, Low) and priority (P1 for immediate fix, P2 for next release, etc.). Consider factors such as legal or compliance risks, impact on revenue, user sentiment, and alignment with sprint goals. Tools like decision matrices or voting systems (e.g., MoSCoW method) can facilitate consensus. Document the rationale in the issue tracker, adding comments on trade-offs. This review ensures that resources are allocated efficiently and that critical bugs are escalated appropriately, balancing technical debt with business needs."
+            },
+            {
+              "label": "Assignment and Action Plan",
+              "category": "action",
+              "description": "Assign the bug to the appropriate team and define clear next steps for resolution.",
+              "content": "Based on the analysis and review, assign the bug to a specific team or developer using project management tools like Asana or JIRA dashboards. Create a detailed action plan: outline the fix approach, estimate time (e.g., using story points), identify dependencies (e.g., other bugs or features), and set a target resolution date. Communicate the plan to all stakeholders via Slack channels or email updates. Establish escalation paths for high-priority issues—for instance, notify on-call engineers for Critical bugs. Update the bug status to 'In Progress' and schedule follow-ups. This step ensures accountability and smooth workflow progression toward resolution."
+            },
+            {
+              "label": "Triage Documentation",
+              "category": "output",
+              "description": "Final documentation of the triage decision, status, and outcomes for records and communication.",
+              "content": "Compile all triage artifacts into a centralized document or system entry: include bug ID, summary of analysis, reproduction results, assigned severity/priority, responsible team, and expected resolution timeline. Use tools like Confluence, Notion, or a dedicated triage database. Update the bug tracker with the final status (e.g., 'Triaged', 'Assigned') and communicate key decisions to the original reporter if necessary—this builds trust and transparency. This documentation serves as an audit trail for future reference, helps in retrospectives to improve the triage process, and ensures that all stakeholders have a single source of truth. Regularly review and archive closed cases to maintain clarity."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "validates"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "approves"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "outputs"
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 95,
+        "maxScore": 95,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 6 (min: 4)",
+          "✓ Node count: 6 ≤ 10",
+          "✓ All 7 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 702c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (7 edges, 6 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "execute-runbook",
+      "status": "ok",
+      "elapsed": 88261,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Write a production incident runbook for a microservices e-commerce platform. Cover severity classification (P1-P4), escalation paths, communication templates, rollback procedures, and post-incident review. Include specific commands for Kubernetes and AWS.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Production Incident Runbook: Microservices E-Commerce Platform\n\n## 1.0 Overview & Purpose\nThis runbook provides standardized procedures for detecting, responding to, and resolving incidents affecting the production e-commerce platform. The platform is a distributed microservices architecture deployed on AWS and orchestrated with Kubernetes (EKS). The goal is to minimize customer impact, restore service rapidly, and preserve forensic data for root cause analysis.\n\n## 2.0 Severity Classification\nIncidents are classified based on impact and urgency. The On-Call Engineer makes the initial classification.\n\n**P1 - Critical**\n*   **Definition:** Full platform outage, core transaction flow broken (checkout, payment, order processing), significant data loss/corruption, or security breach.\n* **Examples:** Checkout service 100% failure, payment gateway integration down, database unreachable, major security incident.\n* **Response SLA:** Immediate engagement, 24/7.\n\n**P2 - High**\n*   **Definition:** Major degradation of core functionality, significantly impacted users, or failure of a critical microservice supporting core flow.\n*   **Examples:** High error rates (>20%) in checkout, shopping cart service degraded, product search failing for a major region, payment latency >10s.\n*   **Response SLA:** Engage within 15 minutes, 24/7.\n\n**P3 - Medium**\n*   **Definition:** Partial degradation of non-core functionality, minor impact on users, or performance issues not blocking transactions.\n*   **Examples:** Product recommendation engine down, user review service failing, increased latency in non-critical paths, minor UI rendering issues.\n*   **Response SLA:** Engage within 1 hour during business hours.\n\n**P4 - Low**\n*   **Definition:** Minor issues with negligible user impact, cosmetic defects, or informational alerts.\n*   **Examples:** A single non-critical pod in a CrashLoopBackOff, minor logging errors, isolated caching issues.\n*   **Response SLA:** Engage within 4 business hours.\n\n## 3.0 Initial Detection & Triage\n1.  **Acknowledge Alert:** Acknowledge the alert in the monitoring system (e.g., PagerDuty, OpsGenie).\n2.  **Assess Scope:** Immediately check:\n    *   **Business Impact:** Can users browse? Add to cart? Checkout?\n    *   **Technical Scope:** Is it one service, a dependency (DB, cache), or a region?\n    *   **Dashboards:** Review central dashboards (Kibana, Grafana, CloudWatch).\n3.  **Classify Severity:** Apply the P1-P4 matrix above.\n4.  **Open Incident Channel:** Create a dedicated Slack/Teams channel named `#incident-YYYYMMDD-<brief-description>`.\n5.  **Declare Incident:** If P1 or P2, formally declare an incident in the channel. Use the communication template (4.1).\n\n## 4.0 Escalation Path & Communication\n### 4.1 Communication Templates\n**Initial Incident Declaration (Slack/Teams):**\n```\n[INCIDENT DECLARED - PX] <Brief Description>\nTime: <UTC Time>\nImpact: <e.g., Checkout failing for EU users>\nService(s) Affected: <e.g., payment-service, order-service>\nIncident Commander: <@Primary On-Call>\nLead Responder: <@Secondary On-Call>\nStatus Page: <Link>\nBridge Line: <Zoom/Teams Link>\n```\n**Status Update (Every 15-30 mins for P1/P2):**\n```\n[INCIDENT UPDATE - PX] <Brief Description>\nTime: <UTC Time>\nCurrent Status: <Investigating / Identified / Mitigating / Monitoring>\nSummary: <What we know, what we're doing next>\nEvolving ETA: <If available>\n```\n\n### 4.2 Escalation Matrix\n*   **Tier 1 (0-15 min):** Primary & Secondary On-Call Engineers.\n*   **Tier 2 (15-30 min):** Engineering Team Lead / Manager.\n*   **Tier 3 (30-45 min):** Head of Engineering / Director of Platform.\n*   **Tier 4 (60+ min):** VP of Engineering / CTO.\n*   **Non-Technical (As needed):** Communications Lead for customer updates (Statuspage, Twitter).\n\n## 5.0 Investigation & Diagnostic Commands\n**Kubernetes (EKS) Diagnostics:**\n```bash\n# Get overall cluster health\nkubectl get nodes\nkubectl top nodes\n\n# Get pod status across all namespaces\nkubectl get pods --all-namespaces -o wide | grep -v Running\n\n# Describe and logs for a failing service\nkubectl -n <namespace> describe pod <pod-name>\nkubectl -n <namespace> logs <pod-name> --tail=50 --timestamps\nkubectl -n <namespace> logs deployment/<deployment-name> --tail=100\n\n# Check service endpoints and networking\nkubectl -n <namespace> get svc,ing,ep\nkubectl -n <namespace> describe ingress <ingress-name>\n\n# Check for resource constraints\nkubectl -n <namespace> describe nodes | grep -A 10 -i \"events\"\nkubectl get events --sort-by='.lastTimestamp' --all-namespaces\n```\n\n**AWS Diagnostics:**\n```bash\n# RDS Database\naws rds describe-db-instances --db-instance-identifier <db-id>\naws cloudwatch get-metric-statistics --namespace AWS/RDS --metric-name CPUUtilization \\\n  --dimensions Name=DBInstanceIdentifier,Value=<db-id> \\\n  --start-time $(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%SZ) --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \\\n  --period 300 --statistics Maximum\n\n# ElastiCache (Redis)\naws elasticache describe-cache-clusters --cache-cluster-id <cluster-id> --show-cache-node-info\naws cloudwatch get-metric-statistics --namespace AWS/ElastiCache --metric-name CurrConnections \\\n  --dimensions Name=CacheClusterId,Value=<cluster-id> \\\n  --start-time $(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%SZ) --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \\\n  --period 300 --statistics Maximum\n\n# SQS Queue Depth\naws sqs get-queue-attributes --queue-url <queue-url> --attribute-names ApproximateNumberOfMessages\n```\n\n## 6.0 Mitigation & Rollback Procedures\n### 6.1 Standard Service Restart/Scaling\n```bash\n# Restart a deployment (causes zero-downtime rollout)\nkubectl -n <namespace> rollout restart deployment/<deployment-name>\n\n# Scale a deployment\nkubectl -n <namespace> scale deployment/<deployment-name> --replicas=<desired-count>\n\n# If a pod is stuck terminating\nkubectl -n <namespace> delete pod <pod-name> --grace-period=0 --force\n```\n\n### 6.2 Code/Configuration Rollback (Kubernetes)\n```bash\n# Check rollout history\nkubectl -n <namespace> rollout history deployment/<deployment-name>\n\n# Rollback to previous stable version\nkubectl -n <namespace> rollout undo deployment/<deployment-name>\n\n# Rollback to a specific revision\nkubectl -n <namespace> rollout undo deployment/<deployment-name> --to-revision=<revision-number>\n```\n\n### 6.3 Database Mitigation (AWS RDS)\n1.  **High CPU/Memory:** Monitor CloudWatch. Consider restarting the instance if unresponsive (AWS Console > RDS > Modify > Apply Immediately after setting minor version upgrade).\n2.  **Failover:** For Multi-AZ deployments, initiate a failover (AWS Console > RDS > Actions > Reboot > Reboot with Failover? Yes).\n3.  **Point-in-Time Recovery:** As a last resort for data corruption, restore to a point before the incident.\n\n### 6.4 Cache Flush (ElastiCache Redis)\n```bash\n# FLUSHALL (Use with extreme caution - clears all data)\naws elasticache describe-cache-clusters --cache-cluster-id <cluster-id> --show-cache-node-info\n# Use redis-cli to connect to the primary endpoint and run `FLUSHALL`\n# Preferred: Restart individual cache nodes via AWS Console to clear memory without CLI risk.\n```\n\n## 7.0 Resolution & Post-Incident Review\n### 7.1 Resolution Steps\n1.  **Confirm Recovery:** Validate core user journeys (browse, add to cart, checkout) are functional.\n2.  **Close Monitoring Loops:** Resolve alerts in monitoring systems.\n3.  **Communicate Resolution:**\n    ```\n    [INCIDENT RESOLVED - PX] <Brief Description>\n    Time Resolved: <UTC Time>\n    Root Cause: <High-level summary>\n    Resolution Actions: <e.g., Rolled back deployment v1.2.3 to v1.2.2>\n    Next Steps: Post-Incident Review scheduled for <Date>.\n    ```\n\n### 7.2 Post-Incident Review (PIR) Process\n**Timing:** Within 72 hours for P1/P2; within 5 business days for P3.\n**Attendees:** Incident Commander, Responders, relevant Engineering Leads, Product Manager.\n**Agenda:**\n1.  **Timeline Reconstruction:** Build a minute-by-minute timeline from detection to resolution.\n2.  **Root Cause Analysis:** Use \"5 Whys\" to determine the underlying cause.\n3.  **Impact Assessment:** Quantify (downtime, affected users, revenue impact).\n4.  **Action Items:** Document corrective and preventative actions (CAPAs). Assign owners and due dates.\n    *   **Corrective:** Fix the specific bug, restore data.\n    *   **Preventative:** Improve monitoring, add alerting, update runbooks, implement circuit breakers, add chaos engineering tests.\n5.  **Documentation:** Update this runbook with any new learnings, commands, or procedures.\n\n**PIR Report Template** (to be stored in a central wiki):\n*   Incident ID & Title\n*   Date & Duration\n*   Severity\n*   Timeline\n*   Root Cause\n*   Impact Metrics\n*   What went well?\n*   What went poorly?\n*   Action Items (with owners and deadlines)\n*   Lessons Learned",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (8788 chars)",
+          "✓ Content length: 8788 ≥ 1500"
+        ]
+      }
+    }
+  ]
+}

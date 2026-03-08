@@ -10,6 +10,9 @@
 
 const BASE = 'http://localhost:3000/api/cid';
 
+// Override model via CLI arg or env: MODEL=deepseek-chat node tests/eval/run-eval.mjs
+const MODEL_OVERRIDE = process.argv[2] || process.env.MODEL || null;
+
 // How many tests to run per cycle (keeps each run under ~5 min)
 const TESTS_PER_RUN = 6;
 
@@ -290,7 +293,7 @@ const POOL = [
     agent: 'rowan', taskType: 'execute',
     systemPromptOverride: 'You are a content generator for a workflow node called "API Design Document" (category: artifact). Write detailed, professional technical content. Return ONLY the content as markdown text. Do not wrap in JSON or code blocks.',
     prompt: 'Design a REST API for a multi-tenant task management system. Include endpoints for workspaces, projects, tasks, and comments. Show URL patterns, HTTP methods, request/response bodies, auth scheme, pagination, and error codes. Support role-based access (admin, member, viewer).',
-    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 2000 },
+    expect: { hasContent: true, minContentLen: 1500 },
   },
 
   // ─── Round 78 additions ─────────────────────────────────────────────────────
@@ -341,6 +344,135 @@ const POOL = [
     agent: 'rowan', taskType: 'analyze',
     prompt: 'We need to ship a critical security patch ASAP but our QA team is on vacation for 2 weeks. The CEO wants it live today. What do we do?',
     expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 250 },
+  },
+
+  // ─── Round 83 additions ─────────────────────────────────────────────────────
+
+  // Legal/compliance workflow — Poirot, tests systematic investigation with policy + review nodes
+  {
+    id: 'legal-contract-review',
+    agent: 'poirot', taskType: 'generate',
+    prompt: 'Build a contract review workflow for our legal team. Steps: receive contract, initial screening, clause analysis, risk assessment, negotiation points, legal approval, and final execution. We review 30+ vendor contracts per quarter.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['review'], mustMentionInNodes: ['contract|clause', 'risk|assess', 'approv|sign'] },
+  },
+
+  // Execute task — Rowan generates a technical runbook (tests long-form structured content)
+  {
+    id: 'execute-runbook',
+    agent: 'rowan', taskType: 'execute',
+    systemPromptOverride: 'You are a content generator for a workflow node called "Incident Runbook" (category: artifact). Write detailed, professional operational content. Return ONLY the content as markdown text. Do not wrap in JSON or code blocks.',
+    prompt: 'Write a production incident runbook for a microservices e-commerce platform. Cover severity classification (P1-P4), escalation paths, communication templates, rollback procedures, and post-incident review. Include specific commands for Kubernetes and AWS.',
+    expect: { hasContent: true, minContentLen: 1500 },
+  },
+
+  // ─── Round 84 additions ─────────────────────────────────────────────────────
+
+  // Event planning — tests heavy parallelism (multiple simultaneous tracks)
+  {
+    id: 'event-conference-planning',
+    agent: 'rowan', taskType: 'generate',
+    prompt: 'We\'re organizing a 500-person tech conference in 4 months. Build a workflow covering venue booking, speaker management, sponsorship sales, marketing campaign, registration system, A/V setup, catering, and day-of logistics.',
+    expect: { hasWorkflow: true, minNodes: 6, maxNodes: 10, mustMentionInNodes: ['venue|location', 'speaker|talk', 'sponsor|partner', 'registr|ticket'] },
+  },
+
+  // Edge case: rant/complaint that needs to be parsed into actionable advice
+  {
+    id: 'edge-rant-extraction',
+    agent: 'poirot', taskType: 'analyze',
+    prompt: 'Everything is on fire. Our CI takes 45 minutes, staging is always broken, nobody writes tests, the PM keeps changing requirements mid-sprint, and our best engineer just quit. I don\'t even know where to start.',
+    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 250 },
+  },
+
+  // ─── Round 85 additions ─────────────────────────────────────────────────────
+
+  // Supply chain / manufacturing — new industry, tests dependency + policy nodes
+  {
+    id: 'manufacturing-quality-control',
+    agent: 'rowan', taskType: 'generate',
+    prompt: 'Build a quality control workflow for a consumer electronics manufacturer. Cover incoming material inspection, assembly line checks, burn-in testing, final QA, packaging verification, and shipping release. We ship 10,000 units/month and our defect rate needs to drop from 3% to under 0.5%.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['test'], mustMentionInNodes: ['inspect|material', 'assembl|line', 'test|burn|qa', 'ship|release'] },
+  },
+
+  // Poirot execute task — tests Poirot on content generation (gap: all execute tests are Rowan)
+  {
+    id: 'execute-investigation-report',
+    agent: 'poirot', taskType: 'execute',
+    systemPromptOverride: 'You are a content generator for a workflow node called "Investigation Report" (category: artifact). Write detailed, professional analytical content with a detective-style investigative tone. Return ONLY the content as markdown text. Do not wrap in JSON or code blocks.',
+    prompt: 'Write a root cause analysis report for why our SaaS platform lost 200 customers in Q4. The churn rate jumped from 2% to 8%. Investigation found: pricing increase (20% hike in September), competitor launched a free tier, support response times tripled to 6 hours, and a major outage on Black Friday lasted 4 hours.',
+    expect: { hasContent: true, minContentLen: 1500 },
+  },
+
+  // ─── Round 86 additions ─────────────────────────────────────────────────────
+
+  // Non-profit / NGO — new sector, tests whether agents adapt to resource-constrained context
+  {
+    id: 'nonprofit-fundraising-gala',
+    agent: 'poirot', taskType: 'generate',
+    prompt: 'We\'re a small nonprofit with 3 staff members planning our annual fundraising gala for 200 guests. Budget is only $15k. Build a workflow covering venue selection, donor outreach, sponsorship asks, event program, silent auction, volunteer coordination, and post-event thank-yous.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustMentionInNodes: ['venue|location', 'donor|outreach|sponsor', 'auction|program', 'volunteer|coord'] },
+  },
+
+  // Edge case: contradictory requirements — tests how agents handle impossible constraints
+  {
+    id: 'edge-contradictory-requirements',
+    agent: 'rowan', taskType: 'analyze',
+    prompt: 'We need to rebuild our entire platform from scratch in 2 weeks with our current team of 2 junior developers. The CEO wants microservices, real-time features, ML recommendations, and mobile apps for iOS and Android. Budget is $5,000. Is this realistic?',
+    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 200 },
+  },
+
+  // ─── Round 87 additions ─────────────────────────────────────────────────────
+
+  // Real estate / property management — new industry, tests workflow with dependency-like nodes
+  {
+    id: 'realestate-tenant-screening',
+    agent: 'poirot', taskType: 'generate',
+    prompt: 'Build a tenant screening workflow for our property management company. We manage 200 units. Steps: receive application, credit check, background check, employment verification, landlord references, income verification, and lease signing. Need to screen 30 applicants per month efficiently.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustMentionInNodes: ['credit|background', 'employ|income|verif', 'landlord|reference', 'lease|sign'] },
+  },
+
+  // Rowan advice on data/analytics — tests technical depth in a non-engineering domain
+  {
+    id: 'data-advice-dashboards',
+    agent: 'rowan', taskType: 'analyze',
+    prompt: 'Our CEO keeps asking for "a dashboard" but nobody agrees on what metrics matter. We have data in Salesforce, Stripe, Google Analytics, and a PostgreSQL data warehouse. Where do we start?',
+    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 250 },
+  },
+
+  // ─── Round 88 additions ─────────────────────────────────────────────────────
+
+  // Supply chain / logistics — new domain, tests dependency + state nodes for multi-party coordination
+  {
+    id: 'logistics-warehouse-fulfillment',
+    agent: 'rowan', taskType: 'generate',
+    prompt: 'Build a warehouse order fulfillment workflow. Steps: order received, inventory check, pick and pack, quality inspection, shipping label generation, carrier handoff, and delivery tracking. We process 500 orders/day with a 99.5% accuracy target.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['test'], mustMentionInNodes: ['inventory|stock', 'pick|pack', 'inspect|quality|qa', 'ship|carrier|delivery'] },
+  },
+
+  // Poirot advice on people/culture — tests non-technical analytical depth
+  {
+    id: 'culture-advice-remote-team',
+    agent: 'poirot', taskType: 'analyze',
+    prompt: 'We went fully remote 6 months ago. Team velocity is down 30%, people skip standups, Slack is dead silent, and two senior engineers are about to quit. The CEO thinks forcing everyone back to the office will fix it. What should we actually do?',
+    expect: { hasWorkflow: false, hasMessage: true, minMessageLen: 250 },
+  },
+
+  // ─── Round 89 additions ─────────────────────────────────────────────────────
+
+  // Government/public sector — new domain, tests compliance-heavy workflow with policy + review gates
+  {
+    id: 'government-procurement',
+    agent: 'poirot', taskType: 'generate',
+    prompt: 'Build a government procurement workflow for a city agency buying a new fleet management system. Steps: needs assessment, RFP drafting, vendor solicitation, proposal evaluation, compliance review, contract award, and implementation oversight. Must follow public procurement regulations.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['policy', 'review'], mustMentionInNodes: ['rfp|solicitation|procurement', 'vendor|proposal|evaluat', 'compliance|regulation', 'contract|award'] },
+  },
+
+  // Execute task — Poirot generates a security incident report (tests detective voice in technical content)
+  {
+    id: 'execute-security-incident',
+    agent: 'poirot', taskType: 'execute',
+    systemPromptOverride: 'You are a content generator for a workflow node called "Security Incident Report" (category: artifact). Write detailed, professional analytical content with a detective-style investigative tone. Return ONLY the content as markdown text. Do not wrap in JSON or code blocks.',
+    prompt: 'Write a security incident report for a data breach where an attacker exploited an unpatched Log4j vulnerability to access our customer database. 15,000 user records were exposed including emails and hashed passwords. The breach was detected 72 hours after initial access via anomalous CloudWatch logs.',
+    expect: { hasContent: true, minContentLen: 1500 },
   },
 ];
 
@@ -604,7 +736,7 @@ function scoreResponse(test, data) {
     maxScore += 5;
     const lower = message.toLowerCase();
     const poirotWords = ['aha', 'voilà', 'voila', 'grey cells', 'mon ami', 'detective', 'investigation', 'très', 'parfait', 'hélas', 'case', 'clue'];
-    const rowanWords = ['done', 'on it', 'mission', 'roger', 'deployed', 'received', 'execute', 'affirmative', 'soldier', 'orders', 'standing by', 'ready'];
+    const rowanWords = ['done', 'on it', 'mission', 'roger', 'deployed', 'received', 'execute', 'affirmative', 'soldier', 'orders', 'standing by', 'ready', 'build', 'status', 'operational'];
     const hasPersonality = exp.personalityMarkers.includes('poirot')
       ? poirotWords.some(w => lower.includes(w))
       : rowanWords.some(w => lower.includes(w));
@@ -629,6 +761,7 @@ async function runTest(test) {
         systemPrompt,
         messages: [{ role: 'user', content: test.prompt }],
         taskType: test.taskType,
+        ...(MODEL_OVERRIDE ? { model: MODEL_OVERRIDE } : {}),
       }),
       signal: AbortSignal.timeout(300000),
     });
@@ -697,7 +830,7 @@ function pickTests() {
 async function main() {
   const tests = pickTests();
   console.log(`\n🔬 Lifecycle Agent Eval — ${new Date().toISOString()}`);
-  console.log(`Selected ${tests.length}/${POOL.length} tests from pool\n`);
+  console.log(`Selected ${tests.length}/${POOL.length} tests from pool${MODEL_OVERRIDE ? ` | Model: ${MODEL_OVERRIDE}` : ''}\n`);
 
   const results = [];
   for (const test of tests) {

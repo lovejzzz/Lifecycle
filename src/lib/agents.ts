@@ -333,7 +333,7 @@ export interface InterviewQuestion {
   key: string;
 }
 
-export function getInterviewQuestions(prompt: string, existingNodes?: Node<NodeData>[], existingEdges?: Edge[]): InterviewQuestion[] {
+export function getInterviewQuestions(prompt: string, existingNodes?: Node<NodeData>[], _existingEdges?: Edge[]): InterviewQuestion[] {
   const lower = prompt.toLowerCase();
   const questions: InterviewQuestion[] = [];
   const hasExistingWorkflow = (existingNodes?.length ?? 0) > 0;

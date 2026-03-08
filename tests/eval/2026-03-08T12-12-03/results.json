@@ -1,0 +1,406 @@
+{
+  "timestamp": "2026-03-08T12-12-03",
+  "overall": 100,
+  "testsRun": [
+    "edge-vague",
+    "edge-build-looks-like-question",
+    "edge-complex-multi-team",
+    "personality-poirot-empty",
+    "execute-api-design",
+    "data-advice-dashboards"
+  ],
+  "poolSize": 56,
+  "results": [
+    {
+      "id": "edge-vague",
+      "status": "ok",
+      "elapsed": 3471,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "help me with my project",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. I'll need specifics: what's the project type, current blockers, and desired outcome? I can build you a workflow or give tactical advice.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (154 chars)",
+          "✓ Message length: 154 ≥ 30"
+        ]
+      }
+    },
+    {
+      "id": "edge-build-looks-like-question",
+      "status": "ok",
+      "elapsed": 57149,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Can you set up a data pipeline for me? I have CSVs coming from 3 vendors daily and need them in BigQuery by morning.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building a robust, automated data ingestion pipeline with monitoring and error handling.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "CSV Ingestion Trigger",
+              "category": "trigger",
+              "description": "Daily arrival of CSV files from 3 vendors via cloud storage or SFTP",
+              "content": "This node triggers the pipeline daily at 2 AM UTC. Configure a Cloud Scheduler (GCP) or cron job to monitor designated GCS buckets or SFTP directories for each vendor. Expected payload: vendor-specific CSV files (e.g., vendor1_sales_YYYYMMDD.csv) with metadata (timestamp, file size). Set up Pub/Sub notifications on GCS buckets for real-time triggers if files arrive early. Include validation: file format (.csv), naming convention, and absence of duplicates. Use environment variables for bucket paths and credentials. Error handling: retry on missing files (3 attempts, 30-minute intervals), alert via Cloud Monitoring if all vendors don't deliver within 1 hour of scheduled time."
+            },
+            {
+              "label": "Data Validation & Cleaning",
+              "category": "action",
+              "description": "Automated checks, schema enforcement, and data quality fixes",
+              "content": "1. **Schema Validation**: Load each CSV into a temporary staging table in BigQuery using Dataflow (Apache Beam Python) or Cloud Functions. Validate against predefined JSON schemas per vendor (column names, data types, nullable fields). 2. **Data Quality Rules**: Check for missing values (threshold: <5% per column), outliers (Z-score >3), and format consistency (dates as YYYY-MM-DD). 3. **Cleaning Steps**: Standardize column names (snake_case), trim whitespace, convert data types (e.g., string to numeric), and deduplicate based on primary keys. Tools: Pandas in Cloud Functions for small files, Dataflow for large volumes. Log all issues to BigQuery audit table. On failure, quarantine bad rows in a separate dataset and send alert to Slack/Email via Cloud Pub/Sub."
+            },
+            {
+              "label": "Transformation & Enrichment",
+              "category": "action",
+              "description": "Business logic application, joins, and aggregation",
+              "content": "1. **Joins**: Merge vendor data with internal reference tables (e.g., product catalog, customer master) using SQL in BigQuery. Use partitioned tables for performance. 2. **Calculations**: Compute derived metrics (e.g., revenue = quantity * price, growth rates). 3. **Enrichment**: Append geographic or demographic data via external APIs (if needed, with retry logic). 4. **Aggregation**: Create daily summary tables (e.g., sales_by_region). Implement idempotency: use date partitions to avoid reprocessing. Tools: BigQuery scheduled queries or Dataflow with SQL transforms. Monitor execution time (SLA: <30 minutes) and set up alerts for delays. Store transformation logic in GitHub for version control."
+            },
+            {
+              "label": "Load to BigQuery Production",
+              "category": "action",
+              "description": "Final insertion into partitioned BigQuery tables with backups",
+              "content": "1. **Load Strategy**: Use BigQuery's streaming insert API or batch load jobs to write cleaned, transformed data into partitioned tables (partition by ingestion date). 2. **Backup**: Create a snapshot in GCS (Parquet format) before loading. 3. **ACID Compliance**: Implement transactions via BigQuery scripting to ensure atomic updates—roll back on failure. 4. **Performance**: Cluster tables by key columns (e.g., vendor_id). Set table expiration (e.g., 90 days for raw data). 5. **Monitoring**: Track rows inserted, data freshness (time since last update), and storage costs via BigQuery INFORMATION_SCHEMA. Automate with Terraform for table schema management. Error handling: retry failed loads (exponential backoff), dead-letter to GCS for investigation."
+            },
+            {
+              "label": "Pipeline Monitoring & Alerts",
+              "category": "policy",
+              "description": "Continuous oversight of pipeline health, SLAs, and data quality",
+              "content": "1. **Health Checks**: Monitor each step's status (success/failure) via Cloud Logging and custom metrics (e.g., processing latency). 2. **SLA Rules**: Data must be in BigQuery by 6 AM UTC daily; alert if >15 minutes late. 3. **Quality Rules**: Row count variance between source and target <1%; nulls in critical columns <2%. 4. **Cost Controls**: BigQuery query cost threshold of $50/day; alert if exceeded. 5. **Alert Channels**: Send to Slack/Email/PagerDuty via Cloud Monitoring. Use severity levels: critical (pipeline failure), warning (latency). 6. **Dashboard**: Build a Grafana dashboard with key metrics: files processed, errors, end-to-end runtime. Review weekly with data engineering team."
+            },
+            {
+              "label": "Daily Data Delivery Report",
+              "category": "output",
+              "description": "Summary of pipeline execution and data quality for stakeholders",
+              "content": "Generate an automated daily report via BigQuery scheduled query and email via SendGrid API. Content: 1. **Executive Summary**: Total records processed, load time, status (success/partial/failure). 2. **Vendor Breakdown**: Files received per vendor, row counts, any missing data. 3. **Quality Metrics**: Percentage of valid rows, top data issues (e.g., format errors). 4. **Performance**: Pipeline duration (target: <2 hours), BigQuery storage changes. 5. **Recommendations**: Actions needed (e.g., contact vendor for schema updates). Format: HTML email with embedded charts (using Google Data Studio), plus PDF attachment. Distribute to data team and business analysts by 7 AM UTC. Archive reports in GCS for compliance."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "drives"
+            },
+            {
+              "from": 3,
+              "to": 5,
+              "label": "outputs"
+            },
+            {
+              "from": 4,
+              "to": 1,
+              "label": "monitors"
+            },
+            {
+              "from": 4,
+              "to": 2,
+              "label": "monitors"
+            },
+            {
+              "from": 4,
+              "to": 3,
+              "label": "monitors"
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "label": "informs"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "informs"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "informs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 90,
+        "maxScore": 90,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 6 (min: 4)",
+          "✓ All 10 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 722c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (10 edges, 6 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "edge-complex-multi-team",
+      "status": "ok",
+      "elapsed": 106771,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "We're migrating from AWS to GCP. It involves the platform team, app developers, security, and finance. There are 40 microservices. I need a migration plan workflow.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, a migration case worthy of my little grey cells! This multi-team, multi-service cloud transition requires careful orchestration. Let me construct a workflow that accounts for all your stakeholders and 40 microservices.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Discovery & Assessment",
+              "category": "input",
+              "description": "Initial inventory and analysis of current AWS environment",
+              "content": "**Phase 1: Complete Environment Mapping**\n\n1. **Inventory Creation**: Use AWS Config, CloudTrail, and custom scripts to catalog all 40 microservices, their dependencies, data flows, and resource configurations. Document EC2 instances, RDS databases, S3 buckets, IAM roles, VPC configurations, and networking setups.\n\n2. **Cost Analysis**: Extract 12 months of AWS Cost Explorer data, categorize by service, environment (prod/dev), and team. Calculate TCO including data transfer costs, reserved instance commitments, and support plans. Use tools like CloudHealth or custom spreadsheets with AWS Cost and Usage Reports.\n\n3. **Compliance & Security Assessment**: Map all security controls, compliance requirements (SOC2, HIPAA, PCI), and data residency constraints. Identify encryption requirements, key management systems, and audit trails that must be preserved.\n\n4. **Dependency Mapping**: Create service dependency graphs using tools like AWS X-Ray, Datadog APM, or custom tracing. Document external dependencies (third-party APIs, SaaS services) and internal service-to-service communication patterns.\n\n5. **Gap Analysis**: Compare AWS services with GCP equivalents, identifying feature gaps, pricing model differences, and migration complexity scores for each service (low/medium/high)."
+            },
+            {
+              "label": "Migration Strategy Design",
+              "category": "state",
+              "description": "Define migration patterns, sequencing, and team responsibilities",
+              "content": "**Phase 2: Strategic Planning & Pattern Selection**\n\n1. **Pattern Selection**: For each microservice, determine migration approach: Rehost (lift-and-shift), Replatform (lift-tinker-and-shift), Refactor (re-architect), or Replace (SaaS). Use decision matrix based on complexity, business criticality, and GCP feature alignment.\n\n2. **Wave Planning**: Group microservices into migration waves (5-8 services per wave) based on dependencies, team capacity, and risk tolerance. Create detailed wave schedules with dependencies mapped using tools like Jira, Asana, or custom Gantt charts.\n\n3. **Team RACI Matrix**: Define clear roles: Platform Team (infrastructure provisioning), App Developers (code changes), Security (compliance validation), Finance (cost monitoring). Use RACI (Responsible, Accountable, Consulted, Informed) for each migration activity.\n\n4. **Communication Plan**: Establish weekly syncs, status dashboards (using Data Studio or Looker), and escalation paths. Create migration playbooks with runbooks for common scenarios.\n\n5. **Success Metrics**: Define KPIs: migration velocity (services/week), cost optimization targets (20-30% reduction), performance benchmarks, and zero-downtime requirements."
+            },
+            {
+              "label": "Security & Compliance Setup",
+              "category": "policy",
+              "description": "Parallel security controls and compliance validation",
+              "content": "**Phase 3: Security Foundation & Policy Enforcement**\n\n1. **GCP Organization Structure**: Design hierarchical folder structure mirroring AWS accounts, with separate projects for production, development, and shared services. Implement Resource Manager with appropriate IAM inheritance.\n\n2. **Security Controls Implementation**: Deploy Security Command Center, Cloud Armor (WAF), VPC Service Controls, and Data Loss Prevention. Configure Cloud IAM with principle of least privilege, using service accounts instead of user credentials.\n\n3. **Compliance Automation**: Implement Policy Intelligence and Forseti Config Validator for continuous compliance monitoring. Create custom Organization Policy Constraints for region restrictions, allowed services, and resource quotas.\n\n4. **Encryption Strategy**: Set up Cloud KMS with customer-managed encryption keys, implement VPC Flow Logs to Cloud Logging, and configure Cloud Audit Logs for all admin activities. Establish key rotation schedules and backup procedures.\n\n5. **Network Security**: Design VPC architecture with shared VPCs, private service access, and Cloud NAT. Implement firewall rules following zero-trust principles, with explicit ingress/egress controls and mandatory TLS for all traffic."
+            },
+            {
+              "label": "Platform Foundation Build",
+              "category": "action",
+              "description": "GCP environment provisioning and tooling setup",
+              "content": "**Phase 4: Infrastructure as Code Foundation**\n\n1. **Terraform/Deployment Manager**: Create reusable modules for VPCs, GKE clusters, Cloud SQL instances, and storage buckets. Implement Terraform workspaces for environment separation with remote state in Cloud Storage.\n\n2. **CI/CD Pipeline Migration**: Adapt existing Jenkins/GitLab CI pipelines to use Cloud Build, Artifact Registry, and Cloud Deploy. Implement deployment strategies (blue-green, canary) using GKE or Cloud Run with traffic splitting.\n\n3. **Monitoring & Observability**: Set up Cloud Monitoring with custom dashboards, Cloud Logging with log-based metrics, and Cloud Trace for distributed tracing. Configure alerting policies with PagerDuty/Opsgenie integration.\n\n4. **Networking Configuration**: Establish Cloud Interconnect or VPN tunnels between AWS and GCP for hybrid connectivity during migration. Configure Cloud DNS with appropriate routing policies and DNSSEC.\n\n5. **Disaster Recovery**: Implement cross-region backups for Cloud SQL, GKE persistent volumes, and Cloud Storage. Create DR runbooks with RTO/RPO targets and regular failover testing procedures."
+            },
+            {
+              "label": "Microservice Migration Execution",
+              "category": "action",
+              "description": "Wave-by-wave service migration with validation",
+              "content": "**Phase 5: Controlled Service Transition**\n\n1. **Database Migration**: Use Database Migration Service for homogeneous migrations or third-party tools (Striim, Fivetran) for heterogeneous. Implement change data capture for minimal downtime, with comprehensive data validation scripts.\n\n2. **Application Migration**: Containerize applications using Cloud Buildpacks or manual Dockerfile creation. Deploy to GKE Autopilot or Cloud Run with appropriate resource requests/limits. Implement health checks, readiness probes, and auto-scaling policies.\n\n3. **Data Migration**: Use Storage Transfer Service for S3 to Cloud Storage migration with integrity verification. Implement BigQuery Data Transfer Service for analytics workloads, with schema mapping and query compatibility testing.\n\n4. **DNS Cutover**: Plan DNS TTL reduction in advance, use weighted routing in Cloud DNS for gradual traffic shifting. Implement comprehensive monitoring during cutover with automatic rollback triggers.\n\n5. **Post-Migration Validation**: Run synthetic transactions, load tests using Cloud Load Testing, and compare performance metrics with AWS baselines. Validate all integrations, webhook deliveries, and third-party API connections."
+            },
+            {
+              "label": "Testing & Validation",
+              "category": "test",
+              "description": "Comprehensive testing at each migration stage",
+              "content": "**Phase 6: Quality Gates & Verification**\n\n1. **Functional Testing**: Implement automated test suites using Selenium, Cypress, or Playwright for UI testing, with parallel execution in Cloud Build. Create integration test harnesses that validate service-to-service communication in the new environment.\n\n2. **Performance Benchmarking**: Conduct load testing with Locust or k6, comparing response times, throughput, and error rates between AWS and GCP deployments. Establish performance budgets and monitor for regressions.\n\n3. **Security Testing**: Run automated vulnerability scans using Cloud Security Scanner, implement SAST/DAST with tools like Checkmarx or Snyk integrated into CI/CD. Conduct penetration testing with approved third-party vendors.\n\n4. **Disaster Recovery Testing**: Execute controlled failover tests for critical services, measuring RTO/RPO compliance. Test backup restoration procedures with validation of data integrity and application functionality.\n\n5. **User Acceptance Testing**: Coordinate with business teams for UAT sessions, creating test scenarios that cover all critical user journeys. Document and prioritize any identified issues using severity-based triage process."
+            },
+            {
+              "label": "Financial Governance",
+              "category": "policy",
+              "description": "Cost monitoring, optimization, and budget controls",
+              "content": "**Phase 7: Financial Oversight & Optimization**\n\n1. **Budget Management**: Set up Cloud Billing budgets with alerts at 50%, 90%, and 100% thresholds. Implement budget export to BigQuery for custom reporting and anomaly detection using machine learning models.\n\n2. **Cost Allocation**: Configure detailed billing export with resource labels for cost attribution by team, project, and environment. Create custom dashboards in Looker Studio showing cost per microservice and trend analysis.\n\n3. **Optimization Recommendations**: Regularly review Active Assist recommendations for committed use discounts, idle resource identification, and rightsizing suggestions. Implement automated remediation for low-risk recommendations.\n\n4. **Showback/Chargeback**: Develop monthly cost reports distributed to each team with comparisons to AWS costs. Implement quota management to prevent cost overruns with soft and hard limits per project.\n\n5. **FinOps Practices**: Establish FinOps working group with representatives from each team. Conduct monthly business reviews discussing cost trends, optimization opportunities, and trade-offs between cost and performance."
+            },
+            {
+              "label": "Migration Review & Sign-off",
+              "category": "review",
+              "description": "Cross-team approval before final cutover",
+              "content": "**Phase 8: Governance Gate & Final Approval**\n\n1. **Technical Review Checklist**: Verify all infrastructure as code is peer-reviewed, documented in Confluence/Google Docs, and stored in version control. Confirm backup strategies, monitoring coverage, and alert configurations are operational.\n\n2. **Security Compliance Verification**: Validate all security controls are active, compliance requirements are met, and audit trails are properly configured. Review access logs for any unauthorized activities during migration.\n\n3. **Business Readiness Assessment**: Confirm business continuity plans are updated, support teams are trained on new environment, and rollback procedures are documented and tested. Verify communication plans for any potential user impact.\n\n4. **Performance Validation**: Review load test results, comparing against success criteria. Confirm all performance Service Level Objectives (SLOs) are being met or exceeded in the new environment.\n\n5. **Stakeholder Sign-off**: Obtain formal approval from Platform Lead, Security Officer, Finance Controller, and Application Owners. Document decisions and acceptance criteria met before proceeding to final cutover."
+            },
+            {
+              "label": "Post-Migration Optimization",
+              "category": "output",
+              "description": "Continuous improvement and AWS decommissioning",
+              "content": "**Phase 9: Optimization & Cleanup**\n\n1. **AWS Resource Decommissioning**: After successful migration and validation period (typically 30 days), begin AWS resource termination following documented decommissioning checklist. Start with non-production environments, then production, with verification at each stage.\n\n2. **GCP Optimization**: Implement automatic scaling policies based on actual usage patterns, rightsize resources using Recommender insights, and enable features like Cloud CDN, Cloud Armor Advanced, and Memorystore where beneficial.\n\n3. **Knowledge Transfer**: Document lessons learned, create runbooks for common operations, and conduct training sessions for all teams on GCP best practices. Establish community of practice for ongoing knowledge sharing.\n\n4. **Cost Optimization Review**: After full migration, conduct comprehensive cost analysis comparing final GCP costs with original AWS baseline. Calculate ROI and document savings achieved through the migration.\n\n5. **Process Improvement**: Retrospective analysis of migration process, identifying what worked well and areas for improvement. Update migration playbooks and templates for future cloud initiatives. Establish ongoing cloud governance committee for continuous optimization."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "feeds"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "requires"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "monitors"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "validates"
+            },
+            {
+              "from": 5,
+              "to": 4,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 7,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 7,
+              "label": "monitors"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "monitors"
+            },
+            {
+              "from": 7,
+              "to": 8,
+              "label": "approves"
+            },
+            {
+              "from": 4,
+              "to": 6,
+              "label": "informs"
+            },
+            {
+              "from": 3,
+              "to": 6,
+              "label": "feeds"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 95,
+        "maxScore": 95,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 9 (min: 5)",
+          "✓ Node count: 9 ≤ 10",
+          "✓ All 13 edges valid",
+          "✓ Starts with input",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 1210c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (13 edges, 9 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "personality-poirot-empty",
+      "status": "ok",
+      "elapsed": 3185,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Mon ami, the case is fresh—the board is empty, awaiting our first clue. Let us begin the investigation with a clear plan and meticulous detail.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (143 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "execute-api-design",
+      "status": "ok",
+      "elapsed": 90471,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Design a REST API for a multi-tenant task management system. Include endpoints for workspaces, projects, tasks, and comments. Show URL patterns, HTTP methods, request/response bodies, auth scheme, pagination, and error codes. Support role-based access (admin, member, viewer).",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# REST API Design Document: Multi-Tenant Task Management System\n\n## 1. Overview\nA RESTful API for a multi-tenant task management system supporting hierarchical organization of work (workspaces → projects → tasks → comments) with role-based access control.\n\n## 2. Authentication & Authorization\n**Scheme:** Bearer Token (JWT)\n**Header:** `Authorization: Bearer <jwt_token>`\n\n**Tenant Isolation:** All endpoints implicitly scope data to the authenticated user's current workspace context. Workspace ID is extracted from JWT token claims.\n\n**Roles:**\n- **Admin:** Full CRUD on all resources, manage workspace members\n- **Member:** Create/read/update resources, limited deletion rights\n- **Viewer:** Read-only access to resources\n\n## 3. Base URL & Versioning\n```\nhttps://api.taskmanager.com/v1\n```\n\n## 4. URL Patterns & Endpoints\n\n### 4.1 Workspaces\n**Base Path:** `/workspaces`\n\n| Endpoint | Method | Description | Required Role |\n|----------|--------|-------------|---------------|\n| `/workspaces` | GET | List accessible workspaces | Any |\n| `/workspaces` | POST | Create new workspace | N/A (user creation) |\n| `/workspaces/{workspace_id}` | GET | Get workspace details | Member |\n| `/workspaces/{workspace_id}` | PUT | Update workspace | Admin |\n| `/workspaces/{workspace_id}/members` | GET | List workspace members | Member |\n| `/workspaces/{workspace_id}/members` | POST | Add member to workspace | Admin |\n| `/workspaces/{workspace_id}/members/{user_id}` | PUT | Update member role | Admin |\n| `/workspaces/{workspace_id}/members/{user_id}` | DELETE | Remove member | Admin |\n\n### 4.2 Projects\n**Base Path:** `/workspaces/{workspace_id}/projects`\n\n| Endpoint | Method | Description | Required Role |\n|----------|--------|-------------|---------------|\n| `/projects` | GET | List projects in workspace | Viewer |\n| `/projects` | POST | Create new project | Member |\n| `/projects/{project_id}` | GET | Get project details | Viewer |\n| `/projects/{project_id}` | PUT | Update project | Member |\n| `/projects/{project_id}` | DELETE | Delete project | Admin |\n| `/projects/{project_id}/archive` | POST | Archive project | Member |\n| `/projects/{project_id}/restore` | POST | Restore archived project | Member |\n\n### 4.3 Tasks\n**Base Path:** `/workspaces/{workspace_id}/projects/{project_id}/tasks`\n\n| Endpoint | Method | Description | Required Role |\n|----------|--------|-------------|---------------|\n| `/tasks` | GET | List tasks in project | Viewer |\n| `/tasks` | POST | Create new task | Member |\n| `/tasks/{task_id}` | GET | Get task details | Viewer |\n| `/tasks/{task_id}` | PUT | Update task | Member |\n| `/tasks/{task_id}` | DELETE | Delete task | Member (own tasks) / Admin |\n| `/tasks/{task_id}/assign` | POST | Assign task to user | Member |\n| `/tasks/{task_id}/status` | PUT | Update task status | Member |\n| `/tasks/search` | GET | Search tasks across workspace | Viewer |\n\n### 4.4 Comments\n**Base Path:** `/workspaces/{workspace_id}/projects/{project_id}/tasks/{task_id}/comments`\n\n| Endpoint | Method | Description | Required Role |\n|----------|--------|-------------|---------------|\n| `/comments` | GET | List comments on task | Viewer |\n| `/comments` | POST | Add comment to task | Member |\n| `/comments/{comment_id}` | GET | Get comment | Viewer |\n| `/comments/{comment_id}` | PUT | Update comment | Member (own comments) |\n| `/comments/{comment_id}` | DELETE | Delete comment | Member (own comments) / Admin |\n\n## 5. Request/Response Examples\n\n### 5.1 Create Project\n**Request:**\n```http\nPOST /workspaces/ws-123/projects\nAuthorization: Bearer <jwt_token>\nContent-Type: application/json\n\n{\n  \"name\": \"Website Redesign\",\n  \"description\": \"Complete overhaul of company website\",\n  \"status\": \"active\",\n  \"start_date\": \"2024-01-15\",\n  \"due_date\": \"2024-03-31\",\n  \"tags\": [\"design\", \"frontend\", \"urgent\"]\n}\n```\n\n**Response (201 Created):**\n```json\n{\n  \"id\": \"proj-456\",\n  \"workspace_id\": \"ws-123\",\n  \"name\": \"Website Redesign\",\n  \"description\": \"Complete overhaul of company website\",\n  \"status\": \"active\",\n  \"start_date\": \"2024-01-15\",\n  \"due_date\": \"2024-03-31\",\n  \"tags\": [\"design\", \"frontend\", \"urgent\"],\n  \"created_by\": \"user-789\",\n  \"created_at\": \"2024-01-10T10:30:00Z\",\n  \"updated_at\": \"2024-01-10T10:30:00Z\",\n  \"archived\": false\n}\n```\n\n### 5.2 Create Task\n**Request:**\n```http\nPOST /workspaces/ws-123/projects/proj-456/tasks\nAuthorization: Bearer <jwt_token>\nContent-Type: application/json\n\n{\n  \"title\": \"Design Homepage Mockup\",\n  \"description\": \"Create initial design concepts for homepage\",\n  \"priority\": \"high\",\n  \"status\": \"todo\",\n  \"assignee_id\": \"user-999\",\n  \"estimated_hours\": 8,\n  \"due_date\": \"2024-01-20\"\n}\n```\n\n**Response (201 Created):**\n```json\n{\n  \"id\": \"task-789\",\n  \"project_id\": \"proj-456\",\n  \"workspace_id\": \"ws-123\",\n  \"title\": \"Design Homepage Mockup\",\n  \"description\": \"Create initial design concepts for homepage\",\n  \"priority\": \"high\",\n  \"status\": \"todo\",\n  \"assignee_id\": \"user-999\",\n  \"created_by\": \"user-789\",\n  \"estimated_hours\": 8,\n  \"due_date\": \"2024-01-20\",\n  \"completed_at\": null,\n  \"created_at\": \"2024-01-10T11:00:00Z\",\n  \"updated_at\": \"2024-01-10T11:00:00Z\"\n}\n```\n\n### 5.3 Add Workspace Member\n**Request:**\n```http\nPOST /workspaces/ws-123/members\nAuthorization: Bearer <jwt_token>\nContent-Type: application/json\n\n{\n  \"user_id\": \"user-555\",\n  \"role\": \"member\",\n  \"notify\": true\n}\n```\n\n**Response (201 Created):**\n```json\n{\n  \"id\": \"user-555\",\n  \"workspace_id\": \"ws-123\",\n  \"role\": \"member\",\n  \"joined_at\": \"2024-01-10T12:00:00Z\",\n  \"invited_by\": \"user-789\"\n}\n```\n\n## 6. Pagination\nAll list endpoints support pagination via query parameters:\n- `?page=1` (default: 1)\n- `?limit=50` (default: 20, max: 100)\n- `?sort=created_at` (default: created_at)\n- `?order=desc` (default: desc)\n\n**Paginated Response:**\n```json\n{\n  \"data\": [...],\n  \"pagination\": {\n    \"page\": 1,\n    \"limit\": 20,\n    \"total_items\": 145,\n    \"total_pages\": 8,\n    \"has_next\": true,\n    \"has_prev\": false\n  }\n}\n```\n\n## 7. Filtering & Searching\n**Tasks Search Endpoint:**\n```\nGET /workspaces/{workspace_id}/tasks/search?q=design&status=todo,progress&priority=high&assignee=user-999&project=proj-456\n```\n\n**Query Parameters:**\n- `q`: Full-text search across title and description\n- `status`: Comma-separated status values\n- `priority`: Comma-separated priority values\n- `assignee`: User ID\n- `project`: Project ID\n- `due_before`: ISO date\n- `due_after`: ISO date\n\n## 8. Error Handling\n\n### 8.1 HTTP Status Codes\n| Code | Description |\n|------|-------------|\n| 200 | OK - Successful GET/PUT |\n| 201 | Created - Successful POST |\n| 204 | No Content - Successful DELETE |\n| 400 | Bad Request - Invalid input |\n| 401 | Unauthorized - Missing/invalid token |\n| 403 | Forbidden - Insufficient permissions |\n| 404 | Not Found - Resource doesn't exist |\n| 409 | Conflict - Resource conflict (e.g., duplicate name) |\n| 422 | Unprocessable Entity - Validation errors |\n| 429 | Too Many Requests - Rate limit exceeded |\n| 500 | Internal Server Error |\n\n### 8.2 Error Response Format\n```json\n{\n  \"error\": {\n    \"code\": \"RESOURCE_NOT_FOUND\",\n    \"message\": \"Project with ID 'proj-456' not found\",\n    \"details\": {\n      \"resource_type\": \"project\",\n      \"resource_id\": \"proj-456\"\n    },\n    \"timestamp\": \"2024-01-10T10:30:00Z\",\n    \"request_id\": \"req-123abc\"\n  }\n}\n```\n\n### 8.3 Common Error Codes\n- `AUTH_REQUIRED`: Authentication required\n- `INSUFFICIENT_PERMISSIONS`: Role doesn't permit action\n- `RESOURCE_NOT_FOUND`: Requested resource doesn't exist\n- `VALIDATION_ERROR`: Request body validation failed\n- `WORKSPACE_ACCESS_DENIED`: User not member of workspace\n- `DUPLICATE_RESOURCE`: Resource with same identifier exists\n- `RATE_LIMIT_EXCEEDED`: Too many requests\n\n## 9. Rate Limiting\n- **Authenticated:** 1000 requests per hour per user\n- **Per Endpoint:** Varies by endpoint complexity\n- **Headers Included:**\n  - `X-RateLimit-Limit`: Total requests allowed\n  - `X-RateLimit-Remaining`: Requests remaining\n  - `X-RateLimit-Reset`: UTC timestamp when limit resets\n\n## 10. Data Formats\n- **Dates:** ISO 8601 format (`YYYY-MM-DD` or `YYYY-MM-DDTHH:MM:SSZ`)\n- **IDs:** UUID v4 or prefixed IDs (`ws-`, `proj-`, `task-`, `comment-`)\n- **Booleans:** `true`/`false` (not `1`/`0`)\n- **Empty values:** Use `null`, not empty strings\n\n## 11. Webhooks (Optional Extension)\n**Events:** `task.created`, `task.updated`, `task.completed`, `comment.added`\n**Endpoint:** Configured per workspace by admin\n**Security:** HMAC signature verification\n\n## 12. Versioning Strategy\n- URL path versioning (`/v1/`)\n- Deprecation headers for sunsetting endpoints\n- 12-month migration period for breaking changes\n\n## 13. Idempotency\nPOST endpoints support idempotency via `Idempotency-Key` header:\n```http\nPOST /workspaces/ws-123/projects\nIdempotency-Key: key-123abc\n```\n\n## 14. CORS\n- Allowed origins: Configurable per workspace\n- Allowed methods: GET, POST, PUT, DELETE, PATCH, OPTIONS\n- Allowed headers: Content-Type, Authorization, Idempotency-Key\n\n---\n\n*This API design follows RESTful principles with proper resource nesting, stateless operations, and consistent error handling. The multi-tenant architecture ensures complete data isolation between workspaces while maintaining a clean, intuitive interface for task management.*",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (9217 chars)",
+          "✓ Content length: 9217 ≥ 1500"
+        ]
+      }
+    },
+    {
+      "id": "data-advice-dashboards",
+      "status": "ok",
+      "elapsed": 4409,
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "request": {
+        "prompt": "Our CEO keeps asking for \"a dashboard\" but nobody agrees on what metrics matter. We have data in Salesforce, Stripe, Google Analytics, and a PostgreSQL data warehouse. Where do we start?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Start by locking down the business question before touching a single dashboard tool. Run a stakeholder alignment workshop to map each exec's KPIs to specific data sources, then prototype a single metric in a lightweight BI tool like Metabase to validate the pipeline end-to-end.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (278 chars)",
+          "✓ Message length: 278 ≥ 250"
+        ]
+      }
+    }
+  ]
+}

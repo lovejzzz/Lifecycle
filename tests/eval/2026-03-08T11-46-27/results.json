@@ -1,0 +1,477 @@
+{
+  "timestamp": "2026-03-08T11-46-27",
+  "overall": 100,
+  "testsRun": [
+    "eng-code-review",
+    "support-escalation",
+    "execute-sow",
+    "personality-rowan-empty",
+    "education-course-launch",
+    "strategy-advice-pivot"
+  ],
+  "poolSize": 54,
+  "results": [
+    {
+      "id": "eng-code-review",
+      "status": "ok",
+      "elapsed": 124822,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "PRs sit for days because nobody reviews them. I want an automated workflow: PR opened → assign reviewer → review deadline → merge or request changes → deploy.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building automated PR review workflow to eliminate delays.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "GitHub PR Created",
+              "category": "trigger",
+              "description": "Event triggered when a pull request is opened in the repository",
+              "content": "This node is triggered by a webhook from GitHub when a new pull request (PR) is opened. Configure the webhook in GitHub settings with a payload URL pointing to your workflow engine (e.g., GitHub Actions, Jenkins, or a custom server). The payload includes PR metadata: PR number, title, description, branch names, author, files changed, and diff URL. Set up authentication using tokens or secrets for security. In the workflow, parse this data to initiate downstream actions. Include error handling for webhook failures—log events, retry on failure, and alert via Slack or email if triggers are missed. Use tools like GitHub Actions with `pull_request` event or third-party services like Zapier for integration. Ensure the trigger is idempotent to avoid duplicate processing."
+            },
+            {
+              "label": "Auto-Assign Reviewer",
+              "category": "action",
+              "description": "Automatically assigns a reviewer based on predefined rules to reduce manual overhead",
+              "content": "Implement automated reviewer assignment using a script or tool. Steps: 1) Define assignment rules in a configuration file (e.g., YAML)—rules can be based on code ownership (CODEOWNERS file), round-robin scheduling, expertise areas (e.g., backend vs. frontend), or load balancing. 2) Use GitHub Actions with a custom workflow file (.github/workflows/assign-reviewer.yml) that runs on PR open. 3) In the action, fetch PR details, apply rules to select reviewer(s), and assign via GitHub API (PATCH /repos/{owner}/{repo}/pulls/{pull_number}/requested_reviewers). 4) Handle edge cases: no available reviewers (escalate to team lead), conflicts of interest (skip author), and fallback mechanisms. 5) Log assignments for audit and send notifications via Slack or email. Tools: GitHub Actions, Probot apps, or custom scripts with libraries like Octokit."
+            },
+            {
+              "label": "Set Review Deadline",
+              "category": "action",
+              "description": "Sets and enforces a deadline for review completion to ensure timeliness",
+              "content": "After reviewer assignment, automatically set a review deadline. Steps: 1) Configure deadline rules—e.g., 24 hours for critical PRs, 48 hours for normal ones, based on PR labels or size. 2) Use GitHub Actions to add a deadline label or comment on the PR with the due date. 3) Integrate with calendar tools (Google Calendar, Outlook) via APIs to create events for reviewers. 4) Set up reminders: send Slack messages or emails 6 hours before deadline, and escalate if overdue (e.g., ping team lead). 5) Use GitHub status checks to block merge if deadline is missed. Implement with a scheduled workflow that runs periodically to check PR age and update status. Tools: GitHub Actions with `schedule` event, Slack webhooks, and calendar APIs. Include error handling for API failures and timezone adjustments."
+            },
+            {
+              "label": "PR Review State",
+              "category": "state",
+              "description": "Tracks the state of the PR review process, including transitions and deadlines",
+              "content": "This node represents the dynamic state of the PR review. States include: 'assigned' (reviewer assigned), 'under_review' (review in progress), 'changes_requested' (reviewer asked for updates), 'approved' (review passed), and 'stale' (deadline missed). Transitions: from 'assigned' to 'under_review' when reviewer starts, to 'changes_requested' on feedback, or to 'approved' on approval. Triggers: state changes based on GitHub events (e.g., review submitted) or timeouts (deadline). Use a database or in-memory store (e.g., Redis) to persist state, and update via webhooks. Implement monitoring with dashboards (Grafana) to track PR age and state distribution. Define SLAs for each state (e.g., max 2 days in 'under_review') and alert on violations. Tools: GitHub webhooks, state management libraries, and logging systems."
+            },
+            {
+              "label": "Manual Code Review",
+              "category": "review",
+              "description": "Human reviewer examines code changes for quality, security, and compliance",
+              "content": "This is a human gate where assigned reviewers conduct the code review. Approval criteria: code quality (readability, adherence to style guides), functionality (no bugs, meets requirements), security (no vulnerabilities, data handling), and compliance (licenses, regulations). Reviewers use tools like GitHub's review interface, IDE integrations, or pull request comments. Set SLA: review must be completed within the deadline (e.g., 48 hours). Escalation path: if no review within SLA, automatically reassign or notify a backup reviewer. Include a checklist in PR template: unit tests added, documentation updated, no breaking changes. Reviewers can approve, request changes, or reject; on changes requested, the PR state updates and loops back. Use GitHub's required reviews feature to enforce approvals before merge."
+            },
+            {
+              "label": "Merge PR",
+              "category": "action",
+              "description": "Automatically merges the pull request after successful review and checks",
+              "content": "Once the PR is approved, this action merges it into the target branch. Steps: 1) Verify all conditions: required reviews completed, status checks passed (CI tests, code coverage), no merge conflicts, and deadline met. 2) Use GitHub API (PUT /repos/{owner}/{repo}/pulls/{pull_number}/merge) with merge method (squash, rebase, or merge commit) configured in workflow. 3) Handle edge cases: if conditions fail, comment on PR and notify author via email or Slack. 4) After merge, update PR state to 'merged', close the PR, and delete the source branch if configured. 5) Log the merge event for audit and trigger downstream actions like deployment. Implement with GitHub Actions using `pull_request_review` event with `approved` action. Tools: GitHub Actions, custom scripts with error handling and retries for API rate limits."
+            },
+            {
+              "label": "Deploy to Production",
+              "category": "output",
+              "description": "Automated deployment of merged changes to production environment",
+              "content": "This node outputs the deployed application after PR merge. Process: 1) Trigger deployment pipeline (e.g., CI/CD tool like Jenkins, GitHub Actions, or AWS CodeDeploy) on merge to main branch. 2) Build the application: run tests, compile code, and create artifacts. 3) Deploy to production using blue-green or canary strategies to minimize downtime. 4) Verify deployment: run smoke tests, monitor metrics (error rates, latency), and check health endpoints. 5) If verification fails, automatically rollback to previous version and alert the team. Success metrics: deployment time < 10 minutes, zero failed deployments in last week, post-deployment incident rate < 1%. Distribute deployment report via email or Slack, including commit hash, deployer, and performance stats. Tools: Docker, Kubernetes, Terraform for infrastructure, and monitoring like Prometheus."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "updates"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "requires"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "approves"
+            },
+            {
+              "from": 4,
+              "to": 3,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "outputs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 115,
+        "maxScore": 115,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ Has \"review\" category",
+          "✓ Has \"action\" category",
+          "✓ All 7 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 820c, no thin nodes",
+          "✓ Architecture covers: assign, deadline, merge, deploy",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (7 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "support-escalation",
+      "status": "ok",
+      "elapsed": 171550,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Customers keep complaining their tickets go into a black hole. Design an escalation workflow — ticket comes in, auto-classify priority, route to right team, SLA tracking, escalate if overdue.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! The case of the vanishing tickets is a classic one, mon ami. I have designed an escalation workflow that will shine a light on every step, ensuring no ticket escapes scrutiny. Voilà, the blueprint to track, route, and escalate with precision.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Ticket Submission Trigger",
+              "category": "trigger",
+              "description": "Initiates workflow when a new customer ticket is received.",
+              "content": "This trigger activates upon receiving a new ticket from any channel (email, web form, chat, or phone). Implement using webhooks from ticketing systems like Zendesk, ServiceNow, or Jira Cloud. Configure to capture essential ticket details: subject, description, customer contact information, priority hints, and timestamp. Set up validation rules to ensure data integrity—e.g., check for missing fields or invalid formats—using middleware like Apache Kafka or lightweight scripts. Tools: API endpoints (RESTful or GraphQL), event listeners in Node.js or Python, or integration platforms like Zapier/Make. Steps: 1. Set up a webhook in your ticketing system that POSTs JSON payloads to this workflow's endpoint. 2. Parse the incoming payload to extract key fields; use libraries like JSON.parse in JavaScript or json in Python. 3. Log the event in a centralized logging system (e.g., ELK Stack or Datadog) for audit trails and debugging. 4. Trigger the next node only if all required fields (e.g., ticket ID, customer email, issue summary) are present and valid. Criteria: Tickets must have a unique identifier, a non-empty description, and a source channel tag to proceed; otherwise, queue for manual review or retry."
+            },
+            {
+              "label": "Auto-classify Priority",
+              "category": "action",
+              "description": "Automatically assigns priority level to the ticket using AI or rules.",
+              "content": "This node uses natural language processing (NLP) or rule-based logic to classify ticket priority (e.g., High, Medium, Low). Implement with tools like MonkeyLearn for ML-based classification, or custom rules in Python using regex and keyword matching (e.g., 'urgent', 'broken', 'outage' for High). Steps: 1. Preprocess ticket text: remove stop words, tokenize, and vectorize using TF-IDF or word embeddings (e.g., spaCy or BERT). 2. Apply classification model: train on historical ticket data with labels, or use pre-trained APIs like Google Cloud Natural Language. 3. Set confidence thresholds (e.g., >80% for auto-assignment; otherwise, flag for manual review). 4. Output priority score and category, logging decisions for model improvement. Tools: Scikit-learn for ML, FastAPI for deployment, or low-code platforms like UiPath. Criteria: Priority based on issue severity (e.g., system down = High), customer impact (number of users affected), and business rules (SLA tiers). Include fallback to default Medium if unclear."
+            },
+            {
+              "label": "Route to Designated Team",
+              "category": "action",
+              "description": "Directs the ticket to the appropriate support team based on priority and category.",
+              "content": "This node routes the ticket to the correct team queue (e.g., Technical Support, Billing, General Inquiry) using routing logic. Implement with decision trees or integration with team management tools like Jira Service Management or Freshdesk. Steps: 1. Map priority and ticket category (from classification) to team assignments: e.g., High-priority tech issues → DevOps team, Low-priority billing → Finance team. 2. Use APIs to create or update tickets in team-specific projects or boards. 3. Set automatic notifications via Slack or email to alert team leads. 4. Include escalation rules for overflow: if team queue is full (>10 pending tickets), reroute to backup teams. Tools: Custom scripts in Python with requests library, or workflow engines like n8n. Criteria: Routing based on team capacity (monitor via metrics like queue length), expertise areas (tag teams with skills), and geographic region if applicable. Log all routing decisions for transparency."
+            },
+            {
+              "label": "SLA Compliance Rules",
+              "category": "policy",
+              "description": "Defines Service Level Agreement thresholds and policies for ticket resolution.",
+              "content": "This node sets SLA policies dictating maximum resolution times per priority level (e.g., High: 2 hours, Medium: 8 hours, Low: 24 hours). Implement as configurable rules in a database or policy engine like OPA (Open Policy Agent). Steps: 1. Define SLA tiers in a YAML or JSON configuration: include start time (upon routing), pause conditions (e.g., waiting on customer), and holiday calendars. 2. Integrate with time-tracking systems to calculate elapsed time against SLA. 3. Set up alerts for approaching breaches (e.g., notify at 80% of SLA time). 4. Regularly review and update policies based on performance metrics (e.g., monthly analysis of breach rates). Tools: Kubernetes ConfigMaps for cloud deployments, or relational databases like PostgreSQL with cron jobs. Criteria: SLAs must align with customer contracts, industry standards (e.g., ITIL), and internal capacity. Include exemptions for complex issues requiring escalation."
+            },
+            {
+              "label": "Active Ticket Handling",
+              "category": "state",
+              "description": "Tracks the ticket's current status and progress through the support lifecycle.",
+              "content": "This node maintains the state of the ticket as it moves through stages: Assigned, In Progress, Awaiting Feedback, Resolved. Implement using state machines (e.g., in Redis or a dedicated microservice) with transitions triggered by agent actions. Steps: 1. Initialize state upon routing with timestamp and assigned agent/team. 2. Update state via API calls from ticketing system interfaces when agents take actions (e.g., start work, add comments). 3. Monitor for staleness: if no update in X hours (configurable), trigger nudges or reassignment. 4. Provide real-time dashboards for supervisors using tools like Grafana or Tableau. Tools: State management libraries (XState for JavaScript), or database triggers in SQL. Criteria: State changes must be logged with user ID and reason; include validation to prevent invalid transitions (e.g., from Resolved back to In Progress without reopening). Ensure data consistency with atomic updates."
+            },
+            {
+              "label": "SLA Monitoring and Tracking",
+              "category": "action",
+              "description": "Continuously monitors ticket time against SLA policies and triggers alerts if needed.",
+              "content": "This node performs real-time monitoring of ticket durations compared to SLA rules, generating alerts for potential breaches. Implement with scheduled cron jobs or event-driven architectures using Kafka streams. Steps: 1. Query active tickets from the state node and calculate time elapsed since routing. 2. Compare against SLA policies from the policy node; if elapsed time > threshold minus buffer (e.g., 30 minutes), flag for escalation. 3. Send proactive alerts via channels like PagerDuty, SMS, or internal chat (Slack/MS Teams). 4. Log monitoring events for audit and generate weekly reports on SLA adherence. Tools: Monitoring platforms like Prometheus with custom exporters, or cloud services (AWS CloudWatch alarms). Criteria: Set granularity to check every 5 minutes for High-priority tickets, 15 minutes for others. Include false-positive filters for tickets already in escalation or paused states."
+            },
+            {
+              "label": "Escalation Procedure",
+              "category": "action",
+              "description": "Executes escalation actions when a ticket is overdue or at risk of SLA breach.",
+              "content": "This node triggers escalation workflows to reassign tickets, notify higher-level support, or engage management. Implement with automated scripts and integration with communication tools. Steps: 1. On trigger from monitoring, verify escalation criteria: ticket overdue by >15 minutes or multiple alerts ignored. 2. Reassign ticket to a senior agent or team lead using ticketing system APIs (e.g., Jira assignee update). 3. Send escalation notifications: email to managers, SMS to on-call staff, and post to escalation channel in Slack. 4. Update ticket with escalation notes and set new SLA clock if applicable. Tools: Automation platforms like Ansible or custom Python scripts with smtplib and requests. Criteria: Escalation levels (Level 1 to Level 3) based on severity and time; include manual override options for agents to initiate escalation early. Track escalation rates to identify process gaps."
+            },
+            {
+              "label": "Resolution or Escalation Report",
+              "category": "output",
+              "description": "Produces final outputs including resolved ticket summaries or escalation audit logs.",
+              "content": "This node generates comprehensive reports for each ticket lifecycle, whether resolved or escalated, to ensure transparency and continuous improvement. Implement with report generation tools and data aggregation from previous nodes. Steps: 1. Compile data: ticket details, priority classification, routing history, SLA compliance status, escalation events, and resolution notes. 2. Generate formatted reports (PDF/CSV) using libraries like ReportLab or pandas, and store in a document management system (e.g., SharePoint or S3). 3. Distribute reports via email to stakeholders (customer, support leads, management) and archive for compliance audits. 4. Feed insights back into the workflow: use report data to refine classification models or adjust SLA policies. Tools: BI tools like Power BI for dashboards, or cron jobs with Python scripts. Criteria: Reports must include key metrics: time to resolution, escalation frequency, customer satisfaction scores (if linked), and root cause analysis for breaches. Ensure GDPR compliance by anonymizing customer data where needed."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "updates"
+            },
+            {
+              "from": 3,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "monitors"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "triggers"
+            },
+            {
+              "from": 6,
+              "to": 4,
+              "label": "refines"
+            },
+            {
+              "from": 4,
+              "to": 7,
+              "label": "outputs"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "outputs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 100,
+        "maxScore": 100,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 5)",
+          "✓ Node count: 8 ≤ 10",
+          "✓ Has \"trigger\" category",
+          "✓ All 9 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 994c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (9 edges, 8 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "execute-sow",
+      "status": "ok",
+      "elapsed": 62720,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Write a statement of work for a 3-month web application redesign project. Client is a mid-size e-commerce company. Budget is $85,000. Include scope, deliverables, timeline, and payment terms.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Statement of Work: E-Commerce Web Application Redesign\n\n**Project Title:** E-Commerce Platform Redesign & Modernization\n**Client:** [Client Name, e.g., \"TrendSource Retail Inc.\"]\n**Vendor/Service Provider:** [Your Company Name]\n**Effective Date:** [Date]\n**Project Duration:** 3 Months (12 Weeks)\n**Total Project Budget:** $85,000.00 USD\n\n---\n\n### **1.0 Project Overview & Objectives**\n\nThis Statement of Work (SOW) outlines the agreement between [Client Name] and [Your Company Name] for the comprehensive redesign of [Client Name]'s primary e-commerce web application. The goal is to modernize the user experience (UX), improve site performance and conversion rates, refresh the visual identity to align with current brand standards, and enhance mobile responsiveness. The project will focus on creating a more intuitive, secure, and scalable platform to support future business growth.\n\n**Primary Objectives:**\n*   **Increase Conversion Rate:** Streamline the checkout process and improve product discovery.\n*   **Enhance User Experience (UX/UI):** Implement a modern, cohesive design system that is intuitive and accessible.\n*   **Improve Site Performance:** Achieve core web vitals targets for faster page load times and improved SEO.\n*   **Strengthen Mobile Engagement:** Ensure a best-in-class responsive experience for mobile and tablet users.\n*   **Establish a Scalable Foundation:** Implement a clean, maintainable codebase and CMS structure.\n\n### **2.0 Scope of Work**\n\nThe project will be executed in four (4) sequential phases:\n\n**Phase 1: Discovery & Strategy (Weeks 1-3)**\n*   Stakeholder interviews and requirement workshops.\n*   Heuristic evaluation and analytics review of the current application.\n*   Competitive and market analysis.\n*   Development of user personas and customer journey maps.\n*   Creation of a comprehensive project strategy and UX roadmap document.\n\n**Phase 2: UX/UI Design (Weeks 4-7)**\n*   Development of a revised site architecture (sitemap) and user flows.\n*   Creation of low-fidelity wireframes for key templates (Homepage, PLP, PDP, Cart, Checkout, Account).\n*   Development of a new visual design system (color palette, typography, iconography, UI component library).\n*   Creation of high-fidelity, interactive prototypes for key user journeys.\n*   Internal design reviews and client presentations for feedback and approval.\n\n**Phase 3: Development & Implementation (Weeks 8-11)**\n*   Front-end development of approved designs using [e.g., React/Vue.js, HTML5, CSS3].\n*   Back-end integration with existing e-commerce platform ([e.g., Shopify Plus, Magento, Custom API]).\n*   Implementation of key functionality (enhanced search/filters, dynamic cart, user account features).\n*   Content migration and population as required.\n*   Rigorous quality assurance (QA) testing across devices and browsers (Chrome, Safari, Firefox, Edge).\n*   Performance, security, and accessibility (WCAG 2.1 AA) testing.\n\n**Phase 4: Launch & Transition (Week 12)**\n*   Final client review and User Acceptance Testing (UAT).\n*   Deployment to production environment.\n*   Post-launch monitoring and immediate issue resolution.\n*   Hand-off of final deliverables and source code.\n*   Provision of basic administrator training documentation.\n\n**Out of Scope:**\n*   Major backend platform migration or re-platforming.\n*   Creation of new product data or extensive copywriting.\n*   Long-term hosting, maintenance, or support (can be scoped separately).\n*   Third-party software licensing fees (e.g., for plugins or fonts not included).\n*   Marketing campaign creation or SEO strategy beyond technical implementation.\n\n### **3.0 Deliverables**\n\nAll deliverables will be provided in digital format.\n\n**Phase 1 Deliverables:**\n*   Discovery Findings & Strategy Report\n*   User Personas & Journey Maps\n*   Approved Project Roadmap\n\n**Phase 2 Deliverables:**\n*   Updated Sitemap & User Flow Diagrams\n*   Complete set of Low-Fidelity Wireframes\n*   Visual Design System / Style Guide\n*   High-Fidelity Prototypes for Key Pages/Flows\n*   Formal Design Approval Sign-off\n\n**Phase 3 Deliverables:**\n*   Fully Functional Development Site\n*   QA Test Plan & Results Report\n*   Performance Audit Report\n\n**Phase 4 Deliverables:**\n*   Live, Production-Ready Web Application\n*   Source Code and Asset Repository Access\n*   Project Documentation & Admin Training Guide\n*   Post-Launch Support Report (Week 1)\n\n### **4.0 Project Timeline & Milestones**\n\nThe project will commence on **[Start Date]** and target a live launch on **[Launch Date, 12 weeks later]**.\n\n*   **Kick-off & Phase 1 Completion:** **[Date, End of Week 3]** – *Milestone 1*\n*   **UX/UI Design Approval:** **[Date, End of Week 7]** – *Milestone 2*\n*   **Development Completion & QA Sign-off:** **[Date, End of Week 11]** – *Milestone 3*\n*   **Live Launch:** **[Date, End of Week 12]** – *Milestone 4*\n\nA detailed week-by-week project plan with specific tasks will be maintained in the project management tool ([e.g., Asana, Jira]).\n\n### **5.0 Payment Terms**\n\nThe total fixed project fee is **$85,000.00 USD**. Payments are tied to project milestones and are due net 15 upon receipt of invoice.\n\n*   **Invoice 1 (30%): $25,500** – Due upon project kick-off and SOW signing.\n*   **Invoice 2 (30%): $25,500** – Due upon completion and approval of Phase 2 (UX/UI Design Sign-off).\n*   **Invoice 3 (30%): $25,500** – Due upon completion of Phase 3 (Development & QA Sign-off).\n*   **Invoice 4 (10%): $8,500** – Due upon successful live launch and project closure.\n\nAny additional work requested that falls outside the defined Scope of Work will be estimated and submitted as a Change Order for written approval prior to commencement. Standard hourly rates will apply for post-launch support beyond the transition week.\n\n### **6.0 Assumptions & Success Factors**\n\n*   Client will appoint a single primary Project Sponsor with authority to make final decisions.\n*   Client will provide timely feedback and necessary content/assets as outlined in the project schedule.\n*   Client will provide necessary access to existing systems, analytics, and staging environments.\n*   Scope, timeline, and budget are interdependent; significant changes to scope may impact timeline and/or budget as governed by a Change Order process.\n\n**Signatures:**\n\n___________________________                ___________________________\n[Client Representative Name & Title]    [Your Company Representative Name & Title]\n\n___________________________                ___________________________\nDate                                                        Date",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (6597 chars)",
+          "✓ Content length: 6597 ≥ 300"
+        ]
+      }
+    },
+    {
+      "id": "personality-rowan-empty",
+      "status": "ok",
+      "elapsed": 19814,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Current graph is empty. Provide a specific request to build a workflow, and I'll deploy the architecture. If you need guidance, specify your objective.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (151 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "education-course-launch",
+      "status": "ok",
+      "elapsed": 143241,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "I'm creating an online course on data analytics. I need a workflow: outline curriculum, record videos, build exercises, set up LMS, beta test with students, launch and market.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! Mon ami, let us investigate this case of course creation. With my little grey cells, I have devised a meticulous workflow to ensure your data analytics course is a masterpiece—très intéressant!",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Course Creation Trigger",
+              "category": "trigger",
+              "description": "Initiation of the online data analytics course development project",
+              "content": "Begin by conducting thorough market research to validate demand for a data analytics course, using tools like Google Trends, competitor analysis on platforms like Coursera or Udemy, and surveys targeting potential students. Define clear project goals, such as target audience (e.g., beginners, professionals), learning outcomes, and success metrics like enrollment rates or student satisfaction. Assemble a team or allocate resources, including subject matter experts, video producers, and LMS administrators. Document the project charter with timelines, budget estimates (e.g., for equipment, software licenses), and risk assessments. This trigger phase sets the foundation, ensuring alignment with business objectives and minimizing pitfalls during development. Use project management tools like Asana or Trello to track progress and maintain communication channels for stakeholder updates."
+            },
+            {
+              "label": "Curriculum Outline Design",
+              "category": "action",
+              "description": "Designing the detailed curriculum and learning structure for the data analytics course",
+              "content": "Start by defining specific, measurable learning objectives using Bloom's Taxonomy, covering topics from data collection and cleaning to advanced analysis with Python/R, visualization (e.g., Tableau, Matplotlib), and data storytelling. Break the curriculum into modules, each with lectures, hands-on exercises, and assessments. Conduct a gap analysis by reviewing existing courses and industry standards (e.g., from data science bootcamps) to ensure relevance. Use mind-mapping tools like XMind to visualize topic connections and sequence content logically. Involve subject matter experts for accuracy and practicality, and draft a detailed syllabus with estimated time per module (e.g., 4-6 weeks total). Include real-world case studies and projects, such as analyzing public datasets from Kaggle. Document everything in a shared drive with version control, and schedule review cycles to refine based on feedback before moving to content production."
+            },
+            {
+              "label": "Video Content Production",
+              "category": "action",
+              "description": "Recording and editing video lessons based on the approved curriculum",
+              "content": "Set up a recording studio with essential equipment: a high-quality microphone (e.g., Blue Yeti), camera (DSLR or webcam), lighting kit, and green screen if needed. Use software like OBS Studio for screen recording and DaVinci Resolve for editing. Script each video lesson aligning with curriculum modules, keeping videos concise (8-15 minutes) to maintain engagement. Incorporate visual aids like slides (created with Canva or PowerPoint), code demonstrations, and animations to explain complex concepts. Record in batches to ensure consistency, and edit for clarity, adding captions and annotations for accessibility. Store raw and edited files in cloud storage like Google Drive with backup. Conduct quality checks for audio levels, video resolution (1080p minimum), and content accuracy. This phase may take 3-4 weeks, with iterative reviews by peers to catch errors early."
+            },
+            {
+              "label": "Exercise and Assessment Building",
+              "category": "action",
+              "description": "Creating practical exercises, quizzes, and projects to reinforce learning",
+              "content": "Develop a variety of assessments: multiple-choice quizzes for theory (using tools like Quizlet), coding challenges in Jupyter Notebooks for hands-on practice, and capstone projects simulating real data analytics scenarios. Align each exercise with specific learning objectives from the curriculum, ensuring progressive difficulty. For coding exercises, provide starter code, datasets (e.g., from UCI Machine Learning Repository), and solution keys. Use platforms like GitHub Classroom for submission and automated grading. Include peer-review assignments to foster collaboration. Create detailed rubrics for project evaluation, covering criteria like code quality, analysis depth, and presentation skills. Test all exercises internally to identify bugs or ambiguities, and document instructions clearly. This phase should involve beta testers later for feedback, so maintain flexibility to adjust based on student performance data."
+            },
+            {
+              "label": "LMS Setup and Integration",
+              "category": "action",
+              "description": "Configuring the Learning Management System and uploading course materials",
+              "content": "Choose an LMS platform such as Teachable, Thinkific, or Moodle based on features like scalability, cost, and integration capabilities. Set up the course structure: create modules, upload video files (using optimized formats like MP4), and embed exercises via iframes or direct links. Configure student enrollment, payment gateways if monetizing, and certificate generation. Implement tracking tools like Google Analytics for monitoring engagement metrics (e.g., completion rates, time spent). Ensure mobile responsiveness and accessibility compliance (WCAG guidelines). Integrate discussion forums, live Q&A sessions via Zoom, and automated email sequences for onboarding. Perform thorough testing: check all links, video playback, assessment submissions, and user roles. Document the setup process for future updates, and schedule regular backups. This phase may take 1-2 weeks, with continuous tweaks based on beta feedback."
+            },
+            {
+              "label": "Beta Testing Phase",
+              "category": "test",
+              "description": "Conducting beta tests with a selected group of students to validate course effectiveness",
+              "content": "Recruit 20-30 beta testers from your target audience, using platforms like UserTesting or social media groups. Provide them with access to the course on the LMS and set a testing period of 2-3 weeks. Collect quantitative data via surveys (using Typeform or Google Forms) on aspects like content clarity, exercise difficulty, and technical issues. Gather qualitative feedback through interviews or focus groups, asking about overall experience and suggestions for improvement. Monitor analytics for drop-off points and completion rates. Define success criteria: e.g., 80% satisfaction score, minimal technical bugs. Based on results, identify areas for refinement—such as video edits or exercise adjustments. Document all feedback systematically and prioritize changes. This test phase is critical for polishing the course before launch, reducing post-launch support needs and enhancing student outcomes."
+            },
+            {
+              "label": "Course Launch and Marketing",
+              "category": "output",
+              "description": "Final launch of the course and execution of marketing strategies to attract students",
+              "content": "Execute a launch checklist: ensure all course content is live and functional on the LMS, set up landing pages with compelling copy and visuals (using tools like Unbounce), and optimize SEO for keywords like 'data analytics course'. Launch a multi-channel marketing campaign: run social media ads on LinkedIn and Facebook, collaborate with influencers in the data science community, and offer early-bird discounts. Use email marketing sequences (via Mailchimp) to nurture leads from a pre-launch waitlist. Monitor key performance indicators (KPIs) such as enrollment numbers, conversion rates, and student feedback post-launch. Plan for ongoing support: set up a helpdesk, schedule live office hours, and update content based on student inquiries. This output phase delivers the final product to market, with continuous iteration based on analytics to drive growth and retention over time."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "triggers"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "validates"
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 105,
+        "maxScore": 105,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ All 9 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 909c, no thin nodes",
+          "✓ Architecture covers: curriculum, record, exercise, lms",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (9 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "strategy-advice-pivot",
+      "status": "ok",
+      "elapsed": 23211,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Our B2B SaaS has 200 customers paying $50/mo but enterprise prospects keep asking for features that would require 6 months of engineering. Should we go upmarket or double down on SMB? Our team is 8 people.",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Aha! This is a classic strategic case—your little grey cells must weigh the evidence. For upmarket, analyze enterprise feature ROI using financial models and customer lifetime value projections; for SMB, double down on retention metrics and referral programs with tools like ProfitWell or ChurnZero. Start by conducting SWOT analyses and pilot interviews with key prospects to gather clues before committing your team of eight.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (427 chars)",
+          "✓ Message length: 427 ≥ 250"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,390 @@
+{
+  "timestamp": "2026-03-08T10-12-21",
+  "overall": 99,
+  "testsRun": [
+    "hr-hiring",
+    "freelancer-advice",
+    "execute-job-description",
+    "edge-vague",
+    "personality-rowan-empty",
+    "healthcare-patient-intake"
+  ],
+  "poolSize": 46,
+  "results": [
+    {
+      "id": "hr-hiring",
+      "status": "ok",
+      "elapsed": 176755,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We need to hire 5 engineers in the next 2 months. Our current process is just posting on LinkedIn and hoping. Build me a proper hiring pipeline.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building structured hiring pipeline to secure 5 engineers in 2 months.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Hiring Request Approved",
+              "category": "trigger",
+              "description": "Formal approval to hire 5 engineers within 2 months",
+              "content": "This node triggers the hiring pipeline upon receiving a signed request from department heads. The payload includes detailed role requirements (e.g., seniority, technical skills like Python or React, team fit), approved budget covering salaries and recruitment tools (e.g., LinkedIn Recruiter licenses), and a strict 2-month deadline. Configuration involves setting up a dedicated project in an ATS like Greenhouse or Lever, with webhook integrations to sync with calendar apps (Google Calendar) and communication platforms (Slack). Steps: 1. Validate request with HR and finance for compliance with company policies and budget limits. 2. Create a timeline with milestones using project management tools like Asana, assigning owners: hiring manager leads execution, recruiter handles logistics. 3. Document the request in a centralized tracker (e.g., Google Sheets) with columns for status updates and metrics. Error handling: If budget is insufficient, escalate to executives within 24 hours; if role definitions are vague, schedule clarification meetings with stakeholders. Ensure automated alerts notify all parties via email or Slack upon trigger activation."
+            },
+            {
+              "label": "Job Description Development",
+              "category": "action",
+              "description": "Create and finalize compelling job descriptions for engineering roles",
+              "content": "This action involves drafting job descriptions (JDs) that attract qualified candidates. Steps: 1. Gather input from engineering team leads on technical requirements (e.g., frameworks, cloud experience) and cultural needs (e.g., collaboration style). 2. Use JD templates from platforms like LinkedIn Talent Solutions or Indeed to structure content, including sections: role overview, key responsibilities (e.g., develop scalable APIs, mentor juniors), must-have qualifications (e.g., 3+ years in backend development), benefits (e.g., remote work options), and EEO compliance statements. 3. Review drafts with legal team for compliance with labor laws and inclusivity guidelines. 4. Optimize for SEO by incorporating keywords like 'full-stack engineer' or 'agile environment'. Tools: Google Docs for collaborative editing, Grammarly for clarity checks. Criteria: JDs must be approved by both hiring manager and HR director before publishing. Checklist: Ensure clear call-to-action (apply link), salary transparency if possible, and alignment with company branding. Owner: Recruiter or hiring manager, with a 2-day turnaround."
+            },
+            {
+              "label": "Multi-Channel Sourcing",
+              "category": "action",
+              "description": "Implement diverse sourcing strategies to attract a broad candidate pool",
+              "content": "This action executes sourcing across multiple channels to maximize reach. Steps: 1. Post JDs on LinkedIn, Indeed, and Glassdoor with paid boosts to target specific demographics (e.g., location, skills). 2. Engage niche job boards like Stack Overflow for tech roles or AngelList for startups. 3. Launch an employee referral program with incentives (e.g., cash bonuses for successful hires). 4. Attend virtual career fairs and hackathons (e.g., via Eventbrite) to network. 5. Use sourcing tools like Hired or Entelo for proactive candidate outreach. Tools: Lever ATS for tracking applications, Boolean search strings on LinkedIn Recruiter to filter candidates. Metrics: Monitor application sources, cost-per-hire, and time-to-fill. Error handling: If response rates are low (<10 applications per week), adjust ad spend or refine targeting; weekly reviews with the hiring team to pivot strategies. Owner: Sourcer or recruiter, with daily updates on pipeline health."
+            },
+            {
+              "label": "Resume Screening and Initial Assessment",
+              "category": "test",
+              "description": "Screen resumes and conduct initial assessments to filter candidates",
+              "content": "This test node validates candidate suitability through systematic screening. Steps: 1. Use ATS filters (e.g., in Greenhouse) to rank resumes based on keywords from JDs, such as 'AWS' or 'CI/CD'. 2. Manual review by recruiters for culture fit and red flags (e.g., job-hopping). 3. Send automated coding tests via HackerRank or behavioral assessments via Criteria Corp, with a 48-hour completion window. 4. Set pass/fail criteria: minimum 2 years relevant experience, assessment scores above 70%, and alignment with role requirements. Tools: Calendly for scheduling follow-ups, Google Forms for feedback collection. Coverage: Implement blind screening to reduce bias by removing names and demographics. If fail rate exceeds 50%, refine JD clarity or sourcing channels; escalate to hiring manager for calibration. Owner: Recruiter, with a SLA of 3 days per batch of applications."
+            },
+            {
+              "label": "Structured Interview Rounds",
+              "category": "action",
+              "description": "Conduct multiple interview rounds with standardized questions",
+              "content": "This action involves executing a structured interview process. Steps: 1. Phone screen by recruiter (15 mins) to confirm basics like availability and salary expectations. 2. Technical interview (60 mins) with engineering team members using predefined questions (e.g., system design problems from resources like LeetCode). 3. Cultural fit interview (45 mins) with hiring manager focusing on teamwork and values. 4. Panel interview (90 mins) with cross-functional stakeholders for final evaluation. Tools: Zoom for video calls, Google Sheets for score tracking, and a feedback rubric with scales from 1-5. Owner: Interview coordinator schedules sessions; interviewers submit notes within 24 hours. Error handling: Have backup interviewers on standby, record sessions (with consent) for review, and provide interviewer training to minimize bias. Criteria: Candidates must average a score of 4+ across rounds to proceed."
+            },
+            {
+              "label": "Final Approval and Decision",
+              "category": "review",
+              "description": "Hiring committee reviews candidates and makes final hiring decisions",
+              "content": "This review node gates final candidate selection. Approval criteria: Unanimous or majority vote based on interview scores (minimum 4/5), reference checks (via platforms like Checkster), and budget alignment. Who reviews: Hiring manager, engineering lead, HR business partner, and optionally a diversity advocate. Escalation: If disagreements arise, involve senior leadership (VP of Engineering) within 24 hours. SLA: Decision must be made within 48 hours after the final interview. Steps: 1. Compile all feedback into a summary document using Notion or Confluence. 2. Hold a decision meeting via video call, discussing pros and cons for each candidate. 3. Document rationale and any conditions (e.g., contingent on background check). Tools: Slack for asynchronous discussion, ATS to update candidate status. If rejected, provide constructive feedback to candidates and refine process by adjusting interview questions or sourcing."
+            },
+            {
+              "label": "Offer Management and Onboarding",
+              "category": "action",
+              "description": "Extend offers and manage the onboarding process for hired engineers",
+              "content": "This action handles offer negotiation and seamless onboarding. Steps: 1. Draft offer letters using templates in DocuSign, including compensation details (base salary, equity, benefits), start date, and contingencies (e.g., background check). 2. Negotiate with candidates via phone or email, adhering to company bands and policies. 3. Upon acceptance, initiate background checks through services like GoodHire and coordinate with IT for equipment setup. 4. Create an onboarding schedule in BambooHR or similar, including orientation sessions, mentor assignments, and training modules. Tools: Calendly for scheduling sign-off meetings, Slack channels for new hire introductions. Owner: HR specialist, with support from hiring manager. Error handling: If offer is declined, conduct a post-mortem to analyze reasons (e.g., compensation, role fit) and adjust future offers; maintain a pipeline of backup candidates."
+            },
+            {
+              "label": "Engineers Hired",
+              "category": "output",
+              "description": "Successful completion of hiring 5 engineers within the timeline",
+              "content": "This output node delivers the final hires and reports on success metrics. Deliverable format: A comprehensive report in PDF or Google Slides, detailing hired candidates' names, roles, start dates, onboarding status, and diversity breakdown (e.g., gender, ethnicity). Distribution: Share with stakeholders (executives, hiring team) via email and upload to a shared drive (Google Drive). Success metrics: Time-to-hire (target under 2 months), quality-of-hire (e.g., 90-day retention rate, performance reviews), and cost-per-hire (budget vs. actual). Steps: 1. Confirm all 5 hires have officially started and completed initial onboarding. 2. Collect feedback from new hires via surveys (using Typeform) and hiring team via retrospectives. 3. Update recruitment database (ATS) with closed status and lessons learned. Tools: PowerBI for analytics dashboards, recurring reports to track long-term impact."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "validates"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "informs"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "approves"
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 3,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "outputs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 100,
+        "maxScore": 100,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 5)",
+          "✓ Node count: 8 ≤ 10",
+          "✓ Has \"review\" category",
+          "✓ All 9 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 972c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (9 edges, 8 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "freelancer-advice",
+      "status": "ok",
+      "elapsed": 24507,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "I'm charging $50/hour for web development and I'm always booked but barely making rent. What am I doing wrong?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Aha! My little grey cells are at work—your case is a classic one, mon ami. Très intéressant: charging $50/hour while always booked points to underpricing or poor expense tracking; investigate local market rates using tools like Glassdoor or Upwork data, meticulously log all overheads with software like QuickBooks, and shift to value-based pricing or incremental rate hikes to solve this financial puzzle.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (406 chars)",
+          "✓ Message length: 406 ≥ 250"
+        ]
+      }
+    },
+    {
+      "id": "execute-job-description",
+      "status": "ok",
+      "elapsed": 39237,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Write a job description for a Senior Full-Stack Engineer at a Series B fintech startup. Tech stack is React, Node.js, PostgreSQL, AWS. Remote-first, competitive equity.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "## Senior Full-Stack Engineer\n\n**Location:** Remote (Global) | **Department:** Engineering | **Type:** Full-Time\n\n### About Us\n\nWe are a Series B fintech startup on a mission to democratize access to sophisticated financial tools. Backed by leading venture capital firms, we are building a next-generation platform that simplifies complex financial processes for thousands of businesses. Our culture is built on ownership, collaboration, and a relentless focus on creating exceptional user experiences. As a remote-first company, we believe in empowering talented individuals to do their best work from anywhere in the world.\n\n### The Role\n\nWe are looking for a Senior Full-Stack Engineer to join our core product team. You will be a key contributor in designing, building, and scaling the foundational features of our platform. This role offers the unique opportunity to have a direct and substantial impact on our product direction, architecture, and the experience of our growing customer base. You will work closely with product managers, designers, and other engineers to translate complex fintech challenges into elegant, secure, and scalable solutions.\n\n### Key Responsibilities\n\n*   **End-to-End Feature Development:** Lead the design, implementation, and deployment of full-stack features from concept to production, using React on the frontend and Node.js on the backend.\n*   **System Architecture & Design:** Contribute to technical decisions and architecture that ensure our systems are robust, secure, and scalable. Advocate for best practices in code quality, testing, and system design.\n*   **Collaboration & Mentorship:** Work autonomously and collaboratively within a cross-functional team. Mentor junior engineers and contribute to a culture of technical excellence and continuous learning.\n*   **Fintech-First Mindset:** Build with security, data integrity, and regulatory considerations at the forefront. Develop features that handle sensitive financial data with the highest levels of reliability.\n*   **Ownership & Optimization:** Take ownership of services and systems; monitor performance, troubleshoot issues, and proactively improve our codebase and infrastructure on AWS.\n*   **Product Partnership:** Collaborate with product and design to refine requirements, provide technical insight, and help shape the product roadmap.\n\n### What We're Looking For\n\n**Must-Have Qualifications:**\n\n*   5+ years of professional software development experience.\n*   Proven expertise in our core stack: **React, Node.js, PostgreSQL, and AWS**.\n*   Strong experience designing and consuming RESTful APIs and/or GraphQL.\n*   Deep understanding of modern frontend architecture, state management, and build tools.\n*   Solid backend experience, including data modeling, API design, and performance optimization for relational databases (PostgreSQL).\n*   Experience with cloud services (AWS) for deployment, monitoring, and infrastructure (e.g., EC2, Lambda, RDS, S3).\n*   A track record of building, shipping, and maintaining high-quality, secure, and scalable applications in a production environment.\n*   Excellent communication skills and the ability to thrive in a fully remote, asynchronous environment.\n*   A product-oriented mindset with a passion for creating great user experiences.\n\n**Nice-to-Have Qualifications:**\n\n*   Experience in the fintech, banking, or a heavily regulated industry (PCI DSS, SOC 2).\n*   Knowledge of TypeScript, Docker, Kubernetes, or infrastructure-as-code (e.g., Terraform, CDK).\n*   Experience with real-time data applications or event-driven architecture.\n*   Previous experience in a startup or high-growth technology company.\n\n### What We Offer\n\n*   **Competitive Compensation:** A meaningful salary and a **significant equity package** (stock options), aligning your success with the company's growth.\n*   **Remote-First Culture:** Work from anywhere. We provide a stipend to set up your ideal home office.\n*   **Health & Wellness:** Comprehensive health, dental, and vision insurance.\n*   **Unlimited PTO:** We encourage you to take time off to recharge.\n*   **Learning & Development:** Annual stipend for conferences, courses, and books.\n*   **Team Connection:** Regular virtual social events and annual company offsites (when possible).\n*   **The Opportunity:** A seat at the table. Your work will be critical, visible, and will shape the future of our company.\n\n### How to Apply\n\nIf you are passionate about building impactful products in fintech and want to be a foundational member of a growing engineering team, we would love to hear from you.\n\nPlease submit your resume and a brief note about a challenging technical project you led or a complex system you helped architect. Links to your GitHub, portfolio, or relevant code samples are highly encouraged.\n\n*We are an equal opportunity employer and value diversity at our company. We do not discriminate on the basis of race, religion, color, national origin, gender, sexual orientation, age, marital status, veteran status, or disability status.*",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (5051 chars)",
+          "✓ Content length: 5051 ≥ 200"
+        ]
+      }
+    },
+    {
+      "id": "edge-vague",
+      "status": "ok",
+      "elapsed": 28367,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "help me with my project",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Start by defining clear objectives and key results using SMART goals. Implement a project management tool like Trello or Jira to break down tasks into phases: requirements gathering, development, testing, and deployment for structured progress.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (244 chars)",
+          "✓ Message length: 244 ≥ 30"
+        ]
+      }
+    },
+    {
+      "id": "personality-rowan-empty",
+      "status": "ok",
+      "elapsed": 8088,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Graph is empty. No workflows or nodes present. Let's build something.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 35,
+        "maxScore": 40,
+        "pct": 88,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (69 chars)",
+          "✗ Missing personality markers"
+        ]
+      }
+    },
+    {
+      "id": "healthcare-patient-intake",
+      "status": "ok",
+      "elapsed": 65538,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Design a patient intake workflow for a telehealth clinic. Steps include appointment scheduling, insurance verification, medical history form, consent collection, provider assignment, and video call setup. Must be HIPAA compliant.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, mon ami, a most intriguing case of clinical orchestration. With my little grey cells, I have designed a workflow that weaves compliance like a fine detective's net—observing every step without breaking the elegant sequence of care.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Appointment Request",
+              "category": "trigger",
+              "description": "Patient initiates telehealth intake via portal or call",
+              "content": "This is the initial trigger where patient data first enters the system. Steps: 1) Capture patient's name, contact info, and chief complaint via secure web form (using TLS 1.2+ encryption). 2) Use embedded availability API (like Calendly or Acuity) to show real-time provider slots, filtering for appropriate specialty based on complaint. 3) Generate unique patient identifier (not SSN) and log timestamped audit trail. Tools: HIPAA-compliant scheduling platform (e.g., SimplePractice, DrChrono) with Business Associate Agreement (BAA) signed. Validation: Verify no duplicate requests for same time slot; implement CAPTCHA to prevent bot submissions. Auto-send confirmation email/SMS with encrypted link to next steps."
+            },
+            {
+              "label": "Parallel Verification Hub",
+              "category": "state",
+              "description": "Simultaneous insurance check & medical history collection",
+              "content": "Two parallel streams activated here. Stream A - Insurance Verification: 1) Use eligibility API (e.g., Change Healthcare, Office Ally) with patient's insurance ID, DOB, and plan details. 2) Check co-pay, deductible status, and telehealth coverage specifics. 3) Document authorization requirements and benefit summary. Stream B - Medical History Intake: 1) Patient completes digital PHQ-9, GAD-7, and custom medical history form via encrypted portal. 2) Include medication lists, allergies, and prior surgeries. 3) Implement required fields with validation (e.g., date formats, numerical ranges). Tools: JotForm HIPAA or Cognito Forms with auto-save. Criteria: Both streams must complete before proceeding; timeout after 24 hours triggers staff follow-up call."
+            },
+            {
+              "label": "HIPAA Compliance Monitor",
+              "category": "policy",
+              "description": "Continuous policy enforcement for privacy/security",
+              "content": "This parallel policy node monitors all data flows. Steps: 1) Encrypt all PHI at rest (AES-256) and in transit (TLS). 2) Enforce role-based access control (RBAC) – only assigned providers and front-desk staff can view respective data. 3) Automatic logging of all accesses (who, when, what) for audit trails. 4) Secure disposal of temporary data (e.g., browser cache) after session. 5) Ensure Business Associate Agreements (BAAs) are active for all third-party tools (video platform, forms, EHR). Tools: Automated scanners like Accountable HIPAA compliance dashboard; regular penetration testing via vendors like CynergisTek. Checklist: Annual risk assessment, staff HIPAA training certification, incident response plan documented."
+            },
+            {
+              "label": "Consent & Provider Assignment",
+              "category": "action",
+              "description": "Collect e-consent and match patient to available clinician",
+              "content": "Consolidated step where: 1) Patient reviews and signs digital consent forms for treatment, telehealth, and financial responsibility using e-signature (e.g., DocuSign with BAA). 2) System algorithmically assigns provider based on: specialty match (from chief complaint), availability, patient insurance (in-network status), and provider's current patient load. 3) Trigger automated notification to assigned provider via secure messaging (e.g., TigerConnect) with patient summary. 4) Update EHR with consent documents and provider assignment. Tools: Rules engine for assignment logic; integrate with EHR like Epic or Athenahealth. Validation: Ensure consent forms are version-controlled and include specific telehealth disclosures (state regulations)."
+            },
+            {
+              "label": "Pre-Visit Technical Check",
+              "category": "test",
+              "description": "Validate patient's tech setup before video visit",
+              "content": "Critical test to prevent last-minute failures. Steps: 1) Automated system sends unique, time-limited link to test video platform (e.g., Zoom for Healthcare, Doxy.me). 2) Patient completes browser/device check: camera, microphone, internet speed (min 1.5 Mbps upload). 3) System validates successful connection and provides troubleshooting guide if failed (clear instructions for enabling permissions, browser recommendations). 4) Log results and flag patients needing staff assistance. Tools: Integrated pre-visit check tools within telehealth platforms; Twilio API for SMS reminders. Criteria: Test must be completed at least 2 hours before appointment; failure triggers automated call from support team with screen-sharing capability."
+            },
+            {
+              "label": "Intake Review & Final Prep",
+              "category": "review",
+              "description": "Clinical staff reviews complete packet before visit",
+              "content": "Human review gate ensuring quality and readiness. Steps: 1) Nurse or medical assistant reviews aggregated intake package: medical history, consent forms, insurance verification, tech check result. 2) Verify no contradictions (e.g., allergy listed but medication prescribed). 3) Confirm all HIPAA requirements met (audit logs, BAAs). 4) Flag urgent items for provider attention. 5) Release final appointment confirmation with video link and instructions. Tools: Dashboard view in EHR (e.g., Greenway PrimeSUITE) with checklist functionality. Approval criteria: All previous steps marked complete; any missing items kick back to respective node with comments. Average review time target: Under 10 minutes per patient."
+            },
+            {
+              "label": "Telehealth Visit Ready",
+              "category": "output",
+              "description": "Final output: fully vetted patient-provider session",
+              "content": "The culmination of the workflow—a secure, compliant telehealth encounter ready to launch. Deliverables: 1) Encrypted video waiting room link sent to patient and provider 15 minutes prior. 2) Complete patient dossier available in provider's EHR interface: medical history, consent forms, insurance details, tech check results. 3) Audit trail documenting every step from trigger to ready state. 4) Automated billing ticket created with correct CPT codes for telehealth. 5) Post-visit survey trigger scheduled. Success metrics: Intake completion rate (>95%), time from request to ready (<48 hours), pre-visit no-show rate reduction (<10%). Continuous improvement: Weekly review of bottleneck analytics from workflow metadata."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 0,
+              "to": 2,
+              "label": "monitors"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "monitors"
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "label": "monitors"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "validates"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "approves"
+            },
+            {
+              "from": 4,
+              "to": 3,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 110,
+        "maxScore": 110,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ Has \"policy\" category",
+          "✓ All 10 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 732c, no thin nodes",
+          "✓ Architecture covers: insurance, consent, hipaa",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (10 edges, 7 nodes)"
+        ]
+      }
+    }
+  ]
+}

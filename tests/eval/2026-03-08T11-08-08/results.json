@@ -1,0 +1,512 @@
+{
+  "timestamp": "2026-03-08T11-08-08",
+  "overall": 100,
+  "testsRun": [
+    "founder-fundraising",
+    "pm-feature-ship",
+    "hr-onboarding",
+    "execute-sow",
+    "personality-poirot-empty",
+    "eng-advice-architecture"
+  ],
+  "poolSize": 52,
+  "results": [
+    {
+      "id": "founder-fundraising",
+      "status": "ok",
+      "elapsed": 79260,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We're raising our Series A. I need to manage the whole fundraising process — investor outreach, pitch deck prep, due diligence, term sheet negotiation. Build me a workflow for this.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! The grand Series A, a case that requires all our little grey cells. Let us construct an elegant investigation into the art of fundraising, mon ami—a workflow that leaves no clue unchecked, from the first investor coffee to the final wire transfer. Très intéressant!",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Board Mandate & Internal Alignment",
+              "category": "trigger",
+              "description": "Official decision to raise Series A; secures internal commitment, defines use of funds, and sets timeline.",
+              "content": "This is the case file being opened. Begin by formally obtaining board approval and CEO sign-off to initiate the raise. Document the core investment thesis: specific capital need (e.g., $8M for 18 months of runway), clear use of funds breakdown (45% engineering, 30% sales/marketing, 25% G&A), and target valuation range based on last round metrics and recent comps. Assemble the internal task force: CEO as lead, CFO/Head of Finance for numbers, a key product lead for demos, and potentially a fundraising advisor. Create a central, secure data room (using DocSend, DealRoom, or a secure Google Drive) and populate it with foundational documents: cap table, previous financing docs, and incorporation certificates. Set a strict 90-day target timeline from first outreach to close."
+            },
+            {
+              "label": "Investor Materials & Narrative Crafting",
+              "category": "action",
+              "description": "Develop the core fundraising assets: pitch deck, financial model, and company narrative.",
+              "content": "Now we gather our evidence and construct the story. Create a 12-15 slide pitch deck following the Sequoia format: Problem, Solution, Why Now, Market Size (TAM/SAM/SOM), Product & Magic, Business Model, Go-to-Market, Competition, Team, Financials & Metrics, The Ask. The narrative must be crisp: we solve [X acute pain] for [Y defined customer] using [Z proprietary tech], which gives us [defensible moat]. In parallel, build a detailed 3-year financial model in Excel or Causal, projecting P&L, cash flow, and key unit economics (CAC, LTV, payback period). Prepare a one-page executive summary and a 3-minute elevator pitch. All materials must be visually consistent and data-validated. This phase is iterative; expect 5-10 internal drafts before lock."
+            },
+            {
+              "label": "Targeted Investor Outreach & Sequencing",
+              "category": "action",
+              "description": "Systematically identify, prioritize, and contact potential lead investors and followers.",
+              "content": "The investigation narrows. Build a target list of 40-60 investors using tools like PitchBook, Crunchbase, and your network. Categorize them: Tier 1 (5-7 dream lead VCs, e.g., a16z, Sequoia, Accel), Tier 2 (10-15 strong fits based on stage, sector, and geography), and Tier 3 (fill-out syndicate or strategic angels). Prioritize based on partner affinity, past investments, and value-add. Sequence outreach: start with warm introductions from existing investors/advisors to Tier 1 and 2. For each, personalize the email with 2-3 sentences on why they are a perfect fit. Use a CRM (like Affinity, HubSpot, or a robust Airtable) to track contact, stage (e.g., Intro Sent, Deck Sent, Meeting Scheduled), and next steps. Aim for 15-20 first meetings within the first 3 weeks."
+            },
+            {
+              "label": "Pitch Meetings & Feedback Loop",
+              "category": "review",
+              "description": "Execute pitch meetings, gather qualitative feedback, and refine materials/strategy.",
+              "content": "The courtroom performance. Schedule 60-minute meetings, typically starting with a 20-minute pitch, 30-minute Q&A, and 10-minute next steps. The CEO leads; the CFO supports on numbers. Record common questions and objections (e.g., 'How do you scale acquisition?', 'Where is the technical risk?'). After each meeting, log feedback in the CRM and score investor interest (High/Medium/Low). Every Friday, hold an internal war room to analyze patterns: if multiple investors stumble on the same slide, refine it. If certain metrics are questioned, bolster the data room. This is a dynamic feedback loop; the pitch evolves weekly. The goal is to generate 2-3 serious verbal indications of interest (IOIs) from qualified lead investors within 4-5 weeks of starting outreach."
+            },
+            {
+              "label": "Due Diligence Deep Dive",
+              "category": "test",
+              "description": "Rigorous examination of company by the lead investor's team across legal, financial, technical, and commercial fronts.",
+              "content": "The evidence is scrutinized. Once a lead VC issues a term sheet (covered next), they will commence a 2-4 week diligence sprint. Prepare comprehensive data packets: **Legal**: all contracts (customer, partner, employment), IP assignments, compliance certificates. **Financial**: detailed historical P&L, audit if available, cap table with full history, ARR details, burn rate analysis. **Technical**: architecture diagrams, security audit reports, roadmap, key technical debt assessment. **Commercial**: full customer list with contact info for references, sales pipeline, churn analysis, NPS scores. Assign internal owners for each domain (e.g., CTO for tech, CFO for financial). Run a mock diligence session with your lawyers (e.g., WSGR, Gunderson) to identify gaps. Expect 100+ follow-up questions; respond within 24 hours to maintain momentum."
+            },
+            {
+              "label": "Term Sheet Negotiation & Syndication",
+              "category": "action",
+              "description": "Negotiate the key terms with the lead investor and build out the full investor syndicate.",
+              "content": "Negotiating the treaty. The lead VC will present a term sheet (typically based on NVCA model). Key terms to negotiate: **Valuation** (pre-money vs. post-money), **Liquidation Preference** (1x non-participating is standard), **Board Composition** (aim for 2 founders, 1 lead investor, 1 independent), **Protective Provisions** (keep founder-friendly), and **Option Pool** (typically 10-15% post-money). Engage your startup lawyer immediately to review. Negotiate via video calls, with key points over email. Target signing within 5-7 days of receipt. Concurrently, the lead will often help syndicate the round: bring in 1-2 other institutional co-investors or a group of angels to fill the round. Coordinate side letters for any special rights (e.g., pro-rata, observer rights). Keep all parties on a shared, tight timeline."
+            },
+            {
+              "label": "Final Close & Documentation",
+              "category": "output",
+              "description": "Execute final legal documents, receive funds, and communicate the close internally and externally.",
+              "content": "The case is closed, and the file is sealed. Lawyers draft the definitive agreements: Amended & Restated Certificate of Incorporation, Investor Rights Agreement, Voting Agreement, and Right of First Refusal/Co-Sale Agreement. The company's counsel circulates drafts, manages comments, and coordinates signatures via DocuSign. Once signed, wire instructions are provided, and funds are transferred. Upon confirmation of funds in the bank, issue a press release (if desired), notify all employees in an all-hands meeting, and update the cap table in your equity management platform (e.g., Carta, AngelList). Finally, send a thank you note to all investors—even those who passed—to maintain relationships for the future. Archive all diligence materials and meeting notes for the Series B dossier. The new capital is now operational."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "validates"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "approves"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "outputs"
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "monitors"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 100,
+        "maxScore": 100,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ Has \"review\" category",
+          "✓ All 9 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 795c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (9 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "pm-feature-ship",
+      "status": "ok",
+      "elapsed": 151286,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "I need to ship a new payments feature. It touches billing, the API, the frontend, and we need legal to review the T&C changes. Give me a workflow that makes sure nothing falls through the cracks.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building workflow for payments feature deployment.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Feature Kickoff",
+              "category": "trigger",
+              "description": "Initiation of the new payments feature request",
+              "content": "This node triggers the workflow upon receiving a formal request for the payments feature. The event is typically a product requirement document or a stakeholder request, with payload including feature scope, business objectives, and success metrics such as transaction volume targets. Configuration involves setting up the project in tools like Jira or Asana, assigning a project manager, and defining key milestones. Steps: 1. Capture and document the initial request with all stakeholders (product, engineering, legal). 2. Schedule a kickoff meeting to align on goals and timelines. 3. Create a project board with epics and user stories. 4. Establish communication channels (Slack, email groups). 5. Set up automated webhooks to notify downstream systems (e.g., billing, API teams) upon trigger activation. Ensure all dependencies are identified upfront to avoid delays."
+            },
+            {
+              "label": "Design and Planning",
+              "category": "action",
+              "description": "High-level design and coordination across teams",
+              "content": "This phase involves creating detailed specifications and plans for billing, API, and frontend components. Steps: 1. Conduct collaborative design sessions using tools like Figma for UI/UX and Swagger for API documentation. 2. Define data models and flows between billing systems (e.g., Stripe), backend APIs, and frontend interfaces. 3. Document technical requirements, including security protocols (PCI-DSS compliance) and scalability considerations. 4. Assign owners for each area: billing lead for pricing logic, API lead for endpoint design, frontend lead for user interface. 5. Create a unified timeline with Gantt charts in tools like Monday.com, ensuring all teams are synchronized. 6. Set up version control branches in Git for collaborative development. Error handling includes fallback mechanisms for payment failures and rollback plans."
+            },
+            {
+              "label": "Billing Implementation",
+              "category": "action",
+              "description": "Development of billing logic and integration",
+              "content": "Implement the billing component, focusing on payment processing, invoicing, and subscription management. Steps: 1. Set up or integrate with payment gateways like Stripe or PayPal, configuring API keys and webhooks for transaction events. 2. Develop pricing models, discount logic, and tax calculations using serverless functions (AWS Lambda) or microservices. 3. Create database schemas for storing transaction records, customer billing profiles, and invoice history in PostgreSQL. 4. Implement error handling for failed payments, with retry mechanisms and alerting via PagerDuty. 5. Write unit tests using Jest or PyTest, targeting 90% code coverage for critical paths. 6. Deploy to staging environment and perform integration tests with mock payment data. Owner: Billing engineering team, with daily stand-ups to track progress."
+            },
+            {
+              "label": "API Implementation",
+              "category": "action",
+              "description": "Backend API development for payment endpoints",
+              "content": "Build and secure the API layer that handles payment requests from the frontend and communicates with billing systems. Steps: 1. Design RESTful endpoints using OpenAPI specification for methods like POST /payments, GET /invoices. 2. Implement authentication and authorization with JWT tokens, ensuring role-based access control. 3. Develop core logic for payment validation, fraud detection using tools like Sift, and idempotency handling. 4. Integrate with billing microservices via gRPC or HTTP, with circuit breakers for resilience. 5. Set up logging and monitoring with ELK stack or Datadog for real-time analytics. 6. Write comprehensive integration tests using Postman or Newman, covering edge cases like network timeouts. Owner: Backend engineering team, with code reviews via GitHub Pull Requests."
+            },
+            {
+              "label": "Frontend Implementation",
+              "category": "action",
+              "description": "UI development for payment interfaces",
+              "content": "Create user-facing components for payment flows, such as checkout pages and transaction history. Steps: 1. Develop responsive UI components using React or Vue.js, based on design mockups from Figma. 2. Implement client-side validation for form inputs (e.g., card details) using libraries like Formik. 3. Integrate with the API layer via Axios or Fetch, handling loading states and error messages gracefully. 4. Optimize for performance with lazy loading and code splitting to reduce bundle size. 5. Conduct accessibility audits using tools like axe-core to ensure WCAG 2.1 compliance. 6. Set up end-to-end tests with Cypress, simulating user journeys from cart to payment confirmation. Owner: Frontend engineering team, with design reviews and usability testing sessions."
+            },
+            {
+              "label": "Legal T&C Review",
+              "category": "review",
+              "description": "Approval of terms and conditions changes by legal team",
+              "content": "This node ensures compliance with legal requirements for payment terms, privacy policies, and regulatory standards. Approval criteria: 1. Terms must align with GDPR, CCPA, and PCI-DSS regulations, with clear disclosure of data usage. 2. Review changes to refund policies, liability clauses, and user consent mechanisms. 3. Legal team (specified members) must sign off within a 3-day SLA, using tools like DocuSign for electronic approvals. 4. Escalation path: If issues arise, involve senior counsel and document resolutions in a shared log. Steps: 1. Submit draft T&C documents via a dedicated portal or email. 2. Schedule review meetings with legal stakeholders to discuss potential risks. 3. Update documents based on feedback and maintain version history. 4. Once approved, lock the versions and distribute to relevant teams for implementation."
+            },
+            {
+              "label": "Integration Testing",
+              "category": "test",
+              "description": "End-to-end testing of all components together",
+              "content": "Validate that billing, API, and frontend work seamlessly in a staging environment. What to test: 1. Payment flow from frontend checkout to billing confirmation, including error scenarios like insufficient funds. 2. API endpoints for correct data transmission and response times under load using k6 or JMeter. 3. Billing integration with actual payment gateways in sandbox mode. Pass/fail criteria: 100% of critical path tests must pass, with zero security vulnerabilities identified by SAST tools like SonarQube. Tools: Selenium for UI testing, Postman for API suites, and custom scripts for billing verification. Coverage: Aim for 95% integration test coverage, with automated reports generated after each run. On failure, trigger refinements to implementation nodes with detailed bug reports."
+            },
+            {
+              "label": "Final Approval",
+              "category": "review",
+              "description": "Human sign-off before deployment to production",
+              "content": "This gate ensures all aspects are ready for launch, involving key stakeholders from product, engineering, and operations. Approval criteria: 1. All integration tests passed with no high-severity bugs open. 2. Legal review is confirmed and documented. 3. Performance benchmarks meet SLAs (e.g., <2s payment processing). 4. Rollback plan is validated and communicated. Who reviews: Product manager, engineering lead, and ops manager, using a checklist in Confluence or similar. SLA: Decision within 24 hours, with escalation to director level if deadlocked. Steps: 1. Compile a deployment readiness report with metrics. 2. Conduct a go/no-go meeting to discuss risks and mitigations. 3. Upon approval, trigger the deployment pipeline and notify all teams."
+            },
+            {
+              "label": "Feature Deployment",
+              "category": "output",
+              "description": "Live release of the payments feature",
+              "content": "This node represents the final deliverable: the deployed feature in production. Deliverable format: A versioned release in the production environment, with accompanying documentation and monitoring dashboards. Distribution: Notify users via in-app announcements or email campaigns, and update internal wikis. Success metrics: Track key performance indicators such as transaction success rate (>99.9%), user adoption metrics, and error rates via tools like Google Analytics and New Relic. Steps: 1. Execute deployment using CI/CD pipelines (e.g., GitHub Actions or Jenkins) with canary releases to minimize risk. 2. Monitor initial hours post-deployment for anomalies, with on-call teams ready. 3. Gather feedback and log issues for future iterations. 4. Archive project artifacts and conduct a retrospective to capture lessons learned."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 5,
+              "label": "requires"
+            },
+            {
+              "from": 2,
+              "to": 6,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 6,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 6,
+              "label": "feeds"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "approves"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "validates"
+            },
+            {
+              "from": 7,
+              "to": 8,
+              "label": "outputs"
+            },
+            {
+              "from": 6,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "label": "refines"
+            },
+            {
+              "from": 6,
+              "to": 4,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 110,
+        "maxScore": 110,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 9 (min: 5)",
+          "✓ Node count: 9 ≤ 10",
+          "✓ Has \"review\" category",
+          "✓ All 14 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 817c, no thin nodes",
+          "✓ Architecture covers: billing, api, frontend, legal",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (14 edges, 9 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "hr-onboarding",
+      "status": "ok",
+      "elapsed": 122529,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "New hires keep saying their first week was confusing and they didn't know what to do. Design an onboarding process that actually works — IT setup, team intros, training, 30-60-90 day goals.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! The case of the confusing onboarding is cracked wide open. Voilà, an elegant workflow that structures the first days with detective-like precision, ensuring no clue is missed from IT setup to 90-day goals.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "New Hire Data Intake",
+              "category": "input",
+              "description": "Initial collection and processing of new hire information",
+              "content": "This node involves systematically gathering all essential details about the new hire to personalize the onboarding journey. Steps: 1. Use HRIS tools like BambooHR or Workday to collect role specifics, start date, department, and personal preferences. 2. Schedule automated welcome emails via tools like Mailchimp or HubSpot, including a first-day agenda and access instructions. 3. Assign a dedicated buddy or mentor from the team using a rotation system or algorithm-based matching for compatibility. 4. Prepare IT requisition forms for hardware (laptops, accessories) and software access (Slack, GitHub, CRM) with security protocols in place. Metrics to track: Time from offer acceptance to data completion (aim for <48 hours), accuracy rate of information, and compliance checks with GDPR or other data protection policies. Include a checklist: Verify emergency contacts, dietary restrictions for events, and preferred communication styles to foster inclusivity from day one."
+            },
+            {
+              "label": "IT and Account Provisioning",
+              "category": "action",
+              "description": "Setting up technology infrastructure and access permissions",
+              "content": "Execute a detailed process to equip the new hire with all necessary tools and accounts seamlessly. Steps: 1. Coordinate with IT departments using ticketing systems like Jira or ServiceNow to provision hardware (pre-configured laptops, monitors) and ship them prior to start date. 2. Set up user accounts in core systems: email (e.g., G Suite or Office 365), project management tools (e.g., Asana, Trello), and code repositories (e.g., GitHub, GitLab) with role-based access controls. 3. Implement SSO (Single Sign-On) via Okta or Auth0 for streamlined login experiences and security compliance. 4. Provide a digital welcome kit with tutorials on VPN setup, software installation guides, and troubleshooting contacts. Criteria for success: All accounts activated within 24 hours of start, zero login issues reported, and security audits passed. Include a validation step where the new hire confirms access and functionality before proceeding."
+            },
+            {
+              "label": "Team Integration Kickoff",
+              "category": "action",
+              "description": "Facilitating introductions and cultural immersion activities",
+              "content": "Design immersive experiences to connect the new hire with team members and company culture. Steps: 1. Organize a structured introduction schedule: virtual or in-person meet-and-greets with key stakeholders, team lunches, and a buddy system for ongoing support. 2. Conduct culture workshops using platforms like Miro or Zoom to cover company values, history, and norms through interactive sessions and storytelling. 3. Implement a 'shadowing' program where the new hire observes daily workflows for 2-3 days to understand team dynamics and processes. 4. Use tools like Donut or Slack integrations for random coffee chats and social channels to foster organic relationships. Metrics: Participation rates in events, feedback scores on inclusivity, and time to first meaningful contribution. Include a debrief session to gather initial impressions and adjust future intros based on feedback."
+            },
+            {
+              "label": "Role-Specific Training Phase",
+              "category": "action",
+              "description": "Delivering structured learning and skill development programs",
+              "content": "Deploy a comprehensive training regimen tailored to the new hire's role and career goals. Steps: 1. Create a customized learning path using LMS platforms like Coursera for Business or LinkedIn Learning, covering technical skills, company protocols, and soft skills. 2. Schedule hands-on projects or simulations that mirror real tasks, with milestones at 30, 60, and 90 days to assess progress. 3. Facilitate mentorship sessions with senior team members for deep dives into tools like Salesforce for sales roles or React for developers. 4. Provide resources: internal wikis (Confluence), recorded webinars, and cheat sheets for quick reference. Success criteria: Completion of 80% of training modules within the first month, proficiency assessments via quizzes or peer reviews, and alignment with performance metrics. Incorporate adaptive learning based on feedback loops from review nodes."
+            },
+            {
+              "label": "30-60-90 Goal Tracker",
+              "category": "state",
+              "description": "Ongoing monitoring and adjustment of milestone objectives",
+              "content": "Maintain a dynamic state to track and update goals across the onboarding timeline. Steps: 1. Define SMART goals for each period: 30 days (e.g., complete core training, build first project), 60 days (e.g., contribute to team meetings, take on small tasks independently), and 90 days (e.g., deliver a significant output, integrate fully into workflows). 2. Use goal-tracking tools like Asana or Notion with dashboards visible to the new hire, manager, and HR for transparency. 3. Regularly update progress based on input from feedback sessions, adjusting goals if priorities shift or challenges arise. 4. Include metrics: goal attainment rate, time spent on objectives, and alignment with company KPIs. Criteria: Goals should be reviewed bi-weekly, with documented justifications for any changes. This state node ensures continuous alignment and prevents drift from initial onboarding plans."
+            },
+            {
+              "label": "Bi-Weekly Feedback Sessions",
+              "category": "review",
+              "description": "Regular check-ins for performance evaluation and process refinement",
+              "content": "Conduct structured review sessions to gather insights and approve progress. Steps: 1. Schedule bi-weekly meetings between the new hire, their manager, and the onboarding buddy using Calendly for coordination and Zoom for virtual sessions. 2. Use standardized templates (e.g., in Google Forms) to collect feedback on IT setup, training effectiveness, team dynamics, and goal clarity. 3. Analyze data to identify pain points: e.g., if confusion persists, trigger adjustments in training or intros. 4. Make approval decisions: green-light continuation, recommend additional resources, or escalate issues to HR for intervention. Tools: Feedback software like Culture Amp or 15Five for sentiment analysis. Metrics: Satisfaction scores, reduction in onboarding time, and number of issues resolved. This node acts as a human gate to ensure quality and drive iterative improvements."
+            },
+            {
+              "label": "Onboarding Completion Report",
+              "category": "output",
+              "description": "Final evaluation and documentation of onboarding success",
+              "content": "Produce a comprehensive report marking the end of the onboarding process and readiness for full integration. Steps: 1. Compile data from all previous nodes: IT setup logs, training completion certificates, feedback session summaries, and goal achievement metrics. 2. Generate a report using tools like Power BI or Tableau to visualize outcomes, such as time-to-productivity (aim for <90 days) and engagement levels. 3. Include a formal sign-off from HR and the manager, confirming that the new hire has met all criteria and is prepared for independent contribution. 4. Distribute the report to relevant stakeholders: the new hire for personal records, team leads for capacity planning, and executives for strategic insights. Criteria: Report must be completed within 100 days of start, with actionable recommendations for future onboarding iterations. This output ensures accountability and continuous improvement in the hiring lifecycle."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 0,
+              "to": 2,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "updates"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "requires"
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "approves"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 105,
+        "maxScore": 105,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ All 8 edges valid",
+          "✓ Starts with input",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 914c, no thin nodes",
+          "✓ Architecture covers: it, training, 30",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (8 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "execute-sow",
+      "status": "ok",
+      "elapsed": 59393,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Write a statement of work for a 3-month web application redesign project. Client is a mid-size e-commerce company. Budget is $85,000. Include scope, deliverables, timeline, and payment terms.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Statement of Work: E-Commerce Web Application Redesign\n\n**Project Title:** E-Commerce Platform Redesign & Modernization\n**Client:** [Client Name], a Mid-Size E-Commerce Company\n**Vendor:** [Your Agency/Consultancy Name]\n**Effective Date:** [Date]\n**Project Duration:** 3 Months (Approximately 12-13 weeks)\n**Total Project Budget:** $85,000 (Eighty-Five Thousand U.S. Dollars)\n\n---\n\n### 1.0 Project Overview & Objectives\n\nThis Statement of Work (SOW) outlines the agreement for a comprehensive redesign of the Client's existing e-commerce web application. The primary objectives are to modernize the user interface (UI) and user experience (UX), improve site performance and conversion rates, enhance mobile responsiveness, and implement a more maintainable and scalable technical architecture.\n\nKey business goals include:\n*   Increasing customer conversion rates by streamlining the checkout process.\n*   Improving average order value (AOV) through enhanced product discovery and upselling features.\n*   Strengthening brand perception with a contemporary, trustworthy digital storefront.\n*   Reducing page load times to improve SEO rankings and user satisfaction.\n*   Creating a foundation for future feature expansion.\n\n### 2.0 Scope of Work\n\nThe Vendor will execute the project through the following phased approach:\n\n**Phase 1: Discovery & Strategy (Weeks 1-3)**\n*   **Stakeholder Workshops:** Conduct sessions to understand business goals, brand voice, and target customer personas.\n*   **Heuristic Evaluation & Analytics Review:** Audit the existing application for UX issues, technical debt, and performance bottlenecks. Analyze current user behavior data.\n*   **Competitive & Comparative Analysis:** Review key competitor and best-in-class e-commerce sites.\n*   **Technical Assessment:** Review current tech stack, hosting environment, and third-party integrations (payment gateways, CRM, ERP).\n*   **Deliverable:** A comprehensive Project Strategy & Requirements Document.\n\n**Phase 2: User Experience (UX) & Design (Weeks 4-7)**\n*   **Information Architecture (IA) & User Flows:** Redesign site structure and map critical user journeys (browsing, searching, checkout).\n*   **Wireframing:** Create low and high-fidelity wireframes for all key templates (Homepage, PLP, PDP, Cart, Checkout, Account Dashboard).\n*   **UI Design & Prototyping:** Develop a new, responsive visual design system (including typography, color palette, iconography, and component library). Create interactive prototypes for key flows.\n*   **Deliverable:** Complete UX/UI Design Package with interactive prototypes and design system specifications.\n\n**Phase 3: Development & Implementation (Weeks 8-12)**\n*   **Front-End Development:** Build responsive, performant front-end components using modern frameworks (e.g., React, Vue.js) based on approved designs.\n*   **Back-End Integration:** Integrate with the Client's existing e-commerce platform/backend (e.g., Shopify Plus, Magento, custom API) to ensure dynamic data flows (products, inventory, user accounts, orders).\n*   **Feature Implementation:** Core development will focus on:\n    *   Redesigned, intuitive product listings and detail pages.\n    *   Enhanced, multi-step checkout process with guest option.\n    *   Improved site search and filtering.\n    *   Responsive account management area.\n    *   Integration with existing payment, shipping, and tax calculators.\n*   **Performance Optimization:** Implement code splitting, image optimization, caching strategies, and other performance enhancements.\n*   **Quality Assurance (QA):** Execute functional, cross-browser, and cross-device testing. Conduct user acceptance testing (UAT) support.\n\n**Phase 4: Launch & Transition (Week 13)**\n*   **Staging Deployment & Final Review:** Deploy the redesigned application to a staging environment for final Client approval.\n*   **Production Launch:** Coordinate and execute the launch to the live production environment.\n*   **Post-Launch Support:** Provide 2 weeks of post-launch monitoring and critical bug-fix support.\n*   **Knowledge Transfer:** Deliver final documentation and conduct a handover session for the Client's internal team.\n\n### 3.0 Project Deliverables\n\n1.  **Project Strategy & Requirements Document**\n2.  **Site Map & User Flow Diagrams**\n3.  **Complete Set of Wireframes**\n4.  **UI Design System & Style Guide**\n5.  **Interactive Prototypes (for core user journeys)**\n6.  **Fully Functional, Redeveloped Web Application** deployed to production.\n7.  **Technical Documentation** covering architecture and content management.\n8.  **Project Final Report & Analytics Baseline**\n\n### 4.0 Project Timeline & Milestones\n\n*   **Kickoff & Project Start:** Week 1\n*   **Milestone 1 – Strategy Sign-off:** End of Week 3\n*   **Milestone 2 – UX/UI Design Sign-off:** End of Week 7\n*   **Milestone 3 – Development Complete / UAT Ready:** End of Week 11\n*   **Milestone 4 – Client UAT Sign-off:** End of Week 12\n*   **Milestone 5 – Project Launch:** Week 13\n*   **Project Closure & Final Deliverables:** End of Week 13\n\n### 5.0 Assumptions & Exclusions\n\n**Assumptions:**\n*   Client will provide timely feedback and approvals at each milestone (within 3 business days).\n*   Client will provide necessary access to existing systems, APIs, staging environments, and brand assets.\n*   Client will assign a single point of contact for project decisions and communications.\n*   The project scope is based on the redesign of the core public-facing e-commerce experience, not a full platform migration.\n\n**Exclusions (Out of Scope):**\n*   Development of new backend e-commerce platform functionality (e.g., new admin features).\n*   Major data migration beyond product/category content.\n*   Creation of new marketing content (photography, video, copywriting).\n*   Long-term hosting, maintenance, or support beyond the 2-week post-launch period.\n*   Extensive SEO campaign work beyond on-page technical SEO implementation.\n*   Third-party software licensing fees.\n\n### 6.0 Payment Terms\n\nThe total fixed project fee is **$85,000**. Payments are tied to project milestones as follows:\n\n*   **Payment 1 (20% - $17,000):** Due upon signing this SOW to initiate the project.\n*   **Payment 2 (25% - $21,250):** Due upon Client sign-off of the Project Strategy & Requirements Document (Milestone 1).\n*   **Payment 3 (25% - $21,250):** Due upon Client sign-off of the complete UX/UI Design Package (Milestone 2).\n*   **Payment 4 (25% - $21,250):** Due upon successful launch of the application to the production environment (Milestone 5).\n*   **Payment 5 (5% - $4,250):** Due upon delivery of all final project documentation and closure (End of Week 13).\n\nAll invoices are payable within 15 days of receipt.\n\n### 7.0 Acceptance\n\nBy signing below, both parties agree to the terms, scope, deliverables, timeline, and budget outlined in this Statement of Work.\n\n**For [Client Name]:**\n_______________________________\nPrinted Name & Title\nDate\n\n**For [Vendor Name]:**\n_______________________________\nPrinted Name & Title\nDate",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (7046 chars)",
+          "✓ Content length: 7046 ≥ 300"
+        ]
+      }
+    },
+    {
+      "id": "personality-poirot-empty",
+      "status": "ok",
+      "elapsed": 12591,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, mon ami, we have nothing so far—the board is empty, and the case is yet to be cracked! We must gather our clues and evidence to design a workflow worthy of the little grey cells. Très intéressant, let us begin by defining our first steps.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (242 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "eng-advice-architecture",
+      "status": "ok",
+      "elapsed": 31436,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We have a Django monolith serving 50k users. Page loads are 4-6 seconds, database has 200+ tables, and deployments take 45 minutes. The team wants to add real-time features. Should we refactor, rewrite, or bolt on new services?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Mission: Execute a phased strategy. Profile with Django Debug Toolbar and New Relic to isolate bottlenecks—likely N+1 queries or unindexed joins in that 200-table schema. Refactor critical modules into Django apps or bounded contexts, bolt on real-time features via Django Channels for WebSockets, and cut deployment time by implementing CI/CD with Docker and Kubernetes. Avoid a full rewrite; incremental decoupling reduces risk while enabling scalability.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (457 chars)",
+          "✓ Message length: 457 ≥ 250"
+        ]
+      }
+    }
+  ]
+}

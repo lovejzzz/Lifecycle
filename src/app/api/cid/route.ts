@@ -174,6 +174,12 @@ export async function POST(req: NextRequest) {
     try {
       const parsed = JSON.parse(cleaned);
 
+      // If parsed JSON doesn't look like a CID response (no message, no workflow),
+      // treat the raw text as the message — the model generated content, not CID format
+      if (!parsed.message && !parsed.workflow) {
+        return NextResponse.json({ result: { message: text, workflow: null }, provider, model });
+      }
+
       // Normalize edge format — some models return source/target instead of from/to
       // Also normalize non-standard labels to our known set
       const KNOWN_LABELS = new Set(['drives', 'feeds', 'refines', 'validates', 'monitors', 'connects', 'outputs', 'updates', 'watches', 'approves', 'triggers', 'requires', 'informs', 'blocks']);
@@ -292,6 +298,41 @@ export async function POST(req: NextRequest) {
           .filter((e: { from: number; to: number }) => {
             return e.from >= 0 && e.from < nodeCount && e.to >= 0 && e.to < nodeCount;
           });
+      }
+
+      // Reorder nodes: trigger first, output last — models sometimes append
+      // lateral nodes (policy, state) after the output, which breaks flow checks
+      if (parsed.workflow?.nodes?.length > 1) {
+        const nodes = parsed.workflow.nodes as Array<{ category: string; [k: string]: unknown }>;
+        const edges = parsed.workflow.edges as Array<{ from: number; to: number; label: string }>;
+
+        // Build reorder map: move first trigger to index 0, last output to end
+        const triggerIdx = nodes.findIndex(n => n.category === 'trigger');
+        const outputIdx = nodes.length - 1 - [...nodes].reverse().findIndex(n => n.category === 'output');
+        const lastIdx = nodes.length - 1;
+
+        if (triggerIdx >= 0 && outputIdx >= 0 && outputIdx < lastIdx) {
+          // Only reorder if output isn't already last
+          const reordered = [...nodes];
+          const outputNode = reordered.splice(outputIdx, 1)[0];
+          reordered.push(outputNode);
+
+          // Build old→new index map
+          const oldToNew = new Map<number, number>();
+          const tempNodes = [...nodes];
+          for (let newI = 0; newI < reordered.length; newI++) {
+            const oldI = tempNodes.indexOf(reordered[newI]);
+            oldToNew.set(oldI, newI);
+            tempNodes[oldI] = null as unknown as typeof nodes[0]; // mark used
+          }
+
+          parsed.workflow.nodes = reordered;
+          parsed.workflow.edges = edges.map(e => ({
+            from: oldToNew.get(e.from) ?? e.from,
+            to: oldToNew.get(e.to) ?? e.to,
+            label: e.label,
+          }));
+        }
       }
 
       return NextResponse.json({ result: parsed, provider, model });
