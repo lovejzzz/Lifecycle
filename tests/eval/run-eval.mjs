@@ -671,6 +671,22 @@ const POOL = [
     expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['review'], mustMentionInNodes: ['registr|intake|patient', 'insurance|verif', 'triage|assess', 'document|record'] },
   },
 
+  // Real estate transaction management — tests state-heavy workflow with handoff between multiple parties
+  {
+    id: 'real-estate-transaction',
+    agent: 'rowan', taskType: 'generate',
+    prompt: 'Build a workflow for managing residential real estate transactions from listing to closing. I\'m a real estate agent handling 15 concurrent deals. Cover: listing prep, MLS syndication, showing scheduling, offer review, inspection coordination, appraisal, title search, and closing day logistics. Each deal takes 45-60 days.',
+    expect: { hasWorkflow: true, minNodes: 5, maxNodes: 10, mustHaveCategories: ['review'], mustMentionInNodes: ['listing|mls', 'inspect|apprais', 'title|closing'] },
+  },
+
+  // Extremely short ambiguous prompt — tests intent detection at the boundary
+  {
+    id: 'edge-ultra-short-prompt',
+    agent: 'poirot', taskType: 'generate',
+    prompt: 'Onboarding.',
+    expect: { hasWorkflow: true, minNodes: 4, maxNodes: 10 },
+  },
+
   // Supply chain with explicit policy requirement — stress tests the recurring policy-category gap
   {
     id: 'supply-chain-risk-management',
