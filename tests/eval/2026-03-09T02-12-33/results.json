@@ -1,0 +1,214 @@
+{
+  "timestamp": "2026-03-09T02-12-33",
+  "overall": 98,
+  "testsRun": [
+    "artifact-edit-api-spec",
+    "artifact-edit-runbook",
+    "artifact-sync-data-pipeline",
+    "artifact-minimal-standup"
+  ],
+  "poolSize": 103,
+  "results": [
+    {
+      "id": "artifact-edit-api-spec",
+      "status": "ok",
+      "elapsed": 37444,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Write an API specification for a user authentication service. Include endpoints for signup, login, password reset, and token refresh. For each endpoint: method, path, request body (with types), response codes, and example curl command. Keep it minimal — no fluff, just the spec.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# User Authentication Service API Specification\n\n## Base URL\n`https://api.example.com/auth/v1`\n\n## Endpoints\n\n### Sign Up\nCreates a new user account.\n\n**Method:** `POST`  \n**Path:** `/signup`\n\n**Request Body:**\n| Field | Type | Required | Description |\n|-------|------|----------|-------------|\n| `email` | string | Yes | User's email address |\n| `password` | string | Yes | Minimum 8 characters |\n| `name` | string | No | User's full name |\n\n**Response Codes:**\n- `201 Created`: User successfully created\n- `400 Bad Request`: Invalid input or missing required fields\n- `409 Conflict`: Email already exists\n\n**Example Request:**\n```bash\ncurl -X POST https://api.example.com/auth/v1/signup \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"email\": \"user@example.com\",\n    \"password\": \"securePass123\",\n    \"name\": \"John Doe\"\n  }'\n```\n\n---\n\n### Log In\nAuthenticates a user and returns access/refresh tokens.\n\n**Method:** `POST`  \n**Path:** `/login`\n\n**Request Body:**\n| Field | Type | Required | Description |\n|-------|------|----------|-------------|\n| `email` | string | Yes | Registered email address |\n| `password` | string | Yes | User's password |\n\n**Response Codes:**\n- `200 OK`: Authentication successful\n- `401 Unauthorized`: Invalid credentials\n- `400 Bad Request`: Missing required fields\n\n**Example Request:**\n```bash\ncurl -X POST https://api.example.com/auth/v1/login \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"email\": \"user@example.com\",\n    \"password\": \"securePass123\"\n  }'\n```\n\n---\n\n### Password Reset Request\nInitiates a password reset process.\n\n**Method:** `POST`  \n**Path:** `/password/reset-request`\n\n**Request Body:**\n| Field | Type | Required | Description |\n|-------|------|----------|-------------|\n| `email` | string | Yes | Registered email address |\n\n**Response Codes:**\n- `200 OK`: Reset email sent if account exists\n- `400 Bad Request`: Invalid email format\n\n**Example Request:**\n```bash\ncurl -X POST https://api.example.com/auth/v1/password/reset-request \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"email\": \"user@example.com\"\n  }'\n```\n\n---\n\n### Password Reset Confirm\nConfirms password reset with token.\n\n**Method:** `POST`  \n**Path:** `/password/reset-confirm`\n\n**Request Body:**\n| Field | Type | Required | Description |\n|-------|------|----------|-------------|\n| `token` | string | Yes | Reset token from email |\n| `new_password` | string | Yes | New password (min 8 chars) |\n\n**Response Codes:**\n- `200 OK`: Password successfully reset\n- `400 Bad Request`: Invalid token or weak password\n- `410 Gone`: Token expired\n\n**Example Request:**\n```bash\ncurl -X POST https://api.example.com/auth/v1/password/reset-confirm \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"token\": \"abc123def456\",\n    \"new_password\": \"newSecurePass123\"\n  }'\n```\n\n---\n\n### Token Refresh\nRefreshes an expired access token using a refresh token.\n\n**Method:** `POST`  \n**Path:** `/refresh`\n\n**Request Body:**\n| Field | Type | Required | Description |\n|-------|------|----------|-------------|\n| `refresh_token` | string | Yes | Valid refresh token |\n\n**Response Codes:**\n- `200 OK`: New access token issued\n- `401 Unauthorized`: Invalid or expired refresh token\n\n**Example Request:**\n```bash\ncurl -X POST https://api.example.com/auth/v1/refresh \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"refresh_token\": \"xyz789uvw012\"\n  }'\n```",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 35,
+        "maxScore": 35,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (3374 chars)",
+          "✓ Content length: 3374 ≥ 800",
+          "✓ Content mentions: POST|GET|PUT|DELETE, signup|register, login|auth, password|reset, ```"
+        ]
+      }
+    },
+    {
+      "id": "artifact-edit-runbook",
+      "status": "ok",
+      "elapsed": 98092,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Write a runbook for handling a database connection pool exhaustion incident on PostgreSQL. Include: detection (what alerts fire), diagnosis (queries to run), mitigation (immediate fixes), resolution (root cause fix), and follow-up. Include actual SQL queries and shell commands.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Incident Runbook: PostgreSQL Database Connection Pool Exhaustion\n\n## Overview\nThis runbook provides procedures for detecting, diagnosing, mitigating, and resolving PostgreSQL database connection pool exhaustion incidents. Connection pool exhaustion occurs when all available database connections are consumed, preventing new applications from connecting to the database.\n\n## Severity: **HIGH** - Production impact likely\n\n---\n\n## Phase 1: Detection\n\n### Primary Alerts & Indicators\n- **Alert**: `PostgreSQL_Connection_Pool_Exhaustion` (triggered at >90% connection utilization)\n- **Alert**: `PostgreSQL_Too_Many_Connections` (when `max_connections` limit reached)\n- **Monitoring Dashboards**:\n  - Database connection count approaching `max_connections`\n  - Application error logs showing connection timeout errors\n  - Increased HTTP 5xx errors from application servers\n  - APM alerts showing increased database connection latency\n\n### Immediate Verification Commands\n```bash\n# Check current connection count vs. max_connections\npsql -h ${DB_HOST} -U ${MONITORING_USER} -d postgres -c \\\n\"SELECT COUNT(*) as current_connections, \n        setting as max_connections \n FROM pg_stat_activity, \n      pg_settings \n WHERE name='max_connections' \n GROUP BY setting;\"\n\n# Quick health check\npsql -h ${DB_HOST} -U ${MONITORING_USER} -d postgres -c \\\n\"SELECT now() - query_start as duration, state, count(*) \n FROM pg_stat_activity \n WHERE state IS NOT NULL \n GROUP BY state, duration \n ORDER BY duration DESC;\"\n```\n\n---\n\n## Phase 2: Diagnosis\n\n### Step 1: Identify Connection Sources\n```sql\n-- Check where connections are coming from\nSELECT \n    client_addr,\n    client_hostname,\n    client_port,\n    application_name,\n    backend_type,\n    COUNT(*) as connection_count\nFROM pg_stat_activity \nWHERE pid <> pg_backend_pid()\nGROUP BY 1,2,3,4,5\nORDER BY connection_count DESC\nLIMIT 20;\n```\n\n### Step 2: Analyze Connection States\n```sql\n-- Detailed connection analysis\nSELECT \n    state,\n    wait_event_type,\n    wait_event,\n    COUNT(*) as count,\n    MAX(now() - query_start) as longest_query,\n    MAX(now() - state_change) as longest_state\nFROM pg_stat_activity \nWHERE pid <> pg_backend_pid()\nGROUP BY 1,2,3\nORDER BY count DESC;\n\n-- Identify idle transactions\nSELECT \n    pid,\n    application_name,\n    client_addr,\n    now() - xact_start as xact_age,\n    now() - query_start as query_age,\n    state,\n    query\nFROM pg_stat_activity \nWHERE state IN ('idle in transaction', 'idle in transaction (aborted)')\nORDER BY xact_start;\n```\n\n### Step 3: Check for Blocking Processes\n```sql\n-- Find blocking processes\nSELECT \n    blocked.pid AS blocked_pid,\n    blocked_activity.usename AS blocked_user,\n    blocking.pid AS blocking_pid,\n    blocking_activity.usename AS blocking_user,\n    blocked_activity.query AS blocked_statement,\n    blocking_activity.query AS current_statement_in_blocking_process\nFROM pg_catalog.pg_locks blocked_locks\nJOIN pg_catalog.pg_stat_activity blocked_activity ON blocked_activity.pid = blocked_locks.pid\nJOIN pg_catalog.pg_locks blocking_locks ON blocking_locks.locktype = blocked_locks.locktype\n    AND blocking_locks.database IS NOT DISTINCT FROM blocked_locks.database\n    AND blocking_locks.relation IS NOT DISTINCT FROM blocked_locks.relation\n    AND blocking_locks.page IS NOT DISTINCT FROM blocked_locks.page\n    AND blocking_locks.tuple IS NOT DISTINCT FROM blocked_locks.tuple\n    AND blocking_locks.virtualxid IS NOT DISTINCT FROM blocked_locks.virtualxid\n    AND blocking_locks.transactionid IS NOT DISTINCT FROM blocked_locks.transactionid\n    AND blocking_locks.classid IS NOT DISTINCT FROM blocked_locks.classid\n    AND blocking_locks.objid IS NOT DISTINCT FROM blocked_locks.objid\n    AND blocking_locks.objsubid IS NOT DISTINCT FROM blocked_locks.objsubid\n    AND blocking_locks.pid != blocked_locks.pid\nJOIN pg_catalog.pg_stat_activity blocking_activity ON blocking_activity.pid = blocking_locks.pid\nWHERE NOT blocked_locks.granted;\n```\n\n### Step 4: Check Connection Pooler Status (if applicable)\n```bash\n# If using pgbouncer\npsql -h ${PGBOUNCER_HOST} -p ${PGBOUNCER_PORT} -U ${ADMIN_USER} -d pgbouncer \\\n-c \"SHOW CLIENTS; SHOW SERVERS; SHOW POOLS; SHOW STATS;\"\n```\n\n---\n\n## Phase 3: Immediate Mitigation\n\n### Step 1: Terminate Problematic Connections\n```sql\n-- Terminate idle transactions (older than 10 minutes)\nSELECT pg_terminate_backend(pid)\nFROM pg_stat_activity \nWHERE state IN ('idle in transaction', 'idle in transaction (aborted)')\nAND now() - state_change > interval '10 minutes';\n\n-- Terminate long-running queries (customize threshold as needed)\nSELECT pg_terminate_backend(pid)\nFROM pg_stat_activity \nWHERE state = 'active'\nAND now() - query_start > interval '5 minutes'\nAND pid <> pg_backend_pid();\n\n-- Emergency: Terminate connections from specific application\nSELECT pg_terminate_backend(pid)\nFROM pg_stat_activity \nWHERE application_name = '${PROBLEMATIC_APP}'\nAND pid <> pg_backend_pid();\n```\n\n### Step 2: Temporarily Increase Connection Limit\n```sql\n-- Increase max_connections (requires superuser, may need restart)\nALTER SYSTEM SET max_connections = '500'; -- Increase from default 100\n\n-- Reload configuration (if not requiring restart)\nSELECT pg_reload_conf();\n\n-- Check if change applied\nSHOW max_connections;\n```\n\n### Step 3: Restart Connection Pooler (if applicable)\n```bash\n# Graceful restart of pgbouncer\nsudo systemctl restart pgbouncer\n\n# Or using pgbouncer admin console\npsql -h ${PGBOUNCER_HOST} -p ${PGBOUNCER_PORT} -U ${ADMIN_USER} -d pgbouncer \\\n-c \"RELOAD; SUSPEND; RESUME;\"\n```\n\n### Step 4: Implement Connection Rate Limiting\n```bash\n# Emergency firewall rule to limit new connections\n# Allow only essential services\nsudo iptables -A INPUT -p tcp --dport 5432 -m connlimit --connlimit-above 10 -j REJECT\n```\n\n---\n\n## Phase 4: Root Cause Resolution\n\n### Step 1: Application Layer Fixes\n1. **Review connection pool settings** in application configuration:\n   ```yaml\n   # Example: Spring Boot application.yml\n   spring:\n     datasource:\n       hikari:\n         maximum-pool-size: 10  # Reduce from excessive values\n         connection-timeout: 30000\n         idle-timeout: 600000\n         max-lifetime: 1800000\n   ```\n\n2. **Add connection validation**:\n   ```sql\n   -- Set statement_timeout for all connections\n   ALTER DATABASE ${DB_NAME} SET statement_timeout = '30s';\n   \n   -- Set idle_in_transaction_session_timeout\n   ALTER DATABASE ${DB_NAME} SET idle_in_transaction_session_timeout = '10min';\n   ```\n\n### Step 2: Database Configuration Optimization\n```sql\n-- Permanent configuration changes in postgresql.conf\nALTER SYSTEM SET max_connections = '200'; -- Set sustainable limit\nALTER SYSTEM SET shared_buffers = '4GB'; -- Adjust based on RAM\nALTER SYSTEM SET work_mem = '16MB'; -- Reduce to handle more connections\nALTER SYSTEM SET maintenance_work_mem = '512MB';\n\n-- Apply changes\nSELECT pg_reload_conf();\n```\n\n### Step 3: Implement Connection Pooling\n```bash\n# Install and configure pgbouncer\nsudo apt-get install pgbouncer\n\n# Configure /etc/pgbouncer/pgbouncer.ini\ncat > /etc/pgbouncer/pgbouncer.ini << EOF\n[databases]\n${DB_NAME} = host=${DB_HOST} port=5432 dbname=${DB_NAME}\n\n[pgbouncer]\npool_mode = transaction\nmax_client_conn = 1000\ndefault_pool_size = 20\nreserve_pool_size = 5\nEOF\n\nsudo systemctl restart pgbouncer\n```\n\n### Step 4: Add Monitoring and Alerting\n```sql\n-- Create monitoring view for connection trends\nCREATE VIEW connection_monitoring AS\nSELECT \n    date_trunc('minute', backend_start) as minute,\n    application_name,\n    COUNT(*) as connections,\n    COUNT(CASE WHEN state = 'active' THEN 1 END) as active,\n    COUNT(CASE WHEN state = 'idle' THEN 1 END) as idle,\n    COUNT(CASE WHEN state LIKE 'idle in transaction%' THEN 1 END) as idle_tx\nFROM pg_stat_activity\nWHERE pid <> pg_backend_pid()\nGROUP BY 1, 2;\n```\n\n---\n\n## Phase 5: Follow-up Actions\n\n### Step 1: Post-Incident Analysis\n1. **Review connection patterns**:\n   ```bash\n   # Extract connection logs from pg_log\n   grep \"connection\" /var/log/postgresql/postgresql-*.log | \\\n   tail -1000 > /tmp/connection_analysis.log\n   ```\n\n2. **Analyze application connection lifecycle**:\n   - Review application code for unclosed connections\n   - Check connection pool configuration\n   - Verify connection timeout handling\n\n### Step 2: Implement Preventive Measures\n1. **Add connection pool monitoring dashboard** with:\n   - Connection count by application\n   - Connection age distribution\n   - Query duration percentiles\n   - Idle transaction count\n\n2. **Create automated remediation**:\n   ```bash\n   # Script to automatically clear idle transactions\n   */5 * * * * /usr/local/bin/clear_idle_transactions.sh\n   ```\n\n   ```bash\n   # clear_idle_transactions.sh\n   #!/bin/bash\n   psql -h ${DB_HOST} -U ${MONITORING_USER} -d ${DB_NAME} <<EOF\n   SELECT pg_terminate_backend(pid)\n   FROM pg_stat_activity \n   WHERE state IN ('idle in transaction', 'idle in transaction (aborted)')\n   AND now() - state_change > interval '15 minutes'\n   AND application_name NOT IN ('pg_monitor', 'pg_dump');\n   EOF\n   ```\n\n### Step 3: Documentation Updates\n1. Update runbook with new findings\n2. Document optimal connection pool settings per application\n3. Create knowledge base article for developers on proper connection handling\n\n### Step 4: Schedule Reviews\n- Weekly: Review connection pool metrics\n- Monthly: Audit connection patterns\n- Quarterly: Stress test connection handling\n\n---\n\n## Prevention Checklist\n- [ ] Implement connection pooling (pgbouncer/odyssey)\n- [ ] Set appropriate statement and idle timeouts\n- [ ] Monitor connection count by application\n- [ ] Implement circuit breakers in application code\n- [ ] Regular load testing of connection handling\n- [ ] Educate developers on connection lifecycle management\n\n---\n\n**Last Updated**: $(date +%Y-%m-%d)  \n**Primary Contact**: Database Engineering Team  \n**Escalation Path**: SRE Lead → Engineering Director",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 35,
+        "maxScore": 35,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (9891 chars)",
+          "✓ Content length: 9891 ≥ 600",
+          "✓ Content mentions: SELECT|pg_stat|connection, pool|max_connections, ```"
+        ]
+      }
+    },
+    {
+      "id": "artifact-sync-data-pipeline",
+      "status": "ok",
+      "elapsed": 135176,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Build a data pipeline workflow where a schema change in the source definition must propagate to transformation, validation, and output nodes. I need to be able to edit the schema and have downstream steps know they're stale.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building a schema-aware data pipeline with staleness tracking and propagation mechanisms.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Schema Change Event",
+              "category": "trigger",
+              "description": "Event that detects changes in the source schema, triggering downstream updates.",
+              "content": "This trigger node monitors for schema modifications using configured methods such as webhooks (e.g., from a schema registry like Confluent Schema Registry), file system watchers (e.g., inotify for Avro/JSON files), or database alerts (e.g., PostgreSQL event triggers). Payload includes schema ID, version diff, timestamp, and change type (add/remove/modify field). Setup involves defining event sources, setting up listeners with tools like Apache Kafka for event streaming or cron jobs for periodic checks. Error handling logs failures and retries with exponential backoff. Configuration includes thresholds for minor vs. major changes and notification channels (Slack, email) for immediate alerts. Ensure idempotency to handle duplicate events and maintain a changelog for audit trails."
+            },
+            {
+              "label": "Source Schema Definition",
+              "category": "artifact",
+              "description": "Editable schema document that defines data structure, stored with versioning.",
+              "content": "This artifact holds the schema definition in formats like JSON Schema, Avro, or Protobuf, stored in a version-controlled repository (e.g., Git) or a schema registry (e.g., AWS Glue Schema Registry). Content includes field names, data types, constraints, and metadata. To edit, use tools such as schema editors (e.g., Redpanda Console for Avro) or CI/CD pipelines with pull requests for review. Versioning is managed via semantic versioning (major/minor/patch) and tags. Detailed steps: 1) Clone the schema repo or access registry UI, 2) Modify schema using validation tools (e.g., ajv for JSON), 3) Commit changes with descriptive messages and version bumps, 4) Automatically trigger tests for backward compatibility. Ensure documentation is updated and stakeholders are notified of changes."
+            },
+            {
+              "label": "Schema Dependency Tracker",
+              "category": "dependency",
+              "description": "Tracks dependencies of downstream nodes on schema versions and manages staleness flags.",
+              "content": "This node maintains a dependency graph linking the schema to transformation and validation nodes, using a state store (e.g., Redis or a database table) to record schema version IDs and staleness status (e.g., 'fresh', 'stale', 'pending'). Steps: 1) On schema change event, update tracker with new version and mark dependent nodes as 'stale'. 2) Implement a polling or push mechanism to notify downstream nodes via message queues (e.g., RabbitMQ) or APIs. 3) Define criteria for staleness: if schema version differs from last used version in a node, flag it. 4) Provide an API endpoint for nodes to check their status and fetch latest schema. 5) Log all changes for debugging and compliance. Use tools like Apache Airflow for dependency management or custom scripts with retry logic."
+            },
+            {
+              "label": "Data Transformation",
+              "category": "action",
+              "description": "Process that transforms raw data using the current schema, with handling for stale states.",
+              "content": "This action node executes data transformation logic, such as mapping, filtering, or aggregating, based on the schema. Steps: 1) Check Schema Dependency Tracker for staleness; if 'stale', fetch latest schema version via API. 2) Use transformation tools like Apache Spark with DataFrames, dbt models, or custom Python scripts (e.g., Pandas). 3) Implement error handling for schema mismatches: log errors, fallback to previous version if safe, or halt processing. 4) Owner: Data engineering team; set up monitoring with metrics (e.g., processing time, error rates) in Datadog or Prometheus. 5) On completion, update internal state to 'fresh' and emit events for downstream nodes. Ensure idempotency and test with schema evolution scenarios using tools like Deequ for data quality."
+            },
+            {
+              "label": "Data Validation",
+              "category": "test",
+              "description": "Validates transformed data against the schema for integrity and compliance.",
+              "content": "This test node checks data quality and schema adherence using validation frameworks. Steps: 1) Retrieve data from Transformation node and latest schema from Dependency Tracker. 2) Apply validation rules: data type checks, null constraints, range validations with tools like Great Expectations, Apache Griffin, or custom Pydantic models. 3) Define pass/fail criteria: e.g., 95% of records must conform, with failures logged to a dashboard (e.g., Grafana). 4) On failure, trigger alerts and refine Transformation via feedback loop—provide error details and suggested fixes. 5) Measure coverage: track validation metrics per field and overall compliance. 6) Automate retries with backoff and escalate to data stewards if persistent issues. Use CI/CD integration for pre-deployment checks."
+            },
+            {
+              "label": "Processed Data Output",
+              "category": "output",
+              "description": "Final deliverable of validated data, distributed with schema version metadata.",
+              "content": "This output node produces the processed data in target formats, ensuring it reflects the latest schema. Steps: 1) Format output as Parquet files, database tables (e.g., in Snowflake or BigQuery), or API endpoints. 2) Embed schema version metadata in output (e.g., as a header or separate manifest file). 3) Distribute to consumers: use data lakes (AWS S3), streaming platforms (Kafka), or direct downloads. 4) Define success metrics: data freshness (time since last schema update), consumer SLA adherence, and error rates. 5) Implement monitoring with tools like DataDog to track output latency and schema compliance. 6) On schema changes, version output datasets and deprecate old versions gradually. Ensure documentation includes schema lineage and access controls for sensitive data."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 0,
+              "to": 2,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "drives"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "outputs"
+            },
+            {
+              "from": 4,
+              "to": 3,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 115,
+        "maxScore": 120,
+        "pct": 96,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 6 (min: 5)",
+          "✓ Node count: 6 ≤ 10",
+          "✗ Missing \"input\" category (found: trigger, artifact, dependency, action, test, output)",
+          "✓ Has \"test\" category",
+          "✓ Has \"output\" category",
+          "✓ All 8 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 785c, no thin nodes",
+          "✓ Architecture covers: schema, transform, validat",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (8 edges, 6 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "artifact-minimal-standup",
+      "status": "ok",
+      "elapsed": 8182,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Write a daily standup template I can fill in every day. Sections: what I did yesterday, what I'm doing today, blockers. Keep it under 20 lines — it should be fast to fill in, not a chore.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "## Daily Standup — [Date]\n\n**Yesterday**\n*   [What you accomplished]\n\n**Today**\n*   [Your primary focus]\n\n**Blockers**\n*   [Impediments, if any]\n\n---",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 30,
+        "maxScore": 30,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (149 chars)",
+          "✓ Content length: 149 ≥ 100",
+          "✓ Content concise: 149 ≤ 800"
+        ]
+      }
+    }
+  ]
+}

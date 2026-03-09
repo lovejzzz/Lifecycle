@@ -4143,6 +4143,3240 @@ Each item includes specific files, implementation steps, acceptance criteria, an
 - [ ] No layout shift — badges and stats bar don't push other elements around
 - [ ] Stats bar auto-hides when all execution results are cleared (workflow reset)
 
+### 57. Learned Reframing Rule Lifecycle with Confidence-Based Eviction
+**Status:** [ ] Not started
+**Version target:** 1.57.0
+**Inspiration:** Letta's context repositories with git-based memory versioning — every memory change is tracked and old entries are pruned based on relevance. Mastra's evaluation primitives with SCD-2 style item versioning that tracks data quality over time. CrewAI's knowledge source expiration policies.
+**Complexity:** Low-Medium (2 hours)
+
+**Problem:** In `src/lib/reflection.ts` (lines 652-717), `updateGrowthEdges()` manages learned reframing rules with a hard cap of `MAX_LEARNED_REFRAMING_RULES = 5`. When the cap is reached, new rules are silently dropped (line 684: `if (!existing && rules.length < MAX)` — nothing happens if at cap). Old rules persist forever with NO timestamp, NO confidence score, and NO eviction mechanism. Growth edges get a 7-day TTL prune (lines 708-711), but learned reframing rules have zero lifecycle management. Over time, early low-quality rules (learned from a user's first interaction) block newer, better rules from being stored. The agent's personality drifts toward its first impressions rather than its most recent learning. This violates the "living entity" design principle of the 5-layer personality architecture.
+
+**Implementation:**
+
+1. **File: `src/lib/types.ts`** — Add metadata to `ReframingRule` interface:
+   ```typescript
+   export interface ReframingRule {
+     trigger: string;
+     reframeAs: string;
+     learnedAt: number;       // NEW: timestamp when rule was learned
+     confidence: number;      // NEW: 0-1, how confident the reflection was
+     hitCount: number;        // NEW: how many times this rule was applied
+     lastAppliedAt?: number;  // NEW: last time the rule matched a trigger
+   }
+   ```
+
+2. **File: `src/lib/reflection.ts`** — In `updateGrowthEdges()` (~line 682), replace hard-cap rejection with confidence-based eviction:
+   ```typescript
+   if (action.type === 'add-reframing-rule' && action.data.trigger && action.data.reframeAs) {
+     const existing = newReflection.learnedReframingRules.find(r => r.trigger === action.data.trigger);
+     if (existing) {
+       // Update existing rule's confidence and reframeAs if new confidence is higher
+       if (action.confidence > (existing.confidence || 0)) {
+         existing.reframeAs = action.data.reframeAs as string;
+         existing.confidence = action.confidence;
+       }
+       existing.hitCount = (existing.hitCount || 0) + 1;
+     } else if (newReflection.learnedReframingRules.length < MAX_LEARNED_REFRAMING_RULES) {
+       newReflection.learnedReframingRules.push({
+         trigger: action.data.trigger as string,
+         reframeAs: action.data.reframeAs as string,
+         learnedAt: Date.now(),
+         confidence: action.confidence,
+         hitCount: 0,
+       });
+     } else {
+       // Evict lowest-scoring rule to make room
+       const scored = newReflection.learnedReframingRules.map((r, i) => ({
+         index: i,
+         score: (r.confidence || 0.5) * 0.4 + Math.min(1, (r.hitCount || 0) / 10) * 0.3
+           + (1 - Math.min(1, (Date.now() - (r.learnedAt || 0)) / (14 * 86400000))) * 0.3,
+       }));
+       const weakest = scored.sort((a, b) => a.score - b.score)[0];
+       if (action.confidence > (scored[weakest.index]?.score || 0)) {
+         newReflection.learnedReframingRules[weakest.index] = {
+           trigger: action.data.trigger as string,
+           reframeAs: action.data.reframeAs as string,
+           learnedAt: Date.now(),
+           confidence: action.confidence,
+           hitCount: 0,
+         };
+       }
+     }
+   }
+   ```
+
+3. **File: `src/lib/reflection.ts`** — Add TTL pruning for reframing rules alongside growth edge pruning (~line 708):
+   ```typescript
+   // Prune reframing rules older than 30 days with 0 hits (never applied = not useful)
+   newReflection.learnedReframingRules = newReflection.learnedReframingRules.filter(r =>
+     (r.hitCount || 0) > 0 || Date.now() - (r.learnedAt || 0) < 30 * 86400000
+   );
+   ```
+
+**Acceptance criteria:**
+- [ ] Reframing rules store `learnedAt`, `confidence`, `hitCount`, `lastAppliedAt` metadata
+- [ ] When at cap (5 rules), new rules evict the weakest-scored existing rule (weighted: 40% confidence, 30% usage, 30% recency)
+- [ ] Rules with 0 hits after 30 days are auto-pruned
+- [ ] Existing rules are updated (not duplicated) if the same trigger is learned again with higher confidence
+- [ ] No migration needed — missing fields default to safe values (`learnedAt: 0`, `confidence: 0.5`, `hitCount: 0`)
+- [ ] Agent personality evolves toward recent learning, not first impressions
+
+---
+
+### 58. Import/Export Graph Invariant Validation (Self-Loops, Multi-Edges, Structural Integrity)
+**Status:** [ ] Not started
+**Version target:** 1.58.0
+**Inspiration:** LangGraph's compile-time graph validation that rejects structurally invalid state machines before execution. Rivet's type-safe edge connections that prevent invalid topologies at draw time. ComfyUI's subgraph publishing validation that checks all inputs/outputs are properly connected before allowing publish.
+**Complexity:** Low (1-2 hours)
+
+**Problem:** `importWorkflow()` in `src/store/useStore.ts` (lines 2163-2201) validates that edges reference existing node IDs (line 2177) but does NOT check for: (1) self-loops where `source === target`, (2) duplicate edges (same source→target pair appearing twice), (3) edges pointing to the same node from the same source with different labels (ambiguous relationships). Similarly, `exportAsJSON()` (line 2153) strips `apiKey` but doesn't validate graph integrity before export — a corrupted internal state exports silently. A self-loop imported from a malformed JSON file causes `executeNode()` to create circular dependencies, and topological sort (Kahn's algorithm in `graph.ts:50-74`) silently drops nodes involved in cycles — the user sees nodes that "never execute" without explanation.
+
+**Implementation:**
+
+1. **File: `src/lib/graph.ts`** — Add graph invariant validation utility:
+   ```typescript
+   export interface GraphValidationResult {
+     valid: boolean;
+     issues: Array<{ code: string; message: string; severity: 'error' | 'warning' }>;
+   }
+
+   export function validateGraphInvariants(
+     nodes: Array<{ id: string }>,
+     edges: Array<{ source: string; target: string; label?: string }>,
+   ): GraphValidationResult {
+     const issues: GraphValidationResult['issues'] = [];
+     const nodeIds = new Set(nodes.map(n => n.id));
+
+     // Check self-loops
+     for (const e of edges) {
+       if (e.source === e.target) {
+         issues.push({ code: 'self-loop', message: `Edge loops back to itself on node "${e.source}"`, severity: 'error' });
+       }
+     }
+
+     // Check duplicate edges
+     const edgeKeys = new Set<string>();
+     for (const e of edges) {
+       const key = `${e.source}→${e.target}`;
+       if (edgeKeys.has(key)) {
+         issues.push({ code: 'duplicate-edge', message: `Duplicate edge: ${key}`, severity: 'warning' });
+       }
+       edgeKeys.add(key);
+     }
+
+     // Check dangling edges (reference non-existent nodes)
+     for (const e of edges) {
+       if (!nodeIds.has(e.source)) issues.push({ code: 'dangling-source', message: `Edge source "${e.source}" not found`, severity: 'error' });
+       if (!nodeIds.has(e.target)) issues.push({ code: 'dangling-target', message: `Edge target "${e.target}" not found`, severity: 'error' });
+     }
+
+     return { valid: issues.filter(i => i.severity === 'error').length === 0, issues };
+   }
+   ```
+
+2. **File: `src/store/useStore.ts`** — Use validation in `importWorkflow()` (~line 2163):
+   ```typescript
+   importWorkflow: (json) => {
+     try {
+       const data = JSON.parse(json);
+       // ... existing structure checks ...
+
+       // NEW: Graph invariant validation
+       const { valid, issues } = validateGraphInvariants(data.nodes, data.edges || []);
+       if (!valid) {
+         // Auto-fix: remove self-loops and duplicate edges
+         data.edges = (data.edges || []).filter((e: Edge) => {
+           if (e.source === e.target) return false; // Remove self-loops
+           return true;
+         });
+         // Deduplicate edges
+         const seen = new Set<string>();
+         data.edges = data.edges.filter((e: Edge) => {
+           const key = `${e.source}→${e.target}`;
+           if (seen.has(key)) return false;
+           seen.add(key);
+           return true;
+         });
+       }
+       // ... rest of import logic ...
+     }
+   },
+   ```
+
+3. **File: `src/store/useStore.ts`** — Add validation to `exportAsJSON()` (~line 2153):
+   ```typescript
+   // Before export, validate and warn:
+   const { issues } = validateGraphInvariants(
+     get().nodes.map(n => ({ id: n.id })),
+     get().edges.map(e => ({ source: e.source, target: e.target })),
+   );
+   if (issues.length > 0) {
+     console.warn(`[Export] Graph has ${issues.length} issue(s):`, issues);
+   }
+   ```
+
+**Acceptance criteria:**
+- [ ] Self-loops (source === target) are detected and auto-removed on import
+- [ ] Duplicate edges (same source→target) are deduplicated on import
+- [ ] Dangling edges (referencing non-existent nodes) are rejected
+- [ ] Export logs warnings for any graph invariant issues
+- [ ] `validateGraphInvariants()` is a pure function in graph.ts, unit-testable
+- [ ] Existing valid imports are unaffected (validation passes through cleanly)
+- [ ] User sees warning toast if import required auto-fixing
+
+---
+
+### 59. Word-Boundary-Aware Node Reference Linking in Chat Messages
+**Status:** [ ] Not started
+**Version target:** 1.59.0
+**Inspiration:** Dify's variable reference system with `{{#nodeId.fieldName}}` syntax that unambiguously identifies node references. Rivet's type-safe node connections where each reference is validated against the graph schema. Also: IDE-style "Go to Definition" that uses precise symbol resolution, not substring matching.
+**Complexity:** Low (1-2 hours)
+
+**Problem:** The markdown renderer in `src/lib/markdown.tsx` (lines 42-63) matches node names in chat messages using `remaining.toLowerCase().indexOf(name.toLowerCase())`. This is a naive substring match that causes two problems: (1) If nodes are named "Test" and "Testing", writing "Test" in a CID response will match "Testing" if it appears first in the node name map iteration order. (2) The substring match doesn't respect word boundaries — "artifact" inside the word "artifactual" links to the "artifact" node. This creates phantom links that confuse users and misrepresent CID's intent. The matching also fails on partial overlaps: a node named "Data Pipeline" would match inside "Metadata Pipeline Processing".
+
+**Implementation:**
+
+1. **File: `src/lib/markdown.tsx`** — Replace substring matching with word-boundary-aware regex (~line 42):
+   ```typescript
+   if (nodeNames && onNodeClick) {
+     // Sort node names by length (longest first) to match most specific name
+     const sortedNames = [...nodeNames.entries()].sort((a, b) => b[0].length - a[0].length);
+
+     let foundNode = false;
+     for (const [name, id] of sortedNames) {
+       // Escape regex special chars in node name
+       const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+       // Word-boundary match: must be preceded/followed by non-alphanumeric or string boundary
+       const regex = new RegExp(`(?<![a-zA-Z0-9])${escaped}(?![a-zA-Z0-9])`, 'i');
+       const match = remaining.match(regex);
+       if (match && match.index != null) {
+         if (match.index > 0) parts.push(<React.Fragment key={key++}>{remaining.slice(0, match.index)}</React.Fragment>);
+         parts.push(
+           <button key={key++} onClick={() => onNodeClick(id)}
+             className="text-cyan-400/80 hover:text-cyan-300 underline underline-offset-2 decoration-cyan-400/30 hover:decoration-cyan-400/60 transition-colors"
+             title={`Go to node: ${name}`}
+           >
+             {remaining.slice(match.index, match.index + match[0].length)}
+           </button>,
+         );
+         remaining = remaining.slice(match.index + match[0].length);
+         foundNode = true;
+         break;
+       }
+     }
+     if (foundNode) continue;
+   }
+   ```
+
+2. **Key changes in the approach:**
+   - Sort names longest-first so "Testing" matches before "Test"
+   - Use regex word boundaries (`(?<![a-zA-Z0-9])...(![a-zA-Z0-9])`) instead of `indexOf`
+   - Add `title` attribute for accessibility (shows full node name on hover)
+   - Escape special regex characters in node names to prevent regex injection
+
+**Acceptance criteria:**
+- [ ] "Test" does not match inside "Testing" — longest-first matching prevents ambiguity
+- [ ] "artifact" does not match inside "artifactual" — word boundary regex prevents false positives
+- [ ] "Data Pipeline" does not match inside "Metadata Pipeline Processing"
+- [ ] Node names with special characters (e.g., "Review (Phase 2)") are properly escaped and matched
+- [ ] Links include `title` attribute showing the full node name for accessibility
+- [ ] Performance: regex matching is fast (<1ms for 20 node names in a 1000-char message)
+- [ ] No regression on existing node linking for exact-match cases
+
+---
+
+### 60. Storage Reliability Layer with Quota Warning and Flush-on-Exit
+**Status:** [ ] Not started
+**Version target:** 1.60.0
+**Inspiration:** Dify's persistent workflow state with auto-save indicators and recovery prompts. n8n's execution data management with configurable retention and pruning. Letta's context repositories with durable persistence guarantees. ComfyUI's workflow auto-save with versioned backups.
+**Complexity:** Medium (2-3 hours)
+
+**Problem:** The localStorage persistence in `src/store/useStore.ts` (lines 491-502) has three silent failure modes: (1) `saveToStorage()` debounces with 150ms timeout (line 494), but if the browser closes before the timeout fires, the last batch of changes is lost. (2) `flushSave()` (line 502) catches `localStorage.setItem()` errors with an empty catch block — if localStorage quota (typically 5MB) is exceeded, the user's workflow is silently not saved. (3) On next page load, `loadFromStorage()` (line 462) loads the LAST successful save, which may be missing the user's most recent work. Combined, these create a data loss scenario where a user builds a complex workflow with many large execution results, the quota is exceeded mid-session, and they lose everything after their next browser restart.
+
+**Implementation:**
+
+1. **File: `src/store/useStore.ts`** — Add `beforeunload` flush in store initialization (~line 490):
+   ```typescript
+   // Flush pending saves before browser closes
+   if (typeof window !== 'undefined') {
+     window.addEventListener('beforeunload', () => {
+       if (saveTimer) {
+         clearTimeout(saveTimer);
+         flushSave(); // Synchronous localStorage write before exit
+       }
+     });
+   }
+   ```
+
+2. **File: `src/store/useStore.ts`** — Add quota detection in `flushSave()` (~line 502):
+   ```typescript
+   function flushSave() {
+     const state = useLifecycleStore.getState();
+     const data = {
+       nodes: state.nodes,
+       edges: state.edges,
+       events: state.events.slice(-200), // Cap events to prevent quota bloat
+       messages: state.messages.filter(m => !m._ephemeral).slice(-100), // Cap messages
+     };
+     const json = JSON.stringify(data);
+     const sizeKB = Math.round(json.length / 1024);
+
+     // Quota warning threshold (4MB of 5MB limit)
+     if (sizeKB > 4096) {
+       console.warn(`[Storage] Near quota: ${sizeKB}KB. Trimming execution results.`);
+       // Trim large execution results to previews only
+       for (const node of data.nodes) {
+         if (node.data.executionResult && node.data.executionResult.length > 2000) {
+           node.data.executionResult = node.data.executionResult.slice(0, 2000) + '\n\n... (truncated for storage)';
+         }
+       }
+     }
+
+     try {
+       localStorage.setItem('lifecycle-agent-store', JSON.stringify(data));
+       set({ _lastSavedAt: Date.now(), _saveError: null });
+     } catch (e) {
+       console.error('[Storage] Save failed:', e);
+       set({ _saveError: 'Storage quota exceeded. Some data may not be saved.' });
+       // Attempt emergency save with aggressive trimming
+       try {
+         for (const node of data.nodes) {
+           node.data.executionResult = node.data.executionResult?.slice(0, 500) || '';
+         }
+         data.events = data.events.slice(-50);
+         localStorage.setItem('lifecycle-agent-store', JSON.stringify(data));
+         set({ _saveError: 'Storage full — execution results trimmed to fit.' });
+       } catch {
+         set({ _saveError: 'Storage completely full. Export your workflow to avoid data loss.' });
+       }
+     }
+   }
+   ```
+
+3. **File: `src/lib/types.ts`** — Add save status fields to store:
+   ```typescript
+   _lastSavedAt?: number;
+   _saveError?: string | null;
+   ```
+
+4. **File: `src/components/TopBar.tsx`** — Show save status indicator:
+   ```typescript
+   // In the top bar, near the node/edge count:
+   {saveError && (
+     <span className="text-[8px] text-rose-400/60 flex items-center gap-1" title={saveError}>
+       <AlertCircle size={9} /> Storage issue
+     </span>
+   )}
+   {!saveError && lastSavedAt && (
+     <span className="text-[7px] text-white/15" title={`Last saved: ${new Date(lastSavedAt).toLocaleTimeString()}`}>
+       ✓ Saved
+     </span>
+   )}
+   ```
+
+**Acceptance criteria:**
+- [ ] `beforeunload` handler flushes pending saves synchronously before browser closes
+- [ ] Quota detection triggers at 4MB — execution results are auto-trimmed to 2KB each
+- [ ] Emergency save (aggressive trim) fires if first save attempt fails
+- [ ] TopBar shows "✓ Saved" indicator with last-saved time on hover
+- [ ] TopBar shows red "Storage issue" indicator when save fails, with tooltip explaining the problem
+- [ ] Events capped at 200, messages at 100 during save to prevent quota bloat
+- [ ] No data loss on normal-sized workflows (<3MB). Only large execution results are trimmed.
+- [ ] Save error state clears automatically on next successful save
+
+---
+
+### 61. Explicit Node Execution Lock with Visual "Pin Content" Toggle
+**Status:** [ ] Not started
+**Version target:** 1.61.0
+**Inspiration:** n8n's "pin data" feature that locks a node's output to specific data, preventing re-execution. Dify's "None" error handling mode where a node explicitly passes through without processing. ComfyUI's "bypass node" toggle that makes a node pass through data without running its processor. Rivet's node disable/enable toggle for iterative debugging.
+**Complexity:** Low (1-2 hours)
+
+**Problem:** In `src/store/useStore.ts` (lines 1167-1176), the logic for deciding whether to skip AI execution on a node is brittle: `if (d.content && d.content.length > 50 && !hasUpstreamExecResults && !d.aiPrompt)`. This complex AND condition creates confusing behavior — a user pre-fills a node with detailed content expecting it to be used as-is, but if upstream nodes have execution results (making `hasUpstreamExecResults` true), the pre-filled content is OVERWRITTEN by an AI call. There's no explicit way for a user to say "this node's content is final — don't regenerate it." n8n solves this with a "pin data" toggle: once pinned, a node always returns its pinned data regardless of upstream state. ComfyUI has a bypass toggle. We have nothing — the skip logic is implicit and unpredictable.
+
+**Implementation:**
+
+1. **File: `src/lib/types.ts`** — Add pinned flag to `NodeData`:
+   ```typescript
+   _pinned?: boolean;  // If true, node skips AI execution and uses existing content/executionResult as output
+   ```
+
+2. **File: `src/store/useStore.ts`** — In `executeNode()` (~line 1167), add explicit pin check FIRST:
+   ```typescript
+   // BEFORE the existing content bypass logic:
+   if (d._pinned) {
+     const pinnedOutput = d.executionResult || d.content || '';
+     store.updateNodeData(nodeId, {
+       executionResult: pinnedOutput,
+       executionStatus: pinnedOutput ? 'success' : 'idle',
+       _executionStartedAt: _execStart,
+       _executionDurationMs: 0,
+     });
+     return; // Skip AI call entirely — use pinned content
+   }
+   ```
+
+3. **File: `src/components/LifecycleNode.tsx`** — Add visual pin indicator and toggle:
+   ```typescript
+   // In the node header area, next to the status icon:
+   {nodeData._pinned && (
+     <span className="text-[7px] text-amber-400/50 flex items-center gap-0.5" title="Content pinned — won't re-execute">
+       <Pin size={8} /> Pinned
+     </span>
+   )}
+   ```
+
+4. **File: `src/components/NodeDetailPanel.tsx`** — Add pin toggle in node settings:
+   ```typescript
+   // In the node configuration section:
+   <label className="flex items-center gap-2 text-[10px] text-white/40 cursor-pointer">
+     <input
+       type="checkbox"
+       checked={!!node.data._pinned}
+       onChange={() => updateNodeData(node.id, { _pinned: !node.data._pinned })}
+       className="rounded border-white/20"
+     />
+     <Pin size={10} />
+     Pin content (skip AI execution)
+   </label>
+   ```
+
+5. **File: `src/lib/prompts.ts`** — Teach CID about pinned nodes in graph serializer (~line 376):
+   ```typescript
+   // In serializeGraph(), after exec info:
+   const pinnedStr = d._pinned ? ' [PINNED — content locked, skip execution]' : '';
+   // Include in node line: ...${execInfo}${pinnedStr}...
+   ```
+
+**Acceptance criteria:**
+- [ ] Nodes with `_pinned: true` skip AI execution entirely — return existing content as executionResult
+- [ ] Pin toggle available in NodeDetailPanel as a checkbox
+- [ ] Pinned nodes show amber "Pinned" badge in the node card header
+- [ ] CID's graph serializer shows `[PINNED]` marker so the agent knows which nodes are locked
+- [ ] CID does NOT suggest modifications to pinned nodes unless user explicitly asks to unpin
+- [ ] Pin state persists across page reloads (saved in localStorage)
+- [ ] Unpinning a node allows normal execution on next workflow run
+- [ ] Pin works for ALL node categories (not just CID/action nodes)
+
+---
+
+### 62. Node-Level Prompt Optimization Assistant (CID Self-Improves Node Configs)
+**Status:** [ ] Not started
+**Version target:** 1.62.0
+**Inspiration:** Dify v1.8.0's auto-fix tool for Code nodes that generates improved versions based on desired output + prompt optimization assistant for LLM nodes. Mastra's completion scoring that evaluates whether output actually satisfies intent. Langflow's inline component inspection showing per-node token counts and state.
+**Complexity:** Medium (3-4 hours)
+
+**Problem:** When a workflow executes and produces weak results, users must manually rewrite each node's `aiPrompt` field to improve output quality. There's no way to ask CID "make this node's prompt better." In `src/store/useStore.ts` (lines 2472-2487), the `update_nodes` modification handler can change `content`, `description`, `sections`, and `status` — but there's no dedicated "optimize this node's prompt" operation that analyzes execution results, identifies why output was weak, and rewrites the `aiPrompt` with better instructions. Dify solved this with a prompt optimization assistant that takes a node's current prompt + sample output + desired output and generates an improved prompt. Our CID agent has "full power" over nodes (per `prompts.ts:86-109`) but no explicit guidance on HOW to improve prompts — it just overwrites blindly.
+
+**Implementation:**
+
+1. **File: `src/lib/prompts.ts`** — Add a `PROMPT_OPTIMIZATION_GUIDE` block to `SHARED_CAPABILITIES` (after the modification schema, ~line 109):
+   ```typescript
+   const PROMPT_OPTIMIZATION_GUIDE = `
+   When asked to optimize/improve a node's prompt (e.g. "make this node better", "improve the output of X"):
+   1. Read the node's current aiPrompt, its executionResult, and upstream context
+   2. Diagnose WHY the output is weak:
+      - Vague instructions → add specificity (format, length, audience, examples)
+      - Missing context → add upstream data references ("Use the analysis from {upstream_node}")
+      - Wrong tone → add persona/voice constraints
+      - Incomplete output → add explicit section requirements
+   3. Return a modification with update_nodes containing the improved aiPrompt
+   4. Include a message explaining what you changed and why
+
+   PROMPT REWRITE PATTERNS:
+   - Add "You are a [role] with expertise in [domain]" if missing
+   - Add "Output format: [structure]" if output is unstructured
+   - Add "Include: [list of required sections]" if output is incomplete
+   - Add "Constraints: [word count, tone, audience]" if output is unfocused
+   - Reference upstream node outputs by name: "Using the {Node Label} results..."
+   `;
+   ```
+
+2. **File: `src/lib/prompts.ts`** — In `compileExpressionMode()` (~line 223), inject optimization context when a node has execution results:
+   ```typescript
+   // After canvas state sensing (~line 255):
+   const nodesWithResults = nodes.filter(n => n.data.executionResult);
+   const weakNodes = nodesWithResults.filter(n =>
+     (n.data.executionResult?.length || 0) < 200 ||
+     n.data.executionStatus === 'error'
+   );
+   if (weakNodes.length > 0) {
+     directives.push(`${weakNodes.length} node(s) have weak/short execution results. If user asks to improve them, use the PROMPT OPTIMIZATION GUIDE.`);
+   }
+   ```
+
+3. **File: `src/store/useStore.ts`** — In the modification handler for `update_nodes` (~line 2472), ensure `aiPrompt` field is writable:
+   ```typescript
+   // Add aiPrompt to the updatable fields list:
+   if (mod.aiPrompt !== undefined) {
+     updates.aiPrompt = mod.aiPrompt;
+   }
+   ```
+
+4. **File: `src/components/NodeDetailPanel.tsx`** — Add "Optimize with CID" button next to the aiPrompt textarea:
+   ```typescript
+   // Below the aiPrompt input field:
+   <button
+     onClick={() => chatWithCID(`Optimize the prompt for the "${node.data.label}" node. Its current output is weak — rewrite the aiPrompt to produce better results.`)}
+     className="text-[9px] text-blue-400/60 hover:text-blue-400 transition-colors"
+     title="Ask CID to analyze and improve this node's AI prompt"
+   >
+     ✦ Optimize with CID
+   </button>
+   ```
+
+**Acceptance criteria:**
+- [ ] CID can rewrite a node's `aiPrompt` when asked "improve the prompt for X" or "make X node better"
+- [ ] The optimization guide is included in system prompt so CID knows rewrite patterns
+- [ ] `aiPrompt` field is writable via `update_nodes` modification (not just content/description)
+- [ ] NodeDetailPanel shows "Optimize with CID" button that sends a pre-built prompt to chat
+- [ ] After optimization, re-executing the node produces measurably better output (longer, more structured, more relevant)
+- [ ] CID explains what it changed in the accompanying message
+
+---
+
+### 63. Conditional Node Execution Gate with Runtime Boolean Skip
+**Status:** [ ] Not started
+**Version target:** 1.63.0
+**Inspiration:** Rivet's conditional inputs on every node — any node can optionally have a boolean condition input that toggles whether it runs, without needing separate conditional routing nodes. n8n's IF node that evaluates conditions and routes to different branches. ComfyUI's bypass toggle for iterative debugging.
+**Complexity:** Medium (3-4 hours)
+
+**Problem:** In `src/store/useStore.ts` (lines 1070-1257), `executeNode()` has a hardcoded list of passthrough categories (`input`, `trigger`, `dependency`) that skip AI execution. There's no way for a user to say "skip this node IF a condition is true at runtime." Current workarounds: (1) manually remove the node from the graph, losing it; (2) use `_pinned` from item #61, but that's unconditional — always skips. Real workflows need conditional execution: "only run the translation node if the input language isn't English", "skip the review node if content length > 5000 chars." Rivet solves this elegantly by adding an optional boolean condition input port to every node — if the condition is false, the node passes through its input unchanged. This avoids the graph clutter of dedicated IF/ELSE branch nodes while giving per-node execution control.
+
+**Implementation:**
+
+1. **File: `src/lib/types.ts`** — Add condition fields to `NodeData`:
+   ```typescript
+   _condition?: string;       // JS expression evaluated at runtime, e.g. "input.length > 100"
+   _conditionEnabled?: boolean; // Whether the condition gate is active
+   ```
+
+2. **File: `src/store/useStore.ts`** — In `executeNode()` (~line 1070), add condition evaluation AFTER pin check but BEFORE AI execution:
+   ```typescript
+   // After the _pinned check from #61:
+   if (d._conditionEnabled && d._condition) {
+     const upstreamText = upstreamResults.join('\n');
+     const conditionMet = evaluateNodeCondition(d._condition, {
+       input: upstreamText,
+       inputLength: upstreamText.length,
+       nodeLabel: d.label,
+       nodeCategory: d.category,
+       upstreamCount: incomingEdges.length,
+     });
+     if (!conditionMet) {
+       // Pass through upstream data without AI execution
+       store.updateNodeData(nodeId, {
+         executionResult: upstreamText || d.content || '',
+         executionStatus: 'success',
+         _executionDurationMs: 0,
+         _skippedByCondition: true,
+       });
+       cidLog(`Skipped "${d.label}" — condition "${d._condition}" evaluated false`);
+       return;
+     }
+   }
+   ```
+
+3. **File: `src/store/useStore.ts`** — Add safe condition evaluator (NO eval(), use simple expression parser):
+   ```typescript
+   function evaluateNodeCondition(
+     expr: string,
+     ctx: { input: string; inputLength: number; nodeLabel: string; nodeCategory: string; upstreamCount: number }
+   ): boolean {
+     // Simple expression parser — supports: >, <, >=, <=, ==, !=, &&, ||, contains, startsWith
+     // Examples: "inputLength > 500", "input.contains('error')", "upstreamCount >= 2"
+     // NO eval() — parse and evaluate safely
+     try {
+       const trimmed = expr.trim();
+       // Handle "inputLength > N" pattern
+       const numericMatch = trimmed.match(/^(\w+)\s*(>=?|<=?|==|!=)\s*(\d+)$/);
+       if (numericMatch) {
+         const [, field, op, val] = numericMatch;
+         const left = (ctx as Record<string, unknown>)[field];
+         if (typeof left !== 'number') return true; // unknown field → don't skip
+         const right = Number(val);
+         switch (op) {
+           case '>': return left > right;
+           case '<': return left < right;
+           case '>=': return left >= right;
+           case '<=': return left <= right;
+           case '==': return left === right;
+           case '!=': return left !== right;
+         }
+       }
+       // Handle "input.contains('text')" pattern
+       const containsMatch = trimmed.match(/^input\.contains\(['"](.+)['"]\)$/);
+       if (containsMatch) return ctx.input.includes(containsMatch[1]);
+       // Handle "input.startsWith('text')" pattern
+       const startsMatch = trimmed.match(/^input\.startsWith\(['"](.+)['"]\)$/);
+       if (startsMatch) return ctx.input.startsWith(startsMatch[1]);
+       return true; // Unparseable → don't skip (safe default)
+     } catch { return true; }
+   }
+   ```
+
+4. **File: `src/components/NodeDetailPanel.tsx`** — Add condition configuration UI:
+   ```typescript
+   // In node settings, after the pin toggle:
+   <div className="space-y-1">
+     <label className="flex items-center gap-2 text-[10px] text-white/40 cursor-pointer">
+       <input type="checkbox" checked={!!node.data._conditionEnabled}
+         onChange={() => updateNodeData(node.id, { _conditionEnabled: !node.data._conditionEnabled })} />
+       <Filter size={10} /> Conditional execution
+     </label>
+     {node.data._conditionEnabled && (
+       <input
+         value={node.data._condition || ''}
+         onChange={(e) => updateNodeData(node.id, { _condition: e.target.value })}
+         placeholder='e.g. inputLength > 200'
+         className="w-full bg-black/30 border border-white/10 rounded px-2 py-1 text-[10px]"
+       />
+     )}
+   </div>
+   ```
+
+5. **File: `src/components/LifecycleNode.tsx`** — Show condition badge when active:
+   ```typescript
+   // In node header, next to pinned indicator:
+   {nodeData._conditionEnabled && nodeData._condition && (
+     <span className="text-[7px] text-cyan-400/50 flex items-center gap-0.5" title={`Condition: ${nodeData._condition}`}>
+       <Filter size={8} /> IF
+     </span>
+   )}
+   // If skipped by condition, show in status area:
+   {nodeData._skippedByCondition && (
+     <span className="text-[7px] text-white/30 italic">skipped</span>
+   )}
+   ```
+
+6. **File: `src/lib/prompts.ts`** — Teach CID about conditional nodes in graph serializer:
+   ```typescript
+   // In serializeGraph(), include condition info:
+   const condStr = d._conditionEnabled && d._condition ? ` [CONDITION: ${d._condition}]` : '';
+   ```
+
+**Acceptance criteria:**
+- [ ] Nodes with `_conditionEnabled: true` and a `_condition` expression evaluate the condition at runtime
+- [ ] When condition is false, node passes through upstream data without AI execution
+- [ ] When condition is true, node executes normally
+- [ ] Condition evaluator is safe (no `eval()`) — uses pattern matching for supported expressions
+- [ ] Supported expressions: `inputLength > N`, `input.contains('text')`, `input.startsWith('text')`, `upstreamCount >= N`
+- [ ] NodeDetailPanel shows condition configuration UI with enable toggle + expression input
+- [ ] Skipped nodes show "skipped" indicator in the node card
+- [ ] CID's graph serializer includes `[CONDITION: ...]` for conditional nodes
+- [ ] Unparseable conditions default to "don't skip" (safe fallback)
+
+---
+
+### 64. JIT Context Window Scoping for Per-Node Execution
+**Status:** [ ] Not started
+**Version target:** 1.64.0
+**Inspiration:** Composio's Agent Orchestrator "Just-in-Time" managed toolsets — the Planner decomposes objectives into sub-tasks, and the Executor receives only tool definitions relevant to the current sub-task (not all 100+ tools). This reduces token usage and parameter hallucination. Also inspired by CrewAI Flows' event-driven pipeline where each step only receives data it explicitly subscribes to, and Mastra's isolated agent memory within networks.
+**Complexity:** Medium (3-4 hours)
+
+**Problem:** In `src/store/useStore.ts` (lines 1186-1210), `executeNode()` builds the execution prompt by joining ALL upstream results: `upstreamResults.join('\n\n---\n\n')`. For fan-out/fan-in topologies, this means a node that merges 5 upstream branches receives the FULL output of all 5 — even if some are irrelevant to this node's task. A "Format as PDF" output node doesn't need the raw research data from 3 branches ago — it only needs the immediately preceding "Compile Report" node's output. This wastes tokens and confuses the LLM. Composio solved this with JIT scoping: each executor only sees tools/data relevant to its sub-task. Currently, `executeNode()` collects upstream results by walking all incoming edges (lines 1186-1200), but doesn't filter by relevance or distance. A 20-node workflow where 15 nodes feed into a final merge node sends 15 full outputs (~50K+ tokens) as context — exceeding model limits and degrading quality.
+
+**Implementation:**
+
+1. **File: `src/store/useStore.ts`** — Replace the flat upstream collection with distance-aware scoping in `executeNode()` (~line 1186):
+   ```typescript
+   // NEW: JIT context scoping — prioritize immediate parents, summarize distant ancestors
+   function collectScopedContext(
+     nodeId: string,
+     nodes: Node[],
+     edges: Edge[],
+     maxDirectParents: number = 3,
+     maxAncestorDepth: number = 2
+   ): { directContext: string; ancestorSummary: string } {
+     const directParents = edges
+       .filter(e => e.target === nodeId)
+       .map(e => nodes.find(n => n.id === e.source))
+       .filter(Boolean);
+
+     // Direct parents: include full execution results (most relevant)
+     const directContext = directParents
+       .slice(0, maxDirectParents)
+       .map(n => {
+         const result = n.data.executionResult || n.data.content || '';
+         return `[${n.data.label}]: ${result}`;
+       })
+       .join('\n\n---\n\n');
+
+     // Grandparents+: include only label + first 200 chars (context hint, not full data)
+     const ancestorSummary = collectAncestors(directParents, edges, nodes, maxAncestorDepth)
+       .map(n => {
+         const result = n.data.executionResult || n.data.content || '';
+         return `[${n.data.label}]: ${result.slice(0, 200)}${result.length > 200 ? '...' : ''}`;
+       })
+       .join('\n');
+
+     return { directContext, ancestorSummary };
+   }
+
+   function collectAncestors(parents: Node[], edges: Edge[], nodes: Node[], depth: number): Node[] {
+     if (depth <= 0 || parents.length === 0) return [];
+     const grandparents = parents.flatMap(p =>
+       edges.filter(e => e.target === p.id).map(e => nodes.find(n => n.id === e.source)).filter(Boolean)
+     );
+     const unique = [...new Map(grandparents.map(n => [n.id, n])).values()];
+     return [...unique, ...collectAncestors(unique, edges, nodes, depth - 1)];
+   }
+   ```
+
+2. **File: `src/store/useStore.ts`** — Update `executeNode()` to use scoped context (~line 1210):
+   ```typescript
+   // REPLACE: const upstreamText = upstreamResults.join('\n\n---\n\n');
+   // WITH:
+   const { directContext, ancestorSummary } = collectScopedContext(nodeId, nodes, edges);
+   const upstreamText = ancestorSummary
+     ? `## Direct inputs:\n${directContext}\n\n## Background context (summarized):\n${ancestorSummary}`
+     : directContext;
+   ```
+
+3. **File: `src/lib/prompts.ts`** — Update the execution prompt builder to respect scoped context (~line 364, in graph serializer or execution prompt section):
+   ```typescript
+   // Add context scoping instruction to execution prompts:
+   const SCOPING_INSTRUCTION = `You are receiving SCOPED context:
+   - "Direct inputs" = full output from your immediate upstream nodes. Use these as your primary data.
+   - "Background context" = truncated summaries from earlier nodes. Use for reference only.
+   Focus on transforming/processing the Direct inputs. Don't try to reconstruct truncated data.`;
+   ```
+
+4. **File: `src/app/api/cid/route.ts`** — Add token counting log for execution tasks to measure the improvement:
+   ```typescript
+   // After building the messages array for 'execute' tasks:
+   const contextTokenEstimate = Math.ceil(messages.reduce((sum, m) => sum + (m.content?.length || 0), 0) / 4);
+   console.log(`[CID API] Execute "${requestBody.nodeLabel}" — ~${contextTokenEstimate} tokens context`);
+   ```
+
+**Acceptance criteria:**
+- [ ] `executeNode()` uses `collectScopedContext()` instead of flat `upstreamResults.join()`
+- [ ] Direct parent nodes (1 edge away) provide full execution results
+- [ ] Ancestor nodes (2+ edges away) provide truncated summaries (first 200 chars)
+- [ ] Fan-in merge nodes receive structured "Direct inputs" + "Background context" sections
+- [ ] Token usage for execution tasks decreases by 30%+ on workflows with 10+ nodes
+- [ ] Execution prompt includes scoping instruction so LLM knows how to use tiered context
+- [ ] No regression on workflow output quality for simple linear workflows (3-5 nodes)
+- [ ] Console logs show estimated token count per execution for monitoring
+
+---
+
+### 65. Hover-to-Render Node Output with Lazy Content Expansion
+**Status:** [ ] Not started
+**Version target:** 1.65.0
+**Inspiration:** Rivet's hover-to-render for large outputs — node outputs only render when the mouse hovers over the node, solving the performance problem of displaying large LLM responses in a visual graph. ComfyUI Node 2.0's migration to framework-rendered nodes for richer interactions. Langflow 1.8's inline component inspection panel showing logs, tokens, and state per-node without leaving the canvas.
+**Complexity:** Low-Medium (2-3 hours)
+
+**Problem:** In `src/components/LifecycleNode.tsx`, every node renders its full content preview regardless of visibility or interaction state. When a workflow executes and 15+ nodes each have 500+ character execution results, React Flow re-renders all visible nodes on every state change — causing frame drops and sluggish canvas panning. The `memo()` wrapper (line 22) helps with prop equality, but the content string itself changes after execution, triggering full re-renders of every executed node simultaneously. The current node card (210-270px wide, lines 87-88) truncates long content with CSS overflow, but the DOM still contains the full text string, bloating the virtual DOM diff. Additionally, there's no visual way to see execution output on the canvas — users must open the PreviewPanel or NodeDetailPanel to inspect results.
+
+**Implementation:**
+
+1. **File: `src/components/LifecycleNode.tsx`** — Replace static content preview with lazy-rendered hover expansion:
+   ```typescript
+   // NEW: Track hover state for output rendering
+   const [isHovered, setIsHovered] = useState(false);
+   const [showOutput, setShowOutput] = useState(false);
+
+   // Debounce hover to prevent flicker
+   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+   const handleMouseEnter = useCallback(() => {
+     hoverTimeoutRef.current = setTimeout(() => setIsHovered(true), 300);
+   }, []);
+   const handleMouseLeave = useCallback(() => {
+     clearTimeout(hoverTimeoutRef.current);
+     setIsHovered(false);
+     setShowOutput(false);
+   }, []);
+   ```
+
+2. **File: `src/components/LifecycleNode.tsx`** — Add hover overlay for executed nodes:
+   ```typescript
+   // After the main node card, render overlay only on hover:
+   {isHovered && nodeData.executionResult && (
+     <motion.div
+       initial={{ opacity: 0, y: -4 }}
+       animate={{ opacity: 1, y: 0 }}
+       exit={{ opacity: 0 }}
+       className="absolute left-0 top-full mt-1 z-50 w-[320px] max-h-[240px] overflow-y-auto
+         bg-zinc-900/95 backdrop-blur-sm border border-white/10 rounded-lg shadow-2xl p-3"
+     >
+       <div className="flex items-center justify-between mb-2">
+         <span className="text-[9px] font-medium text-white/60">Execution Output</span>
+         <span className="text-[8px] text-white/30">
+           {nodeData._executionDurationMs ? `${(nodeData._executionDurationMs / 1000).toFixed(1)}s` : ''}
+         </span>
+       </div>
+       <div className="text-[10px] text-white/80 leading-relaxed whitespace-pre-wrap">
+         {nodeData.executionResult.slice(0, 1000)}
+         {nodeData.executionResult.length > 1000 && (
+           <span className="text-white/30 italic">... ({nodeData.executionResult.length} chars total)</span>
+         )}
+       </div>
+     </motion.div>
+   )}
+   ```
+
+3. **File: `src/components/LifecycleNode.tsx`** — Optimize content preview to show truncated stub instead of full text:
+   ```typescript
+   // REPLACE full content render in the node body with a stub:
+   // Instead of rendering the full content string in the DOM:
+   const contentPreview = useMemo(() => {
+     const text = nodeData.executionResult || nodeData.content || nodeData.description || '';
+     if (text.length <= 80) return text;
+     return text.slice(0, 80) + '…';
+   }, [nodeData.executionResult, nodeData.content, nodeData.description]);
+
+   // Use contentPreview in the render, NOT the full string
+   ```
+
+4. **File: `src/components/LifecycleNode.tsx`** — Add execution status micro-indicator:
+   ```typescript
+   // Small colored dot indicating execution state, visible without hover:
+   {nodeData.executionStatus === 'success' && (
+     <div className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500/80 border border-zinc-900"
+       title="Executed — hover to see output" />
+   )}
+   {nodeData.executionStatus === 'error' && (
+     <div className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500/80 border border-zinc-900"
+       title="Error — hover to see details" />
+   )}
+   ```
+
+**Acceptance criteria:**
+- [ ] Node cards show truncated content preview (max 80 chars) instead of full text in the DOM
+- [ ] Hovering over an executed node for 300ms shows a floating output panel below the node
+- [ ] Output panel shows execution result (first 1000 chars), duration, and total char count
+- [ ] Mouse leave dismisses the output panel
+- [ ] Canvas panning performance improves measurably with 15+ executed nodes (no frame drops)
+- [ ] Non-executed nodes show no hover overlay (only description/content stub)
+- [ ] Small colored dot indicator shows execution status without needing hover
+- [ ] Works correctly when zoomed in/out on the React Flow canvas
+
+---
+
+### 66. Inline Per-Node Execution Inspector with Logs and Token Metrics
+**Status:** [ ] Not started
+**Version target:** 1.66.0
+**Inspiration:** Langflow 1.8's dedicated component inspection panel — inspect a component's internal state, inputs, and outputs during or after execution, showing logs, token counts, and component state inline in the workspace. Dify's visual relationship debugging (hold Shift to highlight connected nodes). n8n's AI evaluations with inline logs showing each step's reasoning. Mastra Studio's trace visualization with score deltas.
+**Complexity:** Medium (3-4 hours)
+
+**Problem:** After workflow execution, users have no way to inspect what happened inside each node without opening the NodeDetailPanel (which shows configuration, not execution trace). The `executionResult` is stored in `NodeData` (`useStore.ts`), but the raw LLM request/response, token usage, timing breakdown (API latency vs. processing), and the actual prompt sent to the LLM are invisible. When a node produces unexpected output, users can't debug whether the issue was: (a) bad upstream data, (b) a poorly written aiPrompt, (c) the model hallucinating, or (d) context window overflow. Langflow solved this with inline component inspection — click any node after execution to see its full trace (inputs, outputs, logs, tokens, state) without leaving the canvas. Currently, execution timing is tracked (`_executionDurationMs` in `useStore.ts:1248`) but not exposed in any useful debugging UI, and there's no token count tracking at all.
+
+**Implementation:**
+
+1. **File: `src/app/api/cid/route.ts`** — Return execution metadata alongside the response (~line 380):
+   ```typescript
+   // After getting the LLM response, add metadata to the return:
+   const executionMeta = {
+     model: resolvedModel,
+     provider: resolvedProvider,
+     promptTokens: response.usage?.prompt_tokens || null,
+     completionTokens: response.usage?.completion_tokens || null,
+     totalTokens: response.usage?.total_tokens || null,
+     latencyMs: Date.now() - requestStartTime,
+     promptLength: messages.reduce((sum, m) => sum + (typeof m.content === 'string' ? m.content.length : 0), 0),
+     responseLength: rawContent.length,
+   };
+   // Include in JSON response:
+   return NextResponse.json({ ...parsed, _executionMeta: executionMeta });
+   ```
+
+2. **File: `src/store/useStore.ts`** — Store execution metadata per node (~line 1240):
+   ```typescript
+   // After receiving API response in executeNode():
+   const executionMeta = data._executionMeta || null;
+   store.updateNodeData(nodeId, {
+     executionResult: result,
+     executionStatus: 'success',
+     _executionDurationMs: Date.now() - _execStart,
+     _executionMeta: executionMeta,  // NEW: store full trace
+     _executionPrompt: executionPrompt.slice(0, 2000),  // NEW: store prompt sent (truncated)
+     _executionUpstreamSummary: upstreamText.slice(0, 500),  // NEW: what upstream data was used
+   });
+   ```
+
+3. **File: `src/components/NodeInspector.tsx`** — NEW component for inline execution trace:
+   ```typescript
+   // Renders as a slide-out panel attached to the selected node
+   // Shows 4 tabs: Output | Prompt | Upstream | Metrics
+
+   // Output tab: formatted execution result with copy button
+   // Prompt tab: the actual prompt sent to the LLM (shows what the model saw)
+   // Upstream tab: what upstream data was fed into this node
+   // Metrics tab: model, provider, tokens (prompt/completion/total), latency, chars
+
+   // Visual layout: panel slides from right side of node, 300px wide, scrollable
+   // Opens on double-click of an executed node (single-click = select, double-click = inspect)
+   // Close button + Escape key to dismiss
+   ```
+
+4. **File: `src/components/LifecycleNode.tsx`** — Add double-click handler for inspector:
+   ```typescript
+   // On the node card wrapper:
+   onDoubleClick={(e) => {
+     if (nodeData.executionResult) {
+       e.stopPropagation();
+       store.setInspectedNodeId(node.id); // NEW store field
+     }
+   }}
+   ```
+
+5. **File: `src/store/useStore.ts`** — Add inspector state:
+   ```typescript
+   // In the store state:
+   inspectedNodeId: string | null;
+   setInspectedNodeId: (id: string | null) => void;
+
+   // In the store actions:
+   setInspectedNodeId: (id) => set({ inspectedNodeId: id }),
+   ```
+
+6. **File: `src/app/page.tsx`** (or wherever the canvas is composed) — Render NodeInspector when active:
+   ```typescript
+   {inspectedNodeId && (
+     <NodeInspector
+       nodeId={inspectedNodeId}
+       onClose={() => setInspectedNodeId(null)}
+     />
+   )}
+   ```
+
+**Acceptance criteria:**
+- [ ] API route returns `_executionMeta` with model, provider, token counts, latency, prompt/response lengths
+- [ ] Each executed node stores `_executionMeta`, `_executionPrompt` (truncated), and `_executionUpstreamSummary`
+- [ ] Double-clicking an executed node opens the NodeInspector panel
+- [ ] Inspector shows 4 tabs: Output, Prompt, Upstream, Metrics
+- [ ] Metrics tab shows: model name, provider, prompt tokens, completion tokens, total tokens, latency (ms), prompt chars, response chars
+- [ ] Prompt tab shows the exact prompt sent to the LLM (so users can debug prompt quality)
+- [ ] Upstream tab shows what data was fed from parent nodes (so users can debug data flow)
+- [ ] Inspector closes on Escape key or close button
+- [ ] Execution metadata fields are filtered from localStorage persistence (prefix with `_`)
+- [ ] Non-executed nodes ignore double-click (no empty inspector)
+
+---
+
+### 67. Personality Layer Injection into Node Execution Prompts
+**Status:** [ ] Not started
+**Version target:** 1.67.0
+**Inspiration:** CrewAI's role-play agent execution where each agent carries its persona, backstory, and goals into every task it performs — not just conversation. Strands Agents SOPs where agents follow personality-specific standard operating procedures during task execution. Dify's model-level persona injection that persists across all workflow nodes.
+**Complexity:** Medium (2-3 hours)
+
+**Problem:** The 5-layer personality system (`src/lib/prompts.ts` lines 126-310: `compileCognitiveLens()`, `compileActiveTensions()`, `compileLearnedPatterns()`, `compileExpressionMode()`, `compileGrowthAwareness()`) is only compiled and injected during **chat interactions** via `buildSystemPrompt()`. When `executeNode()` in `src/store/useStore.ts` (lines 1070-1257) runs a node, it builds an execution prompt with the node's `aiPrompt`, upstream context, and category instructions — but **zero personality layers**. This means a Poirot (Detective) execution produces identical output to a Rowan (Soldier) execution at the node level. The entire personality architecture is wasted during the most important part: actual work output. A user who chose Poirot for its analytical, curiosity-driven approach gets generic LLM output during workflow execution.
+
+**Implementation:**
+
+1. **File: `src/lib/prompts.ts`** — Create a lightweight `compileExecutionPersonality()` function that produces a condensed personality block for node execution (not the full 5-layer chat version):
+   ```typescript
+   export function compileExecutionPersonality(agent: AgentConfig, habits: HabitLayer): string {
+     const lens = compileCognitiveLens(agent);
+     const tensions = compileActiveTensions(agent);
+     const patterns = compileLearnedPatterns(habits);
+
+     return `## Agent Identity for Execution
+   You are ${agent.name} (${agent.archetype}).
+   ${lens.attentionPriorities ? `Focus: ${lens.attentionPriorities.join(', ')}` : ''}
+   ${tensions.emotionalBaseline ? `Tone: ${tensions.emotionalBaseline}` : ''}
+   ${patterns.domainExpertise?.length ? `Domain expertise: ${patterns.domainExpertise.map(d => d.domain).join(', ')}` : ''}
+   ${patterns.communicationStyle ? `Style: ${patterns.communicationStyle}` : ''}
+
+   Apply your personality to HOW you execute this task — your analytical depth, tone, domain expertise, and attention priorities should shape the output.`;
+   }
+   ```
+
+2. **File: `src/store/useStore.ts`** — In `executeNode()` (~line 1200), inject the condensed personality into the execution system prompt:
+   ```typescript
+   // BEFORE building the API request body:
+   const agentConfig = get().cidMode === 'poirot' ? POIROT_CONFIG : ROWAN_CONFIG;
+   const habits = get().habitLayer;
+   const executionPersonality = compileExecutionPersonality(agentConfig, habits);
+
+   // Prepend to the execution system prompt:
+   const systemPrompt = `${executionPersonality}\n\n${existingExecutionPrompt}`;
+   ```
+
+3. **File: `src/lib/prompts.ts`** — Add agent-specific execution directives in `SHARED_CAPABILITIES`:
+   ```typescript
+   // After the existing category instructions:
+   const AGENT_EXECUTION_STYLES = {
+     rowan: 'Execute with military precision. Be direct, structured, and action-oriented. Prioritize clarity and completeness.',
+     poirot: 'Execute with detective curiosity. Explore nuances, consider edge cases, and provide analytical depth. Question assumptions.',
+   };
+   ```
+
+**Acceptance criteria:**
+- [ ] `compileExecutionPersonality()` produces a condensed personality block (~100-200 tokens, not the full chat prompt)
+- [ ] `executeNode()` injects personality into the execution system prompt for AI-category nodes
+- [ ] Rowan executions produce noticeably more structured, action-oriented output
+- [ ] Poirot executions produce noticeably more analytical, nuance-aware output
+- [ ] Personality injection does NOT apply to passthrough categories (input, trigger, dependency)
+- [ ] No regression on execution speed (personality block is small, <200 tokens)
+- [ ] Eval pass rate remains >= 95% with personality injection enabled
+- [ ] Personality is visible in the NodeInspector's Prompt tab (from item #66) when implemented
+
+---
+
+### 68. Double-Texting Strategy for Mid-Execution User Messages
+**Status:** [ ] Not started
+**Version target:** 1.68.0
+**Inspiration:** LangGraph Platform's four explicit double-texting strategies (Reject, Enqueue, Interrupt, Rollback) that handle the case where a user sends a new message while the agent is still processing. Vercel AI SDK 6's `onError` + abort controller pattern for cancelling in-flight requests. AG-UI Protocol's `RUN_STARTED`/`RUN_FINISHED` events for tracking execution state.
+**Complexity:** Medium (3-4 hours)
+
+**Problem:** In `src/components/CIDPanel.tsx`, the chat input is disabled during processing (`isProcessing` state), but users can still trigger actions through keyboard shortcuts, command hints, and the suggestion chips. In `src/store/useStore.ts`, if `chatWithCID()` is called while a previous call is still in flight (streaming response), the second call overwrites the streaming message state, causing the first response to be lost or garbled. There's no queue, no abort, and no explicit strategy. The `stopProcessing()` function (which sets `isProcessing: false`) doesn't cancel the in-flight fetch — the response continues arriving and writing to a message that may have already been replaced. LangGraph solved this by defining four explicit strategies per-thread. Currently, Lifecycle's behavior is undefined — sometimes the second message wins, sometimes the first, sometimes both responses interleave into the same message bubble.
+
+**Implementation:**
+
+1. **File: `src/store/useStore.ts`** — Add an AbortController registry and double-texting policy:
+   ```typescript
+   // In the store state:
+   _activeAbortController: AbortController | null;
+   _messageQueue: Array<{ message: string; resolve: () => void }>;
+   doubleTextingStrategy: 'interrupt' | 'enqueue' | 'reject'; // default: 'interrupt'
+
+   // In stopProcessing():
+   stopProcessing: () => {
+     const ctrl = get()._activeAbortController;
+     if (ctrl) ctrl.abort('User cancelled');
+     set({ isProcessing: false, _activeAbortController: null });
+   },
+   ```
+
+2. **File: `src/store/useStore.ts`** — In `chatWithCID()`, implement the strategy check at the top:
+   ```typescript
+   chatWithCID: async (message: string) => {
+     const { isProcessing, doubleTextingStrategy, _messageQueue } = get();
+
+     if (isProcessing) {
+       switch (doubleTextingStrategy) {
+         case 'reject':
+           // Block the message — notify user
+           get().addMessage({ role: 'system', content: '⏳ Please wait for the current response to finish.' });
+           return;
+         case 'enqueue':
+           // Queue for later execution
+           return new Promise<void>(resolve => {
+             set({ _messageQueue: [..._messageQueue, { message, resolve }] });
+             get().addMessage({ role: 'system', content: `📋 Queued: "${message.slice(0, 50)}..." (will run after current response)` });
+           });
+         case 'interrupt':
+           // Abort current, start new
+           get().stopProcessing();
+           get().addMessage({ role: 'system', content: '⚡ Interrupted previous response.' });
+           // Fall through to normal execution
+           break;
+       }
+     }
+
+     const controller = new AbortController();
+     set({ _activeAbortController: controller, isProcessing: true });
+     // ... rest of chatWithCID, pass controller.signal to fetch()
+   ```
+
+3. **File: `src/store/useStore.ts`** — After a response completes, drain the queue if `enqueue` strategy:
+   ```typescript
+   // At the end of chatWithCID(), after response is processed:
+   set({ isProcessing: false, _activeAbortController: null });
+   const queue = get()._messageQueue;
+   if (queue.length > 0) {
+     const next = queue[0];
+     set({ _messageQueue: queue.slice(1) });
+     next.resolve();
+     get().chatWithCID(next.message); // Process next queued message
+   }
+   ```
+
+4. **File: `src/app/api/cid/route.ts`** — Respect AbortSignal in the fetch to LLM providers (~line 195):
+   ```typescript
+   // Pass signal through to the underlying fetch:
+   const response = await fetch(providerUrl, {
+     ...options,
+     signal: request.signal, // Forward the client's abort signal
+   });
+   ```
+
+5. **File: `src/components/CIDPanel.tsx`** — Show queue indicator when messages are enqueued:
+   ```typescript
+   // Near the input area:
+   {messageQueue.length > 0 && (
+     <div className="text-[9px] text-amber-400/50 px-3 py-1">
+       📋 {messageQueue.length} message{messageQueue.length > 1 ? 's' : ''} queued
+     </div>
+   )}
+   ```
+
+**Acceptance criteria:**
+- [ ] Default strategy is `interrupt` — new message aborts the in-flight request and starts fresh
+- [ ] `reject` strategy shows a system message telling the user to wait
+- [ ] `enqueue` strategy queues messages and processes them sequentially after the current response
+- [ ] AbortController properly cancels the fetch to the LLM provider (no orphaned requests)
+- [ ] `stopProcessing()` triggers abort on the active controller
+- [ ] Queue indicator shows count of pending messages in the chat input area
+- [ ] No message interleaving or garbling when two messages are sent rapidly
+- [ ] Strategy is configurable (stored in Zustand, could be exposed in settings later)
+- [ ] Enqueued messages resolve in FIFO order
+
+---
+
+### 69. Post-Condition Validation for Node Execution Outputs
+**Status:** [ ] Not started
+**Version target:** 1.69.0
+**Inspiration:** Strands AI Functions' post-condition validation — instead of relying on prompt engineering for correctness, the system enforces runtime assertions on LLM output and automatically retries with error context if assertions fail. Mastra's completion scoring that evaluates whether the network has achieved its goal before returning. OpenAI Agents SDK's output guardrails that validate response structure after generation.
+**Complexity:** Medium (3-4 hours)
+
+**Problem:** In `src/store/useStore.ts` (lines 1230-1250), after `executeNode()` receives the LLM response, it stores the raw `executionResult` with zero validation. The only quality check is at the **workflow level** in `route.ts` (`validateWorkflowQuality()` lines 16-103) which scores workflow STRUCTURE, not individual node OUTPUT QUALITY. If a node's `aiPrompt` says "Generate a detailed 5-section report" but the LLM returns 2 paragraphs with no sections, no one catches it. The user discovers the weak output only after the entire workflow finishes and they manually inspect each node. Strands solved this with post-conditions: each function defines assertions (output type, minimum length, required patterns), and failures trigger automatic retry with the error context injected.
+
+**Implementation:**
+
+1. **File: `src/lib/types.ts`** — Add post-condition fields to `NodeData`:
+   ```typescript
+   _postConditions?: {
+     minLength?: number;          // Minimum character count for output
+     maxLength?: number;          // Maximum character count
+     mustContain?: string[];      // Required substrings (e.g. ["## ", "Conclusion"])
+     mustNotContain?: string[];   // Forbidden substrings (e.g. ["TODO", "placeholder"])
+     minSections?: number;        // Minimum markdown heading count (## or ###)
+     customCheck?: string;        // Simple expression: "sections >= 3 && length > 500"
+   };
+   _postConditionRetries?: number; // How many retries attempted (max 1)
+   ```
+
+2. **File: `src/store/useStore.ts`** — Add post-condition evaluator function:
+   ```typescript
+   function evaluatePostConditions(
+     output: string,
+     conditions: NodeData['_postConditions']
+   ): { passed: boolean; failures: string[] } {
+     if (!conditions) return { passed: true, failures: [] };
+     const failures: string[] = [];
+     const len = output.length;
+     const sectionCount = (output.match(/^#{2,3}\s/gm) || []).length;
+
+     if (conditions.minLength && len < conditions.minLength)
+       failures.push(`Output too short: ${len} chars (minimum: ${conditions.minLength})`);
+     if (conditions.maxLength && len > conditions.maxLength)
+       failures.push(`Output too long: ${len} chars (maximum: ${conditions.maxLength})`);
+     if (conditions.mustContain) {
+       for (const s of conditions.mustContain) {
+         if (!output.includes(s)) failures.push(`Missing required content: "${s}"`);
+       }
+     }
+     if (conditions.mustNotContain) {
+       for (const s of conditions.mustNotContain) {
+         if (output.includes(s)) failures.push(`Contains forbidden content: "${s}"`);
+       }
+     }
+     if (conditions.minSections && sectionCount < conditions.minSections)
+       failures.push(`Too few sections: ${sectionCount} (minimum: ${conditions.minSections})`);
+
+     return { passed: failures.length === 0, failures };
+   }
+   ```
+
+3. **File: `src/store/useStore.ts`** — In `executeNode()` (~line 1240), add post-condition check with retry:
+   ```typescript
+   // After receiving executionResult:
+   if (d._postConditions && !d._postConditionRetries) {
+     const { passed, failures } = evaluatePostConditions(result, d._postConditions);
+     if (!passed) {
+       cidLog(`Post-condition failed for "${d.label}": ${failures.join('; ')}`);
+       // Retry once with failure context
+       store.updateNodeData(nodeId, { _postConditionRetries: 1 });
+       const retryPrompt = `${executionPrompt}\n\nYour previous output failed these quality checks:\n${failures.map(f => `- ${f}`).join('\n')}\n\nFix these issues and regenerate.`;
+       // Re-execute with retry prompt (recursive call bounded by _postConditionRetries)
+       // ... fetch again with retryPrompt
+     }
+   }
+   ```
+
+4. **File: `src/components/NodeDetailPanel.tsx`** — Add post-condition configuration UI:
+   ```typescript
+   // In a collapsible "Quality Gates" section:
+   <details className="mt-2">
+     <summary className="text-[10px] text-white/40 cursor-pointer">Quality Gates</summary>
+     <div className="space-y-2 mt-2 pl-2">
+       <label className="block text-[9px] text-white/30">
+         Min output length
+         <input type="number" value={node.data._postConditions?.minLength || ''}
+           onChange={(e) => updatePostCondition('minLength', Number(e.target.value))}
+           className="w-20 ml-2 bg-black/30 border border-white/10 rounded px-1" />
+       </label>
+       <label className="block text-[9px] text-white/30">
+         Min sections (## headings)
+         <input type="number" value={node.data._postConditions?.minSections || ''}
+           onChange={(e) => updatePostCondition('minSections', Number(e.target.value))}
+           className="w-20 ml-2 bg-black/30 border border-white/10 rounded px-1" />
+       </label>
+       <label className="block text-[9px] text-white/30">
+         Must contain (comma-separated)
+         <input value={(node.data._postConditions?.mustContain || []).join(', ')}
+           onChange={(e) => updatePostCondition('mustContain', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+           placeholder="e.g. Conclusion, ## Summary"
+           className="w-full bg-black/30 border border-white/10 rounded px-2 py-1 mt-1" />
+       </label>
+     </div>
+   </details>
+   ```
+
+5. **File: `src/lib/prompts.ts`** — Teach CID to set post-conditions when generating workflows:
+   ```typescript
+   // In SHARED_CAPABILITIES, after modification schema:
+   const POST_CONDITION_GUIDE = `When generating workflows, you MAY set _postConditions on critical nodes:
+   - Report/analysis nodes: { minLength: 500, minSections: 3 }
+   - Summary nodes: { maxLength: 1000 }
+   - Review nodes: { mustContain: ["Recommendation", "Risk"] }
+   Post-conditions auto-retry the node once if the output fails quality checks.`;
+   ```
+
+**Acceptance criteria:**
+- [ ] Nodes with `_postConditions` validate output after execution
+- [ ] Failed post-conditions trigger exactly 1 retry with failure context injected into the prompt
+- [ ] Supported conditions: minLength, maxLength, mustContain, mustNotContain, minSections
+- [ ] Post-condition failures are logged via `cidLog()` with specific failure reasons
+- [ ] NodeDetailPanel shows "Quality Gates" collapsible section for configuring conditions
+- [ ] CID can set `_postConditions` on nodes during workflow generation (via prompt guide)
+- [ ] Retry limit of 1 prevents infinite loops (`_postConditionRetries` counter)
+- [ ] Post-condition check adds < 1ms overhead (pure string operations, no LLM call)
+- [ ] Nodes that pass on first try show no retry indicator; nodes that needed retry show a small badge
+
+---
+
+### 70. Execution Path Highlighting with Skipped-Node Dimming
+**Status:** [ ] Not started
+**Version target:** 1.70.0
+**Inspiration:** Mastra's `stepExecutionPath` — workflow results include the exact ordered list of steps that were executed, with Studio rendering progress and highlighting the taken path. Dify's visual relationship debugging where Shift-highlighting shows connected nodes. ComfyUI's "bypass node" toggle that visually grays out bypassed nodes during execution.
+**Complexity:** Low-Medium (2-3 hours)
+
+**Problem:** After a branching workflow executes, ALL nodes display their execution status (success/error/idle), but there's no visual way to see WHICH PATH through the graph was actually taken. In `src/store/useStore.ts` (lines 1305-1451), `executeWorkflow()` tracks execution per-node but doesn't record the execution path order. If a workflow has 3 branches and only 1 was taken (due to conditional gates from item #63, or because some branches had errors), the user can't visually distinguish "executed and succeeded" from "never reached because upstream skipped." Additionally, when execution is cancelled mid-flight via `stopProcessing()`, nodes that were never reached retain stale results from a previous run — there's no "cancelled" or "not-reached" status to distinguish them. Mastra solves this by recording `stepExecutionPath` — the exact order of executed steps — and visually highlighting only the taken path.
+
+**Implementation:**
+
+1. **File: `src/store/useStore.ts`** — Add execution path tracking to workflow execution (~line 1305):
+   ```typescript
+   // In the store state:
+   _lastExecutionPath: string[];  // Ordered list of node IDs that actually executed
+   _lastExecutionTimestamp: number;
+
+   // In executeWorkflow(), initialize the path:
+   set({ _lastExecutionPath: [], _lastExecutionTimestamp: Date.now() });
+
+   // After each node executes successfully in the topological loop:
+   set(s => ({ _lastExecutionPath: [...s._lastExecutionPath, nodeId] }));
+   ```
+
+2. **File: `src/store/useStore.ts`** — Add `not-reached` status for nodes skipped by cancellation or upstream failure:
+   ```typescript
+   // After executeWorkflow() completes (or is cancelled), mark unexecuted nodes:
+   const executedSet = new Set(get()._lastExecutionPath);
+   const allNodeIds = get().nodes.map(n => n.id);
+   for (const nid of allNodeIds) {
+     const node = get().nodes.find(n => n.id === nid);
+     if (node && !executedSet.has(nid) && node.data.executionStatus !== 'error') {
+       // Only mark as not-reached if this node wasn't explicitly errored
+       if (node.data.executionStatus === 'idle' || !node.data.executionStatus) continue; // Never ran
+       // Had stale results from a previous run — mark as not-reached
+       get().updateNodeData(nid, { executionStatus: 'not-reached' as any });
+     }
+   }
+   ```
+
+3. **File: `src/components/LifecycleNode.tsx`** — Add visual dimming for not-reached and skipped nodes:
+   ```typescript
+   // In the node card wrapper's className:
+   const isOnExecutionPath = lastExecutionPath.includes(node.id);
+   const wasSkipped = nodeData._skippedByCondition;
+   const notReached = nodeData.executionStatus === 'not-reached';
+
+   // Apply visual styles:
+   const dimClass = (notReached || wasSkipped) ? 'opacity-40 grayscale' : '';
+   const pathClass = isOnExecutionPath ? 'ring-1 ring-emerald-500/30' : '';
+
+   // In the node wrapper div:
+   <div className={`${baseClasses} ${dimClass} ${pathClass}`}>
+   ```
+
+4. **File: `src/components/LifecycleNode.tsx`** — Add execution order badge for nodes on the path:
+   ```typescript
+   // Show execution order number on nodes that were in the path:
+   {isOnExecutionPath && (
+     <div className="absolute -top-2 -left-2 w-5 h-5 rounded-full bg-emerald-600/80 border border-zinc-900
+       flex items-center justify-center text-[8px] font-bold text-white z-10"
+       title={`Executed #${lastExecutionPath.indexOf(node.id) + 1}`}>
+       {lastExecutionPath.indexOf(node.id) + 1}
+     </div>
+   )}
+   ```
+
+5. **File: `src/components/TopBar.tsx`** — Add "Clear execution" button to reset path highlighting:
+   ```typescript
+   // In the toolbar, next to existing execution controls:
+   {lastExecutionPath.length > 0 && (
+     <button
+       onClick={() => {
+         set({ _lastExecutionPath: [] });
+         // Reset not-reached statuses
+         nodes.forEach(n => {
+           if (n.data.executionStatus === 'not-reached')
+             updateNodeData(n.id, { executionStatus: 'idle' });
+         });
+       }}
+       className="text-[9px] text-white/30 hover:text-white/60 transition-colors"
+       title="Clear execution path highlighting"
+     >
+       Clear path
+     </button>
+   )}
+   ```
+
+**Acceptance criteria:**
+- [ ] `executeWorkflow()` records `_lastExecutionPath` as an ordered array of executed node IDs
+- [ ] After execution, nodes ON the path get a subtle emerald ring highlight
+- [ ] After execution, nodes NOT on the path (skipped or not-reached) are dimmed to 40% opacity with grayscale
+- [ ] Each executed node shows its execution order number (1, 2, 3...) as a small badge
+- [ ] Cancelled executions mark unexecuted nodes as `not-reached` (visually distinct from `idle`)
+- [ ] Conditionally skipped nodes (from item #63) show dimmed with "skipped" label
+- [ ] "Clear path" button in TopBar resets all path highlighting
+- [ ] Path highlighting persists until the next execution or manual clear
+- [ ] Works correctly with parallel execution (nodes at the same topological level all get the same order number)
+
+---
+
+### 71. Runtime Flow State Key-Value Store for Implicit Cross-Node Data Sharing
+**Status:** [ ] Not started
+**Version target:** 1.71.0
+**Inspiration:** Flowise AgentFlow V2's Flow State — a runtime key-value store that lives for the duration of a single workflow execution where any node can read/write without direct edge connections. Composio's Agent Orchestrator managed toolsets where the Executor maintains shared state across sub-tasks. LangGraph's graph state channels where typed state flows through the graph implicitly.
+**Complexity:** Medium (3-4 hours)
+
+**Problem:** In `src/store/useStore.ts` (lines 1186-1210), `executeNode()` collects upstream context by walking incoming edges — nodes can only access data from nodes they're DIRECTLY connected to. This creates two problems: (1) Non-adjacent nodes that need shared data must be connected with explicit edges, cluttering the canvas with "data-passing" edges that have no semantic meaning. (2) Utility data (e.g., a `state` node tracking document metadata, or an `artifact` node holding a glossary) must fan-out edges to every consumer, creating visual spaghetti. Flowise solved this with Flow State — a runtime KV store scoped to a single execution run. Any node can write keys (`flowState.set('documentTitle', title)`) and any downstream node can read them (`flowState.get('documentTitle')`) without a direct edge. This reduces edge count by 30-40% on data-heavy workflows.
+
+**Implementation:**
+
+1. **File: `src/store/useStore.ts`** — Add flow state to the execution context:
+   ```typescript
+   // In the store state:
+   _flowState: Map<string, string>;  // Runtime KV store, cleared on each execution
+
+   // In executeWorkflow(), before the topological loop:
+   set({ _flowState: new Map() });
+   ```
+
+2. **File: `src/store/useStore.ts`** — Add flow state read/write in `executeNode()` (~line 1200):
+   ```typescript
+   // WRITE: After a node executes, auto-publish its result under its label as key:
+   const flowState = get()._flowState;
+   flowState.set(d.label.toLowerCase().replace(/\s+/g, '_'), result);
+   // Also store under node ID for exact reference:
+   flowState.set(nodeId, result);
+   set({ _flowState: new Map(flowState) });
+
+   // READ: Before execution, inject available flow state keys into context:
+   const availableKeys = Array.from(flowState.keys());
+   if (availableKeys.length > 0 && d.category !== 'input' && d.category !== 'trigger') {
+     const flowContext = availableKeys
+       .filter(k => k !== nodeId) // Don't include own previous result
+       .map(k => `[FlowState "${k}"]: ${flowState.get(k)!.slice(0, 300)}`)
+       .join('\n');
+     // Append to upstream context:
+     upstreamText += `\n\n## Shared Flow State:\n${flowContext}`;
+   }
+   ```
+
+3. **File: `src/lib/prompts.ts`** — Add flow state awareness to execution prompts:
+   ```typescript
+   // In the execution prompt builder:
+   const FLOW_STATE_INSTRUCTION = `You have access to "Shared Flow State" — key-value pairs published by previously executed nodes. Use these for context without requiring direct connections. Reference them by key name.`;
+   ```
+
+4. **File: `src/components/NodeDetailPanel.tsx`** — Add flow state key configuration:
+   ```typescript
+   // Allow users to specify which flow state keys a node should read:
+   <label className="block text-[9px] text-white/30 mt-2">
+     Read from Flow State (comma-separated keys)
+     <input
+       value={node.data._flowStateReads?.join(', ') || ''}
+       onChange={(e) => updateNodeData(node.id, {
+         _flowStateReads: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
+       })}
+       placeholder="e.g. document_title, glossary"
+       className="w-full bg-black/30 border border-white/10 rounded px-2 py-1 mt-1"
+     />
+   </label>
+   ```
+
+5. **File: `src/store/useStore.ts`** — If `_flowStateReads` is set, only inject specified keys instead of all:
+   ```typescript
+   // In the flow state read logic:
+   const keysToRead = d._flowStateReads?.length
+     ? d._flowStateReads.filter(k => flowState.has(k))
+     : availableKeys.filter(k => k !== nodeId);
+
+   const flowContext = keysToRead
+     .map(k => `[FlowState "${k}"]: ${flowState.get(k)!.slice(0, 300)}`)
+     .join('\n');
+   ```
+
+**Acceptance criteria:**
+- [ ] `_flowState` Map is created fresh at the start of each `executeWorkflow()` call
+- [ ] Every executed node auto-publishes its result under its label (normalized to snake_case) and node ID
+- [ ] Downstream nodes can read any flow state key without direct edge connections
+- [ ] Optional `_flowStateReads` field lets users specify which keys a node should consume (selective reading)
+- [ ] Flow state entries are truncated to 300 chars in context injection (full data available via key lookup)
+- [ ] Flow state is cleared between workflow runs (no leakage across executions)
+- [ ] Canvas edge count can be reduced by 30%+ on data-heavy workflows by using flow state instead of pass-through edges
+- [ ] Flow state is NOT persisted to localStorage (ephemeral, runtime-only)
+- [ ] Input and trigger nodes do not receive flow state context (they produce data, not consume it)
+- [ ] NodeDetailPanel shows flow state key configuration for selective reads
+
+---
+
+### 72. Adaptive Thinking Effort Levels per Node
+**Status:** [ ] Not started
+**Version target:** 1.72.0
+**Inspiration:** Anthropic's adaptive thinking (GA on Claude Opus 4.6) — replaces fixed `budget_tokens` with an `effort` parameter (`low`, `medium`, `high`, `max`) that lets the model decide when and how deeply to reason. Google Gemini 2.5's "thinking budget" parameter. OpenAI o3's reasoning effort slider. All three major providers now expose reasoning depth as a first-class API parameter.
+**Complexity:** Low (1-2 hours)
+
+**Problem:** In `src/app/api/cid/route.ts` (lines 173-210), all LLM calls use the same reasoning depth regardless of task complexity. A simple "rename this node" modification consumes the same thinking budget as "design a 10-node multi-output compliance workflow." This wastes tokens and increases latency for trivial tasks, while potentially under-reasoning on complex ones. The route currently omits `temperature` for reasoner models (line 173) but has no mechanism for controlling reasoning depth. Anthropic's adaptive thinking with effort levels is now GA — setting `effort: "low"` on simple tasks can cut latency by 50-70% while `effort: "max"` on complex generation tasks produces measurably better workflows.
+
+**Implementation:**
+
+1. **File: `src/lib/types.ts`** — Add effort level to `NodeData`:
+   ```typescript
+   _effortLevel?: 'low' | 'medium' | 'high' | 'max';  // Reasoning depth for this node's execution
+   ```
+
+2. **File: `src/store/useStore.ts`** — In `executeNode()` (~line 1224), pass effort level to the API:
+   ```typescript
+   // Determine effort level: node override > task-type default
+   const effortLevel = d._effortLevel || inferEffortFromTask(d);
+
+   function inferEffortFromTask(nodeData: NodeData): string {
+     // Simple transforms → low effort
+     if (['input', 'trigger', 'dependency', 'output'].includes(nodeData.category)) return 'low';
+     // Content generation → high effort
+     if (['cid', 'action', 'artifact'].includes(nodeData.category)) return 'high';
+     // Review/test/policy → medium (structured checking, not creative generation)
+     if (['review', 'test', 'policy'].includes(nodeData.category)) return 'medium';
+     return 'medium';
+   }
+
+   // Include in the API request body:
+   body: JSON.stringify({
+     ...existingBody,
+     effortLevel,
+   }),
+   ```
+
+3. **File: `src/app/api/cid/route.ts`** — Route effort level to provider-specific parameters (~line 195):
+   ```typescript
+   const effortLevel = body.effortLevel || 'medium';
+
+   // For Anthropic Claude with adaptive thinking:
+   if (resolvedProvider === 'anthropic') {
+     requestBody.thinking = { type: 'adaptive', effort: effortLevel };
+   }
+   // For DeepSeek reasoner: map to max_tokens scaling
+   if (resolvedProvider === 'deepseek' && resolvedModel.includes('reasoner')) {
+     const tokenMap = { low: 4096, medium: 8192, high: 16384, max: 32768 };
+     requestBody.max_tokens = tokenMap[effortLevel] || 8192;
+   }
+   ```
+
+4. **File: `src/store/useStore.ts`** — In `chatWithCID()`, auto-detect effort from message complexity:
+   ```typescript
+   // Simple heuristic for chat effort level:
+   function inferChatEffort(message: string, nodes: Node[]): string {
+     const wordCount = message.split(/\s+/).length;
+     if (wordCount < 10 && !message.match(/build|create|design|generate/i)) return 'low';
+     if (wordCount > 50 || nodes.length > 8) return 'high';
+     if (message.match(/complex|detailed|comprehensive|thorough/i)) return 'max';
+     return 'medium';
+   }
+   ```
+
+5. **File: `src/components/NodeDetailPanel.tsx`** — Add effort level selector:
+   ```typescript
+   <label className="block text-[9px] text-white/30 mt-2">
+     Reasoning depth
+     <select
+       value={node.data._effortLevel || 'auto'}
+       onChange={(e) => updateNodeData(node.id, {
+         _effortLevel: e.target.value === 'auto' ? undefined : e.target.value
+       })}
+       className="ml-2 bg-black/30 border border-white/10 rounded px-1 py-0.5 text-[9px]"
+     >
+       <option value="auto">Auto (by category)</option>
+       <option value="low">Low — fast, simple transforms</option>
+       <option value="medium">Medium — balanced</option>
+       <option value="high">High — detailed generation</option>
+       <option value="max">Max — deep reasoning</option>
+     </select>
+   </label>
+   ```
+
+**Acceptance criteria:**
+- [ ] Each node can have an `_effortLevel` override (low/medium/high/max) or use auto-detection
+- [ ] Auto-detection maps node categories to sensible defaults (input→low, cid→high, review→medium)
+- [ ] Effort level is passed through `/api/cid` and routed to provider-specific parameters
+- [ ] Anthropic calls use `thinking: { type: 'adaptive', effort: level }` (GA parameter)
+- [ ] DeepSeek calls scale `max_tokens` based on effort level
+- [ ] Chat messages auto-detect effort from message complexity and word count
+- [ ] NodeDetailPanel shows effort level selector with "Auto" default
+- [ ] Low-effort calls are 50%+ faster than high-effort calls on simple tasks
+- [ ] No regression on workflow generation quality (complex tasks still use high/max)
+
+---
+
+### 73. Self-Healing Hallucination Recovery in Workflow Execution
+**Status:** [ ] Not started
+**Version target:** 1.73.0
+**Inspiration:** Mastra's self-healing tool calls (March 2026) — when an LLM hallucinates a tool name, instead of crashing the agent loop, the error is returned as a tool result so the model can self-correct. Amazon Nova Act's confidence-based human escalation — when reliability drops below threshold, pause for review. Flowise AgentFlow V2's guard mechanisms with structured validation before propagation.
+**Complexity:** Low-Medium (2-3 hours)
+
+**Problem:** In `src/app/api/cid/route.ts` (lines 298-330), node category normalization maps 40+ aliases to the 13 valid categories. But when the LLM generates a completely unknown category (e.g., `"category": "scheduler"` or `"category": "database"`), the normalization silently passes it through unchanged — the invalid category reaches the client, creates a node with no matching style/icon, and breaks execution logic. Similarly, in `src/store/useStore.ts` (lines 2455-2609), `applyModifications()` uses exact label matching to find nodes. If the LLM hallucinates a slightly wrong node name (e.g., "Content Reviewer" instead of "Content Review"), the modification silently fails — no error, no retry, just a no-op. The user's requested change appears to succeed but nothing actually changed. Mastra solved this by catching tool-not-found errors and feeding them back as context so the model self-corrects.
+
+**Implementation:**
+
+1. **File: `src/app/api/cid/route.ts`** — Add unknown category recovery after normalization (~line 330):
+   ```typescript
+   // After the CATEGORY_MAP normalization:
+   const VALID_CATEGORIES = new Set([
+     'input', 'trigger', 'state', 'artifact', 'note', 'cid',
+     'action', 'review', 'test', 'policy', 'patch', 'dependency', 'output'
+   ]);
+
+   let hasUnknownCategories = false;
+   for (const node of parsed.workflow.nodes) {
+     if (!VALID_CATEGORIES.has(node.category)) {
+       console.warn(`[CID API] Unknown category "${node.category}" on node "${node.label}" — attempting recovery`);
+       // Try fuzzy match: find closest valid category by substring/edit distance
+       const closest = findClosestCategory(node.category, VALID_CATEGORIES);
+       if (closest) {
+         node.category = closest;
+       } else {
+         node.category = 'action'; // Safe default
+         hasUnknownCategories = true;
+       }
+     }
+   }
+
+   function findClosestCategory(unknown: string, valid: Set<string>): string | null {
+     const lower = unknown.toLowerCase();
+     // Substring containment check
+     for (const v of valid) {
+       if (lower.includes(v) || v.includes(lower)) return v;
+     }
+     // Common semantic mappings
+     const SEMANTIC_MAP: Record<string, string> = {
+       'scheduler': 'trigger', 'timer': 'trigger', 'cron': 'trigger',
+       'database': 'state', 'storage': 'state', 'cache': 'state',
+       'api': 'action', 'webhook': 'trigger', 'transform': 'action',
+       'filter': 'action', 'validate': 'test', 'check': 'test',
+       'approve': 'review', 'gate': 'review', 'guard': 'policy',
+       'log': 'note', 'comment': 'note', 'docs': 'artifact',
+       'file': 'artifact', 'report': 'output', 'export': 'output',
+     };
+     return SEMANTIC_MAP[lower] || null;
+   }
+   ```
+
+2. **File: `src/store/useStore.ts`** — In `applyModifications()`, add fuzzy label matching with error feedback (~line 2464):
+   ```typescript
+   // REPLACE exact label match with fuzzy fallback:
+   function findNodeByLabel(nodes: Node[], targetLabel: string): Node | undefined {
+     // 1. Exact match (case-insensitive)
+     const exact = nodes.find(n => n.data.label?.toLowerCase() === targetLabel.toLowerCase());
+     if (exact) return exact;
+
+     // 2. Fuzzy match: find closest by Levenshtein distance
+     let bestMatch: Node | undefined;
+     let bestDistance = Infinity;
+     for (const n of nodes) {
+       const dist = levenshteinDistance(
+         (n.data.label || '').toLowerCase(),
+         targetLabel.toLowerCase()
+       );
+       // Accept if distance is <= 3 characters (typo tolerance)
+       if (dist < bestDistance && dist <= 3) {
+         bestDistance = dist;
+         bestMatch = n;
+       }
+     }
+     if (bestMatch) {
+       cidLog(`Fuzzy matched "${targetLabel}" → "${bestMatch.data.label}" (distance: ${bestDistance})`);
+     }
+     return bestMatch;
+   }
+
+   function levenshteinDistance(a: string, b: string): number {
+     const m = a.length, n = b.length;
+     const dp = Array.from({ length: m + 1 }, (_, i) =>
+       Array.from({ length: n + 1 }, (_, j) => i === 0 ? j : j === 0 ? i : 0)
+     );
+     for (let i = 1; i <= m; i++)
+       for (let j = 1; j <= n; j++)
+         dp[i][j] = Math.min(
+           dp[i-1][j] + 1, dp[i][j-1] + 1,
+           dp[i-1][j-1] + (a[i-1] !== b[j-1] ? 1 : 0)
+         );
+     return dp[m][n];
+   }
+   ```
+
+3. **File: `src/store/useStore.ts`** — Track modification failures and feed back to CID (~line 2605):
+   ```typescript
+   // After all modifications applied, check for failures:
+   const modFailures: string[] = [];
+   // ... in each modification handler, push to modFailures instead of silently skipping
+
+   if (modFailures.length > 0) {
+     // Feed failures back as a system message so CID can self-correct
+     const failureReport = modFailures.join('\n');
+     get().addMessage({
+       role: 'assistant',
+       content: `⚠️ Some modifications couldn't be applied:\n${failureReport}\n\nWould you like me to retry with corrected references?`,
+       _ephemeral: false,
+     });
+     cidLog(`Modification failures: ${modFailures.length}`);
+   }
+   ```
+
+**Acceptance criteria:**
+- [ ] Unknown node categories are recovered via fuzzy matching and semantic mapping (40+ mappings)
+- [ ] Completely unrecoverable categories default to 'action' with a console warning
+- [ ] Modification label matching uses Levenshtein distance with max tolerance of 3 characters
+- [ ] Fuzzy matches are logged via `cidLog()` so users can see what was auto-corrected
+- [ ] Failed modifications are collected and reported as a CID message (not silently dropped)
+- [ ] The failure report asks the user if they want CID to retry with corrected references
+- [ ] No regression on existing exact-match modification behavior
+- [ ] Common hallucinated categories (scheduler, database, api, webhook) map to correct valid categories
+
+---
+
+### 74. Persistent Human Feedback Training for Node Prompt Refinement
+**Status:** [ ] Not started
+**Version target:** 1.74.0
+**Inspiration:** CrewAI's `crewai train -n <iterations>` — runs agents through tasks repeatedly, capturing human feedback each iteration and serializing consolidated suggestions that augment future runs. OpenAI AgentKit's automated prompt optimization with inline eval configuration. Mastra's versioned datasets where experiment results feed back into agent improvement.
+**Complexity:** Medium (3-4 hours)
+
+**Problem:** When a user executes a workflow and a node produces weak output, they can re-execute the node or ask CID to rewrite it — but the feedback is lost. Next time the same workflow runs, the same node makes the same mistakes. There's no mechanism in `src/store/useStore.ts` for storing per-node human corrections that persist and improve future executions. The habit layer in `src/lib/reflection.ts` (lines 180-220, `compileLearnedPatterns()`) tracks domain expertise and workflow preferences at the agent level, but not per-node execution feedback. CrewAI solved this with a training loop: human scores outputs, feedback is serialized per-agent, and future runs automatically prepend prior feedback to the prompt.
+
+**Implementation:**
+
+1. **File: `src/lib/types.ts`** — Add feedback history to `NodeData`:
+   ```typescript
+   _feedbackHistory?: Array<{
+     timestamp: number;
+     rating: 'good' | 'needs-work' | 'bad';
+     comment: string;           // What was wrong / what to improve
+     originalOutput: string;    // The output that was rated (first 500 chars)
+   }>;
+   ```
+
+2. **File: `src/store/useStore.ts`** — Add `addNodeFeedback()` action:
+   ```typescript
+   addNodeFeedback: (nodeId: string, rating: 'good' | 'needs-work' | 'bad', comment: string) => {
+     const node = get().nodes.find(n => n.id === nodeId);
+     if (!node) return;
+
+     const history = node.data._feedbackHistory || [];
+     const entry = {
+       timestamp: Date.now(),
+       rating,
+       comment,
+       originalOutput: (node.data.executionResult || '').slice(0, 500),
+     };
+
+     // Keep last 5 feedback entries per node (prevent bloat)
+     const updated = [...history, entry].slice(-5);
+     get().updateNodeData(nodeId, { _feedbackHistory: updated });
+     cidLog(`Feedback recorded for "${node.data.label}": ${rating}`);
+   },
+   ```
+
+3. **File: `src/store/useStore.ts`** — In `executeNode()` (~line 1200), prepend feedback to execution prompt:
+   ```typescript
+   // After building the execution prompt, before the API call:
+   if (d._feedbackHistory?.length) {
+     const feedbackBlock = d._feedbackHistory
+       .filter(f => f.rating !== 'good') // Only include improvement feedback
+       .map(f => `- Previous issue (${f.rating}): ${f.comment}`)
+       .join('\n');
+
+     if (feedbackBlock) {
+       executionPrompt = `## Human Feedback from Previous Runs\nThe following issues were noted in prior executions of this node. Address them in your output:\n${feedbackBlock}\n\n${executionPrompt}`;
+     }
+   }
+   ```
+
+4. **File: `src/components/NodeDetailPanel.tsx`** — Add feedback UI after execution:
+   ```typescript
+   // Show feedback buttons when node has execution results:
+   {node.data.executionResult && (
+     <div className="mt-2 space-y-1">
+       <div className="text-[9px] text-white/30">Rate this output:</div>
+       <div className="flex gap-1">
+         {(['good', 'needs-work', 'bad'] as const).map(rating => (
+           <button
+             key={rating}
+             onClick={() => {
+               const comment = rating !== 'good'
+                 ? prompt(`What should be improved? (${rating})`) || ''
+                 : '';
+               if (rating === 'good' || comment) addNodeFeedback(node.id, rating, comment);
+             }}
+             className={`text-[9px] px-2 py-0.5 rounded border transition-colors ${
+               rating === 'good' ? 'border-emerald-500/30 hover:bg-emerald-500/10 text-emerald-400/60' :
+               rating === 'needs-work' ? 'border-amber-500/30 hover:bg-amber-500/10 text-amber-400/60' :
+               'border-red-500/30 hover:bg-red-500/10 text-red-400/60'
+             }`}
+           >
+             {rating === 'good' ? '✓ Good' : rating === 'needs-work' ? '~ Needs work' : '✗ Bad'}
+           </button>
+         ))}
+       </div>
+       {(node.data._feedbackHistory?.length || 0) > 0 && (
+         <div className="text-[8px] text-white/20">
+           {node.data._feedbackHistory!.length} feedback entries stored
+         </div>
+       )}
+     </div>
+   )}
+   ```
+
+5. **File: `src/lib/prompts.ts`** — Teach CID about the feedback system:
+   ```typescript
+   // In SHARED_CAPABILITIES:
+   `Nodes with "Human Feedback from Previous Runs" in their execution prompt have been rated by the user.
+   Pay special attention to these corrections — they represent explicit human preferences for this specific node.
+   Prioritize addressing feedback items over your default generation strategy.`
+   ```
+
+**Acceptance criteria:**
+- [ ] Users can rate node execution output as good/needs-work/bad via NodeDetailPanel buttons
+- [ ] "Needs-work" and "bad" ratings prompt for a text comment explaining what to improve
+- [ ] Feedback history is stored per-node in `_feedbackHistory` (max 5 entries, LIFO)
+- [ ] On re-execution, non-"good" feedback is prepended to the execution prompt as improvement instructions
+- [ ] Feedback persists across page reloads (stored in localStorage with node data)
+- [ ] "Good" ratings are stored but not injected into prompts (positive reinforcement tracking only)
+- [ ] CID's system prompt includes instructions to prioritize human feedback over defaults
+- [ ] After 3+ re-executions with feedback, node output measurably improves on the flagged issues
+- [ ] Feedback count indicator shows how many entries are stored per node
+
+---
+
+### 75. Auto-Context Node Relevance Injection in Chat
+**Status:** [ ] Not started
+**Version target:** 1.75.0
+**Inspiration:** Cursor Composer's auto-context discovery — the agent automatically figures out what context it needs without the user manually adding files. Windsurf Cascade's repo-level indexing that pulls relevant code on demand. CrewAI's unified Memory class that uses LLM-scored importance and composite scoring (semantic similarity + recency + importance) on recall.
+**Complexity:** Medium (3-4 hours)
+
+**Problem:** In `src/store/useStore.ts` (lines 2330-2450), `chatWithCID()` sends the conversation history and the serialized graph to the LLM, but the graph serialization (via `serializeGraph()` in `prompts.ts:364-400`) is a flat list of ALL nodes with truncated metadata. When the user asks "improve the review node," CID receives the full graph but has no signal about WHICH review node is most relevant — it could be any of 3 review nodes in a 15-node workflow. The user must either select the node first or specify the exact name. Cursor's Composer solved this by auto-discovering relevant context: when you mention a concept, it finds related files automatically. Currently, CID has no relevance ranking — it treats all nodes equally in the context. The `selectedNodeId` state exists in the store but is NOT injected into chat prompts, so CID doesn't know what the user is looking at.
+
+**Implementation:**
+
+1. **File: `src/store/useStore.ts`** — In `chatWithCID()` (~line 2350), inject relevance-ranked node context:
+   ```typescript
+   // Before building the API request:
+   const relevantNodes = rankNodeRelevance(message, get().nodes, get().selectedNodeId, get().edges);
+
+   function rankNodeRelevance(
+     query: string,
+     nodes: Node[],
+     selectedId: string | null,
+     edges: Edge[]
+   ): Array<{ node: Node; score: number; reason: string }> {
+     const queryLower = query.toLowerCase();
+     const results: Array<{ node: Node; score: number; reason: string }> = [];
+
+     for (const node of nodes) {
+       let score = 0;
+       const reasons: string[] = [];
+       const label = (node.data.label || '').toLowerCase();
+       const category = (node.data.category || '').toLowerCase();
+
+       // 1. Currently selected node (highest signal)
+       if (node.id === selectedId) { score += 50; reasons.push('selected'); }
+
+       // 2. Label mentioned in query
+       if (queryLower.includes(label)) { score += 40; reasons.push('name-mentioned'); }
+
+       // 3. Category mentioned in query
+       if (queryLower.includes(category)) { score += 20; reasons.push('category-mentioned'); }
+
+       // 4. Recently executed (recency bonus)
+       if (node.data._executionStartedAt) {
+         const ageMs = Date.now() - node.data._executionStartedAt;
+         if (ageMs < 60000) { score += 15; reasons.push('recently-executed'); }
+       }
+
+       // 5. Has errors (likely what user wants to fix)
+       if (node.data.executionStatus === 'error') { score += 25; reasons.push('has-error'); }
+
+       // 6. Connected to selected node
+       if (selectedId) {
+         const isConnected = edges.some(e =>
+           (e.source === selectedId && e.target === node.id) ||
+           (e.target === selectedId && e.source === node.id)
+         );
+         if (isConnected) { score += 10; reasons.push('connected-to-selected'); }
+       }
+
+       if (score > 0) results.push({ node, score, reason: reasons.join('+') });
+     }
+
+     return results.sort((a, b) => b.score - a.score).slice(0, 5);
+   }
+   ```
+
+2. **File: `src/store/useStore.ts`** — Inject top relevant nodes as enriched context in the chat prompt:
+   ```typescript
+   // Build focused context block from top relevant nodes:
+   const focusedContext = relevantNodes.length > 0
+     ? `\n\n## Most Relevant Nodes (ranked by relevance to your question):\n${
+         relevantNodes.map(({ node, score, reason }) => {
+           const d = node.data;
+           const result = d.executionResult ? `\nLatest output: ${d.executionResult.slice(0, 400)}` : '';
+           const feedback = d._feedbackHistory?.length ? `\nHuman feedback: ${d._feedbackHistory.slice(-1)[0].comment}` : '';
+           const prompt = d.aiPrompt ? `\nAI Prompt: ${d.aiPrompt.slice(0, 200)}` : '';
+           return `### ${d.label} [${d.category}] (relevance: ${reason})\n${d.description || ''}${prompt}${result}${feedback}`;
+         }).join('\n\n')
+       }`
+     : '';
+
+   // Prepend to the user message or add as a system message:
+   const enrichedMessages = [
+     ...existingMessages,
+     { role: 'user', content: `${message}${focusedContext}` }
+   ];
+   ```
+
+3. **File: `src/lib/prompts.ts`** — Add context-awareness instruction to system prompt:
+   ```typescript
+   // In SHARED_CAPABILITIES:
+   `When "Most Relevant Nodes" context is provided, use it to:
+   1. Identify which specific node(s) the user is referring to
+   2. Use the node's current output, AI prompt, and feedback to inform your response
+   3. If modifying, target the most relevant node by exact label
+   4. If advising, reference the node's specific configuration and results
+   Do NOT ask "which node do you mean?" if a relevant node is clearly indicated.`
+   ```
+
+4. **File: `src/components/CIDPanel.tsx`** — Show relevance indicator when a node is auto-contextualized:
+   ```typescript
+   // Before the input area, show which nodes CID will focus on:
+   {relevantNodes.length > 0 && (
+     <div className="flex gap-1 px-3 py-1 text-[8px] text-white/25 items-center flex-wrap">
+       <span>Context:</span>
+       {relevantNodes.slice(0, 3).map(({ node, reason }) => (
+         <span key={node.id} className="bg-white/5 rounded px-1.5 py-0.5" title={reason}>
+           {node.data.label}
+         </span>
+       ))}
+     </div>
+   )}
+   ```
+
+**Acceptance criteria:**
+- [ ] `rankNodeRelevance()` scores nodes based on 6 signals: selected, name-mentioned, category-mentioned, recently-executed, has-error, connected-to-selected
+- [ ] Top 5 relevant nodes are injected into the chat prompt with enriched metadata (output, prompt, feedback)
+- [ ] Selected node gets the highest relevance boost (+50 score)
+- [ ] CID no longer asks "which node do you mean?" when relevance ranking clearly identifies the target
+- [ ] Error nodes get a +25 bonus (users frequently ask about fixing errors)
+- [ ] CIDPanel shows small "Context: [node1] [node2]" indicator before the input area
+- [ ] Relevance injection adds < 500 tokens to the prompt (truncated metadata)
+- [ ] When no nodes are relevant (score 0), no extra context is injected (clean fallback)
+- [ ] Works correctly with multi-select (all selected nodes get the +50 boost)
+
+---
+
+### 76. Inline Node Eval Scoring with Graded Preview Runs
+**Status:** [ ] Not started
+**Version target:** 1.76.0
+**Inspiration:** OpenAI AgentKit's Agent Builder with inline eval configuration — users attach scoring criteria directly to nodes and run preview executions with graded outputs, enabling 70% reduction in iteration cycles. Mastra's versioned Experiments with configurable scorers (model-graded, rule-based, statistical). n8n's AI Evaluations for catching regressions and monitoring drift across prompt iterations.
+**Complexity:** Medium-High (4-5 hours)
+
+**Problem:** The eval harness at `tests/eval/run-eval.mjs` (1,315 lines, 103 tests) evaluates the CID agent's API-level behavior but runs OUTSIDE the app — users can't evaluate individual node output quality from the canvas. When a user tweaks a node's `aiPrompt` and re-executes, they visually compare the output and make a gut judgment. There's no systematic way to define "this node should produce output that contains these sections, is at least 500 chars, and scores 4/5 on relevance to the input." AgentKit solved this with inline eval: each node can have scoring criteria, and a "preview run" executes the node with a test input and shows a graded scorecard. Combined with item #69 (post-condition validation) which handles binary pass/fail checks, this adds GRADED scoring (0-100) with multiple dimensions.
+
+**Implementation:**
+
+1. **File: `src/lib/types.ts`** — Add eval config to `NodeData`:
+   ```typescript
+   _evalConfig?: {
+     testInput?: string;          // Sample input for preview runs
+     expectedOutput?: string;     // Reference output for comparison
+     scorers: Array<{
+       name: string;              // e.g. "completeness", "relevance", "format"
+       type: 'rule' | 'llm';     // Rule-based or LLM-graded
+       rule?: string;             // For rule type: "length > 500", "contains ## Summary"
+       llmPrompt?: string;        // For llm type: "Rate 1-5 how relevant this output is to..."
+       weight: number;            // 0.0-1.0, weights must sum to 1.0
+     }>;
+   };
+   _lastEvalResult?: {
+     timestamp: number;
+     overallScore: number;        // 0-100
+     scores: Array<{ name: string; score: number; detail: string }>;
+   };
+   ```
+
+2. **File: `src/store/useStore.ts`** — Add `evalNode()` action:
+   ```typescript
+   evalNode: async (nodeId: string) => {
+     const node = get().nodes.find(n => n.id === nodeId);
+     if (!node?.data._evalConfig?.scorers.length) return;
+
+     const config = node.data._evalConfig;
+     const output = node.data.executionResult || '';
+     const scores: Array<{ name: string; score: number; detail: string }> = [];
+
+     for (const scorer of config.scorers) {
+       if (scorer.type === 'rule') {
+         const { score, detail } = evaluateRuleScorer(output, scorer.rule || '');
+         scores.push({ name: scorer.name, score, detail });
+       } else if (scorer.type === 'llm') {
+         // Call /api/cid with a scoring prompt
+         const scorePrompt = `${scorer.llmPrompt}\n\nOutput to evaluate:\n${output.slice(0, 2000)}\n\nRespond with ONLY a JSON object: {"score": 0-100, "detail": "brief explanation"}`;
+         const response = await fetch('/api/cid', {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify({
+             messages: [{ role: 'user', content: scorePrompt }],
+             taskType: 'analyze',
+             model: 'deepseek-chat', // Use fast model for scoring
+             effortLevel: 'low',
+           }),
+         });
+         const data = await response.json();
+         try {
+           const parsed = JSON.parse(data.message);
+           scores.push({ name: scorer.name, score: parsed.score, detail: parsed.detail });
+         } catch {
+           scores.push({ name: scorer.name, score: 50, detail: 'Failed to parse scorer response' });
+         }
+       }
+     }
+
+     // Calculate weighted overall score
+     const totalWeight = config.scorers.reduce((s, sc) => s + sc.weight, 0);
+     const overallScore = Math.round(
+       scores.reduce((sum, s, i) => sum + s.score * config.scorers[i].weight, 0) / totalWeight
+     );
+
+     get().updateNodeData(nodeId, {
+       _lastEvalResult: { timestamp: Date.now(), overallScore, scores },
+     });
+   },
+   ```
+
+3. **File: `src/store/useStore.ts`** — Add rule-based scorer evaluator:
+   ```typescript
+   function evaluateRuleScorer(output: string, rule: string): { score: number; detail: string } {
+     const len = output.length;
+     const sections = (output.match(/^#{2,3}\s/gm) || []).length;
+
+     // Parse rule patterns
+     const lengthMatch = rule.match(/length\s*(>=?|<=?|>|<)\s*(\d+)/);
+     if (lengthMatch) {
+       const [, op, val] = lengthMatch;
+       const target = Number(val);
+       const ratio = Math.min(len / target, 2);
+       if (op === '>' || op === '>=') {
+         return { score: Math.round(Math.min(ratio * 100, 100)), detail: `${len}/${target} chars` };
+       }
+     }
+
+     const containsMatch = rule.match(/contains\s+"([^"]+)"/);
+     if (containsMatch) {
+       const found = output.includes(containsMatch[1]);
+       return { score: found ? 100 : 0, detail: found ? `Contains "${containsMatch[1]}"` : `Missing "${containsMatch[1]}"` };
+     }
+
+     const sectionsMatch = rule.match(/sections\s*(>=?)\s*(\d+)/);
+     if (sectionsMatch) {
+       const target = Number(sectionsMatch[2]);
+       return { score: Math.round(Math.min(sections / target, 1) * 100), detail: `${sections}/${target} sections` };
+     }
+
+     return { score: 50, detail: 'Unknown rule format' };
+   }
+   ```
+
+4. **File: `src/components/NodeDetailPanel.tsx`** — Add eval scorecard display and "Run Eval" button:
+   ```typescript
+   // After execution results, show eval controls:
+   {node.data._evalConfig && (
+     <div className="mt-2 space-y-1">
+       <div className="flex items-center justify-between">
+         <span className="text-[9px] text-white/30">Eval Scoring</span>
+         <button
+           onClick={() => evalNode(node.id)}
+           className="text-[9px] text-blue-400/60 hover:text-blue-400"
+         >
+           Run eval
+         </button>
+       </div>
+       {node.data._lastEvalResult && (
+         <div className="bg-black/20 rounded p-2 space-y-1">
+           <div className={`text-[11px] font-medium ${
+             node.data._lastEvalResult.overallScore >= 80 ? 'text-emerald-400' :
+             node.data._lastEvalResult.overallScore >= 50 ? 'text-amber-400' : 'text-red-400'
+           }`}>
+             Overall: {node.data._lastEvalResult.overallScore}/100
+           </div>
+           {node.data._lastEvalResult.scores.map(s => (
+             <div key={s.name} className="text-[8px] text-white/40 flex justify-between">
+               <span>{s.name}</span>
+               <span>{s.score}/100 — {s.detail}</span>
+             </div>
+           ))}
+         </div>
+       )}
+     </div>
+   )}
+   ```
+
+5. **File: `src/components/LifecycleNode.tsx`** — Show eval score badge on the node card:
+   ```typescript
+   // In the node header, after status indicators:
+   {nodeData._lastEvalResult && (
+     <span className={`text-[7px] font-medium px-1 rounded ${
+       nodeData._lastEvalResult.overallScore >= 80 ? 'bg-emerald-500/20 text-emerald-400' :
+       nodeData._lastEvalResult.overallScore >= 50 ? 'bg-amber-500/20 text-amber-400' :
+       'bg-red-500/20 text-red-400'
+     }`}>
+       {nodeData._lastEvalResult.overallScore}
+     </span>
+   )}
+   ```
+
+**Acceptance criteria:**
+- [ ] Nodes can have `_evalConfig` with multiple scorers (rule-based and LLM-graded)
+- [ ] Rule-based scorers support: `length >= N`, `contains "text"`, `sections >= N`
+- [ ] LLM-graded scorers send a scoring prompt to `/api/cid` with `effortLevel: 'low'` for speed
+- [ ] Weighted overall score (0-100) calculated from individual scorer weights
+- [ ] "Run eval" button in NodeDetailPanel triggers evaluation and displays scorecard
+- [ ] Scorecard shows overall score with color coding (green ≥80, amber ≥50, red <50)
+- [ ] Individual scorer results show score + detail explanation
+- [ ] Node card shows small score badge (colored by overall score)
+- [ ] Eval results persist in `_lastEvalResult` across page reloads
+- [ ] LLM scoring uses fast model (deepseek-chat) to minimize cost and latency
+- [ ] Eval config is optional — nodes without config show no eval UI
+
+---
+
+### 77. Project-Specific Context Store for Domain Knowledge
+**Status:** [ ] Not started
+**Version target:** 1.77.0
+**Inspiration:** Dagster Compass's "context store" — a persistent knowledge base of institutional definitions (e.g., "net sales excludes refunds in our company") that the AI analyst references when interpreting queries, making it accurate for the specific organization. Pydantic AI's typed dependency injection where agents receive project-specific context through `RunContext`. Sim Studio's multi-mode copilot that adapts behavior based on project configuration.
+**Complexity:** Medium (3-4 hours)
+
+**Problem:** In `src/lib/prompts.ts` (lines 364-400), `serializeGraph()` serializes node labels, categories, and content for CID's context, but CID has no access to project-specific domain knowledge. If a user's workflow domain is "pharmaceutical compliance," CID doesn't know that "QC" means "Quality Control" (not "Quick Check"), that "batch release" is a regulatory milestone, or that "deviation" has a specific FDA definition. Every user prompt must re-explain domain terms. The habit layer in `src/lib/reflection.ts` tracks agent-level patterns (domain expertise sedimentation at lines 180-220), but this is per-agent personality, not per-project terminology. Dagster Compass solved this with a "context store" — a curated glossary of project-specific definitions that the AI always references. Currently, if a user builds 5 workflows in a pharmaceutical project, they must re-explain "deviation" in every conversation because CID has no project-level knowledge persistence.
+
+**Implementation:**
+
+1. **File: `src/lib/types.ts`** — Add context store type:
+   ```typescript
+   interface ProjectContext {
+     id: string;
+     entries: Array<{
+       term: string;          // e.g., "QC", "batch release", "deviation"
+       definition: string;    // e.g., "Quality Control — regulatory inspection step per FDA 21 CFR Part 211"
+       addedAt: number;
+       source: 'user' | 'inferred';  // User-defined or CID-inferred from conversation
+     }>;
+   }
+   ```
+
+2. **File: `src/store/useStore.ts`** — Add context store state and actions:
+   ```typescript
+   // In the store state:
+   projectContext: ProjectContext;
+
+   // Actions:
+   addContextEntry: (term: string, definition: string, source: 'user' | 'inferred') => {
+     const entries = get().projectContext.entries;
+     // Deduplicate by term (case-insensitive)
+     const filtered = entries.filter(e => e.term.toLowerCase() !== term.toLowerCase());
+     set({
+       projectContext: {
+         ...get().projectContext,
+         entries: [...filtered, { term, definition, addedAt: Date.now(), source }],
+       },
+     });
+   },
+   removeContextEntry: (term: string) => { /* filter out by term */ },
+   ```
+
+3. **File: `src/lib/prompts.ts`** — Inject context store into system prompt (~line 110, end of SHARED_CAPABILITIES):
+   ```typescript
+   export function compileContextStore(entries: ProjectContext['entries']): string {
+     if (!entries.length) return '';
+     const glossary = entries
+       .map(e => `- **${e.term}**: ${e.definition}`)
+       .join('\n');
+     return `\n## Project Glossary\nThe following terms have specific meanings in this project. ALWAYS use these definitions when interpreting user requests or generating node content:\n${glossary}\n`;
+   }
+   ```
+
+4. **File: `src/store/useStore.ts`** — In `chatWithCID()`, auto-infer new terms from conversation:
+   ```typescript
+   // After CID responds, check if response defined new terms:
+   const definitionPattern = /(?:"([^"]+)"\s+means?\s+|(\w+)\s+refers?\s+to\s+)(.+?)(?:\.|$)/gi;
+   let match;
+   while ((match = definitionPattern.exec(response)) !== null) {
+     const term = match[1] || match[2];
+     const definition = match[3].trim();
+     if (term && definition.length > 10) {
+       get().addContextEntry(term, definition, 'inferred');
+     }
+   }
+   ```
+
+5. **File: `src/components/CIDPanel.tsx`** — Add context store management UI (collapsible section):
+   ```typescript
+   // Above the message input, a collapsible "Project Context" section:
+   <details className="px-3 py-1 border-t border-white/5">
+     <summary className="text-[9px] text-white/30 cursor-pointer">
+       Project Context ({projectContext.entries.length} terms)
+     </summary>
+     <div className="mt-1 space-y-1 max-h-32 overflow-y-auto">
+       {projectContext.entries.map(e => (
+         <div key={e.term} className="flex items-start justify-between text-[8px] text-white/40">
+           <span><strong>{e.term}</strong>: {e.definition}</span>
+           <button onClick={() => removeContextEntry(e.term)} className="text-red-400/40 hover:text-red-400 ml-1">×</button>
+         </div>
+       ))}
+       <form onSubmit={handleAddTerm} className="flex gap-1 mt-1">
+         <input placeholder="Term" className="w-20 bg-black/30 border border-white/10 rounded px-1 text-[8px]" />
+         <input placeholder="Definition" className="flex-1 bg-black/30 border border-white/10 rounded px-1 text-[8px]" />
+         <button type="submit" className="text-[8px] text-blue-400/60">+</button>
+       </form>
+     </div>
+   </details>
+   ```
+
+**Acceptance criteria:**
+- [ ] Project context store holds term→definition pairs persisted in localStorage
+- [ ] Context store is injected into CID's system prompt as a "Project Glossary" section
+- [ ] Users can manually add/remove terms via CIDPanel UI
+- [ ] CID auto-infers new terms when it defines them in conversation (source: 'inferred')
+- [ ] Inferred terms can be edited or removed by the user
+- [ ] Glossary injection adds < 300 tokens to the prompt (truncated if > 20 entries)
+- [ ] CID uses project-specific definitions when generating node content and workflow structures
+- [ ] Context store is per-project (different for each saved project)
+- [ ] Terms are deduplicated case-insensitively (adding "QC" replaces existing "qc")
+
+---
+
+### 78. Pre-Execution Input Transform Hooks for Node Pipeline
+**Status:** [ ] Not started
+**Version target:** 1.78.0
+**Inspiration:** Claude Code v2.0.10+ PreToolUse hooks that can modify tool inputs before execution (not just allow/deny) — enabling transparent sandboxing, secret redaction, and convention enforcement. Inngest's checkpointing with local step orchestration where each step can be intercepted and transformed. Pydantic AI's dependency injection where tools receive validated, transformed context through `RunContext`.
+**Complexity:** Medium (3-4 hours)
+
+**Problem:** In `src/store/useStore.ts` (lines 1186-1210), `executeNode()` builds the execution prompt by concatenating upstream results and the node's `aiPrompt`, then sends it directly to `/api/cid`. There's no interception point where the input can be validated, transformed, or enriched before the LLM call. This means: (1) sensitive data in upstream results (API keys, PII) flows to the LLM unredacted, (2) common input patterns can't be normalized (e.g., always prepend "You are an expert in X" to all action nodes), (3) there's no way to enforce team conventions on execution prompts. Claude Code solved this with PreToolUse hooks that TRANSFORM inputs — not just gate them. The hook receives the tool input, modifies it, and returns the modified version. This is fundamentally different from item #63 (conditional gate, which skips execution) and item #69 (post-condition, which validates output). This is about transforming INPUT before execution.
+
+**Implementation:**
+
+1. **File: `src/lib/types.ts`** — Add hook configuration to `NodeData`:
+   ```typescript
+   _preExecuteHooks?: Array<{
+     name: string;
+     type: 'redact' | 'prepend' | 'replace' | 'validate' | 'custom';
+     pattern?: string;     // Regex for redact/replace
+     replacement?: string; // Replacement text for redact/replace
+     content?: string;     // Content for prepend
+     customFn?: string;    // Simple expression for custom transforms
+   }>;
+   ```
+
+2. **File: `src/store/useStore.ts`** — Add hook execution pipeline before the API call in `executeNode()` (~line 1210):
+   ```typescript
+   function applyPreExecuteHooks(
+     prompt: string,
+     hooks: NodeData['_preExecuteHooks']
+   ): { prompt: string; log: string[] } {
+     if (!hooks?.length) return { prompt, log: [] };
+     let result = prompt;
+     const log: string[] = [];
+
+     for (const hook of hooks) {
+       switch (hook.type) {
+         case 'redact': {
+           // Redact matching patterns (PII, API keys, etc.)
+           if (hook.pattern) {
+             const regex = new RegExp(hook.pattern, 'gi');
+             const matches = result.match(regex);
+             if (matches?.length) {
+               result = result.replace(regex, hook.replacement || '[REDACTED]');
+               log.push(`Redacted ${matches.length} matches of /${hook.pattern}/`);
+             }
+           }
+           break;
+         }
+         case 'prepend': {
+           // Prepend standard context/instructions
+           if (hook.content) {
+             result = `${hook.content}\n\n${result}`;
+             log.push(`Prepended: "${hook.content.slice(0, 50)}..."`);
+           }
+           break;
+         }
+         case 'replace': {
+           // Pattern-based replacement
+           if (hook.pattern && hook.replacement !== undefined) {
+             const regex = new RegExp(hook.pattern, 'gi');
+             result = result.replace(regex, hook.replacement);
+             log.push(`Replaced /${hook.pattern}/ → "${hook.replacement}"`);
+           }
+           break;
+         }
+         case 'validate': {
+           // Validate input meets requirements, log warning if not
+           if (hook.pattern) {
+             const regex = new RegExp(hook.pattern);
+             if (!regex.test(result)) {
+               log.push(`⚠️ Validation failed: input does not match /${hook.pattern}/`);
+             }
+           }
+           break;
+         }
+       }
+     }
+     return { prompt: result, log };
+   }
+
+   // In executeNode(), before the fetch call:
+   const { prompt: transformedPrompt, log: hookLog } = applyPreExecuteHooks(executionPrompt, d._preExecuteHooks);
+   if (hookLog.length) cidLog(`Pre-execute hooks for "${d.label}": ${hookLog.join('; ')}`);
+   // Use transformedPrompt instead of executionPrompt for the API call
+   ```
+
+3. **File: `src/store/useStore.ts`** — Add global hooks that apply to ALL nodes:
+   ```typescript
+   // In the store state:
+   globalPreExecuteHooks: NodeData['_preExecuteHooks'];
+
+   // In executeNode(), merge global + node-level hooks:
+   const allHooks = [...(get().globalPreExecuteHooks || []), ...(d._preExecuteHooks || [])];
+   ```
+
+4. **File: `src/components/NodeDetailPanel.tsx`** — Add hook configuration UI:
+   ```typescript
+   // In a collapsible "Pre-Execute Hooks" section:
+   <details className="mt-2">
+     <summary className="text-[10px] text-white/40 cursor-pointer">Pre-Execute Hooks ({(node.data._preExecuteHooks || []).length})</summary>
+     <div className="space-y-2 mt-2 pl-2">
+       {(node.data._preExecuteHooks || []).map((hook, i) => (
+         <div key={i} className="flex gap-1 items-start text-[9px]">
+           <select value={hook.type} onChange={...} className="bg-black/30 border border-white/10 rounded px-1">
+             <option value="redact">Redact</option>
+             <option value="prepend">Prepend</option>
+             <option value="replace">Replace</option>
+             <option value="validate">Validate</option>
+           </select>
+           <input value={hook.pattern || hook.content || ''} onChange={...}
+             placeholder={hook.type === 'prepend' ? 'Text to prepend' : 'Regex pattern'}
+             className="flex-1 bg-black/30 border border-white/10 rounded px-1" />
+           <button onClick={() => removeHook(i)} className="text-red-400/40">×</button>
+         </div>
+       ))}
+       <button onClick={addHook} className="text-[9px] text-blue-400/60">+ Add hook</button>
+     </div>
+   </details>
+   ```
+
+5. **File: `src/lib/prompts.ts`** — Add built-in hook presets CID can recommend:
+   ```typescript
+   export const HOOK_PRESETS = {
+     'redact-api-keys': { name: 'Redact API Keys', type: 'redact' as const, pattern: '(?:sk-|key-|api_)[a-zA-Z0-9]{20,}', replacement: '[API_KEY_REDACTED]' },
+     'redact-emails': { name: 'Redact Emails', type: 'redact' as const, pattern: '[\\w.-]+@[\\w.-]+\\.[a-z]{2,}', replacement: '[EMAIL_REDACTED]' },
+     'redact-urls': { name: 'Redact URLs', type: 'redact' as const, pattern: 'https?://[^\\s]+', replacement: '[URL_REDACTED]' },
+     'expert-persona': { name: 'Expert Persona', type: 'prepend' as const, content: 'You are a domain expert. Be precise, thorough, and cite specific details.' },
+   };
+   ```
+
+**Acceptance criteria:**
+- [ ] `applyPreExecuteHooks()` transforms execution prompts before the API call
+- [ ] Supports 4 hook types: redact (pattern→replacement), prepend (add context), replace (pattern→text), validate (pattern check)
+- [ ] Global hooks apply to ALL nodes; node-level hooks apply per-node; both merge at execution time
+- [ ] Hook execution is logged via `cidLog()` with transformation details
+- [ ] NodeDetailPanel shows hook configuration UI with add/remove/edit
+- [ ] Built-in presets available: redact-api-keys, redact-emails, redact-urls, expert-persona
+- [ ] Hooks execute in order (global first, then node-level)
+- [ ] Validation hooks log warnings but don't block execution
+- [ ] Hook configuration persists in localStorage with node data
+- [ ] Redaction patterns use safe regex (no catastrophic backtracking — simple patterns only)
+
+---
+
+### 79. Code Action Mode for Data Transform Nodes
+**Status:** [ ] Not started
+**Version target:** 1.79.0
+**Inspiration:** HuggingFace smolagents' code-as-action paradigm — agents write and execute Python/JS code as their action format instead of JSON tool calls, reducing LLM calls by ~30% because the agent can compose multiple operations in a single code block. Temporal's `activity_as_tool` which auto-generates tool schemas from function signatures. Flowise AgentFlow V2's guard mechanisms with structured output validation before propagation.
+**Complexity:** Medium-High (4-5 hours)
+
+**Problem:** In `src/store/useStore.ts` (lines 1070-1257), `executeNode()` sends ALL node tasks to the LLM as natural language prompts, even simple data transformations that would be more reliable as code. For example, "Convert this CSV to JSON" or "Extract all email addresses from this text" or "Calculate the total from these line items" — these are deterministic operations that an LLM handles unreliably (hallucinating data, changing formats, losing precision on numbers). smolagents demonstrated that code-as-action is 30% more efficient AND more reliable for data transformations. Currently, Lifecycle has no way for a node to execute a code snippet — everything goes through the LLM, which is slow, expensive, and non-deterministic for tasks that should be deterministic.
+
+**Implementation:**
+
+1. **File: `src/lib/types.ts`** — Add code action fields to `NodeData`:
+   ```typescript
+   _codeAction?: {
+     enabled: boolean;
+     language: 'javascript';     // JS only (runs in browser sandbox)
+     code: string;               // User-written or LLM-generated code
+     autoGenerate: boolean;      // If true, CID generates code from aiPrompt on first run
+   };
+   ```
+
+2. **File: `src/store/useStore.ts`** — Add code execution path in `executeNode()` (~line 1167):
+   ```typescript
+   // BEFORE the AI execution path, check for code action:
+   if (d._codeAction?.enabled && d._codeAction.code) {
+     try {
+       const result = executeCodeAction(d._codeAction.code, {
+         input: upstreamText,
+         nodeLabel: d.label,
+         nodeCategory: d.category,
+       });
+       store.updateNodeData(nodeId, {
+         executionResult: typeof result === 'string' ? result : JSON.stringify(result, null, 2),
+         executionStatus: 'success',
+         _executionDurationMs: Date.now() - _execStart,
+       });
+       return;
+     } catch (err) {
+       // If code fails, fall through to LLM execution as fallback
+       cidLog(`Code action failed for "${d.label}": ${err}. Falling back to LLM.`);
+     }
+   }
+
+   // If autoGenerate is enabled and no code exists yet, ask LLM to generate code:
+   if (d._codeAction?.enabled && d._codeAction.autoGenerate && !d._codeAction.code) {
+     const codeGenPrompt = `Write a JavaScript function that: ${d.aiPrompt || d.description}
+     The function receives 'input' (string) and must return a string.
+     Return ONLY the function body, no wrapper. Example: return input.toUpperCase();`;
+     // ... call API, extract code, store in _codeAction.code, then execute
+   }
+   ```
+
+3. **File: `src/store/useStore.ts`** — Add sandboxed code executor:
+   ```typescript
+   function executeCodeAction(
+     code: string,
+     ctx: { input: string; nodeLabel: string; nodeCategory: string }
+   ): string {
+     // Create sandboxed function with limited scope
+     // NO access to: window, document, fetch, localStorage, eval, Function
+     const sandbox = new Function(
+       'input', 'nodeLabel', 'nodeCategory',
+       // Inject safe utilities:
+       'JSON', 'Math', 'Date', 'parseInt', 'parseFloat', 'String', 'Number', 'Array', 'Object', 'RegExp',
+       `"use strict";\n${code}`
+     );
+
+     // Execute with 5-second timeout via Promise.race
+     const result = sandbox(ctx.input, ctx.nodeLabel, ctx.nodeCategory,
+       JSON, Math, Date, parseInt, parseFloat, String, Number, Array, Object, RegExp);
+
+     if (result === undefined || result === null) return '';
+     return typeof result === 'string' ? result : JSON.stringify(result, null, 2);
+   }
+   ```
+
+4. **File: `src/components/NodeDetailPanel.tsx`** — Add code editor toggle and textarea:
+   ```typescript
+   // In node configuration, after aiPrompt:
+   <label className="flex items-center gap-2 text-[10px] text-white/40 cursor-pointer mt-2">
+     <input type="checkbox" checked={!!node.data._codeAction?.enabled}
+       onChange={() => updateNodeData(node.id, {
+         _codeAction: { ...node.data._codeAction, enabled: !node.data._codeAction?.enabled, language: 'javascript', code: node.data._codeAction?.code || '', autoGenerate: true }
+       })} />
+     <Code size={10} /> Code action mode
+   </label>
+   {node.data._codeAction?.enabled && (
+     <div className="mt-1">
+       <textarea
+         value={node.data._codeAction.code || ''}
+         onChange={(e) => updateNodeData(node.id, {
+           _codeAction: { ...node.data._codeAction!, code: e.target.value }
+         })}
+         placeholder="// JS code. 'input' is the upstream text.\n// Return a string.\nreturn input.split(',').map(s => s.trim()).join('\\n');"
+         className="w-full h-24 bg-black/40 border border-white/10 rounded p-2 text-[10px] font-mono text-emerald-300/80"
+         spellCheck={false}
+       />
+       <div className="flex items-center gap-2 mt-1">
+         <label className="flex items-center gap-1 text-[8px] text-white/30">
+           <input type="checkbox" checked={node.data._codeAction.autoGenerate}
+             onChange={(e) => updateNodeData(node.id, {
+               _codeAction: { ...node.data._codeAction!, autoGenerate: e.target.checked }
+             })} />
+           Auto-generate from AI prompt
+         </label>
+       </div>
+     </div>
+   )}
+   ```
+
+5. **File: `src/components/LifecycleNode.tsx`** — Show code action indicator:
+   ```typescript
+   {nodeData._codeAction?.enabled && (
+     <span className="text-[7px] text-emerald-400/50 flex items-center gap-0.5" title="Code action mode">
+       <Code size={8} /> JS
+     </span>
+   )}
+   ```
+
+**Acceptance criteria:**
+- [ ] Nodes with `_codeAction.enabled` execute JavaScript code instead of calling the LLM
+- [ ] Code runs in a sandboxed `new Function()` with restricted scope (no window, document, fetch)
+- [ ] `input` variable contains upstream text; function must return a string
+- [ ] Safe builtins available: JSON, Math, Date, parseInt, parseFloat, String, Number, Array, Object, RegExp
+- [ ] If code fails, execution falls back to normal LLM path with a warning log
+- [ ] `autoGenerate` mode: CID generates code from the node's `aiPrompt` on first execution, stores it
+- [ ] NodeDetailPanel shows code editor with monospace textarea and syntax-colored placeholder
+- [ ] Node card shows "JS" badge when code action is enabled
+- [ ] Data transformations (CSV→JSON, email extraction, math) are faster and more deterministic than LLM
+- [ ] Code execution has 5-second timeout to prevent infinite loops
+
+---
+
+### 80. User-Facing Error Toast Notifications for API and Execution Failures
+**Status:** [ ] Not started
+**Version target:** 1.80.0
+**Inspiration:** Gradio's native error display with collapsible tracebacks in chat. Sim Studio's real-time feedback system with visual status indicators. Vercel AI SDK 6's `onError` callback pattern that surfaces errors to the UI layer. LangSmith's trace-level error visibility with inline debugging.
+**Complexity:** Low (1-2 hours)
+
+**Problem:** In `src/app/api/cid/route.ts` (lines 240-247), API errors are caught and returned as JSON `{ error: message }`, but the consuming code in `src/components/CIDPanel.tsx` and `src/store/useStore.ts` handles errors inconsistently. In `executeNode()` (lines 1230-1250), errors set `executionStatus: 'error'` on the node but the user sees no notification — they must click on the node to discover it failed. In `chatWithCID()`, network timeouts (45-120s) show no feedback — the UI appears frozen with a spinning indicator. The `cidClient.ts` fetch wrapper catches errors but returns an error shape that callers don't always check. Server-side retry logic (lines 508-556) logs to console only — the user has no idea a retry happened or why. There is NO toast/notification system anywhere in the app. Users discover failures only by noticing something looks wrong.
+
+**Implementation:**
+
+1. **File: `src/store/useStore.ts`** — Add a toast notification system:
+   ```typescript
+   // In the store state:
+   toasts: Array<{
+     id: string;
+     type: 'error' | 'warning' | 'success' | 'info';
+     title: string;
+     message: string;
+     timestamp: number;
+     autoDismissMs: number;  // 0 = manual dismiss only
+   }>;
+
+   // Actions:
+   addToast: (type: 'error' | 'warning' | 'success' | 'info', title: string, message: string, autoDismissMs = 5000) => {
+     const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+     set(s => ({ toasts: [...s.toasts, { id, type, title, message, timestamp: Date.now(), autoDismissMs }] }));
+     if (autoDismissMs > 0) {
+       setTimeout(() => {
+         set(s => ({ toasts: s.toasts.filter(t => t.id !== id) }));
+       }, autoDismissMs);
+     }
+   },
+   dismissToast: (id: string) => set(s => ({ toasts: s.toasts.filter(t => t.id !== id) })),
+   ```
+
+2. **File: `src/components/ToastContainer.tsx`** — NEW component for rendering toasts:
+   ```typescript
+   export function ToastContainer() {
+     const toasts = useStore(s => s.toasts);
+     const dismissToast = useStore(s => s.dismissToast);
+
+     return (
+       <div className="fixed bottom-4 right-4 z-[100] space-y-2 max-w-sm">
+         <AnimatePresence>
+           {toasts.map(toast => (
+             <motion.div
+               key={toast.id}
+               initial={{ opacity: 0, y: 20, scale: 0.95 }}
+               animate={{ opacity: 1, y: 0, scale: 1 }}
+               exit={{ opacity: 0, x: 100 }}
+               className={`rounded-lg border px-4 py-3 shadow-xl backdrop-blur-sm ${
+                 toast.type === 'error' ? 'bg-red-950/90 border-red-500/30 text-red-200' :
+                 toast.type === 'warning' ? 'bg-amber-950/90 border-amber-500/30 text-amber-200' :
+                 toast.type === 'success' ? 'bg-emerald-950/90 border-emerald-500/30 text-emerald-200' :
+                 'bg-zinc-900/90 border-white/10 text-white/80'
+               }`}
+             >
+               <div className="flex items-start justify-between gap-2">
+                 <div>
+                   <div className="text-[11px] font-medium">{toast.title}</div>
+                   <div className="text-[10px] opacity-70 mt-0.5">{toast.message}</div>
+                 </div>
+                 <button onClick={() => dismissToast(toast.id)} className="text-white/30 hover:text-white/60 text-sm">×</button>
+               </div>
+             </motion.div>
+           ))}
+         </AnimatePresence>
+       </div>
+     );
+   }
+   ```
+
+3. **File: `src/store/useStore.ts`** — Add toast calls to all error paths:
+   ```typescript
+   // In executeNode(), on error (~line 1240):
+   get().addToast('error', `Node "${d.label}" failed`, error.message || 'Unknown execution error');
+
+   // In chatWithCID(), on network failure:
+   get().addToast('error', 'Connection failed', 'Could not reach the AI server. Check your network connection.', 0);
+
+   // In chatWithCID(), on timeout:
+   get().addToast('warning', 'Request timed out', 'The AI is taking longer than expected. You can wait or try again.');
+
+   // In executeWorkflow(), on completion:
+   const { success, errors } = executionSummary;
+   if (errors > 0) {
+     get().addToast('warning', 'Workflow completed with errors', `${success} nodes succeeded, ${errors} failed.`);
+   } else {
+     get().addToast('success', 'Workflow complete', `All ${success} nodes executed successfully.`, 3000);
+   }
+
+   // In saveToStorage(), on quota error:
+   get().addToast('error', 'Save failed', 'localStorage quota exceeded. Export your work to avoid data loss.', 0);
+   ```
+
+4. **File: `src/app/page.tsx`** — Mount ToastContainer:
+   ```typescript
+   // At the top level, after the canvas:
+   <ToastContainer />
+   ```
+
+**Acceptance criteria:**
+- [ ] Toast notifications appear in the bottom-right corner of the screen
+- [ ] 4 toast types: error (red), warning (amber), success (green), info (neutral)
+- [ ] Toasts auto-dismiss after configurable timeout (default 5s, errors can be manual-dismiss-only)
+- [ ] Toasts animate in (slide up + fade) and out (slide right + fade)
+- [ ] API errors, network failures, and timeouts trigger visible toasts
+- [ ] Node execution errors show "Node X failed" toasts immediately
+- [ ] Workflow completion shows success/error summary toast
+- [ ] localStorage save failures trigger persistent error toast with export suggestion
+- [ ] Toasts can be manually dismissed with × button
+- [ ] Maximum 5 toasts visible at once (oldest auto-removed when exceeded)
+
+---
+
+### 81. Collapsible Execution Trace Accordions in Chat Messages
+**Status:** [ ] Not started
+**Version target:** 1.81.0
+**Inspiration:** Gradio's collapsible accordions for intermediate thoughts and tool usage — agent chain-of-thought and tool calls display in expandable sections next to chat messages, not in a separate panel. LangSmith's multi-turn trace visualization with inline execution details. Sim Studio's real-time workflow feedback with step-by-step progress in the chat thread.
+**Complexity:** Medium (3-4 hours)
+
+**Problem:** When CID builds or executes a workflow, the chat shows a single message like "I've created a 7-node workflow for..." or "Workflow executed successfully." But the user has no visibility into WHAT happened — which nodes were created, what each one does, how execution progressed, which nodes took longest. To see details, they must switch to the canvas, click individual nodes, or open the PreviewPanel. In `src/components/CIDPanel.tsx`, messages are rendered as flat markdown blobs with no structured metadata. The execution trace (node order, timing, results) exists in `src/store/useStore.ts` but is never surfaced in the chat thread. Gradio solved this with collapsible accordions — each tool call or intermediate step is a named expandable section inline with the message, letting users drill into details without leaving the conversation.
+
+**Implementation:**
+
+1. **File: `src/lib/types.ts`** — Extend chat message type with trace data:
+   ```typescript
+   interface ChatMessage {
+     // existing fields...
+     _traceData?: {
+       type: 'workflow-build' | 'workflow-execute' | 'modification';
+       items: Array<{
+         label: string;           // Node name or operation name
+         category?: string;       // Node category
+         status: 'success' | 'error' | 'skipped';
+         durationMs?: number;
+         summary: string;         // 1-2 line summary of what happened
+         detail?: string;         // Full content (shown when expanded)
+       }>;
+       totalDurationMs?: number;
+     };
+   }
+   ```
+
+2. **File: `src/store/useStore.ts`** — Attach trace data to CID response messages:
+   ```typescript
+   // After workflow generation (in chatWithCID, after applying the workflow):
+   const traceItems = newNodes.map(n => ({
+     label: n.data.label,
+     category: n.data.category,
+     status: 'success' as const,
+     summary: n.data.description || `${n.data.category} node`,
+     detail: n.data.content?.slice(0, 300),
+   }));
+   // Attach to the assistant message:
+   assistantMessage._traceData = { type: 'workflow-build', items: traceItems };
+
+   // After workflow execution (in executeWorkflow):
+   const execTraceItems = executedNodes.map(n => ({
+     label: n.data.label,
+     category: n.data.category,
+     status: n.data.executionStatus === 'error' ? 'error' : 'success',
+     durationMs: n.data._executionDurationMs,
+     summary: n.data.executionStatus === 'error'
+       ? n.data.executionError || 'Execution failed'
+       : `Completed in ${((n.data._executionDurationMs || 0) / 1000).toFixed(1)}s`,
+     detail: (n.data.executionResult || '').slice(0, 500),
+   }));
+   completionMessage._traceData = { type: 'workflow-execute', items: execTraceItems, totalDurationMs };
+   ```
+
+3. **File: `src/components/CIDPanel.tsx`** — Render trace accordions inside chat messages:
+   ```typescript
+   // In the message rendering loop, after the markdown content:
+   {msg._traceData && (
+     <div className="mt-2 space-y-1 border-t border-white/5 pt-2">
+       <div className="text-[9px] text-white/30 flex justify-between">
+         <span>{msg._traceData.items.length} steps</span>
+         {msg._traceData.totalDurationMs && (
+           <span>{(msg._traceData.totalDurationMs / 1000).toFixed(1)}s total</span>
+         )}
+       </div>
+       {msg._traceData.items.map((item, i) => (
+         <details key={i} className="group">
+           <summary className="flex items-center gap-2 text-[10px] cursor-pointer hover:bg-white/5 rounded px-2 py-1">
+             <span className={`w-1.5 h-1.5 rounded-full ${
+               item.status === 'success' ? 'bg-emerald-500' :
+               item.status === 'error' ? 'bg-red-500' : 'bg-white/20'
+             }`} />
+             <span className="text-white/60 font-medium">{item.label}</span>
+             {item.category && <span className="text-white/20 text-[8px]">{item.category}</span>}
+             {item.durationMs && (
+               <span className="ml-auto text-[8px] text-white/20">{(item.durationMs / 1000).toFixed(1)}s</span>
+             )}
+           </summary>
+           <div className="pl-6 pr-2 pb-2 text-[9px] text-white/40">
+             <div>{item.summary}</div>
+             {item.detail && (
+               <pre className="mt-1 p-2 bg-black/30 rounded text-[8px] whitespace-pre-wrap max-h-32 overflow-y-auto">
+                 {item.detail}
+               </pre>
+             )}
+           </div>
+         </details>
+       ))}
+     </div>
+   )}
+   ```
+
+4. **File: `src/store/useStore.ts`** — Also attach trace to modification messages:
+   ```typescript
+   // In applyModifications(), build trace:
+   const modTraceItems: TraceItem[] = [];
+   // For each applied modification:
+   modTraceItems.push({
+     label: `${operation} "${targetLabel}"`,
+     status: succeeded ? 'success' : 'error',
+     summary: succeeded ? 'Applied successfully' : failureReason,
+   });
+   // Attach to the response message
+   ```
+
+**Acceptance criteria:**
+- [ ] Chat messages for workflow builds include collapsible trace showing each created node
+- [ ] Chat messages for workflow executions include collapsible trace with per-node status, timing, and output preview
+- [ ] Chat messages for modifications include collapsible trace showing each operation applied
+- [ ] Each trace item shows: status dot (green/red/gray), node label, category, duration
+- [ ] Expanding a trace item reveals summary text and detail content (first 500 chars of output)
+- [ ] Trace header shows total step count and total duration
+- [ ] Trace accordions are collapsed by default (click to expand)
+- [ ] Error trace items are visually distinct (red status dot)
+- [ ] Trace data is stored in `_traceData` field on messages and persists in localStorage
+- [ ] No visual clutter — trace section has subtle border-top separator and muted colors
+
+---
+
+### 82. Citation-Grounded Node Content with Upstream Source References
+**Status:** [ ] Not started
+**Version target:** 1.82.0
+**Inspiration:** Anthropic's Citations API (GA 2026) — Claude returns structured citations pointing to exact passages in source documents with character-index ranges, achieving 15% recall improvement over custom RAG. Devin Search's auto-indexed codebase with cited code references. LangSmith's multi-turn trace evals that track source provenance across conversation turns.
+**Complexity:** Medium (3-4 hours)
+
+**Problem:** In `src/store/useStore.ts` (lines 1186-1210), `executeNode()` passes upstream node results as flat text concatenated with `---` separators. The executing node's LLM call produces output, but there's no way to trace WHICH upstream node's data was used for which part of the output. If a "Summary Report" node receives data from 5 upstream nodes and produces a 1000-word report, users can't verify which claims came from which source. This is critical for compliance workflows (pharmaceutical, legal, financial) where auditability matters. Anthropic's Citations API returns structured `{ start_index, end_index, document_index, quoted_text }` references alongside response text. Currently, Lifecycle has zero provenance tracking — the connection between upstream data and downstream output is lost after execution.
+
+**Implementation:**
+
+1. **File: `src/lib/types.ts`** — Add citation types:
+   ```typescript
+   interface NodeCitation {
+     sourceNodeId: string;       // Which upstream node this data came from
+     sourceNodeLabel: string;    // Human-readable label
+     quotedText: string;         // The exact text that was referenced
+     startIndex: number;         // Character position in the output where this citation applies
+     endIndex: number;
+   }
+   // Add to NodeData:
+   _citations?: NodeCitation[];
+   ```
+
+2. **File: `src/store/useStore.ts`** — In `executeNode()` (~line 1200), tag upstream context with source markers:
+   ```typescript
+   // Instead of flat join, wrap each upstream result with document markers:
+   const taggedUpstream = upstreamResults.map((result, i) => {
+     const sourceNode = upstreamNodes[i];
+     return `<source id="${sourceNode.id}" label="${sourceNode.data.label}">\n${result}\n</source>`;
+   }).join('\n\n');
+   ```
+
+3. **File: `src/app/api/cid/route.ts`** — For Anthropic provider, enable citations API (~line 195):
+   ```typescript
+   // When using Anthropic and taskType === 'execute':
+   if (resolvedProvider === 'anthropic' && taskType === 'execute') {
+     // Convert tagged upstream into document content blocks
+     const documentBlocks = upstreamSources.map((src, i) => ({
+       type: 'document',
+       source: { type: 'text', content: src.content },
+       title: src.label,
+       citations: { enabled: true },
+     }));
+     // Include in messages
+   }
+   ```
+
+4. **File: `src/store/useStore.ts`** — Parse citation data from API response:
+   ```typescript
+   // After receiving execution result:
+   if (data._citations) {
+     const citations: NodeCitation[] = data._citations.map((c: any) => ({
+       sourceNodeId: upstreamNodes[c.document_index]?.id || '',
+       sourceNodeLabel: upstreamNodes[c.document_index]?.data.label || '',
+       quotedText: c.quoted_text,
+       startIndex: c.start_index,
+       endIndex: c.end_index,
+     }));
+     store.updateNodeData(nodeId, { _citations: citations });
+   }
+   ```
+
+5. **File: `src/components/NodeDetailPanel.tsx`** — Render citations as inline footnotes:
+   ```typescript
+   // In the execution result display, highlight cited passages:
+   {node.data._citations?.length > 0 && (
+     <div className="mt-2 border-t border-white/5 pt-2">
+       <div className="text-[9px] text-white/30 mb-1">Sources ({node.data._citations.length})</div>
+       {node.data._citations.map((c, i) => (
+         <div key={i} className="text-[8px] text-white/40 flex gap-1 mb-1">
+           <span className="text-blue-400/60 font-medium">[{i + 1}]</span>
+           <span className="text-white/50">{c.sourceNodeLabel}:</span>
+           <span className="italic">"{c.quotedText.slice(0, 80)}..."</span>
+         </div>
+       ))}
+     </div>
+   )}
+   ```
+
+**Acceptance criteria:**
+- [ ] Upstream node results are tagged with `<source>` markers including node ID and label
+- [ ] Anthropic API calls use `citations: { enabled: true }` on document content blocks
+- [ ] Citations are parsed from API response and stored as `_citations` on the node
+- [ ] NodeDetailPanel renders citations as numbered footnotes with source node name and quoted text
+- [ ] For non-Anthropic providers, a simple regex-based citation extraction identifies `<source>` references
+- [ ] Citations are clickable — clicking a source scrolls the canvas to highlight the source node
+- [ ] Citation data persists in localStorage with node data
+- [ ] Nodes without upstream context have no citations (input/trigger nodes)
+
+---
+
+### 83. Execution Mutex Lock for Concurrent Node Safety
+**Status:** [ ] Not started
+**Version target:** 1.83.0
+**Inspiration:** Inngest's checkpointing with local step orchestration that prevents concurrent mutations. Temporal's activity heartbeats that detect stale workers and prevent double-execution. Pydantic AI's typed `RunContext` that provides isolated state per execution call.
+**Complexity:** Low-Medium (2-3 hours)
+
+**Problem:** In `src/store/useStore.ts` (lines ~1900+), `executeWorkflow()` runs parallel nodes concurrently via `Promise.all()`, but there's no lock mechanism to prevent user-initiated mutations during execution. If a user modifies a node (via CID chat, NodeDetailPanel, or keyboard shortcut) while `executeNode()` is processing that same node, the two concurrent writes to `updateNodeData()` race — one overwrites the other. Specific scenarios: (1) User clicks "regenerate" on a node that's mid-execution → two API calls for the same node, final state is whichever resolves last. (2) CID applies a modification that changes a node's label while that node is executing → the execution result is stored on a node whose identity just changed. (3) User drags a node to reposition it during execution → position update and execution result update race. There is no `_isExecuting` per-node lock, no optimistic locking, and no queue for pending mutations.
+
+**Implementation:**
+
+1. **File: `src/store/useStore.ts`** — Add per-node execution locks:
+   ```typescript
+   // In the store state:
+   _executingNodeIds: Set<string>;  // Nodes currently being executed
+
+   // Lock/unlock helpers:
+   _lockNode: (nodeId: string) => {
+     set(s => ({ _executingNodeIds: new Set([...s._executingNodeIds, nodeId]) }));
+   },
+   _unlockNode: (nodeId: string) => {
+     set(s => {
+       const next = new Set(s._executingNodeIds);
+       next.delete(nodeId);
+       return { _executingNodeIds: next };
+     });
+   },
+   _isNodeLocked: (nodeId: string) => get()._executingNodeIds.has(nodeId),
+   ```
+
+2. **File: `src/store/useStore.ts`** — In `executeNode()` (~line 1070), acquire lock at start, release on completion:
+   ```typescript
+   executeNode: async (nodeId: string) => {
+     if (get()._isNodeLocked(nodeId)) {
+       cidLog(`Skipping "${nodeId}" — already executing`);
+       return; // Prevent double-execution
+     }
+     get()._lockNode(nodeId);
+     try {
+       // ... existing execution logic ...
+     } finally {
+       get()._unlockNode(nodeId);
+     }
+   },
+   ```
+
+3. **File: `src/store/useStore.ts`** — Guard mutation methods during execution:
+   ```typescript
+   // In updateNodeData(), warn if node is locked:
+   updateNodeData: (nodeId: string, data: Partial<NodeData>) => {
+     if (get()._isNodeLocked(nodeId)) {
+       // Allow only execution-related updates (status, result, timing)
+       const executionKeys = new Set(['executionResult', 'executionStatus', 'executionError',
+         '_executionDurationMs', '_executionStartedAt', '_executionMeta']);
+       const isExecutionUpdate = Object.keys(data).every(k => executionKeys.has(k));
+       if (!isExecutionUpdate) {
+         cidLog(`⚠️ Blocked mutation on locked node "${nodeId}" during execution`);
+         return; // Block non-execution mutations during execution
+       }
+     }
+     // ... existing update logic ...
+   },
+   ```
+
+4. **File: `src/components/LifecycleNode.tsx`** — Visual lock indicator during execution:
+   ```typescript
+   // When node is executing, show a subtle lock overlay:
+   const isLocked = useStore(s => s._executingNodeIds.has(node.id));
+   // In the node card:
+   {isLocked && (
+     <div className="absolute inset-0 bg-black/20 rounded-xl z-10 flex items-center justify-center pointer-events-auto"
+       title="Node is executing — edits blocked until complete">
+       <Loader2 size={14} className="animate-spin text-white/30" />
+     </div>
+   )}
+   ```
+
+5. **File: `src/store/useStore.ts`** — In `applyModifications()`, skip locked nodes:
+   ```typescript
+   // Before applying update_nodes modification:
+   if (get()._isNodeLocked(targetNode.id)) {
+     modFailures.push(`Cannot modify "${targetLabel}" — node is currently executing`);
+     continue;
+   }
+   ```
+
+**Acceptance criteria:**
+- [ ] `_executingNodeIds` Set tracks which nodes are currently executing
+- [ ] `executeNode()` acquires lock before execution and releases in `finally` block
+- [ ] Double-execution of the same node is prevented (second call returns immediately)
+- [ ] Non-execution mutations (label, description, category changes) are blocked on locked nodes
+- [ ] Execution-related mutations (result, status, timing) are allowed through the lock
+- [ ] Locked nodes show a subtle overlay with spinner on the canvas
+- [ ] `applyModifications()` reports failure for locked nodes instead of silently skipping
+- [ ] Locks are automatically released even if execution throws an error (finally block)
+- [ ] Node position changes (drag) are still allowed during execution (visual only, doesn't affect data)
+
+---
+
+### 84. English-Language Quality Rules as Enforceable Policy Nodes
+**Status:** [ ] Not started
+**Version target:** 1.84.0
+**Inspiration:** Continue.dev Mission Control — plain-English quality standards committed as markdown files, enforced by AI agent on every PR. Markdown-based rule sets with `--rule` CLI flags for named policies. Strands Agent SOPs — natural language workflow definitions with RFC 2119 keywords (MUST, SHOULD, MAY) that agents execute as structured workflows. OpenAI AgentKit's inline eval configuration attached directly to workflow steps.
+**Complexity:** Medium (3-4 hours)
+
+**Problem:** In `src/lib/prompts.ts` (lines 44-69), workflow generation rules are hardcoded in the system prompt as developer-written instructions. Users can create `policy` nodes, but these are passive — they hold descriptive text and don't actively enforce anything during workflow execution. A policy node saying "All reports must include an Executive Summary section" is just a note; CID doesn't reference it when generating downstream report content. Continue.dev solved this by making plain-English rules into enforceable checks — the AI evaluates whether output conforms to the rule and blocks/flags non-compliant results. Currently, policy nodes in Lifecycle are decorative labels with no enforcement mechanism. The `test` category is similar but also passive — it doesn't actually test anything automatically.
+
+**Implementation:**
+
+1. **File: `src/lib/types.ts`** — Add enforcement fields to `NodeData` for policy/test nodes:
+   ```typescript
+   _policyRule?: {
+     text: string;               // Plain English rule: "All reports MUST include Executive Summary"
+     enforcement: 'block' | 'warn' | 'log';  // What to do on violation
+     appliesTo: 'downstream' | 'specific';     // All downstream nodes or specific targets
+     targetNodeIds?: string[];    // If 'specific', which nodes to check
+   };
+   ```
+
+2. **File: `src/store/useStore.ts`** — Add policy enforcement after node execution (~line 1240):
+   ```typescript
+   // After executeNode() stores the result, check applicable policy nodes:
+   async function enforcePolices(nodeId: string, output: string): Promise<{ passed: boolean; violations: string[] }> {
+     const node = get().nodes.find(n => n.id === nodeId);
+     const allNodes = get().nodes;
+     const edges = get().edges;
+     const violations: string[] = [];
+
+     // Find policy nodes that apply to this node
+     const policyNodes = allNodes.filter(n => {
+       if (n.data.category !== 'policy' || !n.data._policyRule) return false;
+       const rule = n.data._policyRule;
+       if (rule.appliesTo === 'specific') return rule.targetNodeIds?.includes(nodeId);
+       // 'downstream' — check if this node is downstream of the policy node
+       return isDownstream(n.id, nodeId, edges);
+     });
+
+     for (const policyNode of policyNodes) {
+       const rule = policyNode.data._policyRule!;
+       // Ask LLM to evaluate compliance (lightweight call)
+       const checkPrompt = `Does the following output comply with this rule?\n\nRULE: ${rule.text}\n\nOUTPUT:\n${output.slice(0, 1500)}\n\nRespond with ONLY valid JSON: {"compliant": true/false, "reason": "brief explanation"}`;
+       try {
+         const res = await fetch('/api/cid', {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify({
+             messages: [{ role: 'user', content: checkPrompt }],
+             taskType: 'analyze',
+             model: 'deepseek-chat',
+             effortLevel: 'low',
+           }),
+         });
+         const data = await res.json();
+         const parsed = JSON.parse(data.message);
+         if (!parsed.compliant) {
+           violations.push(`Policy "${policyNode.data.label}": ${parsed.reason}`);
+           if (rule.enforcement === 'block') {
+             get().updateNodeData(nodeId, {
+               executionStatus: 'error',
+               executionError: `Blocked by policy "${policyNode.data.label}": ${parsed.reason}`,
+             });
+           } else if (rule.enforcement === 'warn') {
+             get().addToast('warning', `Policy violation`, `"${node?.data.label}" violates "${policyNode.data.label}": ${parsed.reason}`);
+           }
+           cidLog(`Policy violation: ${policyNode.data.label} → ${parsed.reason}`);
+         }
+       } catch { /* scoring failed, skip */ }
+     }
+
+     return { passed: violations.length === 0, violations };
+   }
+   ```
+
+3. **File: `src/store/useStore.ts`** — Call enforcement after execution:
+   ```typescript
+   // At the end of executeNode(), after storing result:
+   if (d.category !== 'policy' && d.category !== 'input' && d.category !== 'trigger') {
+     const { passed, violations } = await enforcePolicies(nodeId, result);
+     if (!passed) {
+       store.updateNodeData(nodeId, {
+         _policyViolations: violations,
+       });
+     }
+   }
+   ```
+
+4. **File: `src/components/NodeDetailPanel.tsx`** — Add policy rule editor for policy nodes:
+   ```typescript
+   // When editing a policy node:
+   {node.data.category === 'policy' && (
+     <div className="mt-2 space-y-2">
+       <div className="text-[10px] text-white/40 font-medium">Enforcement Rule</div>
+       <textarea
+         value={node.data._policyRule?.text || ''}
+         onChange={(e) => updateNodeData(node.id, {
+           _policyRule: { ...node.data._policyRule, text: e.target.value, enforcement: node.data._policyRule?.enforcement || 'warn', appliesTo: 'downstream' }
+         })}
+         placeholder="All reports MUST include an Executive Summary section. Output SHOULD be at least 500 words. Data MUST NOT contain personally identifiable information."
+         className="w-full h-20 bg-black/30 border border-white/10 rounded p-2 text-[10px]"
+       />
+       <select
+         value={node.data._policyRule?.enforcement || 'warn'}
+         onChange={(e) => updateNodeData(node.id, {
+           _policyRule: { ...node.data._policyRule!, enforcement: e.target.value as 'block' | 'warn' | 'log' }
+         })}
+         className="bg-black/30 border border-white/10 rounded px-2 py-1 text-[9px]"
+       >
+         <option value="log">Log only</option>
+         <option value="warn">Warn (toast notification)</option>
+         <option value="block">Block (mark as error)</option>
+       </select>
+     </div>
+   )}
+   ```
+
+5. **File: `src/components/LifecycleNode.tsx`** — Show policy violation indicator:
+   ```typescript
+   {nodeData._policyViolations?.length > 0 && (
+     <span className="text-[7px] text-red-400/60 flex items-center gap-0.5" title={nodeData._policyViolations.join('; ')}>
+       <AlertTriangle size={8} /> {nodeData._policyViolations.length} violation{nodeData._policyViolations.length > 1 ? 's' : ''}
+     </span>
+   )}
+   ```
+
+**Acceptance criteria:**
+- [ ] Policy nodes can have `_policyRule` with plain-English rule text and enforcement level
+- [ ] Three enforcement levels: log (console only), warn (toast notification), block (mark node as error)
+- [ ] After each node executes, applicable policy rules are checked via lightweight LLM call
+- [ ] Policy rules apply to all downstream nodes by default, or specific targeted nodes
+- [ ] Violations are stored in `_policyViolations` on the offending node
+- [ ] NodeDetailPanel shows rule editor with textarea and enforcement level selector for policy nodes
+- [ ] Violation count badge appears on nodes that failed policy checks
+- [ ] Policy checks use fast model (deepseek-chat) with low effort to minimize latency
+- [ ] Policy nodes themselves are never policy-checked (no self-reference loops)
+
+---
+
+### 85. Auto-Generated Workflow Architecture Documentation
+**Status:** [ ] Not started
+**Version target:** 1.85.0
+**Inspiration:** Devin Search's auto-indexed codebase wikis with architecture diagrams, source links, and searchable documentation generated automatically. Dagster Compass's institutional knowledge context store. Continue.dev's committed markdown standards that serve as living documentation.
+**Complexity:** Medium (3-4 hours)
+
+**Problem:** Users build complex workflows with 10-20 nodes but have no way to generate documentation about what the workflow does, how data flows through it, or what each node's role is. In `src/store/useStore.ts`, the `exportWorkflow()` function (around line 4500+) exports raw JSON — node positions, edges, categories — but no human-readable documentation. When a user shares a workflow JSON with a colleague, the recipient must import it and visually inspect each node to understand the design. Devin solved this with auto-generated wikis: periodic background indexing produces comprehensive architecture docs with diagrams and source links. For Lifecycle, a "Generate Docs" action could produce a markdown architecture document from the current workflow graph — explaining the purpose, data flow, node responsibilities, and execution order — without the user writing anything manually.
+
+**Implementation:**
+
+1. **File: `src/store/useStore.ts`** — Add `generateWorkflowDocs()` action:
+   ```typescript
+   generateWorkflowDocs: async () => {
+     const nodes = get().nodes;
+     const edges = get().edges;
+     if (nodes.length === 0) return '';
+
+     // Build structured graph description
+     const graphDesc = serializeGraphForDocs(nodes, edges);
+
+     // Ask CID to generate documentation
+     const docPrompt = `Generate comprehensive architecture documentation for this workflow in Markdown format.
+
+   WORKFLOW GRAPH:
+   ${graphDesc}
+
+   Include these sections:
+   ## Overview
+   One-paragraph summary of what this workflow does.
+
+   ## Data Flow
+   Describe how data moves through the workflow, step by step.
+
+   ## Node Reference
+   For each node, a brief description of its role and what it produces.
+
+   ## Execution Order
+   List the topological execution order, noting which nodes run in parallel.
+
+   ## Dependencies
+   List any external inputs, services, or data sources required.
+
+   Be concise and accurate. Reference actual node names and edge labels.`;
+
+     const res = await fetch('/api/cid', {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({
+         messages: [{ role: 'user', content: docPrompt }],
+         taskType: 'analyze',
+         model: get().cidAIModel,
+       }),
+     });
+     const data = await res.json();
+     const docs = data.message || '';
+
+     set({ _generatedDocs: docs, _docsGeneratedAt: Date.now() });
+     return docs;
+   },
+   ```
+
+2. **File: `src/store/useStore.ts`** — Add helper to serialize graph for documentation:
+   ```typescript
+   function serializeGraphForDocs(nodes: Node[], edges: Edge[]): string {
+     const topoLevels = topoSort(nodes, edges); // reuse existing topoSort from graph.ts
+     let desc = `### Nodes (${nodes.length}):\n`;
+     for (const node of nodes) {
+       const incoming = edges.filter(e => e.target === node.id).length;
+       const outgoing = edges.filter(e => e.source === node.id).length;
+       desc += `- **${node.data.label}** [${node.data.category}] — ${node.data.description || 'No description'} (${incoming} in, ${outgoing} out)\n`;
+       if (node.data.aiPrompt) desc += `  AI Prompt: "${node.data.aiPrompt.slice(0, 100)}..."\n`;
+     }
+     desc += `\n### Edges (${edges.length}):\n`;
+     for (const edge of edges) {
+       const src = nodes.find(n => n.id === edge.source);
+       const tgt = nodes.find(n => n.id === edge.target);
+       desc += `- ${src?.data.label} —[${edge.data?.label || 'connects'}]→ ${tgt?.data.label}\n`;
+     }
+     return desc;
+   }
+   ```
+
+3. **File: `src/components/TopBar.tsx`** — Add "Generate Docs" button:
+   ```typescript
+   <button
+     onClick={async () => {
+       const docs = await generateWorkflowDocs();
+       if (docs) {
+         // Open docs in a modal or copy to clipboard
+         navigator.clipboard.writeText(docs);
+         addToast('success', 'Docs generated', 'Workflow documentation copied to clipboard.', 3000);
+       }
+     }}
+     className="text-[10px] text-white/40 hover:text-white/70 transition-colors flex items-center gap-1"
+     title="Generate architecture documentation for this workflow"
+   >
+     <FileText size={12} /> Docs
+   </button>
+   ```
+
+4. **File: `src/components/PreviewPanel.tsx`** — Show generated docs in a tab:
+   ```typescript
+   // Add a "Docs" tab alongside the existing output display:
+   {generatedDocs && (
+     <div className="p-4 text-[11px] text-white/70 leading-relaxed prose prose-invert prose-sm max-w-none">
+       <ReactMarkdown>{generatedDocs}</ReactMarkdown>
+     </div>
+   )}
+   ```
+
+**Acceptance criteria:**
+- [ ] "Docs" button in TopBar generates markdown documentation from the current workflow
+- [ ] Generated docs include: Overview, Data Flow, Node Reference, Execution Order, Dependencies
+- [ ] Documentation is generated via CID API call using the current model
+- [ ] Docs are copied to clipboard on generation with a success toast
+- [ ] Generated docs are cached in `_generatedDocs` state (regenerate on demand, not automatic)
+- [ ] PreviewPanel can display generated docs in a readable format
+- [ ] Documentation accurately reflects the current workflow graph (node names, edge labels, topology)
+- [ ] Works for workflows of any size (3-20+ nodes)
+- [ ] Empty workflows show no docs button or a disabled state
+
+---
+
+### 86. Conversation Fork-and-Compare for Exploring Alternatives
+**Status:** [ ] Not started
+**Version target:** 1.86.0
+**Inspiration:** OpenAI's Responses API `previous_response_id` chaining that enables forking conversation trees (branch from any prior response and explore alternatives). Replit Agent's Plan/Build/Edit mode split where users can explore ideas without committing changes. LangSmith's multi-turn eval threads that compare conversation branches side-by-side.
+**Complexity:** Medium-High (4-5 hours)
+
+**Problem:** In `src/store/useStore.ts` (lines ~1571-1576), chat messages are stored as a flat linear array. Users can't explore "what if" scenarios — once CID generates a workflow, there's no way to say "actually, let's try a different approach" without losing the current conversation branch. The undo/redo system (30-entry snapshot history) handles canvas state but not conversation state. If a user wants to compare two different workflow designs for the same request, they must manually save one, regenerate, and then manually compare. OpenAI's Responses API introduced `previous_response_id` forking: you can branch from any point in a conversation and explore alternatives, keeping both branches accessible. This is especially valuable for creative workflow design where users want to explore multiple topologies before committing.
+
+**Implementation:**
+
+1. **File: `src/lib/types.ts`** — Extend message type with branch support:
+   ```typescript
+   interface ChatMessage {
+     // existing fields...
+     _branchId?: string;         // Which conversation branch this message belongs to
+     _parentMessageId?: string;  // For forked messages, which message they fork from
+   }
+
+   interface ConversationBranch {
+     id: string;
+     name: string;               // User-assigned or auto-generated: "Branch 1", "Alternative approach"
+     parentBranchId?: string;    // The branch this was forked from
+     forkPointMessageId: string; // Which message was the fork point
+     createdAt: number;
+   }
+   ```
+
+2. **File: `src/store/useStore.ts`** — Add branch management:
+   ```typescript
+   // In the store state:
+   conversationBranches: ConversationBranch[];
+   activeBranchId: string;  // 'main' by default
+
+   // Actions:
+   forkConversation: (fromMessageId: string, branchName?: string) => {
+     const branchId = `branch-${Date.now()}`;
+     const messages = get().messages;
+     const forkIndex = messages.findIndex(m => m.id === fromMessageId);
+     if (forkIndex === -1) return;
+
+     // Create new branch
+     const branch: ConversationBranch = {
+       id: branchId,
+       name: branchName || `Alternative ${get().conversationBranches.length + 1}`,
+       parentBranchId: get().activeBranchId,
+       forkPointMessageId: fromMessageId,
+       createdAt: Date.now(),
+     };
+
+     // Copy messages up to fork point into new branch
+     const branchedMessages = messages.slice(0, forkIndex + 1).map(m => ({
+       ...m,
+       _branchId: branchId,
+     }));
+
+     set(s => ({
+       conversationBranches: [...s.conversationBranches, branch],
+       activeBranchId: branchId,
+       // Keep all messages, filter by branch for display
+     }));
+     cidLog(`Forked conversation at message ${forkIndex + 1} → branch "${branch.name}"`);
+   },
+
+   switchBranch: (branchId: string) => {
+     set({ activeBranchId: branchId });
+     // Also restore the canvas state snapshot associated with this branch
+   },
+
+   // Filtered messages getter:
+   getActiveBranchMessages: () => {
+     const { messages, activeBranchId } = get();
+     if (activeBranchId === 'main') {
+       return messages.filter(m => !m._branchId || m._branchId === 'main');
+     }
+     return messages.filter(m => m._branchId === activeBranchId);
+   },
+   ```
+
+3. **File: `src/components/CIDPanel.tsx`** — Add fork button on messages and branch switcher:
+   ```typescript
+   // On each assistant message, add a fork button:
+   <button
+     onClick={() => forkConversation(msg.id)}
+     className="text-[8px] text-white/20 hover:text-white/50 transition-colors"
+     title="Fork conversation from this point — explore an alternative"
+   >
+     <GitBranch size={10} />
+   </button>
+
+   // Branch switcher at the top of the chat:
+   {conversationBranches.length > 0 && (
+     <div className="flex gap-1 px-3 py-1 border-b border-white/5 overflow-x-auto">
+       <button
+         onClick={() => switchBranch('main')}
+         className={`text-[9px] px-2 py-0.5 rounded ${activeBranchId === 'main' ? 'bg-white/10 text-white/70' : 'text-white/30'}`}
+       >
+         Main
+       </button>
+       {conversationBranches.map(b => (
+         <button
+           key={b.id}
+           onClick={() => switchBranch(b.id)}
+           className={`text-[9px] px-2 py-0.5 rounded ${activeBranchId === b.id ? 'bg-white/10 text-white/70' : 'text-white/30'}`}
+         >
+           {b.name}
+         </button>
+       ))}
+     </div>
+   )}
+   ```
+
+4. **File: `src/store/useStore.ts`** — Snapshot canvas state per branch:
+   ```typescript
+   // When forking, save current canvas state:
+   forkConversation: (fromMessageId, branchName) => {
+     // ... existing fork logic ...
+     // Snapshot the current canvas for the parent branch
+     const canvasSnapshot = { nodes: structuredClone(get().nodes), edges: structuredClone(get().edges) };
+     set(s => ({
+       _branchSnapshots: { ...s._branchSnapshots, [s.activeBranchId]: canvasSnapshot },
+     }));
+   },
+
+   // When switching branches, restore canvas:
+   switchBranch: (branchId) => {
+     // Save current canvas
+     const currentSnapshot = { nodes: structuredClone(get().nodes), edges: structuredClone(get().edges) };
+     set(s => ({
+       _branchSnapshots: { ...s._branchSnapshots, [s.activeBranchId]: currentSnapshot },
+       activeBranchId: branchId,
+     }));
+     // Restore target branch's canvas if it exists
+     const targetSnapshot = get()._branchSnapshots[branchId];
+     if (targetSnapshot) {
+       set({ nodes: targetSnapshot.nodes, edges: targetSnapshot.edges });
+     }
+   },
+   ```
+
+**Acceptance criteria:**
+- [ ] Each assistant message has a fork button (GitBranch icon) that creates a new conversation branch
+- [ ] Forking copies messages up to the fork point and switches to the new branch
+- [ ] Branch switcher shows tabs (Main, Alternative 1, Alternative 2, ...) at the top of CIDPanel
+- [ ] Switching branches also restores the associated canvas state (nodes + edges)
+- [ ] Chat messages are filtered by active branch — each branch shows only its own messages
+- [ ] New messages in a branch are tagged with `_branchId`
+- [ ] Canvas state is snapshotted when switching away from a branch and restored when returning
+- [ ] Branches persist in localStorage across page reloads
+- [ ] Maximum 5 branches to prevent memory bloat (warn user when limit reached)
+- [ ] Branch names are editable (double-click to rename)
+
 ---
 
 ## Completed

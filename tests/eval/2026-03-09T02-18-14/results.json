@@ -1,0 +1,613 @@
+{
+  "timestamp": "2026-03-09T02-18-14",
+  "overall": 99,
+  "testsRun": [
+    "support-escalation",
+    "edge-question-looks-like-build",
+    "personality-rowan-empty",
+    "education-course-launch",
+    "execute-api-design",
+    "agriculture-crop-management",
+    "agriculture-crop-management"
+  ],
+  "poolSize": 103,
+  "results": [
+    {
+      "id": "support-escalation",
+      "status": "ok",
+      "elapsed": 161788,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Customers keep complaining their tickets go into a black hole. Design an escalation workflow — ticket comes in, auto-classify priority, route to right team, SLA tracking, escalate if overdue.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! Mon ami, I have examined the case of the disappearing tickets with my little grey cells and constructed an elegant escalation workflow. Voilà! This system auto-classifies with machine precision, routes to the correct teams, and escalates decisively when SLAs are breached, ensuring no complaint vanishes into the void.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Ticket Submission Trigger",
+              "category": "trigger",
+              "description": "Initial customer ticket creation event that starts the workflow",
+              "content": "When a customer submits a ticket via email, web form, or chat interface, it triggers the escalation workflow. Use tools like Zendesk, Freshdesk, or ServiceNow to capture ticket details including subject, description, customer ID, and metadata. Integrate with CRM systems such as Salesforce for context on customer history. Set up webhooks to forward ticket data to the classification engine in real-time. Include validation steps to filter out spam or incomplete submissions using regex patterns or AI filters. Document the timestamp and source for SLA tracking initiation. Implement API calls to log the event in monitoring dashboards like Datadog or Splunk for real-time visibility and alerting. Ensure data encryption and compliance with GDPR or similar regulations during ingestion. This node serves as the entry point, so configure fail-safes like retry mechanisms for API failures and backup logging to a database like PostgreSQL."
+            },
+            {
+              "label": "Auto-Priority Classification",
+              "category": "action",
+              "description": "Automated assessment of ticket priority using NLP and rules",
+              "content": "Implement a hybrid system combining machine learning and rule-based logic to classify ticket priority (e.g., Critical, High, Medium, Low). Use NLP tools like Google Cloud Natural Language API, AWS Comprehend, or spaCy to analyze ticket text for keywords (e.g., 'outage', 'urgent'), sentiment scores, and entity recognition. Integrate historical ticket data from databases like MongoDB to train models with scikit-learn or TensorFlow, predicting impact based on past resolutions. Define clear criteria: Critical for security breaches or system-wide outages, High for billing disputes affecting multiple users, Medium for feature requests, Low for general inquiries. Set up a feedback loop where human agents can correct misclassifications via a UI in tools like Jira, feeding data back to improve model accuracy. Store classification results with confidence scores in the ticket system for audit trails, and trigger alerts for low-confidence cases requiring manual review."
+            },
+            {
+              "label": "Team Routing Engine",
+              "category": "action",
+              "description": "Directing tickets to appropriate support teams based on priority and category",
+              "content": "Based on the classified priority and ticket category (e.g., technical, billing, sales), route the ticket to designated teams using dynamic rules. Configure routing logic in ticketing systems like Jira Service Management or Zendesk Explore with criteria: Critical and High priority tickets go to on-call engineers or dedicated response teams via automated assignments; Medium priority to specialized teams based on expertise tags; Low priority to tier-1 support with round-robin load balancing. Implement fallback mechanisms: if primary teams are at capacity, use escalation queues or reroute to backup teams. Log assignment decisions in a central log (e.g., ELK stack) and notify team leads via Slack or Microsoft Teams webhooks. Include validation steps to ensure correct routing by cross-referencing with team schedules from tools like Calendly. Set up automated pings for unacknowledged tickets within 15 minutes to prevent delays."
+            },
+            {
+              "label": "SLA Tracking Policy",
+              "category": "policy",
+              "description": "Policy defining and monitoring service level agreements for ticket resolution times",
+              "content": "Define SLA thresholds per priority level: Critical - 30 minutes, High - 2 hours, Medium - 8 hours, Low - 24 hours. Use monitoring tools like Datadog, Prometheus with custom exporters, or scripts in Python to track ticket age from submission timestamp, pulling data via APIs from the ticketing system every 5 minutes. Set up real-time dashboards with Grafana for visibility into SLA adherence metrics (e.g., percentage of tickets within SLA). Implement alerting rules: if 80% of SLA time elapses, send warnings via email or Slack; if breached, trigger escalation automations. Document policy exceptions for approved extensions, requiring manager approval through a form in tools like Airtable. Integrate with on-call tools like PagerDuty to ensure alerts reach the right personnel. Regularly audit SLA performance monthly using SQL queries on historical data to refine thresholds."
+            },
+            {
+              "label": "Escalation Handler",
+              "category": "action",
+              "description": "Automated and manual actions triggered upon SLA breach or escalation requests",
+              "content": "Upon SLA breach detection from the policy node, automatically escalate by reassigning tickets to higher-tier teams or managers. Use automated scripts in Python or Node.js to update ticket priority, add escalation tags (e.g., 'escalated_high'), and send notifications via email, SMS (Twilio), or chat platforms like Slack with detailed context. Include human-in-the-loop approval for critical escalations: set up a review gate in tools like Trello or Asana where managers can approve or reject escalations within 10 minutes. Implement escalation chains: first to team lead, then to department head, and finally to executives if unresolved after 1 hour. Log all escalation events in a centralized database (e.g., MySQL) for audit and analysis. Integrate with communication tools to ensure acknowledgments, and schedule post-escalation retrospectives to identify root causes using incident management platforms like Rootly."
+            },
+            {
+              "label": "Resolution and Reporting Output",
+              "category": "output",
+              "description": "Final documentation of ticket resolution, escalation outcomes, and performance metrics",
+              "content": "Capture the final resolution state of each ticket, whether resolved by the assigned team or after escalation, including resolution time, method used, and customer feedback scores. Use the ticketing system to close tickets with detailed notes and attach resolution artifacts (e.g., screenshots, logs). Generate automated reports on key metrics: escalation rates, SLA compliance percentages, team response times, and customer satisfaction (CSAT) using BI tools like Tableau or Power BI connected to data warehouses like Snowflake. Store historical data in a data lake (AWS S3) for trend analysis and compliance with data retention policies (e.g., 7 years). Provide weekly summaries to management via emailed PDFs or dashboards, highlighting areas for improvement. Implement a feedback loop where insights drive updates to classification and routing rules, ensuring continuous optimization of the workflow."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "monitors"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "triggers"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "outputs"
+            },
+            {
+              "from": 4,
+              "to": 2,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 100,
+        "maxScore": 100,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 6 (min: 5)",
+          "✓ Node count: 6 ≤ 10",
+          "✓ Has \"trigger\" category",
+          "✓ All 6 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 924c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (6 edges, 6 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "edge-question-looks-like-build",
+      "status": "ok",
+      "elapsed": 33417,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What's the best way to set up a data pipeline?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, the case of the data pipeline, mon ami! To solve it, first gather the clues by defining clear data sources, transformation logic, and sinks—tools like Apache Airflow for orchestration, Apache Kafka for streaming, and dbt for transformations are essential. Then, implement rigorous validation with data quality frameworks like Great Expectations and monitor performance using metrics such as latency, error rates, and throughput to ensure nothing escapes the little grey cells.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (480 chars)",
+          "✓ Message length: 480 ≥ 50"
+        ]
+      }
+    },
+    {
+      "id": "personality-rowan-empty",
+      "status": "ok",
+      "elapsed": 7983,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "No active workflow. Give me a target or problem—I'll map the terrain and deliver an executable plan.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 35,
+        "maxScore": 40,
+        "pct": 88,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (100 chars)",
+          "✗ Missing personality markers"
+        ]
+      }
+    },
+    {
+      "id": "education-course-launch",
+      "status": "ok",
+      "elapsed": 136552,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "I'm creating an online course on data analytics. I need a workflow: outline curriculum, record videos, build exercises, set up LMS, beta test with students, launch and market.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, mon ami! The case of the data analytics course is a fascinating puzzle. Let us examine the evidence and construct a workflow with the precision of a detective, ensuring every clue—from curriculum to launch—is meticulously arranged.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Course Creation Trigger",
+              "category": "trigger",
+              "description": "Initiates the online data analytics course project with goal definition and resource allocation",
+              "content": "Begin by defining clear project goals: identify target audience (e.g., beginners, professionals), learning outcomes (e.g., proficiency in Python, SQL, data visualization), and success metrics (e.g., completion rates, student feedback). Conduct a market analysis using tools like Google Trends, Coursera insights, or surveys to validate demand. Assemble a team or resources, including instructional designers, videographers, and LMS experts. Set up a project management tool such as Trello or Asana with timelines, budgets, and risk assessments. Document everything in a project charter to align stakeholders and serve as a reference point throughout development."
+            },
+            {
+              "label": "Outline Curriculum",
+              "category": "action",
+              "description": "Designs the course structure, modules, and learning objectives based on pedagogical principles",
+              "content": "Develop a detailed curriculum outline using backward design: start with end goals (e.g., students can analyze real-world datasets) and work backwards to define modules. Structure content into 6-8 weekly modules, each with specific learning objectives aligned with Bloom's taxonomy. Select core topics: data cleaning with pandas, statistical analysis, visualization with Matplotlib/Tableau, and storytelling. Incorporate diverse learning materials: videos, readings, quizzes, and projects. Use tools like Miro or Lucidchart for mind mapping, and validate with subject matter experts. Include a syllabus draft, estimated time commitments, and prerequisites. Ensure alignment with industry standards (e.g., CRISP-DM for analytics) and accessibility guidelines."
+            },
+            {
+              "label": "Record Videos",
+              "category": "action",
+              "description": "Produces high-quality video lectures with engaging content and technical clarity",
+              "content": "Plan video production by scripting each lecture based on the curriculum outline, focusing on concise explanations (5-10 minutes per video). Use equipment like DSLR cameras, lapel mics, and lighting kits for professional quality. Record in a quiet environment with tools such as OBS Studio or Camtasia, incorporating screen captures for code demonstrations. Edit videos to add captions, annotations, and branding using Adobe Premiere Pro or DaVinci Resolve. Optimize for engagement: include quizzes within videos via platforms like Edpuzzle, and ensure accessibility with transcripts. Store raw and edited files in cloud storage like Google Drive, with version control. Test playback on different devices to guarantee compatibility."
+            },
+            {
+              "label": "Build Exercises",
+              "category": "action",
+              "description": "Creates interactive exercises, assignments, and projects to reinforce learning",
+              "content": "Design hands-on exercises that apply theoretical concepts: start with simple data sets from sources like Kaggle or government portals. Develop coding challenges in Jupyter Notebooks or Google Colab, with auto-grading via tools like nbgrader. Include real-world projects, such as analyzing sales data or building dashboards, with rubrics for assessment. Create multiple-choice quizzes using platforms like Quizizz or integrated LMS tools, focusing on application over recall. Ensure exercises are scalable and provide feedback mechanisms, like peer review or automated hints. Document solutions and troubleshooting guides for instructors. Pilot test exercises with a small group to refine difficulty and clarity before full integration."
+            },
+            {
+              "label": "Set Up LMS",
+              "category": "action",
+              "description": "Configures the Learning Management System with course content, user management, and tracking",
+              "content": "Choose an LMS platform such as Teachable, Thinkific, or Moodle based on features like scalability, cost, and integration. Upload all course materials: videos, exercises, readings, and syllabi into organized modules. Configure user roles (students, instructors, admins) and enrollment processes, including payment gates if monetized. Set up analytics dashboards to track student progress, engagement metrics, and completion rates using tools like Google Analytics or built-in LMS reports. Implement communication features like forums, announcements, and email notifications. Test functionality thoroughly: ensure mobile responsiveness, load times, and security compliance (e.g., GDPR). Create a student onboarding guide and support channel for technical issues."
+            },
+            {
+              "label": "Beta Test with Students",
+              "category": "review",
+              "description": "Conducts a controlled pilot with real students to gather feedback and identify improvements",
+              "content": "Recruit a diverse group of 20-30 beta testers representing the target audience, using platforms like UserTesting or social media. Provide access to the full course on the LMS and set a testing period of 2-3 weeks. Collect quantitative data via surveys (e.g., Net Promoter Score, learning satisfaction) and qualitative feedback through interviews or focus groups. Monitor analytics for pain points: dropout rates, exercise completion times, and forum activity. Use tools like Hotjar for heatmaps or session recordings. Compile feedback into a report highlighting critical issues (e.g., video clarity, exercise difficulty). Schedule review meetings with the team to prioritize changes based on impact and feasibility, ensuring iterative refinement."
+            },
+            {
+              "label": "Launch and Market Course",
+              "category": "output",
+              "description": "Finalizes course delivery and executes marketing strategies to attract and enroll students",
+              "content": "Execute the launch plan: set a go-live date, ensure all LMS components are polished, and conduct a final quality assurance check. Develop a multi-channel marketing strategy using SEO-optimized landing pages built with tools like Unbounce, content marketing via blogs or webinars, and social media campaigns on LinkedIn or Twitter. Utilize email marketing sequences with platforms like Mailchimp to nurture leads, and consider paid ads on Google or Facebook targeting data professionals. Offer launch discounts or early-bird bonuses to drive initial enrollments. Monitor launch metrics: conversion rates, student feedback, and revenue, adjusting tactics as needed. Plan for post-launch support, including community building and updates based on ongoing student insights."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "validates"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "approves"
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 4,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 105,
+        "maxScore": 105,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ All 10 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 737c, no thin nodes",
+          "✓ Architecture covers: curriculum, record, exercise, lms",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (10 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "execute-api-design",
+      "status": "ok",
+      "elapsed": 76137,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Design a REST API for a multi-tenant task management system. Include endpoints for workspaces, projects, tasks, and comments. Show URL patterns, HTTP methods, request/response bodies, auth scheme, pagination, and error codes. Support role-based access (admin, member, viewer).",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# REST API Design: Multi-Tenant Task Management System\n\n## 1. Overview\nA RESTful API for a multi-tenant task management system where each tenant operates within isolated **workspaces**. The system supports hierarchical organization: Workspace → Projects → Tasks → Comments. All operations are scoped to the authenticated user's tenant/workspace.\n\n## 2. Authentication & Authorization\n- **Scheme**: Bearer Token (JWT)\n- **Header**: `Authorization: Bearer <jwt_token>`\n- **Token Claims**: Includes `tenant_id`, `user_id`, `roles` (array of workspace-level roles)\n- **Role-Based Access Control**:\n  - **Admin**: Full CRUD on all workspace resources, manage members.\n  - **Member**: Create/read/update assigned projects/tasks, comment on tasks.\n  - **Viewer**: Read-only access to workspace resources.\n\n## 3. Base URL & Versioning\n- **Base URL**: `https://api.taskmanager.com/v1`\n- All endpoints are relative to this base.\n\n## 4. Endpoints\n\n### 4.1 Workspaces\nManage tenant workspaces. A user can belong to multiple workspaces.\n\n#### **List Workspaces** (User's accessible workspaces)\n- **URL**: `/workspaces`\n- **Method**: `GET`\n- **Query Params**: `?limit=20&offset=0` (optional)\n- **Response Body**:\n```json\n{\n  \"data\": [\n    {\n      \"id\": \"ws_123\",\n      \"name\": \"Acme Corp\",\n      \"slug\": \"acme-corp\",\n      \"created_at\": \"2023-10-05T14:48:00Z\",\n      \"role\": \"admin\"\n    }\n  ],\n  \"pagination\": {\n    \"total\": 1,\n    \"limit\": 20,\n    \"offset\": 0\n  }\n}\n```\n- **Roles**: Any authenticated user.\n\n#### **Create Workspace**\n- **URL**: `/workspaces`\n- **Method**: `POST`\n- **Request Body**:\n```json\n{\n  \"name\": \"New Workspace\",\n  \"slug\": \"new-workspace\"\n}\n```\n- **Response Body**: `201 Created` with full workspace object.\n- **Roles**: Any authenticated user (becomes admin of new workspace).\n\n### 4.2 Projects\nProjects exist within a workspace.\n\n#### **List Projects in a Workspace**\n- **URL**: `/workspaces/{workspace_id}/projects`\n- **Method**: `GET`\n- **Query Params**: `?status=active&limit=10&offset=0`\n- **Response Body**: Array of project objects with pagination metadata.\n- **Roles**: Viewer, Member, Admin.\n\n#### **Create Project**\n- **URL**: `/workspaces/{workspace_id}/projects`\n- **Method**: `POST`\n- **Request Body**:\n```json\n{\n  \"name\": \"Q4 Product Launch\",\n  \"description\": \"Launch new product features\",\n  \"status\": \"planning\",\n  \"start_date\": \"2023-11-01\",\n  \"due_date\": \"2023-12-15\"\n}\n```\n- **Response Body**: `201 Created` with project object.\n- **Roles**: Member, Admin.\n\n#### **Update Project**\n- **URL**: `/workspaces/{workspace_id}/projects/{project_id}`\n- **Method**: `PUT` or `PATCH`\n- **Request Body**: Partial/full project object.\n- **Response Body**: Updated project object.\n- **Roles**: Member (if assigned), Admin.\n\n#### **Delete Project**\n- **URL**: `/workspaces/{workspace_id}/projects/{project_id}`\n- **Method**: `DELETE`\n- **Response Body**: `204 No Content`\n- **Roles**: Admin only.\n\n### 4.3 Tasks\nTasks belong to a project.\n\n#### **List Tasks in a Project**\n- **URL**: `/workspaces/{workspace_id}/projects/{project_id}/tasks`\n- **Method**: `GET`\n- **Query Params**: `?assignee_id=user_456&priority=high&limit=25&offset=0`\n- **Response Body**: Array of task objects with pagination.\n- **Roles**: Viewer, Member, Admin.\n\n#### **Create Task**\n- **URL**: `/workspaces/{workspace_id}/projects/{project_id}/tasks`\n- **Method**: `POST`\n- **Request Body**:\n```json\n{\n  \"title\": \"Design homepage mockup\",\n  \"description\": \"Create Figma mockups for homepage redesign\",\n  \"status\": \"todo\",\n  \"priority\": \"high\",\n  \"assignee_id\": \"user_456\",\n  \"due_date\": \"2023-11-10\",\n  \"tags\": [\"design\", \"frontend\"]\n}\n```\n- **Response Body**: `201 Created` with task object.\n- **Roles**: Member, Admin.\n\n#### **Update Task Status/Details**\n- **URL**: `/workspaces/{workspace_id}/projects/{project_id}/tasks/{task_id}`\n- **Method**: `PATCH`\n- **Request Body**:\n```json\n{\n  \"status\": \"in_progress\",\n  \"priority\": \"medium\"\n}\n```\n- **Response Body**: Updated task object.\n- **Roles**: Member (if assignee or creator), Admin.\n\n#### **Delete Task**\n- **URL**: `/workspaces/{workspace_id}/projects/{project_id}/tasks/{task_id}`\n- **Method**: `DELETE`\n- **Response**: `204 No Content`\n- **Roles**: Admin only.\n\n### 4.4 Comments\nComments are attached to tasks.\n\n#### **List Comments on a Task**\n- **URL**: `/workspaces/{workspace_id}/projects/{project_id}/tasks/{task_id}/comments`\n- **Method**: `GET`\n- **Query Params**: `?limit=50&offset=0`\n- **Response Body**: Array of comment objects (chronological).\n- **Roles**: Viewer, Member, Admin.\n\n#### **Add Comment**\n- **URL**: `/workspaces/{workspace_id}/projects/{project_id}/tasks/{task_id}/comments`\n- **Method**: `POST`\n- **Request Body**:\n```json\n{\n  \"content\": \"Please review the design by tomorrow.\",\n  \"mentions\": [\"user_789\"]\n}\n```\n- **Response Body**: `201 Created` with comment object (includes `author_id`, `created_at`).\n- **Roles**: Member, Admin.\n\n#### **Update Comment**\n- **URL**: `/workspaces/{workspace_id}/projects/{project_id}/tasks/{task_id}/comments/{comment_id}`\n- **Method**: `PUT`\n- **Request Body**: Updated content.\n- **Response Body**: Updated comment object.\n- **Roles**: Member (only if author), Admin.\n\n#### **Delete Comment**\n- **URL**: `/workspaces/{workspace_id}/projects/{project_id}/tasks/{task_id}/comments/{comment_id}`\n- **Method**: `DELETE`\n- **Response**: `204 No Content`\n- **Roles**: Member (only if author), Admin.\n\n## 5. Pagination\nAll list endpoints support cursor-based or offset pagination.\n- **Parameters**: `limit` (default 20, max 100), `offset` (default 0) or `cursor`.\n- **Response**: Includes `pagination` object with `total`, `limit`, `offset`, and `next_cursor` if applicable.\n\n## 6. Error Handling\nStandard HTTP status codes with consistent error response body.\n\n**Error Response Format**:\n```json\n{\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"Request body validation failed.\",\n    \"details\": [\n      {\"field\": \"name\", \"issue\": \"Field is required.\"}\n    ]\n  }\n}\n```\n\n**Common Error Codes**:\n- `400 Bad Request` – Invalid request data.\n- `401 Unauthorized` – Missing or invalid token.\n- `403 Forbidden` – Insufficient permissions for the role.\n- `404 Not Found` – Resource not found in this workspace.\n- `409 Conflict` – Resource conflict (e.g., duplicate slug).\n- `429 Too Many Requests` – Rate limit exceeded.\n- `500 Internal Server Error` – Server-side error.\n\n## 7. Rate Limiting\n- **Limit**: 100 requests per minute per access token.\n- **Headers**: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`.\n\n## 8. Multi-Tenancy Implementation\n- **Tenant Isolation**: All database queries include `WHERE workspace_id = :workspace_id`.\n- **Workspace ID**: Extracted from JWT token or URL path parameter.\n- **Data Segregation**: No cross-workspace data leakage possible at API layer.\n\n## 9. Notes\n- All timestamps in ISO 8601 UTC format.\n- IDs are URL-safe strings (UUIDs or prefixed keys like `task_xyz`).\n- Soft deletes where appropriate, with audit trails.\n- Webhook support for real-time updates (out of scope for this doc).",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (7060 chars)",
+          "✓ Content length: 7060 ≥ 1500"
+        ]
+      }
+    },
+    {
+      "id": "agriculture-crop-management",
+      "status": "ok",
+      "elapsed": 126159,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Build a crop management workflow for a 500-acre corn farm. Cover: soil testing, seed selection, planting schedule, irrigation management, pest monitoring, fertilizer application, harvest planning, and post-harvest storage. We need to optimize yield while staying within a $200k annual budget.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building crop management workflow with budget enforcement.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Annual Cycle Trigger",
+              "category": "trigger",
+              "description": "Initiates the crop management cycle with budget and farm parameters",
+              "content": "This node triggers at the start of each growing season (typically early spring) for the 500-acre corn farm. Payload includes: annual budget cap of $200,000, farm location data (soil type maps, historical yield data), and seasonal weather forecasts. Configuration involves setting up automated alerts via farm management software (e.g., FarmLogs or John Deere Operations Center) to monitor budget thresholds. Steps: 1. Input budget allocation per phase (e.g., 30% for inputs, 40% for operations). 2. Load geospatial data for field zoning. 3. Schedule initial soil testing appointments. Tools: GPS systems, financial dashboards. Error handling: If budget data is missing, escalate to farm manager within 24 hours. Owner: Farm Operations Lead."
+            },
+            {
+              "label": "Pre-Planting Analysis",
+              "category": "action",
+              "description": "Conduct soil testing and select optimal corn seeds based on analysis",
+              "content": "Execute comprehensive soil testing and seed selection to optimize yield. Steps: 1. Collect soil samples from each 50-acre zone using grid sampling tools (e.g., SoilWeb or local agronomy labs). 2. Analyze for pH, nutrient levels (N-P-K), and organic matter; target pH 6.0-6.8 for corn. 3. Based on results, select hybrid seeds (e.g., drought-resistant varieties like Pioneer P1197AM) considering cost ($50-$100 per acre) and yield potential (aim for 200+ bushels/acre). 4. Procure seeds and inputs, negotiating bulk discounts with suppliers. Tools: Soil testing kits, seed comparison databases (e.g., University Extension resources). Error handling: Retest if anomalies occur; adjust seed choices within 5% budget variance. Owner: Agronomist."
+            },
+            {
+              "label": "Planting and Irrigation Setup",
+              "category": "action",
+              "description": "Schedule planting and configure initial irrigation systems",
+              "content": "Implement planting schedule and set up irrigation for optimal germination. Steps: 1. Determine planting dates based on soil temperature (55°F+ at 4-inch depth) and weather data, using tools like Climate FieldView. 2. Deploy planting equipment (e.g., precision planters) at 30,000 seeds/acre density. 3. Configure drip or center-pivot irrigation systems, calibrating for 1-1.5 inches per week initially. 4. Integrate soil moisture sensors (e.g., Trellis) for real-time monitoring. Tools: Planting software, irrigation controllers. Error handling: If planting delays occur, adjust schedule by up to 7 days; monitor for soil crusting. Owner: Field Operations Manager."
+            },
+            {
+              "label": "In-Season Management",
+              "category": "action",
+              "description": "Manage irrigation, fertilizer application, and pest monitoring during growth",
+              "content": "Execute ongoing crop care to maximize health and yield. Steps: 1. Adjust irrigation weekly based on evapotranspiration data (use tools like CIMIS). 2. Apply fertilizers (e.g., urea or ammonium nitrate) at key growth stages (V6 and VT), following soil test recommendations to avoid over-application. 3. Monitor pests (e.g., corn borer, aphids) via scouting and traps; implement IPM strategies like beneficial insects or targeted pesticides if thresholds exceeded. 4. Track crop health with NDVI drones (e.g., DJI Agras) for stress detection. Tools: Fertigation systems, pest monitoring apps. Error handling: If pest outbreaks occur, escalate to integrated pest management specialist within 48 hours. Owner: Crop Consultant."
+            },
+            {
+              "label": "Mid-Season Review",
+              "category": "review",
+              "description": "Human-led assessment of crop progress and budget adherence",
+              "content": "Conduct a mid-season review to evaluate performance and make adjustments. Approval criteria: Crop health scores above 80% (per drone imagery), budget spend within 60% of total, and pest levels below economic thresholds. Who reviews: Farm manager, agronomist, and financial officer. Process: 1. Compile data from previous nodes into a dashboard (e.g., Power BI). 2. Hold review meeting at tasseling stage (approx. 60 days post-planting). 3. Decide on adjustments: e.g., reduce irrigation if rainfall sufficient, or reallocate funds for additional pest control. Escalation: If budget overrun >10%, require CFO approval. SLA: Review completed within 5 business days. Owner: Farm Manager."
+            },
+            {
+              "label": "Harvest and Storage Planning",
+              "category": "action",
+              "description": "Plan and execute harvest, followed by post-harvest storage",
+              "content": "Coordinate harvest operations and ensure proper grain storage. Steps: 1. Schedule harvest based on grain moisture content (target 15-20%) using combine harvesters with yield monitors. 2. Plan logistics: allocate equipment (e.g., grain carts, trucks) and labor for efficient timing (aim for 50 acres/day). 3. Post-harvest: Dry grain to 13-14% moisture using on-farm dryers or commercial facilities. 4. Store in silos with aeration systems, monitoring for temperature and humidity to prevent spoilage. Tools: Harvest scheduling software (e.g., Granular), storage management systems. Error handling: If weather delays harvest, implement contingency plans like temporary storage bags. Owner: Harvest Coordinator."
+            },
+            {
+              "label": "Budget Compliance Policy",
+              "category": "policy",
+              "description": "Enforce $200k annual budget across all farm operations",
+              "content": "Set and monitor financial constraints to optimize costs. Rules: 1. Allocate budget: 25% for seeds and inputs, 30% for irrigation and fertilizer, 20% for pest control, 15% for harvest, 10% contingency. 2. Track expenses in real-time using accounting software (e.g., QuickBooks Ag). 3. Enforce spending caps per phase; if exceeded by >5%, trigger automatic review and require justification. 4. Exceptions: Allow overruns only for emergency pest outbreaks or extreme weather, with manager approval. Enforcement: Automated alerts via SMS/email when thresholds reached. Tools: Budget dashboards, approval workflows. Owner: Financial Controller."
+            },
+            {
+              "label": "Yield and Financial Report",
+              "category": "output",
+              "description": "Final deliverable with yield metrics and budget analysis",
+              "content": "Produce comprehensive report to assess season success and guide future planning. Deliverable format: PDF and digital dashboard with sections: Executive summary, yield per acre (target: optimize to 220+ bushels/acre), cost breakdown (ensure within $200k), storage quality metrics, and lessons learned. Distribution: Share with stakeholders (farm owners, investors) via email and cloud storage (e.g., Google Drive). Success metrics: Yield increase year-over-year by at least 5%, budget adherence within 2% variance, and post-harvest losses below 3%. Steps: 1. Compile data from all nodes. 2. Generate visualizations (charts, maps). 3. Conduct review meeting for feedback. Tools: Reporting software (e.g., Tableau), collaboration platforms. Owner: Farm Analyst."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "drives"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 3,
+              "label": "refines"
+            },
+            {
+              "from": 3,
+              "to": 5,
+              "label": "drives"
+            },
+            {
+              "from": 5,
+              "to": 7,
+              "label": "outputs"
+            },
+            {
+              "from": 6,
+              "to": 0,
+              "label": "monitors"
+            },
+            {
+              "from": 6,
+              "to": 1,
+              "label": "monitors"
+            },
+            {
+              "from": 6,
+              "to": 2,
+              "label": "monitors"
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "label": "monitors"
+            },
+            {
+              "from": 6,
+              "to": 5,
+              "label": "monitors"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "feeds"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 105,
+        "maxScore": 105,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 5)",
+          "✓ Node count: 8 ≤ 10",
+          "✓ All 13 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 707c, no thin nodes",
+          "✓ Architecture covers: soil, plant, irrigat, harvest",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (13 edges, 8 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "agriculture-crop-management",
+      "status": "ok",
+      "elapsed": 78844,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Build a workflow for managing a 500-acre corn and soybean crop rotation. Steps: soil testing, seed selection, planting schedule, irrigation monitoring, pest scouting, fertilizer application, harvest coordination, and post-harvest grain storage. We use precision agriculture with GPS-guided equipment and satellite imagery.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Ah, the classic case of the 500-acre rotation! The plot thickens with GPS and satellites. Very well, mon ami, let us examine the evidence and lay out the investigation—I mean, the workflow. The little grey cells are working; we shall structure this not as a simple checklist, but as a dynamic system of observation and action.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "1. The Annual Rotation Plan",
+              "category": "input",
+              "description": "The master trigger: the crop rotation schedule and field maps for the upcoming season.",
+              "content": "This is our initial clue, the foundation of the case. It must be a detailed georeferenced plan specifying which 250 acres will be corn and which 250 will be soybeans, based on the previous year's rotation. It integrates historical yield maps, soil type data, and legal land descriptions. Tools: Farm management software (e.g., John Deere Operations Center, Climate FieldView) to load boundary files and create the seasonal project. Actionable steps: 1. Review prior year's harvest data and profitability analysis per zone. 2. Confirm rotation logic (e.g., corn follows soybeans to fix nitrogen). 3. Upload final plan to all connected precision ag platforms and sync with all GPS-guided equipment. This plan feeds all subsequent operational decisions and machine guidance lines."
+            },
+            {
+              "label": "2. Pre-Season Diagnostic & Procurement",
+              "category": "state",
+              "description": "The phase of gathering intelligence: soil testing and strategic seed/input selection.",
+              "content": "We must scrutinize the soil's testimony. Conduct grid or zone-based soil sampling (1 sample per 2-3 acres) immediately post-harvest or early spring. Analyze for pH, P, K, organic matter, and CEC. Simultaneously, select hybrid/variety seeds based on: 1. Multi-year trial data for your region's heat units and disease pressure. 2. Trait packages (e.g., herbicide tolerance, insect resistance) tailored to your field's pest history. 3. Economic modeling of seed cost vs. potential yield uplift. Use platforms like Granular or AGRI-TREND to analyze soil data and generate variable rate prescription maps for lime and phosphorus/potassium. Order seeds and fertilizers, ensuring they are staged and logged in inventory."
+            },
+            {
+              "label": "3. In-Season Execution & Primary Monitoring",
+              "category": "action",
+              "description": "The field operations: planting according to schedule, and initiating irrigation and early pest surveillance.",
+              "content": "Execute the planting schedule using auto-steer planters with variable rate seeding prescriptions loaded from the diagnostic phase. Critical steps: 1. Monitor soil temperature and moisture at planting depth; target >50°F for corn, >55°F for soybeans. 2. Ensure planter is calibrated for depth and population. 3. Activate soil moisture sensors and center-pivot irrigation systems, setting initial schedules based on evapotranspiration (ET) models. In parallel, deploy satellite imagery subscriptions (e.g., Planet Labs, Sentinel-2) to get weekly NDVI (Normalized Difference Vegetation Index) scans. These serve as the first alert system for canopy health, feeding the next phase of scouting. Document all as-applied planting maps."
+            },
+            {
+              "label": "4. Mid-Season Vigilance & Corrective Action",
+              "category": "test",
+              "description": "The active investigation: targeted pest and nutrient deficiency scouting, leading to precise applications.",
+              "content": "Here, we cross-reference the satellite 'clues' with boots-on-the-ground evidence. When NDVI shows anomalies (low vigor spots), dispatch scouts to those specific GPS coordinates. Use standardized scouting protocols: 1. For pests: examine 10 plants in 5 locations per zone for insects (e.g., corn borer, soybean aphid) and disease symptoms. 2. For nutrients: conduct tissue sampling (e.g., corn leaf at V6 stage) to test for nitrogen, sulfur, micronutrients. Based on thresholds (e.g., aphids >250/plant), generate a variable rate spray prescription for fungicide/insecticide. For nitrogen, use sensor-based side-dressing equipment (like Greenseeker) or satellite-driven models to apply supplemental N only where needed. This phase directly refines the initial plan."
+            },
+            {
+              "label": "5. The Harvest Directive",
+              "category": "review",
+              "description": "Human decision gate: approving the harvest schedule based on crop maturity and conditions.",
+              "content": "The farmer, the detective-in-chief, must review all evidence before the final act. Analyze: 1. Grain moisture content from field samples (target 15-20% for corn, 13% for soybeans). 2. Field dryness and weather forecast for a 5-day window. 3. Combine harvester and grain cart logistics and operator availability. 4. Dryer and storage bin capacity status. Use a checklist: Is NDVI showing senescence? Are frost risks imminent? Have all pre-harvest desiccants (for soybeans) been applied if needed? This review approves the exact start date, field order, and assigns resources. It requires sign-off on the harvest map, which will guide the combine's yield monitor."
+            },
+            {
+              "label": "6. Harvest & Immediate Post-Harvest Logistics",
+              "category": "action",
+              "description": "The coordinated harvest operation and initial grain handling.",
+              "content": "Execute the approved harvest plan using combines equipped with yield monitors and GPS. Critical actions: 1. Calibrate yield monitors with actual weigh wagon loads for each crop. 2. Log real-time yield data to create the new yield map for future planning. 3. Coordinate grain carts and semi-trucks to transport grain based on destination: a) Direct to market for immediate sale, or b) To on-farm storage bins. For storage, grain must be dried to safe moisture levels (13% corn, 11% soybeans) using continuous flow dryers, monitored with temperature cables. Clean grain before storage to remove fines. Document all load tickets, moisture tests, and bin numbers for traceability."
+            },
+            {
+              "label": "7. Post-Harvest Stewardship & Data Archive",
+              "category": "output",
+              "description": "The final artifact: securely stored grain and the consolidated season data package.",
+              "content": "The case file is closed, but the evidence must be preserved. This node outputs two key items: 1. **The Physical Grain**: Grain in aerated storage bins, monitored weekly for temperature and insect activity. Maintain detailed bin records (variety, moisture, date stored, estimated bushels). 2. **The Digital Dossier**: A comprehensive data package compiled from all prior steps. This includes: final yield maps, as-applied maps for all inputs, soil test results, scouting reports, irrigation logs, and financial summaries (input costs vs. yield revenue). This dossier is saved in the farm management software and cloud backup. It is the primary input for next year's 'Annual Rotation Plan' (Node 1), creating the perpetual investigation loop. Aha! The cycle is complete."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "feeds"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "monitors"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "validates"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "approves"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "outputs"
+            },
+            {
+              "from": 3,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 4,
+              "to": 2,
+              "label": "informs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 105,
+        "maxScore": 105,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ All 8 edges valid",
+          "✓ Starts with input",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 727c, no thin nodes",
+          "✓ Architecture covers: soil, plant, pest, harvest",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (8 edges, 7 nodes)"
+        ]
+      }
+    }
+  ]
+}
