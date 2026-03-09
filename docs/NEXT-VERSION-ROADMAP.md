@@ -2611,7 +2611,7 @@ Each item includes specific files, implementation steps, acceptance criteria, an
 ---
 
 ### 41. Prompt Injection Sanitization in Graph Serializer and Node Labels
-**Status:** [ ] Not started
+**Status:** [x] Done
 **Version target:** 2.3.0
 **Inspiration:** OWASP LLM Top 10 (LLM01: Prompt Injection); codebase security audit found zero sanitization of user-controlled text before embedding into LLM system prompts
 **Complexity:** Medium (2 hours)
@@ -4386,7 +4386,7 @@ Each item includes specific files, implementation steps, acceptance criteria, an
 ---
 
 ### 60. Storage Reliability Layer with Quota Warning and Flush-on-Exit
-**Status:** [ ] Not started
+**Status:** [x] Done
 **Version target:** 1.60.0
 **Inspiration:** Dify's persistent workflow state with auto-save indicators and recovery prompts. n8n's execution data management with configurable retention and pruning. Letta's context repositories with durable persistence guarantees. ComfyUI's workflow auto-save with versioned backups.
 **Complexity:** Medium (2-3 hours)
@@ -6868,7 +6868,7 @@ Each item includes specific files, implementation steps, acceptance criteria, an
 ---
 
 ### 83. Execution Mutex Lock for Concurrent Node Safety
-**Status:** [ ] Not started
+**Status:** [x] Done
 **Version target:** 1.83.0
 **Inspiration:** Inngest's checkpointing with local step orchestration that prevents concurrent mutations. Temporal's activity heartbeats that detect stale workers and prevent double-execution. Pydantic AI's typed `RunContext` that provides isolated state per execution call.
 **Complexity:** Low-Medium (2-3 hours)

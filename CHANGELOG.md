@@ -1,5 +1,25 @@
 # Changelog
 
+### 2026-03-09 — Foundation & Safety: Prompt Sanitization, Storage Reliability, Execution Mutex
+
+**Roadmap Item 41: Prompt Injection Sanitization** — prevents LLM prompt injection via node labels:
+- Added `sanitizeForPrompt()` in `prompts.ts` — strips structural chars `{}[]`, filters injection keywords (IGNORE, OVERRIDE, SYSTEM PROMPT)
+- Applied to `serializeGraph()` for node labels, descriptions, and edge labels
+- 8 new tests in `prompts.test.ts` covering injection patterns, truncation, normal text preservation
+
+**Roadmap Item 60: Storage Reliability Layer** — prevents silent data loss:
+- `flushSave()` now caps events (200) and messages (100) to prevent quota bloat
+- Auto-trims execution results >2KB when approaching 4MB quota threshold
+- Emergency save with aggressive trimming on quota error, with user toast notification
+- `beforeunload` listener flushes pending saves before browser close
+
+**Roadmap Item 83: Execution Mutex Lock** — prevents concurrent node mutations:
+- `_executingNodeIds` Set tracks which nodes are currently executing
+- `executeNode()` acquires lock on entry, releases in `finally` block (and all early returns)
+- `updateNodeData()` blocks non-execution mutations (label, description, category) on locked nodes
+- Execution-related mutations (result, status, timing) pass through the lock
+- Double-execution of same node is prevented (second call returns immediately)
+
 ### 2026-03-09 — Foundation & Safety: Test Infrastructure, Graph Validation, Cycle Detection, Enhanced Toasts
 
 **Roadmap Item 43: Automated Test Infrastructure** (v1.1.0) — Vitest test suite with 62 tests:

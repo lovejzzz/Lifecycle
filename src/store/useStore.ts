@@ -233,6 +233,11 @@ interface LifecycleStore {
   executeNode: (nodeId: string) => Promise<void>;
   executeWorkflow: () => Promise<void>;
 
+  // Execution mutex
+  _executingNodeIds: Set<string>;
+  _lockNode: (nodeId: string) => void;
+  _unlockNode: (nodeId: string) => void;
+
   // Fit view trigger — Canvas watches this counter and calls fitView when it changes
   fitViewCounter: number;
   requestFitView: () => void;
@@ -473,19 +478,52 @@ function flushSave() {
   const { state, cidMode } = lastSaveArgs;
   lastSaveArgs = null;
   if (typeof window === 'undefined') return;
+
+  // Cap events and filter ephemeral messages to prevent quota bloat
+  const cappedEvents = state.events.slice(-200);
+  const cappedMessages = state.messages.filter(m => !m._ephemeral).slice(-100);
+  const saveNodes = state.nodes.map(n => ({ ...n }));
+
+  const data = {
+    _version: STORAGE_VERSION,
+    nodes: saveNodes,
+    edges: state.edges,
+    events: cappedEvents,
+    messages: cappedMessages,
+    ...(cidMode !== undefined && { cidMode }),
+    cidAIModel: currentAIModel,
+  };
+
+  const json = JSON.stringify(data);
+  const sizeKB = Math.round(json.length / 1024);
+
+  // Quota warning: trim large execution results if approaching 4MB
+  if (sizeKB > 4096) {
+    console.warn(`[Storage] Near quota: ${sizeKB}KB. Trimming execution results.`);
+    for (const node of data.nodes) {
+      if (node.data.executionResult && node.data.executionResult.length > 2000) {
+        node.data.executionResult = node.data.executionResult.slice(0, 2000) + '\n\n... (truncated for storage)';
+      }
+    }
+  }
+
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      _version: STORAGE_VERSION,
-      nodes: state.nodes,
-      edges: state.edges,
-      events: state.events,
-      // Filter out ephemeral messages (welcome-back greetings) before persisting
-      messages: state.messages.filter(m => !m._ephemeral),
-      ...(cidMode !== undefined && { cidMode }),
-      cidAIModel: currentAIModel,
-    }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (e) {
-    console.warn('[Lifecycle] Failed to save to localStorage:', e instanceof Error ? e.message : e);
+    console.error('[Storage] Save failed:', e);
+    // Emergency save with aggressive trimming
+    try {
+      for (const node of data.nodes) {
+        if (node.data.executionResult) {
+          node.data.executionResult = node.data.executionResult.slice(0, 500);
+        }
+      }
+      data.events = data.events.slice(-50);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      useLifecycleStore.getState().addToast('Storage full — execution results trimmed to fit', 'warning');
+    } catch {
+      useLifecycleStore.getState().addToast('Storage completely full. Export your workflow to avoid data loss.', 'error', 0);
+    }
   }
 }
 
@@ -493,6 +531,16 @@ function saveToStorage(state: Pick<LifecycleStore, 'nodes' | 'edges' | 'events' 
   lastSaveArgs = { state, cidMode };
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(flushSave, 150);
+}
+
+// Flush pending saves before browser closes to prevent data loss
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    if (saveTimer) {
+      clearTimeout(saveTimer);
+      flushSave();
+    }
+  });
 }
 
 // Graph utilities (layout, edges, node search) → src/lib/graph.ts
@@ -1069,9 +1117,16 @@ export const useLifecycleStore = create<LifecycleStore>((set, get) => ({
   },
 
   executeNode: async (nodeId: string) => {
+    // Mutex: prevent double-execution of same node
+    if (get()._executingNodeIds.has(nodeId)) {
+      cidLog('executeNode:skipped', { nodeId, reason: 'already executing' });
+      return;
+    }
+    get()._lockNode(nodeId);
+
     const store = get();
     const node = store.nodes.find(n => n.id === nodeId);
-    if (!node) return;
+    if (!node) { get()._unlockNode(nodeId); return; }
     cidLog('executeNode', { nodeId, label: node.data.label, category: node.data.category });
 
     const d = node.data;
@@ -1081,18 +1136,21 @@ export const useLifecycleStore = create<LifecycleStore>((set, get) => ({
     if (d.category === 'input') {
       const value = d.inputValue || d.content || '';
       store.updateNodeData(nodeId, { executionResult: value, executionStatus: value ? 'success' : 'idle', _executionStartedAt: _execStart, _executionDurationMs: Date.now() - _execStart });
+      get()._unlockNode(nodeId);
       return;
     }
     if (d.category === 'trigger') {
       // Triggers are initiators — they pass through their description/content as context
       const value = d.content || d.description || `Trigger: ${d.label}`;
       store.updateNodeData(nodeId, { executionResult: value, executionStatus: 'success', _executionStartedAt: _execStart, _executionDurationMs: Date.now() - _execStart });
+      get()._unlockNode(nodeId);
       return;
     }
     if (d.category === 'dependency') {
       // Dependencies are prerequisites — pass through as metadata
       const value = d.content || d.description || `Dependency: ${d.label}`;
       store.updateNodeData(nodeId, { executionResult: value, executionStatus: 'success', _executionStartedAt: _execStart, _executionDurationMs: Date.now() - _execStart });
+      get()._unlockNode(nodeId);
       return;
     }
 
@@ -1108,6 +1166,7 @@ export const useLifecycleStore = create<LifecycleStore>((set, get) => ({
       const content = upstreamResults.join('\n\n---\n\n') || d.content || '';
       if (!content) {
         store.updateNodeData(nodeId, { executionStatus: 'error', executionError: 'No content from upstream nodes to export.', _executionStartedAt: _execStart, _executionDurationMs: Date.now() - _execStart });
+        get()._unlockNode(nodeId);
         return;
       }
 
@@ -1138,6 +1197,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
           }
           store.updateNodeData(nodeId, { executionResult: content, executionStatus: 'success', _executionStartedAt: _execStart, _executionDurationMs: Date.now() - _execStart });
           store.addToast(`PDF ready — use your browser's print dialog to save as PDF`, 'success');
+          get()._unlockNode(nodeId);
           return;
         } else if (d.outputFormat === 'html') {
           const htmlContent = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${d.label}</title></head><body>${markdownToHTML(content)}</body></html>`;
@@ -1158,9 +1218,11 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
 
         store.updateNodeData(nodeId, { executionResult: content, executionStatus: 'success', _executionStartedAt: _execStart, _executionDurationMs: Date.now() - _execStart });
         store.addToast(`Downloaded ${d.outputFormatLabel || d.outputFormat.toUpperCase()} file`, 'success');
+        get()._unlockNode(nodeId);
         return;
       } catch {
         store.updateNodeData(nodeId, { executionStatus: 'error', executionError: 'Failed to export file.', _executionStartedAt: _execStart, _executionDurationMs: Date.now() - _execStart });
+        get()._unlockNode(nodeId);
         return;
       }
     }
@@ -1173,6 +1235,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     });
     if (d.content && d.content.length > 50 && !hasUpstreamExecResults && !d.aiPrompt) {
       store.updateNodeData(nodeId, { executionResult: d.content, executionStatus: 'success', _executionStartedAt: _execStart, _executionDurationMs: Date.now() - _execStart });
+      get()._unlockNode(nodeId);
       return;
     }
 
@@ -1255,6 +1318,8 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       store.updateNodeStatus(nodeId, 'active');
       store.addToast(`Node "${d.label}" failed: ${errMsg.slice(0, 80)}`, 'error');
       cidLog('executeNode:error', errMsg);
+    } finally {
+      get()._unlockNode(nodeId);
     }
   },
 
@@ -1748,14 +1813,24 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       return { nodes };
     }),
 
-  updateNodeData: (id, partial) =>
+  updateNodeData: (id, partial) => {
+    // Mutex guard: block non-execution mutations on locked nodes
+    if (get()._executingNodeIds.has(id)) {
+      const executionKeys = new Set(['executionResult', 'executionStatus', 'executionError', '_executionDurationMs', '_executionStartedAt']);
+      const isExecutionUpdate = Object.keys(partial).every(k => executionKeys.has(k));
+      if (!isExecutionUpdate) {
+        cidLog('updateNodeData:blocked', { id, reason: 'node is executing', keys: Object.keys(partial) });
+        return;
+      }
+    }
     set((s) => {
       const nodes = s.nodes.map((n) =>
         n.id === id ? { ...n, data: { ...n.data, ...partial, lastUpdated: Date.now() } } : n
       );
       saveToStorage({ nodes, edges: s.edges, events: s.events, messages: s.messages });
       return { nodes };
-    }),
+    });
+  },
 
   deleteNode: (id) => {
     const store = get();
@@ -2341,6 +2416,19 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       store.addToast(`Failed to generate content for "${d.label}"`, 'warning');
     }
     store.updateNodeStatus(nodeId, 'active');
+  },
+
+  // Execution mutex — per-node locks to prevent concurrent mutations
+  _executingNodeIds: new Set<string>(),
+  _lockNode: (nodeId) => {
+    set(s => ({ _executingNodeIds: new Set([...s._executingNodeIds, nodeId]) }));
+  },
+  _unlockNode: (nodeId) => {
+    set(s => {
+      const next = new Set(s._executingNodeIds);
+      next.delete(nodeId);
+      return { _executingNodeIds: next };
+    });
   },
 
   // Toast notifications

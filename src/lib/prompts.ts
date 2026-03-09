@@ -361,6 +361,20 @@ ${goalBlock}
 - IMPORTANT: When the user asks "what should we fix?", "what should I look at?", "what's wrong?", "how should I...", or any diagnostic/advice question, give ADVICE (workflow:null). Only build when explicitly asked to CREATE/BUILD/DESIGN/MAKE something.`;
 }
 
+// ─── Prompt Injection Sanitization ──────────────────────────────────────────
+
+/** Sanitize user-controlled text before embedding into LLM system prompts. */
+export function sanitizeForPrompt(text: string, maxLen: number = 200): string {
+  return text
+    .replace(/[{}\[\]]/g, '')                // Remove structural chars that could break JSON context
+    .replace(/\\n|\\r/g, ' ')                // Collapse escaped newlines
+    .replace(/\n/g, ' ')                     // Collapse real newlines
+    .replace(/IGNORE\s*(ALL\s*)?PREVIOUS|FORGET\s*(ALL\s*)?|DISREGARD|OVERRIDE\s*(ALL\s*)?/gi, '[FILTERED]')
+    .replace(/SYSTEM\s*:?\s*PROMPT|NEW\s*INSTRUCTIONS?|YOU\s*ARE\s*NOW/gi, '[FILTERED]')
+    .slice(0, maxLen)
+    .trim();
+}
+
 // ─── Graph Serializer ───────────────────────────────────────────────────────
 
 function serializeGraph(nodes: Node<NodeData>[], edges: Edge[]): string {
@@ -373,15 +387,15 @@ function serializeGraph(nodes: Node<NodeData>[], edges: Edge[]): string {
     const execInfo = d.executionStatus && d.executionStatus !== 'idle'
       ? ` [exec:${d.executionStatus}${durationStr}${d.executionResult ? `, ${d.executionResult.length} chars` : ''}${d.executionError ? `, err: ${d.executionError.slice(0, 60)}` : ''}]`
       : '';
-    return `  [${i}] id=${n.id} label="${d.label}" category=${d.category} status=${d.status} v${d.version ?? 1}${execInfo}${
-      d.description ? ` — ${d.description}` : ''
+    return `  [${i}] id=${n.id} label="${sanitizeForPrompt(d.label, 100)}" category=${d.category} status=${d.status} v${d.version ?? 1}${execInfo}${
+      d.description ? ` — ${sanitizeForPrompt(d.description, 300)}` : ''
     }${sections ? `\n${sections}` : ''}`;
   }).join('\n');
 
   const edgeList = edges.map(e => {
     const srcNode = nodes.find(n => n.id === e.source);
     const tgtNode = nodes.find(n => n.id === e.target);
-    return `  ${srcNode?.data.label ?? e.source} —[${e.label || 'connected'}]→ ${tgtNode?.data.label ?? e.target}`;
+    return `  ${sanitizeForPrompt(srcNode?.data.label ?? e.source, 100)} —[${e.label || 'connected'}]→ ${sanitizeForPrompt(tgtNode?.data.label ?? e.target, 100)}`;
   }).join('\n');
 
   const staleCount = nodes.filter(n => n.data.status === 'stale').length;
