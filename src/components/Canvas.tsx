@@ -922,7 +922,7 @@ function CanvasInner() {
                       }`}
                     >
                       <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: colors.primary }} />
-                      <span className="truncate max-w-[60px]">{node.data.label}</span>
+                      <span className="truncate max-w-[60px]" title={node.data.label}>{node.data.label}</span>
                     </button>
                   </React.Fragment>
                 );

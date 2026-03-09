@@ -554,9 +554,15 @@ let saveTimer: ReturnType<typeof setTimeout> | null = null;
 let lastSaveArgs: { state: Pick<LifecycleStore, 'nodes' | 'edges' | 'events' | 'messages'>; cidMode?: CIDMode } | null = null;
 
 function flushSave() {
-  if (!lastSaveArgs) return;
-  const { state, cidMode } = lastSaveArgs;
+  // Cancel pending debounce timer
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+
+  // Use lastSaveArgs if available (pending debounced save), otherwise read directly from store
+  const store = typeof useLifecycleStore !== 'undefined' ? useLifecycleStore.getState() : null;
+  const state = lastSaveArgs?.state ?? (store ? { nodes: store.nodes, edges: store.edges, events: store.events, messages: store.messages } : null);
+  const cidMode = lastSaveArgs?.cidMode ?? store?.cidMode;
   lastSaveArgs = null;
+  if (!state) return;
   if (typeof window === 'undefined') return;
 
   // Cap events and filter ephemeral messages to prevent quota bloat
@@ -2270,7 +2276,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
   updateNodeData: (id, partial) => {
     // Mutex guard: block non-execution mutations on locked nodes
     if (get()._executingNodeIds.has(id)) {
-      const executionKeys = new Set(['executionResult', 'executionStatus', 'executionError', '_executionDurationMs', '_executionStartedAt']);
+      const executionKeys = new Set(['executionResult', 'executionStatus', 'executionError', '_executionDurationMs', '_executionStartedAt', 'apiKey', '_versionHistory', 'version']);
       const isExecutionUpdate = Object.keys(partial).every(k => executionKeys.has(k));
       if (!isExecutionUpdate) {
         cidLog('updateNodeData:blocked', { id, reason: 'node is executing', keys: Object.keys(partial) });
@@ -5130,7 +5136,12 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     const newNodes = nodes.filter(n => !staleIds.has(n.id));
     const newEdges = edges.filter(e => !staleIds.has(e.source) && !staleIds.has(e.target));
 
-    set({ nodes: newNodes, edges: newEdges });
+    // Clear selection if selected node was removed
+    const selectedNodeId = store.selectedNodeId && staleIds.has(store.selectedNodeId) ? null : store.selectedNodeId;
+    // Remove deleted nodes from multi-selection
+    const multiSelectedIds = new Set([...store.multiSelectedIds].filter(id => !staleIds.has(id)));
+
+    set({ nodes: newNodes, edges: newEdges, selectedNodeId, multiSelectedIds });
     saveToStorage({ nodes: newNodes, edges: newEdges, events: store.events, messages: store.messages });
     const names = staleNodes.map(n => n.data.label);
     store.addEvent({ id: `ev-${Date.now()}`, type: 'edited', message: `Cleared ${staleNodes.length} stale node(s): ${names.join(', ')}`, timestamp: Date.now(), agent: true });

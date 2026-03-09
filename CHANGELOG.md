@@ -1,5 +1,32 @@
 # Changelog
 
+### 2026-03-09 — E2E + Chaos Testing, Data Loss Fix, UI Fixes
+
+**E2E Async Simulation Tests** (32 tests) — full lifecycle loop through the real store:
+- Generate → execute → edit → staleness → regenerate → undo flow
+- Project switching round-trip (create A, switch to B, switch back to A)
+- Execution failure + circuit breaker + retry recovery
+- Parallel execution stages with branching workflows
+- Edge cases: empty graph execution, rapid edits, no-stale propagation
+
+**Chaos/Fuzz Tests** (13 tests) — random operation sequences with invariant checks:
+- Seeded PRNG for reproducible failures (100-500 operations per test)
+- Light chaos, heavy chaos, undo-heavy, delete-storm, edge-heavy, status-chaos profiles
+- Position and data integrity verified after every operation
+- Mixed operations: add/delete/edit/undo/redo/connect/layout/lock/approve/clearStale
+
+**Bugs found and fixed:**
+- **DATA LOSS: `flushSave()` silently did nothing when debounce timer had already fired** — `newProject()` and `switchProject()` call `flushSave()` to save current work before switching, but if no debounced save was pending, the current state was lost. Fixed: `flushSave()` now reads directly from the store when no pending save exists.
+- **CID hints dropdown overflows screen** — autocomplete dropdown had no max-height. Fixed: added `max-h-[300px] overflow-y-auto`.
+- **Node labels truncated without tooltip** — selection bar shows labels as `max-w-[60px]` truncated text. Fixed: added `title` attribute for hover tooltip.
+
+**UI component audit completed** (20 issues identified, 4 critical, 4 high):
+- Critical: streaming interval cleanup, stale closure in dispatch, edge tooltip null check, async sync after unmount
+- Most "critical" issues were already handled in existing code (cleanup refs, null checks in place)
+- Real issues fixed: hints overflow, label truncation
+
+**Test counts**: 267 total (42 simulation + 32 E2E + 13 chaos + 180 existing), all passing, build clean
+
 ### 2026-03-09 — User Simulation System & Bug Fixes
 
 **User Simulation Tests** — 42 integration tests that exercise real user journeys through the Zustand store. 15 scenarios covering: workflow building, undo/redo, content editing, health monitoring, agent modes, edge operations, layout, toasts, queries, edge cases, events, import/export, impact preview, CID rules, and node status transitions.

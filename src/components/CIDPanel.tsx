@@ -1290,7 +1290,7 @@ export default function CIDPanel() {
       <div className="px-4 pb-4 pt-2 relative">
         {/* Autocomplete hints */}
         {matchingHints.length > 0 && (
-          <div className="absolute bottom-full left-4 right-4 mb-1 rounded-lg border border-white/[0.08] bg-[#0e0e18]/95 backdrop-blur-xl overflow-hidden shadow-xl z-10">
+          <div className="absolute bottom-full left-4 right-4 mb-1 rounded-lg border border-white/[0.08] bg-[#0e0e18]/95 backdrop-blur-xl overflow-hidden overflow-y-auto max-h-[300px] shadow-xl z-10">
             {matchingHints.map((h, i) => (
               <div key={h.trigger + i}>
                 {'section' in h && h.section && (
