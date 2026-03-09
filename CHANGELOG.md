@@ -1,5 +1,23 @@
 # Changelog
 
+### 2026-03-09 — CID Intelligence: Semantic Diff View
+
+**Roadmap Item 9: Semantic Diff View** — visual inline diff showing what changed in node content after execution/regeneration.
+
+- New `src/lib/diff.ts` — LCS-based line-level diff algorithm (no external dependencies)
+  - `computeDiff(old, new)` returns `DiffLine[]` with type (`added`/`removed`/`unchanged`) and line numbers
+  - `diffSummary()` counts changes; `formatDiffSummary()` for human-readable output
+- New `src/components/DiffView.tsx` — inline diff viewer component
+  - Color-coded: green (+) for additions, red (-) with strikethrough for removals, gray for unchanged
+  - Line numbers, compact/expanded modes, truncation for long diffs
+  - Accept button (dismiss diff) and Revert button (triggers `rollbackNode`)
+- `NodeDetailPanel.tsx` — new `NodeDiffSection` component after execution result
+  - "View changes" link appears when version history exists and content differs from latest version
+  - Inline diff comparing previous version to current content with accept/revert controls
+- `VersionHistory` component upgraded: clicking a version now shows an inline diff against current content (replacing plain text preview)
+- 13 new tests: identical texts, added/removed lines, complete replacement, empty texts, multiline mixed changes, summary counts, format helpers
+- 124 total tests passing, build clean
+
 ### 2026-03-09 — CID Intelligence: Proactive CID Suggestions
 
 **Roadmap Item 8: Proactive CID Suggestions** — CID analyzes the graph and suggests specific next actions after workflow generation and execution.

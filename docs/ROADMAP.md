@@ -406,7 +406,7 @@ Phase 2 makes CID a proactive partner, not a reactive tool.
 
 ---
 
-### 9. Semantic Diff View
+### 9. Semantic Diff View ✅
 
 **Why**: The spec requires "diff-first review" (17.4) — "users should approve important updates through clear before-and-after views." After selective regeneration, users need to see what actually changed, not just that a node was re-executed. This builds on item 6 (versioning) by making the version history visual.
 

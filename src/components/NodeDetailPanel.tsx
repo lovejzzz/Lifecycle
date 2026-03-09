@@ -10,6 +10,7 @@ import {
 import { useLifecycleStore } from '@/store/useStore';
 import { getNodeColors, CategoryIcon, BUILT_IN_CATEGORIES, EDGE_LABEL_COLORS, relativeTime } from '@/lib/types';
 import type { NodeData, NodeCategory } from '@/lib/types';
+import DiffView from './DiffView';
 
 const ALL_STATUSES: NodeData['status'][] = ['active', 'stale', 'pending', 'locked', 'generating', 'reviewing'];
 
@@ -337,12 +338,61 @@ function SectionEditor({
   );
 }
 
+// ─── Node Diff Section ──────────────────────────────────────────────────────
+
+function NodeDiffSection({ nodeId, data }: { nodeId: string; data: NodeData }) {
+  const [showDiff, setShowDiff] = useState(false);
+  const rollbackNode = useLifecycleStore((s) => s.rollbackNode);
+
+  const history = data._versionHistory as Array<{ version: number; content: string; timestamp: number; trigger: string }> | undefined;
+  if (!history || history.length === 0) return null;
+
+  // Get current content (prefer executionResult, fallback to content)
+  const currentContent = data.executionResult || data.content || '';
+  // Latest version entry = what content was BEFORE the latest change
+  const latestVersion = history[history.length - 1];
+  const previousContent = latestVersion.content;
+
+  // Only show if content actually differs
+  if (currentContent === previousContent) return null;
+
+  return (
+    <div>
+      <button
+        onClick={() => setShowDiff(!showDiff)}
+        className="flex items-center gap-1.5 text-[10px] text-cyan-400/50 hover:text-cyan-400/80 transition-colors"
+      >
+        <Eye size={9} />
+        <span>{showDiff ? 'Hide changes' : 'View changes'}</span>
+        <span className="text-white/20 text-[9px]">vs v{latestVersion.version}</span>
+      </button>
+      {showDiff && (
+        <div className="mt-1.5">
+          <DiffView
+            oldText={previousContent}
+            newText={currentContent}
+            compact
+            onAccept={() => setShowDiff(false)}
+            onRevert={() => {
+              if (window.confirm(`Revert to v${latestVersion.version}? Downstream nodes will be marked stale.`)) {
+                rollbackNode(nodeId, latestVersion.version);
+                setShowDiff(false);
+              }
+            }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Version History ─────────────────────────────────────────────────────────
 
-function VersionHistory({ nodeId, history, currentVersion }: {
+function VersionHistory({ nodeId, history, currentVersion, currentContent }: {
   nodeId: string;
   history: Array<{ version: number; content: string; timestamp: number; trigger: string }>;
   currentVersion: number;
+  currentContent: string;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [viewingVersion, setViewingVersion] = useState<number | null>(null);
@@ -398,8 +448,19 @@ function VersionHistory({ nodeId, history, currentVersion }: {
             </div>
           ))}
           {viewingEntry && (
-            <div className="mt-1.5 text-[10px] text-white/40 bg-white/[0.02] rounded-lg px-3 py-2 border border-white/[0.06] max-h-[100px] overflow-y-auto whitespace-pre-wrap font-mono">
-              {viewingEntry.content.slice(0, 500)}{viewingEntry.content.length > 500 ? '...' : ''}
+            <div className="mt-1.5">
+              <DiffView
+                oldText={viewingEntry.content}
+                newText={currentContent}
+                compact
+                maxLines={30}
+                onRevert={() => {
+                  if (window.confirm(`Restore v${viewingEntry.version}? Downstream nodes will be marked stale.`)) {
+                    rollbackNode(nodeId, viewingEntry.version);
+                    setViewingVersion(null);
+                  }
+                }}
+              />
             </div>
           )}
         </div>
@@ -852,6 +913,9 @@ export default function NodeDetailPanel() {
               </div>
             )}
 
+            {/* Semantic Diff — show changes vs previous version after execution/regeneration */}
+            <NodeDiffSection nodeId={node.id} data={data} />
+
             {/* Content — editable */}
             <ContentEditor
               content={data.content ?? ''}
@@ -882,6 +946,7 @@ export default function NodeDetailPanel() {
                 nodeId={node.id}
                 history={data._versionHistory as Array<{ version: number; content: string; timestamp: number; trigger: string }>}
                 currentVersion={data.version ?? 1}
+                currentContent={data.executionResult || data.content || ''}
               />
             )}
 
