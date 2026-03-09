@@ -447,7 +447,7 @@ function CanvasInner() {
         a.href = url;
         a.download = `lifecycle-workflow-${new Date().toISOString().slice(0, 10)}.json`;
         a.click();
-        URL.revokeObjectURL(url);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
         store.addToast('Workflow exported', 'success');
         return;
       }
@@ -1011,7 +1011,7 @@ function CanvasInner() {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.1 }}
                 className="fixed z-50 max-w-[220px] rounded-lg border border-white/[0.1] bg-[#0e0e18]/95 backdrop-blur-xl px-3 py-2 shadow-2xl pointer-events-none"
-                style={{ left: tooltip.x + 12, top: tooltip.y + 12 }}
+                style={{ left: Math.min(tooltip.x + 12, window.innerWidth - 240), top: Math.min(tooltip.y + 12, window.innerHeight - 100) }}
               >
                 <div className="flex items-center gap-1.5 mb-1">
                   <div className="w-2 h-2 rounded-full" style={{ background: colors.primary }} />
@@ -1054,7 +1054,7 @@ function CanvasInner() {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.1 }}
                 className="fixed z-50 rounded-lg border border-white/[0.1] bg-[#0e0e18]/95 backdrop-blur-xl px-3 py-2 shadow-2xl pointer-events-none min-w-[160px]"
-                style={{ left: edgeTooltip.x + 12, top: edgeTooltip.y + 12 }}
+                style={{ left: Math.min(edgeTooltip.x + 12, window.innerWidth - 240), top: Math.min(edgeTooltip.y + 12, window.innerHeight - 80) }}
               >
                 <div className="flex items-center gap-2 mb-1.5">
                   <div className="w-2 h-2 rounded-full" style={{ background: srcColors.primary }} />

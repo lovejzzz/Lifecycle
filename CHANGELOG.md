@@ -1,5 +1,14 @@
 # Changelog
 
+### 2026-03-09 — Loop Cycle 1: Canvas Audit & Tooltip Fixes
+
+**Canvas.tsx audit** (1407 lines reviewed):
+- **Fix: Tooltip off-screen overflow** — node and edge hover tooltips now clamp to viewport bounds instead of rendering outside the visible area
+- **Fix: Export blob URL revoke timing** — `URL.revokeObjectURL` now delayed 1s after `a.click()` to ensure download starts before revocation
+- Noted: `type: 'edited' as any` type gap in multi-select batch action (non-critical)
+
+**Loop infrastructure**: Created `docs/loop-log.md` with audit rotation queue (12 components, 15 store/lib modules, 9 test files) and cycle logging
+
 ### 2026-03-09 — E2E + Chaos Testing, Data Loss Fix, UI Fixes
 
 **E2E Async Simulation Tests** (32 tests) — full lifecycle loop through the real store:
