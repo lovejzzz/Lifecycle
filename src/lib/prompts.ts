@@ -150,7 +150,7 @@ function compileActiveTensions(agent: AgentPersonality, layers: AgentPersonality
   // Use evolved weights from reflection if available, merged with agent's base config
   const effectiveForce = {
     ...drivingForce,
-    evolvedWeights: { ...(drivingForce.evolvedWeights || {}), ...(layers.reflection.driveEvolutionLog?.length ? {} : {}) },
+    evolvedWeights: { ...(drivingForce.evolvedWeights || {}) },
   };
 
   // Resolve drive tensions against current context (now includes curiosity spikes)

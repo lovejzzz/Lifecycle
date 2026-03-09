@@ -10,7 +10,6 @@ import type {
 const MAX_DOMAINS = 20;
 const MAX_PREFERENCES = 10;
 const MAX_GROWTH_EDGES = 5;
-const _MAX_LEGACY_PATTERNS = 10;
 const DRIVE_ADJUST_CAP = 0.1;
 
 // ─── Layer 4: Generation Context Computation ────────────────────────────────
@@ -799,17 +798,3 @@ export function migrateReflectionV1toV2(old: Record<string, unknown>): Reflectio
   return createDefaultReflection();
 }
 
-// Legacy compat — old callers that used processAllReflections
-export function processAllReflections(habits: HabitLayer, _reflections: unknown[]): HabitLayer {
-  return habits; // V2 uses applyReflectionActions instead
-}
-
-export function detectPatterns(
-  recentUserMessages: string[],
-  _existingHabits: HabitPattern[],
-): { trigger: string; observation: string; habitModification: { action: string; newPattern?: string }; timestamp: number }[] {
-  // V2: this is now handled by reflectOnInteraction
-  // Keep the function for backward compat but return empty
-  void recentUserMessages;
-  return [];
-}

@@ -302,7 +302,6 @@ export default function CIDPanel() {
     });
     setHistoryIndex(-1);
     setInput('');
-    console.log(`%c[CID Router]%c Input: "${prompt}"`, 'color: #06b6d4; font-weight: bold', 'color: inherit');
 
     // If interviewing, treat input as free-form answer
     if (agent.interviewEnabled && poirotContext.phase === 'interviewing') {
