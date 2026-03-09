@@ -43,7 +43,7 @@ This foundation is enough. The execution engine works. Now we need the lifecycle
 
 ## The 6 items
 
-### 1. Staleness Propagation
+### 1. Staleness Propagation ✅
 
 **Why**: This is the foundation of the entire lifecycle loop. The spec says: "The system should identify what is affected by any change" (11.7). Right now, when a user edits a node or re-executes it, nothing happens to downstream nodes. They still show old results as if nothing changed. The graph is dead after execution. This single feature makes it alive.
 
@@ -80,7 +80,7 @@ This foundation is enough. The execution engine works. Now we need the lifecycle
 
 ---
 
-### 2. Selective Regeneration
+### 2. Selective Regeneration ✅
 
 **Why**: The spec says: "Only update what needs updating" (8.6) and "selectively regenerate affected outputs" (Vision). Right now, users have two options: re-run the entire workflow, or manually re-execute individual nodes one by one. Neither is good. Full rerun wastes API calls on nodes that haven't changed. Manual one-by-one is tedious and error-prone (you might miss a node or run them out of order).
 
@@ -117,7 +117,7 @@ This foundation is enough. The execution engine works. Now we need the lifecycle
 
 ---
 
-### 3. Edit Interpretation
+### 3. Edit Interpretation ✅
 
 **Why**: The spec dedicates all of Section 15 to this. Not every edit should trigger propagation. A typo fix shouldn't mark 5 downstream nodes stale. A fundamental content rewrite should. Without classification, staleness propagation is either too aggressive (everything goes stale on every keystroke) or too conservative (nothing ever propagates). CID Agent should be the one deciding.
 
@@ -161,7 +161,7 @@ This foundation is enough. The execution engine works. Now we need the lifecycle
 
 ---
 
-### 4. Impact Preview
+### 4. Impact Preview ✅
 
 **Why**: The spec says: "Before major propagation, users should see what will change" (17.3) and "Show impact before major propagation" (Trust principle 2). Without preview, selective regeneration is a trust problem — users won't click "Refresh stale" if they can't see what's about to happen.
 
@@ -203,7 +203,7 @@ This foundation is enough. The execution engine works. Now we need the lifecycle
 
 ---
 
-### 5. Note Refinement
+### 5. Note Refinement ✅
 
 **Why**: The spec describes notes as "raw user thoughts, quick captures, observations, and rough inputs that may later become structured state" (9.3). CID Agent should be able to "turn rough notes into structured memory, convert ideas into objects, and connect those ideas to relevant artifacts or state nodes" (4.6). Right now, note nodes are just text. They don't evolve. This feature makes notes a first-class input that CID can work with.
 
@@ -242,7 +242,7 @@ This foundation is enough. The execution engine works. Now we need the lifecycle
 
 ---
 
-### 6. Node Versioning
+### 6. Node Versioning ✅
 
 **Why**: The spec requires "versioning across the lifecycle" (11.3) and the ability to "roll back at major lifecycle steps" (Trust principle 5). When selective regeneration changes a node's content, users need to see what changed and undo if the new version is worse. Without versioning, regeneration is a one-way door, which destroys trust.
 
@@ -343,7 +343,7 @@ Phase 2 makes CID a proactive partner, not a reactive tool.
 
 ---
 
-### 7. Workflow Health Monitor
+### 7. Workflow Health Monitor ✅
 
 **Why**: The spec says CID should "track stale outputs" and "help users navigate complex systems" (4.7, 4.2). Right now there's a basic `getHealthScore()` that counts issues, but it's a static number. A real health monitor watches the workflow over time and surfaces problems before the user notices.
 
