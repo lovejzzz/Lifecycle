@@ -372,7 +372,7 @@ Phase 2 makes CID a proactive partner, not a reactive tool.
 
 ---
 
-### 8. Proactive CID Suggestions
+### 8. Proactive CID Suggestions ✅
 
 **Why**: The spec says CID should "suggest missing nodes or dependencies" (4.2) and "propose next steps" (4.7). Right now, suggestions appear as clickable chips below CID messages, but they're generic ("solve", "propagate"). CID should look at the actual graph and suggest specific next actions.
 

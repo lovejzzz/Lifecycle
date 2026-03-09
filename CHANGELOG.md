@@ -1,5 +1,21 @@
 # Changelog
 
+### 2026-03-09 — CID Intelligence: Proactive CID Suggestions
+
+**Roadmap Item 8: Proactive CID Suggestions** — CID analyzes the graph and suggests specific next actions after workflow generation and execution.
+
+- New `src/lib/suggestions.ts` — pure `generateProactiveSuggestions()` with 7 graph-aware checks:
+  - Missing output node, dead-end producer nodes, empty content nodes, no review gate (4+ nodes), linear workflow (5+ nodes), unexecuted workflow, stale nodes
+- Each suggestion has priority, message, chipLabel, actionType (`add-node`/`add-edge`/`command`), and actionPayload
+- `formatSuggestionsMessage()` encodes suggestions as `action:id|Label` chips for CIDPanel
+- Store: `applySuggestion(id)` handles add-node (positions + connects), add-edge, and command execution
+- Store: `dismissSuggestion(id)` prevents suggestions from reappearing via `_dismissedSuggestionIds` Set
+- Replaced old `buildPostBuildSuggestions()` with new proactive system (post-build hook)
+- Added post-execution suggestion hook in `executeWorkflow()` with dismissed-suggestion filtering
+- CIDPanel: `action:` prefixed chips styled cyan, clicking calls `applySuggestion` directly
+- 12 new tests: empty graph, missing output, dead-ends, empty content, review gate, stale nodes, unexecuted workflow, max-3 priority sort, format helpers
+- 111 total tests passing, build clean
+
 ### 2026-03-09 — CID Intelligence: Workflow Health Monitor
 
 **Roadmap Item 7: Workflow Health Monitor** — CID watches the workflow and surfaces problems proactively.

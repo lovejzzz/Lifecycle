@@ -8,6 +8,7 @@ import {
   ArrowLeftRight, Square, Pencil, Pin, Check,
 } from 'lucide-react';
 import { useLifecycleStore, findNodeByName, getNextHint, getSmartSuggestions } from '@/store/useStore';
+import type { ProactiveSuggestion } from '@/lib/suggestions';
 import { getAgent } from '@/lib/agents';
 import type { CIDCard } from '@/lib/types';
 import { relativeTime } from '@/lib/types';
@@ -148,6 +149,7 @@ export default function CIDPanel() {
     suggestNextSteps, healthBreakdown,
     retryFailed, clearExecutionResults, getPreFlightSummary, diffLastRun,
     refineNote, applyRefinementSuggestion, selectedNodeId,
+    applySuggestion, dismissSuggestion,
   } = useLifecycleStore();
   const [input, setInput] = useState('');
   const [_editingMsgId, _setEditingMsgId] = useState<string | null>(null);
@@ -1096,12 +1098,17 @@ export default function CIDPanel() {
                   {msg.suggestions.map(s => {
                     // Refinement suggestion: "refine-node-0|Create: Label" or "refine-edge-0|Connect: X → Y" or "refine-clean|Update note content"
                     const isRefinement = s.startsWith('refine-');
-                    const displayLabel = isRefinement ? s.split('|')[1] || s : s;
+                    // Proactive action suggestion: "action:id|Chip Label"
+                    const isAction = s.startsWith('action:');
+                    const displayLabel = isRefinement || isAction ? s.split('|')[1] || s : s;
                     return (
                       <button
                         key={s}
                         onClick={() => {
-                          if (isRefinement) {
+                          if (isAction) {
+                            const actionId = s.split('|')[0].replace('action:', '');
+                            applySuggestion(actionId);
+                          } else if (isRefinement) {
                             handleRefinementClick(s);
                           } else {
                             pendingSuggestionRef.current = s;
@@ -1111,9 +1118,11 @@ export default function CIDPanel() {
                         className={`px-2.5 py-1 rounded-lg text-[10px] border transition-all hover:scale-[1.03] ${
                           isRefinement
                             ? 'border-violet-500/20 text-violet-400/70 bg-violet-500/[0.06] hover:bg-violet-500/[0.12]'
-                            : isAmber
-                              ? 'border-amber-500/20 text-amber-400/70 bg-amber-500/[0.06] hover:bg-amber-500/[0.12]'
-                              : 'border-emerald-500/20 text-emerald-400/70 bg-emerald-500/[0.06] hover:bg-emerald-500/[0.12]'
+                            : isAction
+                              ? 'border-cyan-500/20 text-cyan-400/70 bg-cyan-500/[0.06] hover:bg-cyan-500/[0.12]'
+                              : isAmber
+                                ? 'border-amber-500/20 text-amber-400/70 bg-amber-500/[0.06] hover:bg-amber-500/[0.12]'
+                                : 'border-emerald-500/20 text-emerald-400/70 bg-emerald-500/[0.06] hover:bg-emerald-500/[0.12]'
                         }`}
                       >
                         {displayLabel}

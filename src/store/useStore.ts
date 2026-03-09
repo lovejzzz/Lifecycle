@@ -24,6 +24,8 @@ import {
 } from '@/lib/graph';
 import { buildNodesFromPrompt } from '@/lib/intent';
 import { assessWorkflowHealth, formatHealthReport, issueFingerprint } from '@/lib/health';
+import { generateProactiveSuggestions, formatSuggestionsMessage } from '@/lib/suggestions';
+import type { ProactiveSuggestion } from '@/lib/suggestions';
 
 type Snapshot = { nodes: Node<NodeData>[]; edges: Edge[] };
 
@@ -352,6 +354,12 @@ interface LifecycleStore {
   // ── Workflow Health Monitor ──
   _lastHealthFingerprint: string;
   runHealthCheck: (silent?: boolean) => void;
+
+  // ── Proactive Suggestions ──
+  _lastSuggestions: ProactiveSuggestion[];
+  _dismissedSuggestionIds: Set<string>;
+  applySuggestion: (suggestionId: string) => void;
+  dismissSuggestion: (suggestionId: string) => void;
 
   // ── Node Versioning ──
   rollbackNode: (nodeId: string, versionNumber: number) => void;
@@ -1639,6 +1647,19 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
 
     // Post-execution health check
     setTimeout(() => get().runHealthCheck(), 500);
+
+    // Proactive post-execution suggestions
+    setTimeout(() => {
+      const s = get();
+      const dismissed = s._dismissedSuggestionIds;
+      const proactive = generateProactiveSuggestions(s.nodes, s.edges)
+        .filter(ps => !dismissed.has(ps.id));
+      const formatted = formatSuggestionsMessage(proactive, 'post-execution');
+      if (formatted) {
+        store.addMessage({ id: uid(), role: 'cid', content: formatted.content, timestamp: Date.now(), suggestions: formatted.suggestionChips });
+        set({ _lastSuggestions: proactive });
+      }
+    }, 1500);
   },
 
   executeBranch: async (targetNodeId: string) => {
@@ -2319,6 +2340,76 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     }
 
     set({ _lastHealthFingerprint: fingerprint });
+  },
+
+  // ── Proactive Suggestions ──
+  _lastSuggestions: [],
+  _dismissedSuggestionIds: new Set<string>(),
+
+  applySuggestion: (suggestionId: string) => {
+    const store = get();
+    const suggestion = store._lastSuggestions.find(s => s.id === suggestionId);
+    if (!suggestion) return;
+
+    if (suggestion.actionType === 'add-node') {
+      const { label, category, connectAfter } = suggestion.actionPayload;
+      const afterNode = store.nodes.find(n => n.data.label === connectAfter);
+      const desired = afterNode
+        ? { x: afterNode.position.x + 300, y: afterNode.position.y }
+        : { x: 100 + Math.random() * 400, y: 100 + Math.random() * 300 };
+      const pos = findFreePosition(desired, store.nodes.map(n => n.position));
+      const newId = uid();
+      const newNode: Node<NodeData> = {
+        id: newId,
+        type: 'lifecycleNode',
+        position: pos,
+        data: {
+          label,
+          category: category as NodeCategory,
+          status: 'active',
+          description: `${label} node`,
+          version: 1,
+        },
+      };
+      const newEdges = [...store.edges];
+      if (afterNode) {
+        newEdges.push(createStyledEdge(afterNode.id, newId, inferEdgeLabel(afterNode.data.category, category as NodeCategory)));
+      }
+      store.pushHistory();
+      const newNodes = [...store.nodes, newNode];
+      saveToStorage({ nodes: newNodes, edges: newEdges, events: store.events, messages: store.messages });
+      set({ nodes: newNodes, edges: newEdges });
+      store.addEvent({ id: uid(), type: 'created', message: `Created "${label}" (${category}) from suggestion`, timestamp: Date.now(), nodeId: newId, agent: true });
+      store.addMessage({ id: uid(), role: 'cid', content: `Created **${label}** (${category})${afterNode ? ` connected after "${afterNode.data.label}"` : ''}.`, timestamp: Date.now(), _ephemeral: true });
+    } else if (suggestion.actionType === 'add-edge') {
+      const { from, to, label } = suggestion.actionPayload;
+      const srcNode = store.nodes.find(n => n.data.label === from);
+      const tgtNode = store.nodes.find(n => n.data.label === to);
+      if (srcNode && tgtNode) {
+        store.pushHistory();
+        const newEdge = createStyledEdge(srcNode.id, tgtNode.id, label || 'connects');
+        const newEdges = [...store.edges, newEdge];
+        saveToStorage({ nodes: store.nodes, edges: newEdges, events: store.events, messages: store.messages });
+        set({ edges: newEdges });
+        store.addMessage({ id: uid(), role: 'cid', content: `Connected **${from}** → **${to}**.`, timestamp: Date.now(), _ephemeral: true });
+      }
+    } else if (suggestion.actionType === 'command') {
+      // Execute as a CID chat command
+      const { command } = suggestion.actionPayload;
+      if (command) {
+        store.chatWithCID(command);
+      }
+    }
+
+    // Remove this suggestion from the list
+    set(s => ({ _lastSuggestions: s._lastSuggestions.filter(x => x.id !== suggestionId) }));
+  },
+
+  dismissSuggestion: (suggestionId: string) => {
+    set(s => ({
+      _dismissedSuggestionIds: new Set([...s._dismissedSuggestionIds, suggestionId]),
+      _lastSuggestions: s._lastSuggestions.filter(x => x.id !== suggestionId),
+    }));
   },
 
   // ── Node Versioning ──
@@ -3770,12 +3861,16 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
             content: ag.responses.buildComplete(newNodes.length, newEdges.length),
             timestamp: Date.now(),
           });
-          // Post-build suggestions after a short delay
+          // Proactive post-build suggestions after a short delay
           trackTimeout(() => {
             const s = get();
-            const result = buildPostBuildSuggestions(s.nodes, s.edges);
-            if (result) {
-              store.addMessage({ id: uid(), role: 'cid', content: result.text, timestamp: Date.now(), suggestions: result.suggestions });
+            const dismissed = s._dismissedSuggestionIds;
+            const proactive = generateProactiveSuggestions(s.nodes, s.edges)
+              .filter(ps => !dismissed.has(ps.id));
+            const formatted = formatSuggestionsMessage(proactive, 'post-build');
+            if (formatted) {
+              store.addMessage({ id: uid(), role: 'cid', content: formatted.content, timestamp: Date.now(), suggestions: formatted.suggestionChips });
+              set({ _lastSuggestions: proactive });
             }
           }, 2000);
         }, 1200);

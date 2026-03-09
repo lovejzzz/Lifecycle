@@ -1,0 +1,192 @@
+/**
+ * Proactive CID Suggestions — graph-aware analysis that suggests specific next actions.
+ * Pure functions, no store dependency. Used after workflow generation and execution.
+ */
+
+import type { Node, Edge } from '@xyflow/react';
+import type { NodeData } from '@/lib/types';
+
+export type SuggestionPriority = 'high' | 'medium' | 'low';
+export type SuggestionActionType = 'add-node' | 'add-edge' | 'generate-content' | 'run-workflow' | 'command';
+
+export interface ProactiveSuggestion {
+  id: string;
+  priority: SuggestionPriority;
+  message: string;
+  /** The display label for the clickable chip */
+  chipLabel: string;
+  /** Action type determines how CIDPanel handles the click */
+  actionType: SuggestionActionType;
+  /** For add-node: {label, category, connectAfter}. For add-edge: {from, to, label}. For command: the command string. */
+  actionPayload: Record<string, string>;
+}
+
+/**
+ * Analyze the graph and return specific, actionable suggestions.
+ * Called after workflow generation and after execution.
+ */
+export function generateProactiveSuggestions(
+  nodes: Node<NodeData>[],
+  edges: Edge[],
+): ProactiveSuggestion[] {
+  if (nodes.length === 0) return [];
+
+  const suggestions: ProactiveSuggestion[] = [];
+  const connectedIds = new Set<string>();
+  for (const e of edges) { connectedIds.add(e.source); connectedIds.add(e.target); }
+  const nodeById = new Map(nodes.map(n => [n.id, n]));
+
+  // Build adjacency
+  const outgoing = new Map<string, string[]>();
+  const incoming = new Map<string, string[]>();
+  for (const e of edges) {
+    if (!outgoing.has(e.source)) outgoing.set(e.source, []);
+    outgoing.get(e.source)!.push(e.target);
+    if (!incoming.has(e.target)) incoming.set(e.target, []);
+    incoming.get(e.target)!.push(e.source);
+  }
+
+  // ── 1. Missing output node ─────────────────────────────────────────────
+  const hasOutput = nodes.some(n => n.data.category === 'output');
+  const leafNodes = nodes.filter(n => !outgoing.has(n.id) || outgoing.get(n.id)!.length === 0);
+  const nonOutputLeaves = leafNodes.filter(n => n.data.category !== 'output' && n.data.category !== 'note');
+  if (!hasOutput && nonOutputLeaves.length > 0) {
+    const last = nonOutputLeaves[nonOutputLeaves.length - 1];
+    suggestions.push({
+      id: 'add-output',
+      priority: 'high',
+      message: `No output node — add one after "${last.data.label}" to capture the final deliverable`,
+      chipLabel: `Add output after ${last.data.label}`,
+      actionType: 'add-node',
+      actionPayload: { label: 'Output', category: 'output', connectAfter: last.data.label },
+    });
+  }
+
+  // ── 2. Dead-end producer nodes ─────────────────────────────────────────
+  // Nodes that produce content but nothing consumes it (not output/note)
+  if (hasOutput) {
+    for (const leaf of nonOutputLeaves.slice(0, 2)) {
+      if (['artifact', 'action', 'cid', 'state'].includes(leaf.data.category)) {
+        suggestions.push({
+          id: `dead-end-${leaf.id}`,
+          priority: 'medium',
+          message: `"${leaf.data.label}" produces content but nothing uses it`,
+          chipLabel: `Connect ${leaf.data.label} →`,
+          actionType: 'command',
+          actionPayload: { command: `connect "${leaf.data.label}" to ` },
+        });
+      }
+    }
+  }
+
+  // ── 3. Empty content nodes ─────────────────────────────────────────────
+  const contentCategories = new Set(['artifact', 'note', 'policy', 'state', 'review', 'action', 'cid', 'test', 'patch']);
+  const emptyNodes = nodes.filter(n =>
+    contentCategories.has(n.data.category) &&
+    !n.data.content && !n.data.description && !n.data.executionResult
+  );
+  if (emptyNodes.length > 0 && emptyNodes.length <= 5) {
+    const names = emptyNodes.slice(0, 3).map(n => n.data.label);
+    suggestions.push({
+      id: 'generate-empty',
+      priority: 'medium',
+      message: `${emptyNodes.length} node${emptyNodes.length > 1 ? 's' : ''} have no content yet: ${names.join(', ')}`,
+      chipLabel: `Generate content for ${emptyNodes.length} node${emptyNodes.length > 1 ? 's' : ''}`,
+      actionType: 'command',
+      actionPayload: { command: 'auto describe' },
+    });
+  }
+
+  // ── 4. No review gate in a workflow with 4+ nodes ─────────────────────
+  const hasReview = nodes.some(n => n.data.category === 'review');
+  if (!hasReview && nodes.length >= 4) {
+    // Find the best place: after artifact/action nodes, before output
+    const artifacts = nodes.filter(n => n.data.category === 'artifact' && (outgoing.get(n.id)?.length ?? 0) > 0);
+    const target = artifacts[artifacts.length - 1] || leafNodes.find(n => n.data.category !== 'output');
+    if (target) {
+      suggestions.push({
+        id: 'add-review',
+        priority: 'medium',
+        message: `No review gate — add one after "${target.data.label}" for quality control`,
+        chipLabel: `Add review gate`,
+        actionType: 'add-node',
+        actionPayload: { label: 'Review Gate', category: 'review', connectAfter: target.data.label },
+      });
+    }
+  }
+
+  // ── 5. Linear workflow without parallel branches ───────────────────────
+  const maxFanOut = Math.max(0, ...nodes.map(n => outgoing.get(n.id)?.length ?? 0));
+  if (maxFanOut <= 1 && nodes.length >= 5) {
+    // Find a node that could fan out
+    const generators = nodes.filter(n =>
+      ['cid', 'state', 'action'].includes(n.data.category) &&
+      (outgoing.get(n.id)?.length ?? 0) === 1
+    );
+    if (generators.length > 0) {
+      suggestions.push({
+        id: 'suggest-parallel',
+        priority: 'low',
+        message: 'This workflow is purely linear — consider adding parallel branches for independent tasks',
+        chipLabel: 'Suggest parallel branches',
+        actionType: 'command',
+        actionPayload: { command: 'optimize' },
+      });
+    }
+  }
+
+  // ── 6. Unexecuted workflow (all idle) ──────────────────────────────────
+  const allIdle = nodes.every(n => !n.data.executionStatus || n.data.executionStatus === 'idle');
+  const hasContent = nodes.some(n => n.data.content || n.data.description);
+  if (allIdle && hasContent && nodes.length >= 3) {
+    suggestions.push({
+      id: 'run-workflow',
+      priority: 'high',
+      message: 'Workflow is ready but hasn\'t been executed yet',
+      chipLabel: 'Run workflow',
+      actionType: 'command',
+      actionPayload: { command: 'run workflow' },
+    });
+  }
+
+  // ── 7. Stale nodes after execution ─────────────────────────────────────
+  const staleNodes = nodes.filter(n => n.data.status === 'stale');
+  if (staleNodes.length > 0) {
+    suggestions.push({
+      id: 'refresh-stale',
+      priority: 'high',
+      message: `${staleNodes.length} stale node${staleNodes.length > 1 ? 's' : ''} need refreshing`,
+      chipLabel: 'Refresh stale',
+      actionType: 'command',
+      actionPayload: { command: 'refresh stale' },
+    });
+  }
+
+  // Sort by priority and return top suggestions
+  const priorityOrder: Record<SuggestionPriority, number> = { high: 0, medium: 1, low: 2 };
+  suggestions.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+  return suggestions.slice(0, 3);
+}
+
+/**
+ * Format suggestions into a CID message with clickable suggestion chips.
+ * Returns { message, suggestions } where suggestions use the "action:" prefix pattern.
+ */
+export function formatSuggestionsMessage(
+  suggestions: ProactiveSuggestion[],
+  context: 'post-build' | 'post-execution',
+): { content: string; suggestionChips: string[] } | null {
+  if (suggestions.length === 0) return null;
+
+  const header = context === 'post-build'
+    ? '### Suggestions'
+    : '### Next Steps';
+
+  const lines = suggestions.map(s => `- ${s.message}`);
+  const content = `${header}\n${lines.join('\n')}`;
+
+  // Encode suggestions as "action:id|chipLabel" for CIDPanel to detect
+  const suggestionChips = suggestions.map(s => `action:${s.id}|${s.chipLabel}`);
+
+  return { content, suggestionChips };
+}
