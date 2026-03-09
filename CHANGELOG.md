@@ -1,5 +1,22 @@
 # Changelog
 
+### 2026-03-09 — Lifecycle Loop: Note Refinement
+
+**Roadmap Item 5: Note Refinement** — CID extracts structured nodes and connections from rough notes.
+
+- New `buildNoteRefinementPrompt()` in prompts.ts — specialized LLM prompt for note analysis
+- Returns structured JSON: summary, suggestedNodes (with category/content), suggestedEdges, cleanedContent
+- `refineNote(nodeId)` store action — sends note content + existing graph context to `/api/cid`
+- Robust JSON parsing with brace-counting (handles LLM preamble text before JSON)
+- Refinement suggestions appear as violet-colored interactive chips in CID chat
+- Three suggestion types: Create node, Connect existing nodes, Update note content
+- `applyRefinementSuggestion()` — creates real nodes with auto-positioned placement, creates edges, or updates note content
+- New nodes auto-connect to existing graph nodes when the LLM suggests it
+- "Refine" button in NodeDetailPanel appears only on note nodes with content
+- CID chat commands: "refine", "extract", "structure" trigger refinement on selected/first note node
+- Refinement hint added to command autocomplete
+- 88 tests passing, build clean
+
 ### 2026-03-09 — Lifecycle Loop: Impact Preview
 
 **Roadmap Item 4: Impact Preview** — users see what will regenerate before it happens.

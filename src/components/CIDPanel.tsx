@@ -63,6 +63,7 @@ const COMMAND_HINTS_BY_SECTION: { section: string; hints: { trigger: string; lab
     { trigger: 'retry failed', label: 'retry failed — Re-run failed nodes' },
     { trigger: 'clear results', label: 'clear results — Reset execution state' },
     { trigger: 'diff last run', label: 'diff last run — Compare vs previous run' },
+    { trigger: 'refine', label: 'refine — Extract structured nodes from a note' },
   ]},
   { section: '🛠 Batch & Fix', hints: [
     { trigger: 'solve', label: 'solve — Fix structural problems' },
@@ -146,6 +147,7 @@ export default function CIDPanel() {
     compressWorkflow, findBottlenecks,
     suggestNextSteps, healthBreakdown,
     retryFailed, clearExecutionResults, getPreFlightSummary, diffLastRun,
+    refineNote, applyRefinementSuggestion, selectedNodeId,
   } = useLifecycleStore();
   const [input, setInput] = useState('');
   const [_editingMsgId, _setEditingMsgId] = useState<string | null>(null);
@@ -737,6 +739,23 @@ export default function CIDPanel() {
       addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
       setProcessing(true);
       autoDescribe().finally(() => setProcessing(false));
+    } else if (/^(?:refine|extract|structure)(?:\s+(?:this\s+)?note)?\s*$/i.test(prompt)) {
+      addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
+      // Find a note node — prefer the selected one, or find the first note
+      const targetId = selectedNodeId;
+      const targetNode = targetId ? nodes.find(n => n.id === targetId) : null;
+      if (targetNode && targetNode.data.category === 'note') {
+        setProcessing(true);
+        refineNote(targetNode.id).finally(() => setProcessing(false));
+      } else {
+        const firstNote = nodes.find(n => n.data.category === 'note' && n.data.content);
+        if (firstNote) {
+          setProcessing(true);
+          refineNote(firstNote.id).finally(() => setProcessing(false));
+        } else {
+          sendStreamingResponse('No note node found. Select a note node or create one first.');
+        }
+      }
     } else {
       chatWithCID(prompt);
     }
@@ -770,6 +789,44 @@ export default function CIDPanel() {
       dispatchCommand(prompt, () => agent.responses.qaOptimized(nodes.length), 500, optimizeLayout);
     } else {
       chatWithCID(prompt);
+    }
+  };
+
+  const handleRefinementClick = (suggestionId: string) => {
+    const refinement = typeof window !== 'undefined' ? (window as unknown as Record<string, unknown>).__lifecycleRefinement as { parsed: { suggestedNodes?: Array<{ label: string; category: string; content: string }>; suggestedEdges?: Array<{ from: string; to: string; label: string }>; cleanedContent?: string }; noteNodeId: string } | undefined : undefined;
+    if (!refinement) return;
+
+    const { parsed, noteNodeId } = refinement;
+    const [prefix] = suggestionId.split('|');
+
+    if (prefix === 'refine-clean' && parsed.cleanedContent) {
+      applyRefinementSuggestion({ type: 'clean', content: parsed.cleanedContent, nodeId: noteNodeId });
+    } else if (prefix.startsWith('refine-node-')) {
+      const idx = parseInt(prefix.replace('refine-node-', ''), 10);
+      const sn = parsed.suggestedNodes?.[idx];
+      if (sn) {
+        // Check if there's an edge connecting this new node to an existing one
+        const edgeToExisting = parsed.suggestedEdges?.find(
+          se => se.from === sn.label && nodes.some(n => n.data.label === se.to)
+        );
+        applyRefinementSuggestion({
+          type: 'node',
+          label: sn.label,
+          category: sn.category,
+          content: sn.content,
+          connectTo: edgeToExisting?.to,
+          edgeLabel: edgeToExisting?.label,
+        });
+      }
+    } else if (prefix.startsWith('refine-edge-')) {
+      const edgesBetweenExisting = parsed.suggestedEdges?.filter(
+        se => nodes.some(n => n.data.label === se.from) && nodes.some(n => n.data.label === se.to)
+      ) || [];
+      const idx = parseInt(prefix.replace('refine-edge-', ''), 10);
+      const se = edgesBetweenExisting[idx];
+      if (se) {
+        applyRefinementSuggestion({ type: 'edge', from: se.from, to: se.to, label: se.label });
+      }
     }
   };
 
@@ -1036,22 +1093,33 @@ export default function CIDPanel() {
               {/* Suggestion chips */}
               {msg.suggestions && msg.suggestions.length > 0 && !isProcessing && (
                 <div className="flex flex-wrap gap-1.5 mt-2">
-                  {msg.suggestions.map(s => (
-                    <button
-                      key={s}
-                      onClick={() => {
-                        pendingSuggestionRef.current = s;
-                        setInput(s);
-                      }}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] border transition-all hover:scale-[1.03] ${
-                        isAmber
-                          ? 'border-amber-500/20 text-amber-400/70 bg-amber-500/[0.06] hover:bg-amber-500/[0.12]'
-                          : 'border-emerald-500/20 text-emerald-400/70 bg-emerald-500/[0.06] hover:bg-emerald-500/[0.12]'
-                      }`}
-                    >
-                      {s}
-                    </button>
-                  ))}
+                  {msg.suggestions.map(s => {
+                    // Refinement suggestion: "refine-node-0|Create: Label" or "refine-edge-0|Connect: X → Y" or "refine-clean|Update note content"
+                    const isRefinement = s.startsWith('refine-');
+                    const displayLabel = isRefinement ? s.split('|')[1] || s : s;
+                    return (
+                      <button
+                        key={s}
+                        onClick={() => {
+                          if (isRefinement) {
+                            handleRefinementClick(s);
+                          } else {
+                            pendingSuggestionRef.current = s;
+                            setInput(s);
+                          }
+                        }}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] border transition-all hover:scale-[1.03] ${
+                          isRefinement
+                            ? 'border-violet-500/20 text-violet-400/70 bg-violet-500/[0.06] hover:bg-violet-500/[0.12]'
+                            : isAmber
+                              ? 'border-amber-500/20 text-amber-400/70 bg-amber-500/[0.06] hover:bg-amber-500/[0.12]'
+                              : 'border-emerald-500/20 text-emerald-400/70 bg-emerald-500/[0.06] hover:bg-emerald-500/[0.12]'
+                        }`}
+                      >
+                        {displayLabel}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
               {/* Pin button on CID messages */}

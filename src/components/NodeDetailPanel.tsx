@@ -340,7 +340,7 @@ function SectionEditor({
 // ─── Main Panel ──────────────────────────────────────────────────────────────
 
 export default function NodeDetailPanel() {
-  const { nodes, edges, selectedNodeId, selectNode, lockNode, approveNode, updateNodeStatus, updateNodeData, deleteNode, deleteEdge, addEvent, askCIDAboutNode, executeNode, openArtifactPanel } = useLifecycleStore();
+  const { nodes, edges, selectedNodeId, selectNode, lockNode, approveNode, updateNodeStatus, updateNodeData, deleteNode, deleteEdge, addEvent, askCIDAboutNode, executeNode, openArtifactPanel, refineNote, isProcessing } = useLifecycleStore();
   const node = nodes.find((n) => n.id === selectedNodeId);
 
   // Track which node the editing state belongs to — auto-resets when selectedNodeId changes (no useEffect needed)
@@ -731,6 +731,17 @@ export default function NodeDetailPanel() {
                       <>▶ Run Node</>
                     )}
                   </button>
+                  {data.category === 'note' && (
+                    <button
+                      onClick={() => refineNote(node.id)}
+                      disabled={isProcessing || !data.content}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-violet-500/10 border border-violet-500/20 text-violet-400 text-[10px] font-medium hover:bg-violet-500/20 transition-colors disabled:opacity-30"
+                      title="Extract structured nodes and connections from this note"
+                    >
+                      <Bot size={10} />
+                      Refine
+                    </button>
+                  )}
                 </div>
                 {data.executionError && (
                   <div className="text-[10px] text-rose-400/80 bg-rose-500/5 rounded-lg px-3 py-2 border border-rose-500/10">

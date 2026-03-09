@@ -403,6 +403,50 @@ export function inferEffortFromCategory(category: string): 'low' | 'medium' | 'h
   return 'medium'; // review, test, policy, state, note, patch
 }
 
+// ─── Note Refinement Prompt ──────────────────────────────────────────────────
+
+export interface NoteRefinementResult {
+  summary: string;
+  suggestedNodes: Array<{ label: string; category: string; content: string }>;
+  suggestedEdges: Array<{ from: string; to: string; label: string }>;
+  cleanedContent?: string;
+}
+
+const NOTE_REFINEMENT_SYSTEM = `You are a workflow analyst. You are analyzing a rough note from a visual workflow builder called Lifecycle Agent.
+
+Your job is to extract structured information from the note and suggest how it connects to the existing workflow graph.
+
+You MUST respond with valid JSON matching this exact schema:
+{
+  "summary": "A 1-2 sentence summary of the note's key points",
+  "suggestedNodes": [
+    { "label": "Short Name", "category": "action|artifact|state|review|test|policy", "content": "Detailed content for this node (100+ chars). Write real content." }
+  ],
+  "suggestedEdges": [
+    { "from": "Source Node Label", "to": "Target Node Label", "label": "drives|feeds|refines|validates|monitors|connects" }
+  ],
+  "cleanedContent": "Optional: a cleaner, more structured version of the original note. Only include if the note benefits from restructuring."
+}
+
+RULES:
+- Extract 1-4 actionable items as suggestedNodes. Don't over-extract — only create nodes for clearly distinct items.
+- For suggestedEdges, connect new nodes to each other AND to existing nodes when relevant. Use exact label matches for existing nodes.
+- Category selection: use "action" for tasks/operations, "artifact" for documents/deliverables, "state" for tracking/status, "review" for approval gates, "test" for validation, "policy" for rules/constraints.
+- "from" and "to" in edges can reference either existing node labels or new suggested node labels.
+- If the note is too vague to extract anything meaningful, return an empty suggestedNodes array with a summary explaining that.
+- Return ONLY the JSON object. No text before or after.`;
+
+export function buildNoteRefinementPrompt(noteContent: string, existingNodes: Array<{ label: string; category: string }>): { system: string; user: string } {
+  const existingList = existingNodes.length > 0
+    ? `\n\nEXISTING NODES IN THE WORKFLOW:\n${existingNodes.map(n => `- "${n.label}" (${n.category})`).join('\n')}\n\nWhen suggesting edges, use these exact labels to connect to existing nodes where relevant.`
+    : '';
+
+  return {
+    system: NOTE_REFINEMENT_SYSTEM,
+    user: `Analyze this note and extract structured information:\n\n---\n${noteContent}\n---${existingList}`,
+  };
+}
+
 // ─── Graph Serializer ───────────────────────────────────────────────────────
 
 function serializeGraph(nodes: Node<NodeData>[], edges: Edge[]): string {

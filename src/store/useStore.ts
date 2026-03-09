@@ -5,7 +5,8 @@ import type { Node, Edge, Connection } from '@xyflow/react';
 import type { NodeData, LifecycleEvent, CIDMessage, NodeCategory, CIDMode, AgentPersonalityLayers, HabitLayer, GenerationLayer, ReflectionLayer, DrivingForceLayer } from '@/lib/types';
 import { registerCustomCategory, EDGE_LABEL_COLORS, BUILT_IN_CATEGORIES } from '@/lib/types';
 import { getAgent, getInterviewQuestions, buildEnrichedPrompt } from '@/lib/agents';
-import { buildSystemPrompt, buildMessages, getExecutionSystemPrompt, inferEffortFromCategory } from '@/lib/prompts';
+import { buildSystemPrompt, buildMessages, getExecutionSystemPrompt, inferEffortFromCategory, buildNoteRefinementPrompt } from '@/lib/prompts';
+import type { NoteRefinementResult } from '@/lib/prompts';
 import { classifyEdit } from '@/lib/edits';
 import {
   createDefaultHabits, createDefaultGeneration, createDefaultReflection,
@@ -346,6 +347,10 @@ interface LifecycleStore {
   selectAllImpactNodes: () => void;
   deselectAllImpactNodes: () => void;
   regenerateSelected: (nodeIds?: string[]) => Promise<void>;
+
+  // ── Note Refinement ──
+  refineNote: (nodeId: string) => Promise<void>;
+  applyRefinementSuggestion: (suggestion: { type: 'node'; label: string; category: string; content: string; connectTo?: string; edgeLabel?: string } | { type: 'edge'; from: string; to: string; label: string } | { type: 'clean'; content: string; nodeId: string }) => void;
 
   // ── Project Management ──
   projects: Map<string, { nodes: Node<NodeData>[]; edges: Edge[]; messages: CIDMessage[]; cidMode: CIDMode; cidAIModel: string; createdAt: number; updatedAt: number }>;
@@ -2236,6 +2241,201 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       ? `${successCount} node${successCount > 1 ? 's' : ''} regenerated in ${elapsed}s.`
       : `${successCount} regenerated, ${errorCount} failed in ${elapsed}s.`;
     store.addMessage({ id: uid(), role: 'cid', content: doneMsg, timestamp: Date.now() });
+  },
+
+  // ── Note Refinement ──
+  refineNote: async (nodeId: string) => {
+    const store = get();
+    const node = store.nodes.find(n => n.id === nodeId);
+    if (!node || node.data.category !== 'note') {
+      store.addMessage({ id: uid(), role: 'cid', content: 'Only note nodes can be refined.', timestamp: Date.now(), _ephemeral: true });
+      return;
+    }
+    const noteContent = node.data.content || node.data.description || '';
+    if (!noteContent.trim()) {
+      store.addMessage({ id: uid(), role: 'cid', content: `"${node.data.label}" has no content to refine. Write something first.`, timestamp: Date.now(), _ephemeral: true });
+      return;
+    }
+
+    const existingNodes = store.nodes
+      .filter(n => n.id !== nodeId)
+      .map(n => ({ label: n.data.label, category: n.data.category }));
+
+    const { system, user } = buildNoteRefinementPrompt(noteContent, existingNodes);
+
+    store.addMessage({
+      id: uid(), role: 'cid', content: `Analyzing note "${node.data.label}"...`, timestamp: Date.now(), action: 'refining',
+    });
+
+    try {
+      const res = await fetch('/api/cid', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemPrompt: system,
+          model: store.cidAIModel,
+          taskType: 'execute',
+          effortLevel: 'medium',
+          messages: [{ role: 'user', content: user }],
+        }),
+      });
+
+      if (!res.ok) {
+        store.addMessage({ id: uid(), role: 'cid', content: `Refinement failed (API ${res.status}).`, timestamp: Date.now() });
+        return;
+      }
+
+      const result = await res.json();
+      const raw = result.result?.content || result.result?.message || (typeof result.result === 'string' ? result.result : '');
+
+      // Parse JSON from LLM response (may have preamble text)
+      let parsed: NoteRefinementResult;
+      try {
+        // Find first { and last } using brace counting
+        let depth = 0;
+        let start = -1;
+        let end = -1;
+        for (let i = 0; i < raw.length; i++) {
+          if (raw[i] === '{') { if (depth === 0) start = i; depth++; }
+          if (raw[i] === '}') { depth--; if (depth === 0) { end = i + 1; break; } }
+        }
+        if (start === -1 || end === -1) throw new Error('No JSON found');
+        parsed = JSON.parse(raw.slice(start, end));
+      } catch {
+        store.addMessage({ id: uid(), role: 'cid', content: `Could not parse refinement result. Try again.`, timestamp: Date.now() });
+        return;
+      }
+
+      // Build interactive suggestion cards and message
+      const suggestions: string[] = [];
+      const cards: Array<{ id: string; label: string; description?: string }> = [];
+
+      if (parsed.summary) {
+        suggestions.push(`**Summary:** ${parsed.summary}`);
+      }
+
+      if (parsed.suggestedNodes && parsed.suggestedNodes.length > 0) {
+        suggestions.push(`\n**Suggested nodes:**`);
+        parsed.suggestedNodes.forEach((sn, i) => {
+          suggestions.push(`- **${sn.label}** (${sn.category})`);
+          // Find if any suggested edge connects this to an existing node
+          const edgeToExisting = parsed.suggestedEdges?.find(
+            se => se.from === sn.label && existingNodes.some(en => en.label === se.to)
+          );
+          cards.push({
+            id: `refine-node-${i}`,
+            label: `Create: ${sn.label}`,
+            description: `${sn.category} node${edgeToExisting ? ` → connects to "${edgeToExisting.to}"` : ''}`,
+          });
+        });
+      }
+
+      if (parsed.suggestedEdges && parsed.suggestedEdges.length > 0) {
+        const edgesBetweenExisting = parsed.suggestedEdges.filter(
+          se => existingNodes.some(n => n.label === se.from) && existingNodes.some(n => n.label === se.to)
+        );
+        if (edgesBetweenExisting.length > 0) {
+          suggestions.push(`\n**Suggested connections:**`);
+          edgesBetweenExisting.forEach((se, i) => {
+            suggestions.push(`- ${se.from} —[${se.label}]→ ${se.to}`);
+            cards.push({
+              id: `refine-edge-${i}`,
+              label: `Connect: ${se.from} → ${se.to}`,
+              description: se.label,
+            });
+          });
+        }
+      }
+
+      if (parsed.cleanedContent) {
+        cards.push({
+          id: 'refine-clean',
+          label: 'Update note content',
+          description: 'Replace with cleaner, structured version',
+        });
+      }
+
+      // Store the parsed result for card click handling
+      const storeKey = `_refinement_${nodeId}_${Date.now()}`;
+      (globalThis as Record<string, unknown>)[storeKey] = { parsed, noteNodeId: nodeId, existingNodes };
+
+      store.addMessage({
+        id: uid(),
+        role: 'cid',
+        content: suggestions.join('\n'),
+        timestamp: Date.now(),
+        suggestions: cards.map(c => `${c.id}|${c.label}`),
+        _ephemeral: false,
+      });
+
+      // Store refinement data on the window for suggestion click handling
+      if (typeof window !== 'undefined') {
+        (window as unknown as Record<string, unknown>).__lifecycleRefinement = { parsed, noteNodeId: nodeId };
+      }
+
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      store.addMessage({ id: uid(), role: 'cid', content: `Refinement failed: ${msg}`, timestamp: Date.now() });
+    }
+  },
+
+  applyRefinementSuggestion: (suggestion) => {
+    const store = get();
+    store.pushHistory();
+
+    if (suggestion.type === 'node') {
+      // Create a new node from the suggestion
+      const { label, category, content, connectTo, edgeLabel } = suggestion;
+      const desired = { x: 100 + Math.random() * 400, y: 100 + Math.random() * 300 };
+      const pos = findFreePosition(desired, store.nodes.map(n => n.position));
+      const newId = uid();
+      const newNode: Node<NodeData> = {
+        id: newId,
+        type: 'lifecycleNode',
+        position: pos,
+        data: {
+          label,
+          category: category as NodeCategory,
+          status: 'active',
+          description: content.slice(0, 100),
+          content,
+          version: 1,
+        },
+      };
+      const newEdges = [...store.edges];
+
+      // Connect to specified node if given
+      if (connectTo) {
+        const target = store.nodes.find(n => n.data.label === connectTo);
+        if (target) {
+          newEdges.push(createStyledEdge(newId, target.id, edgeLabel || inferEdgeLabel(category as NodeCategory, target.data.category)));
+        }
+      }
+
+      const newNodes = [...store.nodes, newNode];
+      saveToStorage({ nodes: newNodes, edges: newEdges, events: store.events, messages: store.messages });
+      set({ nodes: newNodes, edges: newEdges });
+      store.addEvent({ id: uid(), type: 'created', message: `Created "${label}" from note refinement`, timestamp: Date.now(), nodeId: newId, agent: true });
+      store.addMessage({ id: uid(), role: 'cid', content: `Created **${label}** (${category}).`, timestamp: Date.now(), _ephemeral: true });
+    } else if (suggestion.type === 'edge') {
+      const { from, to, label } = suggestion;
+      const srcNode = store.nodes.find(n => n.data.label === from);
+      const tgtNode = store.nodes.find(n => n.data.label === to);
+      if (srcNode && tgtNode) {
+        const newEdge = createStyledEdge(srcNode.id, tgtNode.id, label);
+        const newEdges = [...store.edges, newEdge];
+        saveToStorage({ nodes: store.nodes, edges: newEdges, events: store.events, messages: store.messages });
+        set({ edges: newEdges });
+        store.addMessage({ id: uid(), role: 'cid', content: `Connected **${from}** → **${to}** (${label}).`, timestamp: Date.now(), _ephemeral: true });
+      } else {
+        store.addMessage({ id: uid(), role: 'cid', content: `Could not find nodes "${from}" or "${to}" to connect.`, timestamp: Date.now(), _ephemeral: true });
+      }
+    } else if (suggestion.type === 'clean') {
+      const { content: newContent, nodeId } = suggestion;
+      store.updateNodeData(nodeId, { content: newContent });
+      store.addEvent({ id: uid(), type: 'refined', message: `Note content refined by CID`, timestamp: Date.now(), nodeId, agent: true });
+      store.addMessage({ id: uid(), role: 'cid', content: `Note content updated with structured version.`, timestamp: Date.now(), _ephemeral: true });
+    }
   },
 
   // Functional CID action: auto-layout nodes in a clean grid
