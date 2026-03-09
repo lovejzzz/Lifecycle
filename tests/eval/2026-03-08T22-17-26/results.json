@@ -1,0 +1,506 @@
+{
+  "timestamp": "2026-03-08T22-17-26",
+  "overall": 100,
+  "testsRun": [
+    "founder-advice",
+    "eng-code-review",
+    "execute-incident-postmortem",
+    "personality-poirot-empty",
+    "data-ml-pipeline",
+    "logistics-international-shipping"
+  ],
+  "poolSize": 103,
+  "results": [
+    {
+      "id": "founder-advice",
+      "status": "ok",
+      "elapsed": 19411,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We're burning $50k/month and have 6 months of runway. What should I prioritize?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Prioritize immediate cost-cutting by conducting a zero-based budget audit using tools like Expensify or QuickBooks to slash non-essential spend, targeting a 40% reduction in burn within 60 days. Simultaneously, drive revenue by deploying A/B testing on your highest-conversion channels and reallocating resources to top-performing customer segments measured via Google Analytics or Mixpanel. Secure a bridge round or emergency credit line within 3 months to extend runway, using metrics like CAC and LTV to pitch investors.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (523 chars)",
+          "✓ Message length: 523 ≥ 250"
+        ]
+      }
+    },
+    {
+      "id": "eng-code-review",
+      "status": "ok",
+      "elapsed": 139938,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "PRs sit for days because nobody reviews them. I want an automated workflow: PR opened → assign reviewer → review deadline → merge or request changes → deploy.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Automated PR review and deployment workflow built.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "PR Opened Trigger",
+              "category": "trigger",
+              "description": "Event triggered when a new Pull Request is opened",
+              "content": "Configure this trigger to activate upon PR creation in your version control system (e.g., GitHub, GitLab, Bitbucket). Set up webhooks to send a POST request with payload containing PR metadata: title, description, author, source and target branches, diff stats, and labels. Use authentication via API tokens or OAuth 2.0 for security. In GitHub Actions, define the workflow with `on: pull_request` and event types `opened` and `reopened`. Ensure error handling with exponential backoff retries for webhook failures, and log all events to a monitoring service like Datadog or ELK stack. This trigger is the entry point; validate payload integrity and filter out spam or draft PRs by checking PR attributes. Set up alerts for trigger failures to maintain pipeline reliability."
+            },
+            {
+              "label": "Reviewer Assignment & Deadline Setup",
+              "category": "action",
+              "description": "Automatically assign reviewers and set review deadlines",
+              "content": "Execute this action immediately after PR trigger. Steps: 1. Parse the PR payload to identify changed files and directories. 2. Use a round-robin algorithm or CODEOWNERS file (in GitHub) to assign 1-2 primary reviewers based on expertise; fallback to team leads if no match. 3. Set a review deadline dynamically: 24 hours for small PRs (<200 lines), 48 hours for large PRs, excluding weekends. 4. Notify reviewers via Slack/Teams integration or email with PR link and deadline. 5. Log assignments in a database (e.g., PostgreSQL) for tracking. Tools: GitHub Actions with `actions/github-script` to call GitHub API endpoints like `issues/addAssignees` and `issues/addLabels`. Handle edge cases: if reviewers are unavailable, auto-escalate after 12 hours with pings to managers. Configure deadlines in project management tools like Jira for visibility."
+            },
+            {
+              "label": "PR State Management",
+              "category": "state",
+              "description": "Track the current state of the PR through the review process",
+              "content": "Define and manage PR states: 'Open' (initial), 'Assigned' (reviewers assigned), 'Under Review' (active review), 'Changes Requested' (review failed), 'Approved' (ready for merge), 'Merged' (completed), 'Closed' (rejected). Implement a state machine using a tool like Amazon Step Functions or a custom database table with transitions triggered by events. Transitions: 'Open' → 'Assigned' on assignment; 'Assigned' → 'Under Review' when first comment or review starts; 'Under Review' → 'Approved' if all checks pass, or → 'Changes Requested' if issues found; 'Changes Requested' → 'Under Review' after PR update; 'Approved' → 'Merged' after merge action. Set timeouts: if 'Assigned' exceeds deadline, auto-reassign or escalate. Monitor state changes with dashboards in Grafana, and enforce SLAs (e.g., max 2 days in 'Under Review')."
+            },
+            {
+              "label": "Code Review and Validation",
+              "category": "review",
+              "description": "Human and automated review of the PR with approval gates",
+              "content": "This review node combines automated checks and human evaluation. Automated: Integrate CI tools to run unit tests (Jest, PyTest), linting (ESLint, Pylint), security scans (Snyk, CodeQL), and code coverage (JaCoCo) on every PR update. Configure in GitHub Actions or Jenkins with fail-fast logic. Human: Reviewers assess code quality, architecture, and business logic against team rubrics. Approval criteria: all automated tests pass, at least one human approval from assigned reviewers, no critical security issues. Set SLA for human review: respond within deadline, with reminders at 12-hour intervals via Slack bots. If changes requested, provide specific feedback in PR comments; on approval, update state to 'Approved'. Escalate to senior devs if review stalls. Log review duration and outcomes for performance metrics using tools like PullRequest Analytics."
+            },
+            {
+              "label": "Merge Pull Request",
+              "category": "action",
+              "description": "Merge the approved PR into the target branch",
+              "content": "Execute merge only after state is 'Approved' and all automated checks pass. Steps: 1. Verify PR mergeability via GitHub API (check `mergeable_state`). 2. Use Git commands or GitHub Actions' `merge` action to perform the merge; choose strategy (squash, rebase, or regular) based on team policy defined in repository settings. 3. Post-merge actions: automatically delete the source branch, update linked issues in Jira or Linear to 'Done', send success notification to Slack channel. 4. Handle merge conflicts by aborting and notifying PR author with instructions; retry after conflict resolution. Tools: Script this with `gh pr merge` CLI or REST API calls. Ensure atomicity: rollback on failure by reverting the merge commit. Log merge details (timestamp, committer, hash) to an audit trail database. Transition state to 'Merged' upon success."
+            },
+            {
+              "label": "Deploy to Production",
+              "category": "action",
+              "description": "Deploy the merged changes to the production environment",
+              "content": "Trigger deployment after PR merge. Steps: 1. Pull the latest code from the target branch (e.g., main). 2. Build artifacts using tools like Docker for containerization or Maven/NPM for binaries. 3. Run deployment-specific tests in a staging environment: smoke tests (Selenium), performance tests (k6), and integration tests. 4. Deploy to production using canary release (10% traffic initially) or blue-green deployment via Kubernetes or AWS CodeDeploy. 5. Monitor in real-time with Prometheus for error rates and latency; set up alerts in PagerDuty for anomalies. 6. Rollback plan: if metrics degrade, auto-revert to previous version using infrastructure-as-code (Terraform). Tools: Jenkins pipelines or GitHub Actions with environment secrets. Notify ops team on deployment start and completion. Document deployment logs and version tags for compliance."
+            },
+            {
+              "label": "Deployment Success Output",
+              "category": "output",
+              "description": "Report and metrics on the deployment success",
+              "content": "Generate a comprehensive output report post-deployment. Include metrics: deployment duration, success/failure status, post-deployment error rates (from monitoring tools like New Relic), user impact (e.g., feature adoption from analytics). Format as a Markdown document or JSON payload. Sections: Executive Summary (overall outcome), Technical Details (steps performed, artifacts built), Performance Metrics (response time, throughput), Issues Encountered (any rollbacks or errors), Recommendations (improvements for next cycle). Distribute via email to stakeholders (dev team, product managers, executives) and post to Slack channel. Store reports in a centralized location like S3 or Confluence for historical analysis. Use this data to calculate SLAs (e.g., time from PR open to deploy < 3 days) and refine the workflow iteratively based on trends."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "updates"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "requires"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "approves"
+            },
+            {
+              "from": 3,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "drives"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "outputs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 115,
+        "maxScore": 115,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 7 (min: 5)",
+          "✓ Node count: 7 ≤ 10",
+          "✓ Has \"review\" category",
+          "✓ Has \"action\" category",
+          "✓ All 7 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 837c, no thin nodes",
+          "✓ Architecture covers: assign, deadline, merge, deploy",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (7 edges, 7 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "execute-incident-postmortem",
+      "status": "ok",
+      "elapsed": 41047,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Write a blameless post-mortem for a 2-hour production outage caused by a database migration that locked a critical table. 500 customers were affected. Include timeline, root cause, impact, and action items.",
+        "agent": "rowan",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "# Post-Mortem Report: Production Outage Due to Database Table Locking\n\n**Incident Title:** Production Outage Caused by Blocking Database Migration  \n**Date of Incident:** October 26, 2023  \n**Start Time:** 09:15 UTC  \n**End Time:** 11:22 UTC  \n**Duration:** 2 hours 7 minutes  \n**Impact Level:** SEV-2 (Partial Service Degradation)  \n**Affected Customers:** Approximately 500  \n**Report Date:** October 27, 2023  \n**Authors:** Site Reliability Engineering & Database Engineering Teams\n\n---\n\n## 1. Executive Summary\n\nOn October 26, 2023, between 09:15 and 11:22 UTC, our primary application experienced a partial outage, rendering critical user-facing features unavailable. Approximately 500 active customers were unable to complete transactions or access account data during this period. The incident was triggered by a scheduled database migration that placed an exclusive lock on a high-traffic `customer_orders` table, causing transaction timeouts and cascading failures in dependent services. This report details the timeline, root cause, impact, and corrective actions to prevent recurrence.\n\n## 2. Timeline (All Times UTC)\n\n*   **08:50** – Database Engineer initiates pre-approved migration `ALTER TABLE customer_orders ADD COLUMN tax_code VARCHAR(10);` in production.\n*   **09:15** – Monitoring alerts trigger for elevated API error rates (>40%). On-call engineer acknowledges.\n*   **09:18** – Application logs show a spike in `LockWaitTimeoutException` errors. Dashboard confirms degradation of checkout and user profile services.\n*   **09:25** – Incident Commander declares a SEV-2. War room convenes.\n*   **09:40** – Database diagnostics identify a single, long-running migration transaction holding an exclusive lock on `customer_orders`. Over 150 queries are blocked in the queue.\n*   **10:05** – Decision made to kill the migration process. Rollback procedure initiated.\n*   **10:25** – Migration rollback completes. Table locks are released.\n*   **10:30** – Services begin automatic recovery. Error rates start to decline.\n*   **11:22** – All systems verified as healthy. Monitoring returns to baseline. Incident resolved.\n\n## 3. Root Cause Analysis\n\nThe outage was caused by a **schema migration that required an exclusive lock on a large, critical table during peak business hours**. The migration was not flagged as high-risk in the deployment plan, and the procedure did not account for the table's transaction volume.\n\n### Primary Cause:\nA `ALTER TABLE ... ADD COLUMN` operation was executed using a standard migration tool that, for our database version, requires an exclusive table lock for the duration of the operation. The `customer_orders` table contains over 50 million rows and serves as the backbone for real-time checkout and reporting services. The lock duration (~2 hours) exceeded the application's configured query timeout of 30 seconds, causing all subsequent transactions to fail.\n\n### Contributing Factors:\n1.  **Insufficient Pre-Migration Analysis:** The migration ticket did not require an analysis of row count, lock behavior, or peak traffic windows for the affected table.\n2.  **Gap in Staging Environment Parity:** The staging database is a fraction of the size of production. The migration completed in seconds during testing, failing to surface the locking behavior that would occur on a production-scale dataset.\n3.  **Missing Procedural Safeguards:** The change management process lacked a mandatory checkpoint to confirm the use of non-blocking migration strategies (e.g., `ALTER TABLE` with `ALGORITHM=INPLACE` or using a shadow table pattern) for tables above a certain size or traffic threshold.\n4.  **Delayed Detection:** While alerts fired for API errors, there was no specific, high-priority alert for long-running database locks or a growing query queue, delaying diagnosis by ~25 minutes.\n\n## 4. Impact\n\n### Customer Impact:\n*   **500 customers** actively using the platform during the outage were affected.\n*   **Core user journeys broken:** Customers could not complete purchases, view order history, or update account details.\n*   **~1,200 failed transactions** recorded.\n*   Increased volume to customer support channels.\n\n### Business & Technical Impact:\n*   **Revenue Impact:** Estimated $18,000 in lost sales.\n*   **Brand Impact:** Social media sentiment analysis showed a temporary increase in negative mentions.\n*   **Engineering Cost:** ~35 person-hours spent on detection, mitigation, and recovery.\n\n## 5. Action Items\n\n| ID | Action Item | Owner | Target Date | Status |\n| :--- | :--- | :--- | :--- | :--- |\n| **1** | **Update Change Management Policy:** Require a mandatory risk assessment for all database migrations, including analysis of table size, row count, traffic patterns, and lock behavior. | Head of Platform Eng | Nov 10, 2023 | Open |\n| **2** | **Implement Safe Migration Standards:** Document and enforce the use of non-blocking migration patterns (online schema change tools, shadow tables) for any table > 1M rows or identified as \"critical.\" | Database Eng Lead | Nov 17, 2023 | Open |\n| **3** | **Enhance Monitoring:** Create a dedicated, high-severity alert for long-running database locks (> 60 seconds) and a growing query queue on critical tables. | SRE Team | Nov 3, 2023 | Open |\n| **4** | **Improve Staging Parity:** Create a process to periodically sync anonymized production data volumes for critical tables to staging to better simulate migration performance. | Data Platform Team | Dec 1, 2023 | Open |\n| **5** | **Conduct Blameless Review Session:** Share learnings from this incident across the engineering organization to reinforce a culture of blameless improvement. | Engineering Director | Nov 1, 2023 | Scheduled |\n\n## 6. Lessons Learned\n\n*   **The scale of data matters.** A migration's behavior in a small staging environment is not a reliable predictor of its performance in production. Our processes must account for data volume explicitly.\n*   **Understanding database engine behavior is critical.** We assumed the migration tool would handle locking optimally; we now know we must verify the exact `ALTER` behavior for our specific database version.\n*   **Detection can be optimized.** Our monitoring caught the symptom (API errors) but not the proximate cause (table locks). Adding more specific database health signals will accelerate future diagnosis.\n*   **Blameless culture works.** Teams collaborated effectively under pressure to resolve the issue and are now focused on systemic fixes rather than individual blame.\n\n---\n\n**Conclusion:** This incident was a result of process gaps in our database change management procedures, not individual error. By implementing the outlined action items, we will significantly reduce the risk of a similar outage and improve our resilience when executing necessary infrastructure changes.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (6842 chars)",
+          "✓ Content length: 6842 ≥ 300"
+        ]
+      }
+    },
+    {
+      "id": "personality-poirot-empty",
+      "status": "ok",
+      "elapsed": 12466,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, mon ami, the case is fresh and untouched! We have no workflow on the board yet—the little grey cells are eager for a new investigation. Let's crack a case by building something, shall we?",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (191 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "data-ml-pipeline",
+      "status": "ok",
+      "elapsed": 128570,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Build me an ML model deployment pipeline. Steps: data collection, feature engineering, model training, evaluation, A/B testing, deployment to production, monitoring for drift. We use Python, scikit-learn, and AWS SageMaker.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building ML deployment pipeline with SageMaker.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Pipeline Trigger",
+              "category": "trigger",
+              "description": "Initiates the ML pipeline on new data arrival or manual request",
+              "content": "Configure AWS CloudWatch Events to monitor S3 buckets for new data uploads (e.g., CSV, Parquet files) or set up API Gateway for manual triggers. Define event patterns filtering for 's3:ObjectCreated:*' events with specific prefixes. Target SageMaker Pipelines for execution, passing payload with data paths, model parameters, and deployment flags. Implement IAM roles with SageMakerFullAccess and S3ReadOnly policies for secure access. Steps: 1. Create S3 input bucket and set up event notifications. 2. Use AWS CLI or boto3 to create CloudWatch rule with SageMaker Pipeline as target. 3. Specify input format and validation in payload (e.g., schema checks). 4. Handle failures with dead-letter queues and SNS alerts for monitoring. Tools: AWS CloudWatch, SageMaker SDK, Python boto3. Ensure retry logic and logging to CloudTrail for audit trails."
+            },
+            {
+              "label": "Data Collection & Validation",
+              "category": "action",
+              "description": "Ingests and validates raw data from sources, ensuring quality for downstream steps",
+              "content": "Extract data from S3 or databases using Python pandas or AWS Glue. Perform validation: check for missing values, data types, and schema consistency with predefined rules (e.g., using Great Expectations library). Clean data by handling outliers and duplicates. Store validated data in S3 with versioning (e.g., timestamped folders). Steps: 1. Use boto3 to read data from S3 trigger payload. 2. Apply validation scripts with scikit-learn for statistical checks. 3. Log validation results to CloudWatch for tracking. 4. If validation fails, send alerts and halt pipeline. Tools: Python, pandas, scikit-learn for preprocessing, AWS S3 for storage. Include error handling with retries and fallback data sources."
+            },
+            {
+              "label": "Feature Engineering",
+              "category": "action",
+              "description": "Transforms validated raw data into features suitable for model training",
+              "content": "Engineer features using scikit-learn transformers (e.g., StandardScaler, OneHotEncoder) and custom Python functions. Handle categorical encoding, normalization, and feature selection based on correlation analysis. Save feature sets to S3 for reproducibility. Steps: 1. Load validated data from S3. 2. Define feature pipeline with scikit-learn Pipeline class. 3. Apply transformations and save intermediate artifacts. 4. Use feature importance scores to select top features. Tools: scikit-learn, numpy, joblib for serialization. Ensure feature versioning and documentation in JSON files. Include unit tests for transformation logic."
+            },
+            {
+              "label": "Model Training",
+              "category": "action",
+              "description": "Trains machine learning models using AWS SageMaker with hyperparameter optimization",
+              "content": "Set up SageMaker training jobs with scikit-learn containers. Define model algorithm (e.g., RandomForest, XGBoost) and hyperparameters for tuning using SageMaker HyperparameterTuning. Use feature data from S3 as input, and save trained models to S3 model registry. Steps: 1. Configure SageMaker estimator with instance types (e.g., ml.m5.xlarge). 2. Launch training job with cross-validation splits. 3. Monitor job progress with CloudWatch metrics. 4. Save best model to SageMaker Model Registry with metadata. Tools: AWS SageMaker SDK, scikit-learn, matplotlib for visualizations. Include cost optimization by using spot instances and early stopping."
+            },
+            {
+              "label": "Model Evaluation",
+              "category": "test",
+              "description": "Evaluates trained model performance against predefined metrics and thresholds",
+              "content": "Test model on held-out validation dataset using scikit-learn metrics (accuracy, precision, recall, F1-score). Compare against baseline models and set pass/fail criteria (e.g., accuracy > 0.85). Generate evaluation reports with confusion matrices and ROC curves. Steps: 1. Load trained model from S3. 2. Run predictions on test data. 3. Calculate metrics and log to SageMaker Experiments. 4. If metrics fail, trigger retraining or feature refinement. Tools: scikit-learn, SageMaker Debugger for insights. Define SLA for evaluation time and automate reports in PDF format."
+            },
+            {
+              "label": "A/B Testing",
+              "category": "test",
+              "description": "Conducts canary deployment to test model performance in a production-like environment",
+              "content": "Set up SageMaker endpoint with two variants: new model (variant A) and previous model (variant B). Split live traffic (e.g., 10% to A, 90% to B) using SageMaker routing. Monitor key metrics like latency, error rates, and business KPIs over a defined period (e.g., 7 days). Steps: 1. Deploy models to SageMaker endpoints with aliases. 2. Configure traffic splitting via SDK or console. 3. Collect metrics with CloudWatch and SageMaker Model Monitor. 4. Analyze results; if A outperforms B, proceed to full deployment. Tools: AWS SageMaker, Python for analysis. Include rollback plan if A fails."
+            },
+            {
+              "label": "Deployment to Production",
+              "category": "action",
+              "description": "Deploys the approved model to a full-scale SageMaker production endpoint",
+              "content": "Update SageMaker endpoint to use the new model variant with 100% traffic. Configure auto-scaling based on load (min/max instances). Set up health checks and integration with API Gateway for external access. Steps: 1. Retrieve model from SageMaker Model Registry. 2. Create or update endpoint with desired instance type (e.g., ml.c5.large). 3. Test endpoint with sample requests for latency and accuracy. 4. Document deployment in runbooks and notify stakeholders. Tools: AWS SageMaker SDK, boto3, CloudFormation for infrastructure as code. Ensure blue-green deployment strategy for zero downtime."
+            },
+            {
+              "label": "Monitoring & Drift Detection",
+              "category": "action",
+              "description": "Continuously monitors the production model for data drift and performance degradation",
+              "content": "Use SageMaker Model Monitor to track data quality (e.g., feature distribution shifts) and model performance (e.g., prediction drift). Set up CloudWatch alarms for thresholds (e.g., drift score > 0.1). Automate retraining triggers if drift is detected. Steps: 1. Configure Model Monitor job to run daily on endpoint data. 2. Analyze reports and visualize trends with Amazon QuickSight. 3. Send alerts via SNS for immediate action. 4. Maintain dashboards for real-time visibility. Tools: AWS SageMaker Model Monitor, CloudWatch, Python for custom metrics. Include periodic audits and compliance checks."
+            },
+            {
+              "label": "Production Model Endpoint",
+              "category": "output",
+              "description": "Live SageMaker endpoint serving predictions, with associated metrics and access details",
+              "content": "Final deliverable: a fully operational SageMaker endpoint with secure API access (via IAM or API keys). Provide endpoint URL, documentation for integration, and performance dashboards. Track success metrics: uptime (target 99.9%), average latency (<100ms), and prediction accuracy. Steps: 1. Generate endpoint documentation with sample code in Python. 2. Set up logging to S3 for all predictions for audit. 3. Monitor cost usage and optimize with reserved instances. 4. Schedule regular reviews and updates based on monitoring feedback. Tools: AWS SageMaker, API Gateway, CloudWatch dashboards. Ensure compliance with data privacy policies."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "validates"
+            },
+            {
+              "from": 4,
+              "to": 3,
+              "label": "refines"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "validates"
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "label": "refines"
+            },
+            {
+              "from": 6,
+              "to": 8,
+              "label": "outputs"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "triggers"
+            },
+            {
+              "from": 7,
+              "to": 0,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 110,
+        "maxScore": 110,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 9 (min: 5)",
+          "✓ Node count: 9 ≤ 10",
+          "✓ Has \"test\" category",
+          "✓ All 11 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 648c, no thin nodes",
+          "✓ Architecture covers: feature, train, evaluat, deploy, drift",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (11 edges, 9 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "logistics-international-shipping",
+      "status": "ok",
+      "elapsed": 118497,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Build a workflow for managing international container shipping from Shanghai to Los Angeles. Steps: booking with carrier, container loading, customs declaration (both origin and destination), bill of lading, ocean transit tracking, port arrival, customs clearance, last-mile delivery. We ship 20 containers per month and need to handle delays and customs holds.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mon ami, the puzzle of container shipping from Shanghai to Los Angeles is solved! Voilà, a workflow that tracks every clue from booking to delivery, with my little grey cells ensuring no delay or customs hold goes unnoticed. Très intéressant!",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Shipping Order Initiation",
+              "category": "trigger",
+              "description": "Trigger node for starting the international container shipment process upon client request",
+              "content": "Upon receiving a shipment request, initiate the workflow by gathering all necessary details: verify cargo specifications (weight, dimensions, hazardous materials status), confirm origin (Shanghai) and destination (Los Angeles), and agree on incoterms. Use tools like CRM systems (e.g., Salesforce) or freight management platforms to log the order. For handling 20 containers per month, implement batch processing: create a standardized intake form, assign unique shipment IDs, and set up automated alerts for missing information. Steps include: 1. Client submits request via portal or email. 2. Validate cargo details against regulatory requirements. 3. Confirm shipping dates and carrier availability. 4. Initiate communication with preferred carriers via APIs or direct contact. Checklist: Ensure all documents (commercial invoice, packing list) are prepared, and risk assessments for delays are noted upfront."
+            },
+            {
+              "label": "Pre-Shipment Logistics",
+              "category": "action",
+              "description": "Booking with carrier, container loading, and origin customs declaration in Shanghai",
+              "content": "Execute carrier booking by comparing rates and schedules using tools like Flexport or freight forwarding software. Steps: 1. Request quotes from multiple carriers (e.g., Maersk, COSCO) via EDI or online platforms. 2. Finalize booking and obtain booking confirmation. 3. Arrange container loading at Shanghai port or depot: coordinate pickup times, ensure proper stuffing with cargo securement, and seal containers with tamper-evident seals. 4. Complete export customs declaration through China's Electronic Port System, submitting documents like the export declaration form and certificate of origin. Use compliance checklists to avoid holds: verify HS codes, ensure no restricted items. Tools: Customs declaration software (e.g., China Customs Single Window), GPS for container tracking to loading site. For 20 containers, schedule weekly batches to optimize logistics."
+            },
+            {
+              "label": "Shipping Documentation",
+              "category": "action",
+              "description": "Creation and issuance of bill of lading and other transit documents",
+              "content": "Generate the bill of lading (B/L) as the primary shipping document. Steps: 1. Input shipment details into carrier's B/L system or use electronic B/L platforms like Bolero. 2. Verify accuracy against booking confirmation: shipper and consignee details, cargo description, voyage number. 3. Obtain approval from the shipping line and issue the B/L electronically to all parties (shipper, consignee, bank). 4. Prepare additional documents: commercial invoice, packing list, and any certificates required. Tools: Document management systems (e.g., Adobe Sign for e-signatures), EDI for data exchange. Checklist: Ensure B/L is clean (no clauses), and all copies are distributed. For efficiency, automate data pulls from pre-shipment logs to reduce errors."
+            },
+            {
+              "label": "Customs and Compliance Oversight",
+              "category": "policy",
+              "description": "Policy node monitoring customs declarations and handling potential holds at both origin and destination",
+              "content": "Continuously monitor customs compliance to prevent delays and holds. Steps: 1. Use compliance software (e.g., Amber Road or Integration Point) to check declarations for accuracy in HS codes, values, and origins. 2. Set up alerts for red flags like misdeclared goods or missing certificates. 3. For origin customs in Shanghai, ensure adherence to China export regulations; for destination in Los Angeles, pre-validate data against US CBP requirements via the ACE system. 4. Develop contingency plans: maintain communication channels with customs brokers, have backup documentation ready. Criteria: Regular audits every shipment, update risk profiles based on past incidents. For 20 containers/month, implement weekly compliance reviews and training on regulatory changes."
+            },
+            {
+              "label": "Ocean Transit Tracking",
+              "category": "action",
+              "description": "Real-time monitoring of container movement across the Pacific, handling delays",
+              "content": "Track containers in transit to manage delays proactively. Steps: 1. Integrate with carrier APIs (e.g., Maersk's remote container management) or use tracking platforms like ShipMatrix for real-time GPS and AIS data. 2. Set up automated alerts for deviations from scheduled ETAs, weather disruptions, or port congestion. 3. Daily status updates: log positions, communicate with carriers for ETA adjustments, and notify stakeholders via dashboards. 4. Handle delays: investigate causes (e.g., mechanical issues), coordinate alternative routes if needed, and update documentation. Tools: Cloud-based tracking software, communication tools like Slack for alerts. For 20 containers, use aggregated views to spot trends and optimize future shipments."
+            },
+            {
+              "label": "Destination Port Operations",
+              "category": "action",
+              "description": "Management of port arrival, customs clearance, and handling of holds in Los Angeles",
+              "content": "Execute port arrival and customs clearance upon ship docking in Los Angeles. Steps: 1. Submit import customs declaration to US CBP via the ACE system, including documents like B/L, invoice, and packing list. 2. Coordinate with customs broker to pay duties and taxes, using tools like customs brokerage software (e.g., Descartes). 3. Arrange terminal handling: schedule container pickup with port authorities, ensure cargo inspection if required. 4. Handle customs holds: if flagged, provide additional documentation (e.g., proof of origin), liaise with CBP officers, and log incidents for analysis. Checklist: Verify all data matches origin declarations, monitor clearance status daily. For efficiency, pre-clear containers where possible to reduce dwell time."
+            },
+            {
+              "label": "Last-Mile Delivery",
+              "category": "action",
+              "description": "Final transportation from port to consignee's location",
+              "content": "Manage the delivery from Los Angeles port to the final destination. Steps: 1. Arrange drayage services with local trucking companies, using transportation management systems (e.g., Oracle TMS) to book and track. 2. Schedule delivery appointments with consignee, considering access hours and unloading requirements. 3. Execute delivery: ensure cargo integrity upon unloading, obtain proof of delivery (POD) with signatures and photos. 4. Handle exceptions: if damage occurs, document it, initiate claims with carriers, and update records. Tools: GPS tracking for trucks, mobile apps for driver communication. For 20 containers, optimize routes to reduce costs and ensure timely deliveries, with weekly performance reviews."
+            },
+            {
+              "label": "Shipment Confirmation and Analytics",
+              "category": "output",
+              "description": "Final reporting and closure of the shipment, with insights for improvement",
+              "content": "Produce final outputs including delivery confirmation and analytics for continuous improvement. Steps: 1. Compile all documentation: POD, customs clearance certificates, and incident reports into a digital archive. 2. Generate performance metrics: calculate transit times (from booking to delivery), cost analysis per container, delay frequency, and customs hold resolution times. 3. Use analytics tools like Tableau or Power BI to create dashboards highlighting trends and areas for optimization. 4. Conduct a post-shipment review: gather feedback from stakeholders, update workflows based on lessons learned, and share reports with management. For 20 containers/month, aggregate data monthly to identify patterns and adjust strategies for future shipments."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "label": "triggers"
+            },
+            {
+              "from": 3,
+              "to": 1,
+              "label": "monitors"
+            },
+            {
+              "from": 3,
+              "to": 5,
+              "label": "monitors"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "triggers"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "drives"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "outputs"
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 110,
+        "maxScore": 110,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 8 (min: 5)",
+          "✓ Node count: 8 ≤ 10",
+          "✓ Has \"policy\" category",
+          "✓ All 10 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 786c, no thin nodes",
+          "✓ Architecture covers: customs, container, transit, delivery",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (10 edges, 8 nodes)"
+        ]
+      }
+    }
+  ]
+}

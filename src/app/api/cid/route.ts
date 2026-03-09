@@ -59,6 +59,19 @@ function validateWorkflowQuality(
     }
   }
 
+  // terminalNonOutput: leaf nodes (no outgoing edges) that aren't category "output"
+  const outgoingSet = new Set<number>();
+  for (const e of edges) outgoingSet.add(e.from);
+  for (let i = 0; i < nodes.length; i++) {
+    if (!outgoingSet.has(i) && nodes[i].category !== 'output' && nodes[i].category !== 'input' && nodes.length > 1) {
+      issues.push({
+        code: 'terminal-non-output',
+        message: `Terminal node "${nodes[i].label || 'Untitled'}" (index ${i}) has no outgoing edges but category "${nodes[i].category}" instead of "output". Change it to "output".`,
+        penalty: -15,
+      });
+    }
+  }
+
   // orphanNodes: nodes with 0 edges
   const connectedSet = new Set<number>();
   for (const e of edges) {

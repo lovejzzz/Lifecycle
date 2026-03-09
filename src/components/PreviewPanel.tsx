@@ -142,18 +142,31 @@ export default function PreviewPanel() {
         .map(id => store.nodes.find(n => n.id === id))
         .filter((n): n is NonNullable<typeof n> => !!n && !!n.data.executionResult);
 
-      // Priority: output node > last cid node > last node with result
-      const outNode = executedNodes.find(n => n.data.category === 'output');
+      // Collect ALL output nodes (supports multi-output workflows)
+      const outputNodes = executedNodes.filter(n => n.data.category === 'output');
       const lastCidNode = [...executedNodes].reverse().find(n => n.data.category === 'cid');
-      const bestNode = outNode || lastCidNode || executedNodes[executedNodes.length - 1];
-      let botResponse = bestNode?.data.executionResult || '';
 
-      // If the output node's result is very long (verbose passthrough from policy/action nodes),
-      // prefer the last cid node's cleaner response
-      if (outNode && lastCidNode && outNode.data.executionResult
-        && lastCidNode.data.executionResult
-        && outNode.data.executionResult.length > lastCidNode.data.executionResult.length * 3) {
-        botResponse = lastCidNode.data.executionResult;
+      let botResponse = '';
+
+      if (outputNodes.length > 1) {
+        // Multi-output workflow: show each output with its label as header
+        botResponse = outputNodes.map(n => {
+          const result = n.data.executionResult || '(no output)';
+          return `### ${n.data.label}\n\n${result}`;
+        }).join('\n\n---\n\n');
+      } else if (outputNodes.length === 1) {
+        const outNode = outputNodes[0];
+        botResponse = outNode.data.executionResult || '';
+        // If output is verbose passthrough, prefer last CID node's cleaner response
+        if (lastCidNode && outNode.data.executionResult
+          && lastCidNode.data.executionResult
+          && outNode.data.executionResult.length > lastCidNode.data.executionResult.length * 3) {
+          botResponse = lastCidNode.data.executionResult;
+        }
+      } else {
+        // No output nodes — fall back to last CID node or last executed node
+        const bestNode = lastCidNode || executedNodes[executedNodes.length - 1];
+        botResponse = bestNode?.data.executionResult || '';
       }
 
       if (!botResponse && errors.length > 0) {

@@ -66,7 +66,7 @@ CRITICAL RULES:
   - "informs" = ONLY for truly optional/supplementary context (e.g. a dashboard that provides visibility but isn't required). NEVER use "informs" for sequential workflow steps — use "drives" or "feeds" instead. If you're unsure, use "drives".
   - "updates" = modifying existing state
   Do NOT use other labels.
-- Every workflow MUST start with an "input" or "trigger" node and end with an "output" node. The last node MUST have category "output" — even if it produces a document, report, or artifact, use "output" as the category for the final deliverable. Do not use "action", "state", or "artifact" as the last node.
+- Every workflow MUST start with an "input" or "trigger" node. Every terminal node (no outgoing edges) MUST have category "output" — this is a hard requirement. NEVER leave terminal nodes as "action", "state", or any non-output category. MULTIPLE OUTPUT NODES are supported and encouraged when the user requests multiple distinct deliverables (e.g. "lesson plans AND rubrics AND slides" = 3 output nodes) OR when the workflow has multiple terminal paths (e.g. "cancel order" and "ship order" are both outputs). Each output node should represent ONE deliverable or terminal state. CRITICAL FAN-OUT PATTERN for multi-output: a shared processing/analysis node MUST have PARALLEL edges going to each generator node simultaneously (same "from" index, different "to" indices). Each generator then feeds its own output node. Example for 3 deliverables: Analysis→GenA, Analysis→GenB, Analysis→GenC (3 edges from same node), then GenA→OutputA, GenB→OutputB, GenC→OutputC. NEVER chain generators sequentially (GenA→GenB→GenC is WRONG for independent deliverables). Do not collapse different deliverable types into a single output node. SELF-CHECK: Before returning, verify every leaf node (no outgoing edges) has category "output".
 - Design workflows with 5-10 nodes for optimal visual clarity. HARD LIMIT: never exceed 10 nodes. If the user lists many items (e.g. "research, scripting, filming, editing, thumbnail, SEO, upload, promotion"), group related items into single nodes (e.g. combine "thumbnail + SEO" into "Visual Assets & SEO Optimization"). Each node should represent a PHASE, not a single task.
 - IMPORTANT — WORKFLOW ARCHITECTURE: Do NOT build purely linear chains. Real workflows have:
   1. FEEDBACK LOOPS: When a review/test step can fail, add an edge back to a previous step (e.g. "Review → rejected → back to Implementation"). Use "refines" for feedback edges.
@@ -89,21 +89,25 @@ When the user asks to MODIFY, EDIT, TWEAK, REVISE, ADD TO, REMOVE FROM, SPEED UP
   "message": "Your response",
   "workflow": null,
   "modifications": {
-    "update_nodes": [{ "label": "Exact Node Name", "changes": { "category": "new_cat", "description": "new desc", "content": "new content", "label": "New Name" } }],
+    "update_nodes": [{ "label": "Exact Node Name", "changes": { "category": "new_cat", "description": "new desc", "content": "new content", "label": "New Name", "status": "active", "sections": [{"title": "Section 1", "content": "...", "status": "active"}] } }],
     "add_nodes": [{ "label": "New Node", "category": "action", "description": "...", "content": "300+ chars...", "after": "Existing Node Name" }],
     "remove_nodes": ["Node Name To Remove"],
     "add_edges": [{ "from_label": "Source Node", "to_label": "Target Node", "label": "drives" }],
-    "remove_edges": [{ "from_label": "Source Node", "to_label": "Target Node" }]
+    "remove_edges": [{ "from_label": "Source Node", "to_label": "Target Node" }],
+    "merge_nodes": [{ "keep": "Node To Keep", "remove": "Node To Remove", "new_label": "Merged Name", "new_content": "Combined 300+ char content" }]
   }
 }
 Rules for modifications:
-- Use "update_nodes" to change ANY property of existing nodes: category, label, description, content, or sections.
+- You have FULL POWER over the workflow. You can change ANY property of ANY node: category, label, description, content, status, sections, or anything else the user asks for.
+- Use "update_nodes" to change properties of existing nodes. Include ALL fields you want to change in "changes" — omit only unchanged fields.
 - Use "add_nodes" to insert new nodes. The "after" field names the node it should be placed after in the flow. Also add edges to connect it.
 - Use "remove_nodes" to delete nodes by their exact label. Connected edges are auto-removed.
-- Only include the fields that are changing in "changes" — omit unchanged fields.
-- You can combine modifications: e.g. add a node AND update another AND add edges in one response.
+- Use "merge_nodes" to combine two nodes into one (for optimization). The "keep" node is updated with new content; the "remove" node is deleted and its edges are reconnected.
+- Use "add_edges" and "remove_edges" to restructure the flow — add parallel branches, feedback loops, or remove unnecessary connections.
+- You can combine ANY modifications in one response: update + add + remove + merge + edge changes.
 - If the user asks to rebuild from scratch, use "workflow" instead of "modifications".
-- Match node labels EXACTLY as they appear in the CURRENT GRAPH section below.`;
+- Match node labels EXACTLY as they appear in the CURRENT GRAPH section below.
+- The user may also ask you to save the workflow as a project. Tell them to use the "save <name>" command in chat to save, and "load <name>" to restore it later.`;
 
 // ─── Node Content Templates (shared across agents) ──────────────────────────
 const NODE_CONTENT_GUIDE = `Structure each node's content by category:

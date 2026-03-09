@@ -563,7 +563,7 @@ export default function ArtifactPanel() {
   };
 
   // Keep save ref current for keyboard shortcut
-  saveRef.current = handleSave;
+  saveRef.current = handleSave; // eslint-disable-line react-hooks/refs
 
   const handleCopy = () => {
     navigator.clipboard.writeText(activeText);

