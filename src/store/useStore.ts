@@ -37,7 +37,30 @@ import {
 import type { ProjectMeta } from '@/lib/storage';
 import type { Optimization } from '@/lib/optimizer';
 
-type Snapshot = { nodes: Node<NodeData>[]; edges: Edge[] };
+/**
+ * Operation-based undo — stores only the changed nodes/edges, not the full state.
+ * Each operation is invertible: undo applies `before`, redo applies `after`.
+ */
+interface UndoOperation {
+  /** Nodes that existed before (for undo). Keyed by node ID. */
+  beforeNodes: Map<string, Node<NodeData>>;
+  /** Nodes that exist after (for redo). Keyed by node ID. */
+  afterNodes: Map<string, Node<NodeData>>;
+  /** Edges that existed before. Keyed by edge ID. */
+  beforeEdges: Map<string, Edge>;
+  /** Edges that exist after. Keyed by edge ID. */
+  afterEdges: Map<string, Edge>;
+  /** IDs of nodes that were deleted (present before, absent after). */
+  deletedNodeIds: string[];
+  /** IDs of nodes that were created (absent before, present after). */
+  createdNodeIds: string[];
+  /** IDs of edges that were deleted. */
+  deletedEdgeIds: string[];
+  /** IDs of edges that were created. */
+  createdEdgeIds: string[];
+  /** Human-readable label for toast. */
+  label?: string;
+}
 
 interface PoirotContext {
   phase: 'idle' | 'interviewing' | 'investigating' | 'revealing';
@@ -68,9 +91,9 @@ interface LifecycleStore {
   poirotContext: PoirotContext;
   handleCardSelect: (cardId: string, cardLabel: string) => void;
 
-  // Undo/Redo
-  history: Snapshot[];
-  future: Snapshot[];
+  // Undo/Redo (operation-based)
+  history: UndoOperation[];
+  future: UndoOperation[];
   pushHistory: () => void;
   undo: () => void;
   redo: () => void;
@@ -1002,7 +1025,185 @@ function buildWelcomeBack(nodes: Node<NodeData>[], edges: Edge[], mode: CIDMode)
   return { id: `wb-${Date.now()}`, role: 'cid' as const, content, timestamp: Date.now() };
 }
 
-const MAX_HISTORY = 30;
+const MAX_HISTORY = 50;
+
+/**
+ * Strip execution results from a node clone (execution results are computed, not user actions).
+ */
+function stripExecutionData(node: Node<NodeData>): Node<NodeData> {
+  if (!node.data.executionResult) return node;
+  return { ...node, data: { ...node.data, executionResult: undefined } };
+}
+
+/**
+ * Compute an UndoOperation by diffing before/after node+edge arrays.
+ * Only changed/created/deleted items are stored — not the full state.
+ */
+function computeUndoOp(
+  beforeNodes: Node<NodeData>[],
+  afterNodes: Node<NodeData>[],
+  beforeEdges: Edge[],
+  afterEdges: Edge[],
+): UndoOperation | null {
+  const bNodeMap = new Map(beforeNodes.map(n => [n.id, stripExecutionData(n)]));
+  const aNodeMap = new Map(afterNodes.map(n => [n.id, stripExecutionData(n)]));
+  const bEdgeMap = new Map(beforeEdges.map(e => [e.id, e]));
+  const aEdgeMap = new Map(afterEdges.map(e => [e.id, e]));
+
+  const changedBeforeNodes = new Map<string, Node<NodeData>>();
+  const changedAfterNodes = new Map<string, Node<NodeData>>();
+  const changedBeforeEdges = new Map<string, Edge>();
+  const changedAfterEdges = new Map<string, Edge>();
+  const deletedNodeIds: string[] = [];
+  const createdNodeIds: string[] = [];
+  const deletedEdgeIds: string[] = [];
+  const createdEdgeIds: string[] = [];
+
+  // Detect modified and deleted nodes
+  for (const [id, bNode] of bNodeMap) {
+    const aNode = aNodeMap.get(id);
+    if (!aNode) {
+      deletedNodeIds.push(id);
+      changedBeforeNodes.set(id, bNode);
+    } else if (JSON.stringify(bNode.data) !== JSON.stringify(aNode.data) ||
+               bNode.position.x !== aNode.position.x || bNode.position.y !== aNode.position.y) {
+      changedBeforeNodes.set(id, bNode);
+      changedAfterNodes.set(id, aNode);
+    }
+  }
+  // Detect created nodes
+  for (const [id, aNode] of aNodeMap) {
+    if (!bNodeMap.has(id)) {
+      createdNodeIds.push(id);
+      changedAfterNodes.set(id, aNode);
+    }
+  }
+  // Detect modified and deleted edges
+  for (const [id, bEdge] of bEdgeMap) {
+    const aEdge = aEdgeMap.get(id);
+    if (!aEdge) {
+      deletedEdgeIds.push(id);
+      changedBeforeEdges.set(id, bEdge);
+    } else if (JSON.stringify(bEdge) !== JSON.stringify(aEdge)) {
+      changedBeforeEdges.set(id, bEdge);
+      changedAfterEdges.set(id, aEdge);
+    }
+  }
+  // Detect created edges
+  for (const [id, aEdge] of aEdgeMap) {
+    if (!bEdgeMap.has(id)) {
+      createdEdgeIds.push(id);
+      changedAfterEdges.set(id, aEdge);
+    }
+  }
+
+  // No changes detected — skip
+  const totalChanges = changedBeforeNodes.size + changedAfterNodes.size +
+    changedBeforeEdges.size + changedAfterEdges.size;
+  if (totalChanges === 0 && deletedNodeIds.length === 0 && createdNodeIds.length === 0 &&
+      deletedEdgeIds.length === 0 && createdEdgeIds.length === 0) {
+    return null;
+  }
+
+  return {
+    beforeNodes: changedBeforeNodes,
+    afterNodes: changedAfterNodes,
+    beforeEdges: changedBeforeEdges,
+    afterEdges: changedAfterEdges,
+    deletedNodeIds,
+    createdNodeIds,
+    deletedEdgeIds,
+    createdEdgeIds,
+  };
+}
+
+/**
+ * Apply an undo operation to the current nodes/edges (going backward).
+ */
+function applyUndo(op: UndoOperation, nodes: Node<NodeData>[], edges: Edge[]): { nodes: Node<NodeData>[]; edges: Edge[] } {
+  let newNodes = [...nodes];
+  let newEdges = [...edges];
+
+  // Remove created nodes (they didn't exist before)
+  if (op.createdNodeIds.length > 0) {
+    const created = new Set(op.createdNodeIds);
+    newNodes = newNodes.filter(n => !created.has(n.id));
+  }
+  // Restore deleted nodes
+  for (const id of op.deletedNodeIds) {
+    const before = op.beforeNodes.get(id);
+    if (before) newNodes.push(before);
+  }
+  // Revert modified nodes to their before state
+  for (const [id, beforeNode] of op.beforeNodes) {
+    if (op.deletedNodeIds.includes(id)) continue; // already handled
+    const idx = newNodes.findIndex(n => n.id === id);
+    if (idx >= 0) newNodes[idx] = { ...newNodes[idx], ...beforeNode, data: { ...newNodes[idx].data, ...beforeNode.data } };
+  }
+
+  // Remove created edges
+  if (op.createdEdgeIds.length > 0) {
+    const created = new Set(op.createdEdgeIds);
+    newEdges = newEdges.filter(e => !created.has(e.id));
+  }
+  // Restore deleted edges
+  for (const id of op.deletedEdgeIds) {
+    const before = op.beforeEdges.get(id);
+    if (before) newEdges.push(before);
+  }
+  // Revert modified edges
+  for (const [id, beforeEdge] of op.beforeEdges) {
+    if (op.deletedEdgeIds.includes(id)) continue;
+    const idx = newEdges.findIndex(e => e.id === id);
+    if (idx >= 0) newEdges[idx] = beforeEdge;
+  }
+
+  return { nodes: newNodes, edges: newEdges };
+}
+
+/**
+ * Apply a redo operation (going forward).
+ */
+function applyRedo(op: UndoOperation, nodes: Node<NodeData>[], edges: Edge[]): { nodes: Node<NodeData>[]; edges: Edge[] } {
+  let newNodes = [...nodes];
+  let newEdges = [...edges];
+
+  // Remove deleted nodes (they don't exist after)
+  if (op.deletedNodeIds.length > 0) {
+    const deleted = new Set(op.deletedNodeIds);
+    newNodes = newNodes.filter(n => !deleted.has(n.id));
+  }
+  // Add created nodes
+  for (const id of op.createdNodeIds) {
+    const after = op.afterNodes.get(id);
+    if (after) newNodes.push(after);
+  }
+  // Apply modified nodes to their after state
+  for (const [id, afterNode] of op.afterNodes) {
+    if (op.createdNodeIds.includes(id)) continue;
+    const idx = newNodes.findIndex(n => n.id === id);
+    if (idx >= 0) newNodes[idx] = { ...newNodes[idx], ...afterNode, data: { ...newNodes[idx].data, ...afterNode.data } };
+  }
+
+  // Remove deleted edges
+  if (op.deletedEdgeIds.length > 0) {
+    const deleted = new Set(op.deletedEdgeIds);
+    newEdges = newEdges.filter(e => !deleted.has(e.id));
+  }
+  // Add created edges
+  for (const id of op.createdEdgeIds) {
+    const after = op.afterEdges.get(id);
+    if (after) newEdges.push(after);
+  }
+  // Apply modified edges
+  for (const [id, afterEdge] of op.afterEdges) {
+    if (op.createdEdgeIds.includes(id)) continue;
+    const idx = newEdges.findIndex(e => e.id === id);
+    if (idx >= 0) newEdges[idx] = afterEdge;
+  }
+
+  return { nodes: newNodes, edges: newEdges };
+}
 
 export const useLifecycleStore = create<LifecycleStore>((set, get) => ({
   nodes: persisted?.nodes ?? [],
@@ -1753,56 +1954,67 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     });
   },
 
-  // Undo/Redo
+  // Undo/Redo — operation-based (stores only changed nodes/edges, not full snapshots)
   history: [],
   future: [],
 
-  pushHistory: () =>
-    set((s) => ({
-      history: [...s.history.slice(-(MAX_HISTORY - 1)), { nodes: s.nodes, edges: s.edges }],
-      future: [],
-    })),
+  pushHistory: () => {
+    // Capture a "before" snapshot. A microtask will compute the diff after the mutation.
+    const before = { nodes: structuredClone(get().nodes), edges: structuredClone(get().edges) };
+    // Use queueMicrotask so the actual mutation happens first, then we diff
+    queueMicrotask(() => {
+      const after = get();
+      const op = computeUndoOp(before.nodes, after.nodes, before.edges, after.edges);
+      if (!op) return; // no changes detected
+      set((s) => ({
+        history: [...s.history.slice(-(MAX_HISTORY - 1)), op],
+        future: [],
+      }));
+    });
+  },
 
   undo: () => {
     const s = get();
     if (s.history.length === 0) return;
-    const prev = s.history[s.history.length - 1];
-    const nodeDiff = prev.nodes.length - s.nodes.length;
-    const edgeDiff = prev.edges.length - s.edges.length;
+    const op = s.history[s.history.length - 1];
+    const result = applyUndo(op, s.nodes, s.edges);
     set({
-      nodes: prev.nodes,
-      edges: prev.edges,
+      nodes: result.nodes,
+      edges: result.edges,
       history: s.history.slice(0, -1),
-      future: [{ nodes: s.nodes, edges: s.edges }, ...s.future],
+      future: [op, ...s.future],
     });
-    saveToStorage({ nodes: prev.nodes, edges: prev.edges, events: s.events, messages: s.messages });
-    // Diff toast
+    saveToStorage({ nodes: result.nodes, edges: result.edges, events: s.events, messages: s.messages });
+    // Build descriptive toast
     const parts: string[] = [];
-    if (nodeDiff > 0) parts.push(`+${nodeDiff} node${nodeDiff > 1 ? 's' : ''}`);
-    if (nodeDiff < 0) parts.push(`${nodeDiff} node${nodeDiff < -1 ? 's' : ''}`);
-    if (edgeDiff > 0) parts.push(`+${edgeDiff} edge${edgeDiff > 1 ? 's' : ''}`);
-    if (edgeDiff < 0) parts.push(`${edgeDiff} edge${edgeDiff < -1 ? 's' : ''}`);
+    if (op.createdNodeIds.length > 0) parts.push(`-${op.createdNodeIds.length} node${op.createdNodeIds.length > 1 ? 's' : ''}`);
+    if (op.deletedNodeIds.length > 0) parts.push(`+${op.deletedNodeIds.length} node${op.deletedNodeIds.length > 1 ? 's' : ''}`);
+    const modifiedNodes = [...op.beforeNodes.keys()].filter(id => !op.deletedNodeIds.includes(id));
+    if (modifiedNodes.length > 0) parts.push(`${modifiedNodes.length} node${modifiedNodes.length > 1 ? 's' : ''} reverted`);
+    if (op.createdEdgeIds.length > 0) parts.push(`-${op.createdEdgeIds.length} edge${op.createdEdgeIds.length > 1 ? 's' : ''}`);
+    if (op.deletedEdgeIds.length > 0) parts.push(`+${op.deletedEdgeIds.length} edge${op.deletedEdgeIds.length > 1 ? 's' : ''}`);
     s.addToast(`Undo${parts.length ? ': ' + parts.join(', ') : ''}`, 'info');
   },
 
   redo: () => {
     const s = get();
     if (s.future.length === 0) return;
-    const next = s.future[0];
-    const nodeDiff = next.nodes.length - s.nodes.length;
-    const edgeDiff = next.edges.length - s.edges.length;
+    const op = s.future[0];
+    const result = applyRedo(op, s.nodes, s.edges);
     set({
-      nodes: next.nodes,
-      edges: next.edges,
+      nodes: result.nodes,
+      edges: result.edges,
       future: s.future.slice(1),
-      history: [...s.history, { nodes: s.nodes, edges: s.edges }],
+      history: [...s.history, op],
     });
-    saveToStorage({ nodes: next.nodes, edges: next.edges, events: s.events, messages: s.messages });
+    saveToStorage({ nodes: result.nodes, edges: result.edges, events: s.events, messages: s.messages });
     const parts: string[] = [];
-    if (nodeDiff > 0) parts.push(`+${nodeDiff} node${nodeDiff > 1 ? 's' : ''}`);
-    if (nodeDiff < 0) parts.push(`${nodeDiff} node${nodeDiff < -1 ? 's' : ''}`);
-    if (edgeDiff > 0) parts.push(`+${edgeDiff} edge${edgeDiff > 1 ? 's' : ''}`);
-    if (edgeDiff < 0) parts.push(`${edgeDiff} edge${edgeDiff < -1 ? 's' : ''}`);
+    if (op.createdNodeIds.length > 0) parts.push(`+${op.createdNodeIds.length} node${op.createdNodeIds.length > 1 ? 's' : ''}`);
+    if (op.deletedNodeIds.length > 0) parts.push(`-${op.deletedNodeIds.length} node${op.deletedNodeIds.length > 1 ? 's' : ''}`);
+    const modifiedNodes = [...op.afterNodes.keys()].filter(id => !op.createdNodeIds.includes(id));
+    if (modifiedNodes.length > 0) parts.push(`${modifiedNodes.length} node${modifiedNodes.length > 1 ? 's' : ''} updated`);
+    if (op.createdEdgeIds.length > 0) parts.push(`+${op.createdEdgeIds.length} edge${op.createdEdgeIds.length > 1 ? 's' : ''}`);
+    if (op.deletedEdgeIds.length > 0) parts.push(`-${op.deletedEdgeIds.length} edge${op.deletedEdgeIds.length > 1 ? 's' : ''}`);
     s.addToast(`Redo${parts.length ? ': ' + parts.join(', ') : ''}`, 'info');
   },
 
@@ -4150,8 +4362,8 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       selectedNodeId: null,
       showActivityPanel: false,
       isProcessing: false,
-      history: [] as Snapshot[],
-      future: [] as Snapshot[],
+      history: [] as UndoOperation[],
+      future: [] as UndoOperation[],
       poirotContext: { phase: 'idle' as const, originalPrompt: '', answers: {}, questionIndex: 0 },
       currentProjectId: newId,
       currentProjectName: projectName,
@@ -4191,8 +4403,8 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       events: (data.events || []) as LifecycleEvent[],
       messages: (data.messages || []) as CIDMessage[],
       selectedNodeId: null,
-      history: [] as Snapshot[],
-      future: [] as Snapshot[],
+      history: [] as UndoOperation[],
+      future: [] as UndoOperation[],
       isProcessing: false,
       currentProjectId: id,
       currentProjectName: meta?.name || 'Untitled',

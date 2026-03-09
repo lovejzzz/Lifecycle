@@ -599,7 +599,7 @@ Phase 1 makes workflows alive. Phase 2 makes CID intelligent. Phase 3 makes the 
 
 ---
 
-### 14. Undo/Redo That Actually Works
+### 14. Undo/Redo That Actually Works ✅
 
 **Why**: There's undo/redo infrastructure in the store (`history`, `future`, `pushHistory`), but it captures raw state snapshots — which can be huge (the full node + edge + message array). With versioning (item 6) and the lifecycle loop creating frequent state changes, undo needs to be reliable and efficient.
 

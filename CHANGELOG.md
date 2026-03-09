@@ -1,5 +1,22 @@
 # Changelog
 
+### 2026-03-09 — Product Completeness: Undo/Redo That Actually Works
+
+**Roadmap Item 14: Undo/Redo That Actually Works** — replaced snapshot-based undo with operation-based undo for reliable, memory-efficient history.
+
+- Replaced full-state `Snapshot` type with `UndoOperation` — stores only changed nodes/edges per operation, not the entire graph
+  - `computeUndoOp()` — diffs before/after node+edge arrays to produce minimal operation records
+  - `applyUndo()` / `applyRedo()` — invertible operation application (restores/removes nodes+edges)
+  - `stripExecutionData()` — execution results excluded from undo history (computed, not user actions)
+- `pushHistory()` now captures "before" snapshot, then uses `queueMicrotask` to compute diff after mutation
+- History cap increased from 30 to 50 operations
+- Chat messages and execution state are never affected by undo/redo
+- Memory efficiency: editing 1 node in a 100-node graph stores only that 1 node in the operation, not all 100
+- Descriptive undo/redo toasts: shows exactly what changed (e.g., "Undo: -1 node, 2 nodes reverted")
+- Keyboard shortcuts (Cmd+Z / Cmd+Shift+Z) unchanged — now backed by reliable operations
+- 18 new tests in `undo.test.ts` covering: node create/delete/modify, edge create/delete, execution result filtering, position changes, round-trip undo/redo, multi-step sequences, memory efficiency
+- 180 total tests passing, build clean
+
 ### 2026-03-09 — Product Completeness: Project Persistence & Multi-Project
 
 **Roadmap Item 13: Project Persistence & Multi-Project** — namespaced localStorage with project switcher UI.
