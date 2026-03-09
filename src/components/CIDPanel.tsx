@@ -66,7 +66,7 @@ const COMMAND_HINTS_BY_SECTION: { section: string; hints: { trigger: string; lab
   ]},
   { section: '🛠 Batch & Fix', hints: [
     { trigger: 'solve', label: 'solve — Fix structural problems' },
-    { trigger: 'propagate', label: 'propagate — Sync stale nodes' },
+    { trigger: 'propagate', label: 'propagate / refresh stale — Re-execute stale nodes' },
     { trigger: 'compress', label: 'compress — Remove duplicates & boilerplate' },
     { trigger: 'approve all', label: 'approve all — Batch approve' },
     { trigger: 'unlock all', label: 'unlock all — Batch unlock' },
@@ -398,13 +398,19 @@ export default function CIDPanel() {
       } else {
         dispatchCommand(prompt, () => getStatusReport());
       }
-    } else if (/^(?:propagat|sync)\b/i.test(prompt)) {
-      dispatchCommand(prompt, () => {
-        const currentNodes = useLifecycleStore.getState().nodes;
-        const sc = currentNodes.filter((n) => n.data.status === 'stale').length;
-        if (sc > 0) propagateStale();
-        return sc > 0 ? agent.responses.propagated(sc) : agent.responses.propagateClean();
-      }, 600);
+    } else if (/^(?:propagat|sync|refresh\s*stale|regenerate\s*stale)\b/i.test(prompt)) {
+      addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
+      setProcessing(true);
+      const currentNodes = useLifecycleStore.getState().nodes;
+      const sc = currentNodes.filter((n) => n.data.status === 'stale').length;
+      if (sc > 0) {
+        // propagateStale is now async and does real re-execution
+        propagateStale().finally(() => setProcessing(false));
+      } else {
+        setTimeout(() => {
+          sendStreamingResponse(agent.responses.propagateClean());
+        }, 300);
+      }
     } else if (/^(?:optimi|layout|arrange)\b/i.test(prompt)) {
       dispatchCommand(prompt, () => agent.responses.optimized(nodes.length), 600, optimizeLayout);
     } else if (/^(?:approve\s+all|batch\s+approve)\b/i.test(prompt)) {

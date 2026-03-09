@@ -1,5 +1,22 @@
 # Changelog
 
+### 2026-03-09 — Lifecycle Loop: Staleness Propagation & Selective Regeneration
+
+**Roadmap Items 1 & 2: Staleness Propagation + Selective Regeneration**
+
+The core lifecycle loop is now real. Edits propagate, stale nodes are visible, and regeneration is selective.
+
+- `updateNodeData()` now detects meaningful content/label/category changes and propagates staleness downstream
+- Whitespace-only changes are filtered out (no false propagation)
+- Locked nodes are protected — staleness cascade stops at them (spec Section 18)
+- Lifecycle events record each propagation with change type
+- `propagateStale()` replaced: was a fake 2s timeout animation, now does real re-execution
+- Stale nodes are topologically sorted and re-executed in correct order via `executeNode()`
+- Only stale nodes are re-executed — fresh nodes are untouched (no wasted API calls)
+- CID chat: "refresh stale" / "propagate" / "sync" all trigger selective regeneration
+- Agent-differentiated messages (Rowan vs Poirot) for start and completion
+- Smart suggestions updated: `refresh stale` replaces `propagate`
+
 ### 2026-03-09 — Core Engine: Upstream Data Flow, Circuit Breaker, JIT Context, Parallel & Branch Execution
 
 **Roadmap Item 27: Upstream-Aware Execution Prompts** — structured data flow with edge semantics:

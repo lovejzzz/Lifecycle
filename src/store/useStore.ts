@@ -85,7 +85,7 @@ interface LifecycleStore {
   setProcessing: (v: boolean) => void;
   lockNode: (id: string) => void;
   approveNode: (id: string) => void;
-  propagateStale: () => void;
+  propagateStale: () => Promise<void>;
   optimizeLayout: () => void;
   cidSolve: () => { created: number; message: string };
   generateWorkflow: (prompt: string) => void;
@@ -399,7 +399,7 @@ export function getSmartSuggestions(nodes: Node<NodeData>[], edges: Edge[]): str
   const hasReview = nodes.some(n => n.data.category === 'review');
   const emptyContent = nodes.filter(n => ['artifact', 'note', 'policy'].includes(n.data.category) && !n.data.content && !n.data.description).length;
 
-  if (stale > 0) suggestions.push('propagate');
+  if (stale > 0) suggestions.push('refresh stale');
   if (orphans > 0) suggestions.push('solve');
   if (reviewing > 0) suggestions.push('approve all');
   if (!hasReview && nodes.length >= 3) suggestions.push('add review gate');
@@ -438,7 +438,7 @@ export function getNextHint(nodes: Node<NodeData>[], edges: Edge[]): string | nu
   const reviewing = nodes.filter(n => n.data.status === 'reviewing').length;
   const emptyContent = nodes.filter(n => ['artifact', 'note', 'policy', 'state'].includes(n.data.category) && !n.data.content && !n.data.description).length;
 
-  if (stale > 0) return `\n\n💡 **Tip:** ${stale} stale node${stale > 1 ? 's' : ''} detected — try \`propagate\``;
+  if (stale > 0) return `\n\n💡 **Tip:** ${stale} stale node${stale > 1 ? 's' : ''} detected — try \`refresh stale\``;
   if (orphans > 0) return `\n\n💡 **Tip:** ${orphans} orphan node${orphans > 1 ? 's' : ''} found — try \`solve\` to auto-connect`;
   if (reviewing > 0) return `\n\n💡 **Tip:** ${reviewing} node${reviewing > 1 ? 's' : ''} awaiting review — try \`approve all\``;
   if (emptyContent > 0) return `\n\n💡 **Tip:** ${emptyContent} node${emptyContent > 1 ? 's' : ''} missing content — click to add`;
@@ -1892,6 +1892,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       let nodes = s.nodes.map((n) => (n.id === id ? { ...n, data: { ...n.data, status, locked: status === 'locked' ? true : status === 'active' ? false : n.data.locked } } : n));
 
       // Cascade staleness: if a node goes stale, mark all downstream dependents stale too
+      // Locked nodes are protected — staleness stops at them (spec Section 18)
       if (status === 'stale') {
         const downstream = new Set<string>();
         const queue = [id];
@@ -1899,6 +1900,8 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
           const current = queue.shift()!;
           for (const edge of s.edges) {
             if (edge.source === current && !downstream.has(edge.target)) {
+              const targetNode = nodes.find(n => n.id === edge.target);
+              if (targetNode?.data.locked) continue; // Skip locked nodes
               downstream.add(edge.target);
               queue.push(edge.target);
             }
@@ -1938,6 +1941,18 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         return;
       }
     }
+
+    // Detect meaningful content changes for staleness propagation
+    const currentNode = get().nodes.find(n => n.id === id);
+    const oldContent = currentNode?.data.content || '';
+    const newContent = partial.content;
+    const labelChanged = partial.label !== undefined && partial.label !== currentNode?.data.label;
+    const categoryChanged = partial.category !== undefined && partial.category !== currentNode?.data.category;
+    // Content change: normalize whitespace and compare
+    const contentChanged = newContent !== undefined && newContent !== oldContent
+      && newContent.replace(/\s+/g, ' ').trim() !== oldContent.replace(/\s+/g, ' ').trim();
+    const shouldPropagate = contentChanged || labelChanged || categoryChanged;
+
     set((s) => {
       const nodes = s.nodes.map((n) =>
         n.id === id ? { ...n, data: { ...n.data, ...partial, lastUpdated: Date.now() } } : n
@@ -1945,6 +1960,17 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       saveToStorage({ nodes, edges: s.edges, events: s.events, messages: s.messages });
       return { nodes };
     });
+
+    // Propagate staleness to downstream nodes after a meaningful edit
+    if (shouldPropagate && !get()._executingNodeIds.has(id)) {
+      get().updateNodeStatus(id, 'stale');
+      const changeType = categoryChanged ? 'category' : labelChanged ? 'label' : 'content';
+      get().addEvent({
+        id: `ev-${Date.now()}-${id}`, type: 'edited',
+        message: `${currentNode?.data.label ?? id}: ${changeType} changed, downstream marked stale`,
+        timestamp: Date.now(), nodeId: id,
+      });
+    }
   },
 
   deleteNode: (id) => {
@@ -2024,54 +2050,63 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     }),
 
   // Functional CID action: propagate stale nodes
-  propagateStale: () => {
+  propagateStale: async () => {
     const store = get();
-    store.pushHistory();
     const staleNodes = store.nodes.filter((n) => n.data.status === 'stale');
     cidLog('propagateStale', { staleCount: staleNodes.length });
-    if (staleNodes.length === 0) return;
+    if (staleNodes.length === 0) {
+      store.addMessage({ id: uid(), role: 'cid', content: 'All nodes are up to date. Nothing to refresh.', timestamp: Date.now(), _ephemeral: true });
+      return;
+    }
 
-    // Set all stale to generating
-    staleNodes.forEach((n) => store.updateNodeStatus(n.id, 'generating'));
-    staleNodes.forEach((n) => {
-      store.addEvent({
-        id: `ev-${Date.now()}-${n.id}`, type: 'propagated',
-        message: `Propagating updates to ${n.data.label}...`,
-        timestamp: Date.now(), nodeId: n.id, agent: true,
-      });
-    });
+    store.pushHistory();
+    const staleIds = new Set(staleNodes.map(n => n.id));
+    const mode = get().cidMode ?? 'rowan';
 
-    // After delay, mark them active + bump versions + fix stale sections
-    setTimeout(() => {
-      set((s) => {
-        const nodes = s.nodes.map((n) => {
-          const wasStale = staleNodes.some((sn) => sn.id === n.id);
-          if (!wasStale) return n;
-          return {
-            ...n,
-            data: {
-              ...n.data,
-              status: 'active' as const,
-              version: (n.data.version ?? 1) + 1,
-              lastUpdated: Date.now(),
-              sections: n.data.sections?.map((sec) => ({
-                ...sec,
-                status: 'current' as const,
-              })),
-            },
-          };
-        });
-        saveToStorage({ nodes, edges: s.edges, events: s.events, messages: s.messages });
-        return { nodes };
-      });
-      staleNodes.forEach((n) => {
+    // Topologically sort stale nodes so upstream refreshes before downstream
+    const { order } = topoSort(store.nodes, store.edges);
+    const staleOrder = order.filter(id => staleIds.has(id));
+
+    const names = staleNodes.map(n => n.data.label).slice(0, 6);
+    const startMsg = mode === 'poirot'
+      ? `Refreshing ${staleNodes.length} stale node${staleNodes.length > 1 ? 's' : ''}: ${names.join(', ')}${staleNodes.length > 6 ? '...' : ''}. Let us see what the evidence reveals after these changes, mon ami.`
+      : `Refreshing ${staleNodes.length} stale node${staleNodes.length > 1 ? 's' : ''}: ${names.join(', ')}${staleNodes.length > 6 ? '...' : ''}.`;
+    store.addMessage({ id: uid(), role: 'cid', content: startMsg, timestamp: Date.now() });
+
+    const startTime = Date.now();
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const nodeId of staleOrder) {
+      // Re-check: node might have been refreshed by a prior execution in this loop
+      const current = get().nodes.find(n => n.id === nodeId);
+      if (!current || current.data.status !== 'stale') continue;
+
+      await store.executeNode(nodeId);
+      const updated = get().nodes.find(n => n.id === nodeId);
+      if (updated?.data.executionStatus === 'error') {
+        errorCount++;
+      } else {
+        successCount++;
+        // Mark as active after successful re-execution
+        store.updateNodeStatus(nodeId, 'active');
         store.addEvent({
-          id: `ev-${Date.now()}-${n.id}-done`, type: 'regenerated',
-          message: `${n.data.label} regenerated to v${(n.data.version ?? 1) + 1}`,
-          timestamp: Date.now(), nodeId: n.id, agent: true,
+          id: `ev-${Date.now()}-${nodeId}`, type: 'regenerated',
+          message: `${updated?.data.label} refreshed to v${(updated?.data.version ?? 1) + 1}`,
+          timestamp: Date.now(), nodeId, agent: true,
         });
-      });
-    }, 2000);
+      }
+    }
+
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+    const doneMsg = errorCount === 0
+      ? (mode === 'poirot'
+        ? `Magnifique! All ${successCount} node${successCount > 1 ? 's' : ''} refreshed in ${elapsed}s. The lifecycle, it flows again.`
+        : `Done. ${successCount} node${successCount > 1 ? 's' : ''} refreshed in ${elapsed}s.`)
+      : (mode === 'poirot'
+        ? `${successCount} refreshed, ${errorCount} failed in ${elapsed}s. These failures require investigation.`
+        : `${successCount} refreshed, ${errorCount} failed in ${elapsed}s.`);
+    store.addMessage({ id: uid(), role: 'cid', content: doneMsg, timestamp: Date.now() });
   },
 
   // Functional CID action: auto-layout nodes in a clean grid
