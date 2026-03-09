@@ -1,5 +1,21 @@
 # Changelog
 
+### 2026-03-09 — Lifecycle Loop: Impact Preview
+
+**Roadmap Item 4: Impact Preview** — users see what will regenerate before it happens.
+
+- New `ImpactPreview.tsx` component — floating panel showing stale nodes in execution order
+- `showImpactPreview()` computes stale nodes, topological execution order, estimated API calls
+- Node selection: toggle individual nodes for selective regeneration, select all / deselect all
+- `regenerateSelected()` re-executes only selected stale nodes in topological order
+- Canvas highlighting: stale + selected nodes glow amber, unaffected nodes dim to 35% opacity
+- TopBar: stale count is now clickable — opens impact preview directly
+- CID chat: "refresh stale" / "propagate" now opens impact preview instead of immediately regenerating
+- Shift+click on "Regenerate" button skips preview for power users
+- Impact preview auto-closes after regeneration completes
+- Estimated API call count updates as nodes are selected/deselected
+- 88 tests passing, build clean
+
 ### 2026-03-09 — Lifecycle Loop: Edit Interpretation
 
 **Roadmap Item 3: Edit Interpretation** — not every edit should trigger a cascade.

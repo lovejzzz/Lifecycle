@@ -122,7 +122,7 @@ export default function CIDPanel() {
   const {
     messages, showCIDPanel, toggleCIDPanel, generateWorkflow,
     addMessage, updateStreamingMessage, isProcessing, nodes,
-    propagateStale, optimizeLayout, cidSolve,
+    propagateStale, optimizeLayout, cidSolve, showImpactPreview,
     cidMode, setCIDMode, handleCardSelect, poirotContext,
     chatWithCID, aiEnabled, selectNode, batchUpdateStatus, setProcessing,
     clearMessages, exportChatHistory, stopProcessing, deleteMessage,
@@ -400,12 +400,13 @@ export default function CIDPanel() {
       }
     } else if (/^(?:propagat|sync|refresh\s*stale|regenerate\s*stale)\b/i.test(prompt)) {
       addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
-      setProcessing(true);
       const currentNodes = useLifecycleStore.getState().nodes;
       const sc = currentNodes.filter((n) => n.data.status === 'stale').length;
       if (sc > 0) {
-        // propagateStale is now async and does real re-execution
-        propagateStale().finally(() => setProcessing(false));
+        // Show impact preview instead of immediately regenerating
+        showImpactPreview();
+        const agent = getAgent(cidMode);
+        sendStreamingResponse(`${sc} stale node${sc > 1 ? 's' : ''} found. Review the impact preview below and select which to regenerate.`);
       } else {
         setTimeout(() => {
           sendStreamingResponse(agent.responses.propagateClean());
@@ -762,7 +763,7 @@ export default function CIDPanel() {
       dispatchCommand(prompt, () => {
         const currentNodes = useLifecycleStore.getState().nodes;
         const sc = currentNodes.filter(n => n.data.status === 'stale').length;
-        if (sc > 0) propagateStale();
+        if (sc > 0) showImpactPreview();
         return sc > 0 ? agent.responses.qaPropagated(sc) : agent.responses.qaPropagateClean();
       }, 500);
     } else if (/optimi/i.test(prompt)) {

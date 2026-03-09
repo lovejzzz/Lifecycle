@@ -332,6 +332,21 @@ interface LifecycleStore {
   rewriteArtifactSelection: (nodeId: string, selectedText: string, instruction: string) => Promise<string | null>;
   getDownstreamNodes: (nodeId: string) => Array<{ id: string; label: string; category: string }>;
 
+  // ── Impact Preview ──
+  impactPreview: {
+    visible: boolean;
+    staleNodes: Array<{ id: string; label: string; category: string }>;
+    executionOrder: string[];
+    estimatedCalls: number;
+    selectedNodeIds: Set<string>;
+  } | null;
+  showImpactPreview: () => void;
+  hideImpactPreview: () => void;
+  toggleImpactNodeSelection: (nodeId: string) => void;
+  selectAllImpactNodes: () => void;
+  deselectAllImpactNodes: () => void;
+  regenerateSelected: (nodeIds?: string[]) => Promise<void>;
+
   // ── Project Management ──
   projects: Map<string, { nodes: Node<NodeData>[]; edges: Edge[]; messages: CIDMessage[]; cidMode: CIDMode; cidAIModel: string; createdAt: number; updatedAt: number }>;
   currentProjectName: string | null;
@@ -2115,6 +2130,111 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       : (mode === 'poirot'
         ? `${successCount} refreshed, ${errorCount} failed in ${elapsed}s. These failures require investigation.`
         : `${successCount} refreshed, ${errorCount} failed in ${elapsed}s.`);
+    store.addMessage({ id: uid(), role: 'cid', content: doneMsg, timestamp: Date.now() });
+    // Hide impact preview after regeneration
+    set({ impactPreview: null });
+  },
+
+  // ── Impact Preview ──
+  impactPreview: null,
+
+  showImpactPreview: () => {
+    const store = get();
+    const staleNodes = store.nodes
+      .filter((n) => n.data.status === 'stale')
+      .map((n) => ({ id: n.id, label: n.data.label, category: n.data.category }));
+    if (staleNodes.length === 0) return;
+
+    // Build topological execution order for stale nodes
+    const { order } = topoSort(store.nodes, store.edges);
+    const staleIds = new Set(staleNodes.map(n => n.id));
+    const executionOrder = order.filter(id => staleIds.has(id));
+
+    set({
+      impactPreview: {
+        visible: true,
+        staleNodes,
+        executionOrder,
+        estimatedCalls: staleNodes.length,
+        selectedNodeIds: new Set(staleNodes.map(n => n.id)),
+      },
+    });
+  },
+
+  hideImpactPreview: () => {
+    set({ impactPreview: null });
+  },
+
+  toggleImpactNodeSelection: (nodeId: string) => {
+    const preview = get().impactPreview;
+    if (!preview) return;
+    const next = new Set(preview.selectedNodeIds);
+    if (next.has(nodeId)) next.delete(nodeId);
+    else next.add(nodeId);
+    set({ impactPreview: { ...preview, selectedNodeIds: next, estimatedCalls: next.size } });
+  },
+
+  selectAllImpactNodes: () => {
+    const preview = get().impactPreview;
+    if (!preview) return;
+    const all = new Set(preview.staleNodes.map(n => n.id));
+    set({ impactPreview: { ...preview, selectedNodeIds: all, estimatedCalls: all.size } });
+  },
+
+  deselectAllImpactNodes: () => {
+    const preview = get().impactPreview;
+    if (!preview) return;
+    set({ impactPreview: { ...preview, selectedNodeIds: new Set<string>(), estimatedCalls: 0 } });
+  },
+
+  regenerateSelected: async (nodeIds?: string[]) => {
+    const store = get();
+    const preview = store.impactPreview;
+    const idsToRegenerate = nodeIds ?? (preview ? [...preview.selectedNodeIds] : []);
+    if (idsToRegenerate.length === 0) return;
+
+    // Hide preview
+    set({ impactPreview: null });
+
+    store.pushHistory();
+    const mode = get().cidMode ?? 'rowan';
+    const { order } = topoSort(store.nodes, store.edges);
+    const idSet = new Set(idsToRegenerate);
+    const sortedIds = order.filter(id => idSet.has(id));
+
+    const names = sortedIds.map(id => store.nodes.find(n => n.id === id)?.data.label).filter(Boolean).slice(0, 6);
+    const startMsg = mode === 'poirot'
+      ? `Regenerating ${sortedIds.length} selected node${sortedIds.length > 1 ? 's' : ''}: ${names.join(', ')}${sortedIds.length > 6 ? '...' : ''}. Observe closely, mon ami.`
+      : `Regenerating ${sortedIds.length} selected node${sortedIds.length > 1 ? 's' : ''}: ${names.join(', ')}${sortedIds.length > 6 ? '...' : ''}.`;
+    store.addMessage({ id: uid(), role: 'cid', content: startMsg, timestamp: Date.now() });
+
+    const startTime = Date.now();
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const nodeId of sortedIds) {
+      const current = get().nodes.find(n => n.id === nodeId);
+      if (!current || current.data.status !== 'stale') continue;
+
+      await store.executeNode(nodeId);
+      const updated = get().nodes.find(n => n.id === nodeId);
+      if (updated?.data.executionStatus === 'error') {
+        errorCount++;
+      } else {
+        successCount++;
+        store.updateNodeStatus(nodeId, 'active');
+        store.addEvent({
+          id: `ev-${Date.now()}-${nodeId}`, type: 'regenerated',
+          message: `${updated?.data.label} selectively refreshed`,
+          timestamp: Date.now(), nodeId, agent: true,
+        });
+      }
+    }
+
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+    const doneMsg = errorCount === 0
+      ? `${successCount} node${successCount > 1 ? 's' : ''} regenerated in ${elapsed}s.`
+      : `${successCount} regenerated, ${errorCount} failed in ${elapsed}s.`;
     store.addMessage({ id: uid(), role: 'cid', content: doneMsg, timestamp: Date.now() });
   },
 

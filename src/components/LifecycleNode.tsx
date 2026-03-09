@@ -31,6 +31,9 @@ function LifecycleNode({ data, id }: NodeProps) {
   const updateNodeStatus = useLifecycleStore((s) => s.updateNodeStatus);
   const addEvent = useLifecycleStore((s) => s.addEvent);
   const isMultiSelected = useLifecycleStore((s) => s.multiSelectedIds.has(id));
+  const isImpactHighlighted = useLifecycleStore((s) => s.impactPreview?.visible && s.impactPreview.selectedNodeIds.has(id));
+  const isImpactDimmed = useLifecycleStore((s) => s.impactPreview?.visible && !s.impactPreview.selectedNodeIds.has(id) && status !== 'stale');
+  const isImpactStaleUnselected = useLifecycleStore((s) => s.impactPreview?.visible && status === 'stale' && !s.impactPreview.selectedNodeIds.has(id));
   // Derive connection count with a stable selector to avoid re-render on unrelated edge changes
   const totalConns = useLifecycleStore((s) => {
     let count = 0;
@@ -76,14 +79,17 @@ function LifecycleNode({ data, id }: NodeProps) {
         }`}
         style={{
           background: `linear-gradient(145deg, ${colors.bg}, rgba(10,10,18,0.92))`,
-          borderColor: isMultiSelected ? '#60a5fa' : isSelected ? colors.primary : status === 'generating' ? colors.primary : colors.border,
+          borderColor: isImpactHighlighted ? '#f59e0b' : isMultiSelected ? '#60a5fa' : isSelected ? colors.primary : status === 'generating' ? colors.primary : colors.border,
           outline: isMultiSelected ? '2px dashed rgba(96, 165, 250, 0.4)' : 'none',
           outlineOffset: '3px',
-          boxShadow: status === 'generating'
-            ? `0 0 30px ${colors.glow}, 0 0 60px ${colors.glow}, 0 4px 30px rgba(0,0,0,0.4)`
-            : isSelected
-              ? `0 0 24px ${colors.glow}, 0 4px 30px rgba(0,0,0,0.4)`
-              : `0 2px 20px rgba(0,0,0,0.3), 0 0 12px ${colors.glow}`,
+          boxShadow: isImpactHighlighted
+            ? `0 0 24px rgba(245,158,11,0.3), 0 0 48px rgba(245,158,11,0.15), 0 4px 30px rgba(0,0,0,0.4)`
+            : status === 'generating'
+              ? `0 0 30px ${colors.glow}, 0 0 60px ${colors.glow}, 0 4px 30px rgba(0,0,0,0.4)`
+              : isSelected
+                ? `0 0 24px ${colors.glow}, 0 4px 30px rgba(0,0,0,0.4)`
+                : `0 2px 20px rgba(0,0,0,0.3), 0 0 12px ${colors.glow}`,
+          opacity: isImpactDimmed ? 0.35 : isImpactStaleUnselected ? 0.5 : 1,
           minWidth: 210,
           maxWidth: 270,
         }}

@@ -27,7 +27,7 @@ const BUILT_IN_TYPES: { category: NodeCategory; label: string }[] = [
 ];
 
 export default function TopBar() {
-  const { nodes, toggleCIDPanel, toggleActivityPanel, togglePreviewPanel, showCIDPanel, showActivityPanel, showPreviewPanel, createNewNode, undo, redo, history, future, cidMode, exportWorkflow, importWorkflow, newProject, messages, getHealthScore } = useLifecycleStore();
+  const { nodes, toggleCIDPanel, toggleActivityPanel, togglePreviewPanel, showCIDPanel, showActivityPanel, showPreviewPanel, createNewNode, undo, redo, history, future, cidMode, exportWorkflow, importWorkflow, newProject, messages, getHealthScore, showImpactPreview } = useLifecycleStore();
   const agent = getAgent(cidMode);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showAddMenu, setShowAddMenu] = useState(false);
@@ -215,10 +215,14 @@ export default function TopBar() {
               <span className="text-white/40">{activeCount} <span className="hidden md:inline">active</span></span>
             </div>
             {staleCount > 0 && (
-              <div className="flex items-center gap-1.5 text-[10px]" title={`${staleCount} stale nodes`}>
+              <button
+                onClick={showImpactPreview}
+                className="flex items-center gap-1.5 text-[10px] hover:bg-amber-500/10 px-1.5 py-0.5 rounded-lg transition-colors cursor-pointer"
+                title={`${staleCount} stale nodes — click to preview impact`}
+              >
                 <Circle size={6} fill="#f59e0b" className="text-amber-500" />
                 <span className="text-amber-400/60">{staleCount} <span className="hidden md:inline">stale</span></span>
-              </div>
+              </button>
             )}
             {reviewCount > 0 && (
               <div className="flex items-center gap-1.5 text-[10px]" title={`${reviewCount} reviewing`}>

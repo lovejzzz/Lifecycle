@@ -25,6 +25,7 @@ import ActivityPanel from './ActivityPanel';
 import CIDPanel from './CIDPanel';
 import NodeContextMenu from './NodeContextMenu';
 import ArtifactPanel from './ArtifactPanel';
+import ImpactPreview from './ImpactPreview';
 import { getNodeColors, EDGE_LABEL_COLORS } from '@/lib/types';
 import type { NodeData, NodeCategory } from '@/lib/types';
 import { getAgent } from '@/lib/agents';
@@ -1394,6 +1395,9 @@ function CanvasInner() {
           {mounted && activeArtifactNodeId && <ArtifactPanel />}
         </AnimatePresence>
       </div>
+
+      {/* Impact Preview */}
+      {mounted && <ImpactPreview />}
 
       {/* CID Panel */}
       {mounted && showCIDPanel && <CIDPanel />}
