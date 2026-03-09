@@ -531,7 +531,7 @@ Phase 1 makes workflows alive. Phase 2 makes CID intelligent. Phase 3 makes the 
 
 ---
 
-### 12. Artifact Preview Panel
+### 12. Artifact Preview Panel ✅
 
 **Why**: The spec's "transparent factory" metaphor (Section 3) — users should see what's being built, not just node cards on a canvas. When a workflow has 10+ nodes with execution results, users need a way to browse the actual content without clicking each node individually.
 

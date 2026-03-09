@@ -7,6 +7,7 @@ import {
   ChevronDown, ChevronRight, Sparkles, GitBranch, Loader2, ArrowRight,
   Maximize2, Minimize2, Search, Replace, Bold, Italic, Code, Heading2,
   List, ListOrdered, Quote, Columns2, Minus,
+  ChevronLeft, BookOpen,
 } from 'lucide-react';
 import { useLifecycleStore } from '@/store/useStore';
 import { getNodeColors, CategoryIcon } from '@/lib/types';
@@ -412,15 +413,93 @@ function EditorStats({ text }: { text: string }) {
   );
 }
 
+// ─── Reading Mode Content ────────────────────────────────────────────────────
+
+function ReadingModeContent({
+  nodes: allNodes,
+  executedNodes,
+  activeNodeId,
+  onNavigate,
+}: {
+  nodes: Array<{ id: string; data: NodeData; [key: string]: unknown }>;
+  executedNodes: Array<{ id: string; label: string; category: string }>;
+  activeNodeId: string;
+  onNavigate: (nodeId: string) => void;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to active node on mount
+  useEffect(() => {
+    const el = scrollRef.current?.querySelector(`[data-node-section="${activeNodeId}"]`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [activeNodeId]);
+
+  return (
+    <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 scrollbar-thin">
+      <div className="max-w-[700px] mx-auto">
+        <h1 className="text-[14px] font-bold text-white/80 mb-1">Workflow Output</h1>
+        <p className="text-[10px] text-white/25 mb-4">{executedNodes.length} nodes with content</p>
+        {executedNodes.map((en, i) => {
+          const fullNode = allNodes.find(n => n.id === en.id);
+          if (!fullNode) return null;
+          const content = fullNode.data.executionResult || fullNode.data.content || '';
+          const isRunning = fullNode.data.executionStatus === 'running';
+          const colors = getNodeColors(en.category as NodeData['category']);
+
+          return (
+            <div key={en.id} data-node-section={en.id} className="mb-6">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[10px] text-white/20 font-mono">{i + 1}.</span>
+                <span style={{ color: colors.primary }}>
+                  <CategoryIcon category={en.category as NodeData['category']} size={11} />
+                </span>
+                <button
+                  onClick={() => onNavigate(en.id)}
+                  className="text-[11px] font-semibold text-white/60 hover:text-white/90 transition-colors"
+                >
+                  {en.label}
+                </button>
+                <span className="text-[9px] text-white/20">{en.category}</span>
+              </div>
+              {isRunning ? (
+                <div className="space-y-2 animate-pulse">
+                  <div className="h-3 bg-white/[0.04] rounded w-3/4" />
+                  <div className="h-3 bg-white/[0.04] rounded w-full" />
+                  <div className="h-3 bg-white/[0.04] rounded w-5/6" />
+                  <div className="flex items-center gap-2 mt-2">
+                    <Loader2 size={10} className="animate-spin text-cyan-400/40" />
+                    <span className="text-[10px] text-cyan-400/40">Executing...</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-[11px] text-white/55 leading-relaxed">
+                  {content ? renderMarkdown(content) : (
+                    <span className="text-white/20 italic">No content yet</span>
+                  )}
+                </div>
+              )}
+              {i < executedNodes.length - 1 && (
+                <hr className="border-white/[0.06] mt-6" />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Artifact Panel ─────────────────────────────────────────────────────
 
 export default function ArtifactPanel() {
   const {
-    nodes, activeArtifactNodeId, artifactPanelTab, artifactPanelMode,
+    nodes, edges, activeArtifactNodeId, artifactPanelTab, artifactPanelMode,
     artifactVersions, closeArtifactPanel, setArtifactTab, setArtifactMode,
     saveArtifactVersion, restoreArtifactVersion, rewriteArtifactSelection,
     getDownstreamNodes, updateNodeData, updateNodeStatus, executeNode,
     addEvent, pushHistory, selectNode,
+    artifactReadingMode, setArtifactReadingMode, getExecutedNodesInOrder,
+    openArtifactPanel,
   } = useLifecycleStore();
 
   const node = nodes.find(n => n.id === activeArtifactNodeId);
@@ -538,6 +617,17 @@ export default function ArtifactPanel() {
   const versions = artifactVersions[activeArtifactNodeId] || [];
   const downstream = getDownstreamNodes(activeArtifactNodeId);
 
+  // Navigation: prev/next through executed nodes in topo order
+  const executedNodes = getExecutedNodesInOrder();
+  const currentIdx = executedNodes.findIndex(n => n.id === activeArtifactNodeId);
+  const hasPrev = currentIdx > 0;
+  const hasNext = currentIdx < executedNodes.length - 1;
+  const navigateTo = (idx: number) => {
+    if (idx >= 0 && idx < executedNodes.length) {
+      openArtifactPanel(executedNodes[idx].id);
+    }
+  };
+
   const handleSave = () => {
     pushHistory();
     saveArtifactVersion(activeArtifactNodeId);
@@ -634,14 +724,48 @@ export default function ArtifactPanel() {
           </div>
         </div>
         <div className="flex items-center gap-0.5">
+          {/* Prev/Next Navigation */}
+          {executedNodes.length > 1 && !artifactReadingMode && (
+            <div className="flex items-center gap-0.5 mr-1">
+              <button
+                onClick={() => navigateTo(currentIdx - 1)}
+                disabled={!hasPrev}
+                className="p-1 rounded-lg hover:bg-white/[0.06] text-white/30 hover:text-white/60 transition-colors disabled:opacity-20 disabled:cursor-default"
+                title="Previous node"
+              >
+                <ChevronLeft size={12} />
+              </button>
+              <span className="text-[9px] text-white/25 tabular-nums min-w-[28px] text-center">
+                {currentIdx + 1}/{executedNodes.length}
+              </span>
+              <button
+                onClick={() => navigateTo(currentIdx + 1)}
+                disabled={!hasNext}
+                className="p-1 rounded-lg hover:bg-white/[0.06] text-white/30 hover:text-white/60 transition-colors disabled:opacity-20 disabled:cursor-default"
+                title="Next node"
+              >
+                <ChevronRight size={12} />
+              </button>
+            </div>
+          )}
+          {/* Reading Mode */}
+          <button
+            onClick={() => setArtifactReadingMode(!artifactReadingMode)}
+            className={`p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors ${artifactReadingMode ? 'text-cyan-400/60' : 'text-white/30 hover:text-white/60'}`}
+            title={artifactReadingMode ? 'Exit Reading Mode' : 'Reading Mode — all nodes as document'}
+          >
+            <BookOpen size={12} />
+          </button>
           {/* Find */}
           <button onClick={() => setShowFindReplace(v => !v)} className={`p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors ${showFindReplace ? 'text-cyan-400/60' : 'text-white/30 hover:text-white/60'}`} title="Find & Replace (⌘F)">
             <Search size={12} />
           </button>
           {/* Split View */}
-          <button onClick={() => { setIsSplitView(v => !v); if (!isSplitView) setArtifactMode('edit'); }} className={`p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors ${isSplitView ? 'text-cyan-400/60' : 'text-white/30 hover:text-white/60'}`} title="Split View">
-            <Columns2 size={12} />
-          </button>
+          {!artifactReadingMode && (
+            <button onClick={() => { setIsSplitView(v => !v); if (!isSplitView) setArtifactMode('edit'); }} className={`p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors ${isSplitView ? 'text-cyan-400/60' : 'text-white/30 hover:text-white/60'}`} title="Split View">
+              <Columns2 size={12} />
+            </button>
+          )}
           {/* Copy */}
           <button onClick={handleCopy} className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/30 hover:text-white/60 transition-colors" title="Copy">
             {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
@@ -657,8 +781,8 @@ export default function ArtifactPanel() {
         </div>
       </div>
 
-      {/* Tab Bar + Mode Toggle */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-white/[0.04]">
+      {/* Tab Bar + Mode Toggle (hidden in reading mode) */}
+      {!artifactReadingMode && <div className="flex items-center justify-between px-4 py-2 border-b border-white/[0.04]">
         <div className="flex gap-1">
           <button
             onClick={() => setArtifactTab('content')}
@@ -708,7 +832,7 @@ export default function ArtifactPanel() {
             </button>
           </div>
         )}
-      </div>
+      </div>}
 
       {/* Find & Replace Bar */}
       <AnimatePresence>
@@ -727,8 +851,10 @@ export default function ArtifactPanel() {
       </AnimatePresence>
 
       {/* Content Area */}
-      <div className={`flex-1 overflow-hidden relative ${isSplitView ? 'flex' : 'flex flex-col'}`}>
-        {isSplitView ? (
+      <div className={`flex-1 overflow-hidden relative ${isSplitView && !artifactReadingMode ? 'flex' : 'flex flex-col'}`}>
+        {artifactReadingMode ? (
+          <ReadingModeContent nodes={nodes} executedNodes={executedNodes} activeNodeId={activeArtifactNodeId} onNavigate={(id) => { setArtifactReadingMode(false); openArtifactPanel(id); }} />
+        ) : isSplitView ? (
           <>
             {/* Split: Editor Left */}
             <div className="flex-1 flex flex-col border-r border-white/[0.06] overflow-hidden">
@@ -828,8 +954,8 @@ export default function ArtifactPanel() {
         </AnimatePresence>
       </div>
 
-      {/* Footer: Versions + Downstream + Stats */}
-      <div className="px-4 py-2 space-y-2 border-t border-white/[0.04]">
+      {/* Footer: Versions + Downstream + Stats (hidden in reading mode) */}
+      {!artifactReadingMode && <div className="px-4 py-2 space-y-2 border-t border-white/[0.04]">
         {isSplitView && (
           <div className="flex items-center justify-between">
             <EditorStats text={editDraft} />
@@ -851,7 +977,7 @@ export default function ArtifactPanel() {
           onSync={handleSync}
           isSyncing={isSyncing}
         />
-      </div>
+      </div>}
     </motion.div>
   );
 }

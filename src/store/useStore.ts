@@ -332,10 +332,14 @@ interface LifecycleStore {
   artifactPanelTab: 'content' | 'result';
   artifactPanelMode: 'preview' | 'edit';
   artifactVersions: Record<string, Array<{ content: string; result?: string; timestamp: number; label: string }>>;
+  artifactReadingMode: boolean;
   openArtifactPanel: (nodeId: string) => void;
   closeArtifactPanel: () => void;
   setArtifactTab: (tab: 'content' | 'result') => void;
   setArtifactMode: (mode: 'preview' | 'edit') => void;
+  setArtifactReadingMode: (on: boolean) => void;
+  /** Get executed nodes in topological order for reading mode navigation */
+  getExecutedNodesInOrder: () => Array<{ id: string; label: string; category: string }>;
   saveArtifactVersion: (nodeId: string) => void;
   restoreArtifactVersion: (nodeId: string, versionIndex: number) => void;
   rewriteArtifactSelection: (nodeId: string, selectedText: string, instruction: string) => Promise<string | null>;
@@ -6021,6 +6025,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
   activeArtifactNodeId: null,
   artifactPanelTab: 'content' as const,
   artifactPanelMode: 'preview' as const,
+  artifactReadingMode: false,
   artifactVersions: {},
 
   openArtifactPanel: (nodeId) => {
@@ -6049,6 +6054,17 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
 
   setArtifactTab: (tab) => set({ artifactPanelTab: tab }),
   setArtifactMode: (mode) => set({ artifactPanelMode: mode }),
+  setArtifactReadingMode: (on) => set({ artifactReadingMode: on }),
+
+  getExecutedNodesInOrder: () => {
+    const { nodes, edges } = get();
+    const { order } = topoSort(nodes, edges);
+    const nodeById = new Map(nodes.map(n => [n.id, n]));
+    return order
+      .map(id => nodeById.get(id))
+      .filter((n): n is Node<NodeData> => !!n && !!(n.data.executionResult || n.data.content))
+      .map(n => ({ id: n.id, label: n.data.label, category: n.data.category }));
+  },
 
   saveArtifactVersion: (nodeId) => {
     const node = get().nodes.find(n => n.id === nodeId);

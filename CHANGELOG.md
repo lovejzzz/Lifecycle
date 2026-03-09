@@ -1,5 +1,20 @@
 # Changelog
 
+### 2026-03-09 — Product Completeness: Artifact Preview Panel
+
+**Roadmap Item 12: Artifact Preview Panel** — browse all executed nodes as formatted content with navigation and live updates.
+
+- ArtifactPanel: **Reading Mode** (BookOpen icon toggle) — shows all executed nodes as a continuous scrollable document in topological order
+  - Each section has node label, category icon, and numbered index
+  - Clicking a node header exits reading mode and opens that node's single view
+  - Auto-scrolls to the currently active node on entry
+- ArtifactPanel: **Prev/Next navigation** — ChevronLeft/ChevronRight buttons with counter (e.g., "3/7") to walk through executed nodes in order
+- ArtifactPanel: **Live execution indicator** — running nodes show animated skeleton placeholder with spinning loader and "Executing..." text
+- Store: `artifactReadingMode` state, `setArtifactReadingMode(on)` action
+- Store: `getExecutedNodesInOrder()` — returns nodes with content in topological sort order
+- Tab bar and footer hidden in reading mode for clean document experience
+- 154 total tests passing, build clean
+
 ### 2026-03-09 — Product Completeness: Rich Output Export
 
 **Roadmap Item 11: Rich Output Export** — export node content and compiled workflow outputs as real files.
