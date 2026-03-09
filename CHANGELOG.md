@@ -1,5 +1,19 @@
 # Changelog
 
+### 2026-03-09 — User Simulation System & Bug Fixes
+
+**User Simulation Tests** — 42 integration tests that exercise real user journeys through the Zustand store. 15 scenarios covering: workflow building, undo/redo, content editing, health monitoring, agent modes, edge operations, layout, toasts, queries, edge cases, events, import/export, impact preview, CID rules, and node status transitions.
+
+**Bugs found and fixed by simulation:**
+- **`getWorkflowProgress()` counted all `active` nodes as "done"** — Fixed: now counts only `executionStatus === 'success'` nodes. Previously a 3-node workflow with no execution showed 100% progress.
+- **`addEdge()` allowed duplicate edge IDs** — Fixed: same-ID edges now replace rather than duplicate, preventing data corruption in the edge array.
+
+**Test infrastructure:**
+- Full store integration test harness with mocked `window`, `localStorage`, `fetch` (AI responses)
+- `assertStoreInvariants()` — validates no duplicate IDs, edge integrity, selection consistency after every operation
+- `buildSimpleWorkflow()` / `buildComplexWorkflow()` helpers for realistic test data
+- 222 total tests passing, build clean
+
 ### 2026-03-09 — Product Completeness: Undo/Redo That Actually Works
 
 **Roadmap Item 14: Undo/Redo That Actually Works** — replaced snapshot-based undo with operation-based undo for reliable, memory-efficient history.

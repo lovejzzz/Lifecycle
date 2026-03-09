@@ -2108,7 +2108,11 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
 
   addEdge: (edge) =>
     set((s) => {
-      const edges = [...s.edges, edge];
+      // Deduplicate by ID — replace existing edge if same ID, else append
+      const existing = s.edges.findIndex(e => e.id === edge.id);
+      const edges = existing >= 0
+        ? s.edges.map((e, i) => i === existing ? edge : e)
+        : [...s.edges, edge];
       saveToStorage({ nodes: s.nodes, edges, events: s.events, messages: s.messages });
       return { edges };
     }),
@@ -5665,8 +5669,8 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
   getWorkflowProgress: () => {
     const { nodes } = get();
     if (nodes.length === 0) return { percent: 0, done: 0, total: 0, blocked: 0 };
-    const done = nodes.filter(n => n.data.status === 'active' || n.data.status === 'locked').length;
-    const blocked = nodes.filter(n => n.data.status === 'stale').length;
+    const done = nodes.filter(n => n.data.executionStatus === 'success').length;
+    const blocked = nodes.filter(n => n.data.status === 'stale' || n.data.executionStatus === 'error').length;
     const percent = Math.round((done / nodes.length) * 100);
     return { percent, done, total: nodes.length, blocked };
   },
