@@ -80,7 +80,7 @@ describe('resolveDriverTensions', () => {
   });
 
   it('returns default drive for empty drives', () => {
-    const force: DrivingForceLayer = { drives: [], resolutionStrategy: 'dominant-wins' };
+    const force: DrivingForceLayer = { drives: [], resolutionStrategy: 'dominant-wins', primaryDrive: '', curiosityStyle: '', agencyExpression: '', tensionSource: '' };
     const ctx = computeGenerationContext('test', 0, [], Date.now());
     const result = resolveDriverTensions(force, ctx);
     expect(result.dominant.name).toBe('default');
@@ -90,6 +90,7 @@ describe('resolveDriverTensions', () => {
     const force: DrivingForceLayer = {
       drives: [mkDrive('speed', 0.3), mkDrive('thoroughness', 0.8)],
       resolutionStrategy: 'dominant-wins',
+      primaryDrive: '', curiosityStyle: '', agencyExpression: '', tensionSource: '',
     };
     const ctx = computeGenerationContext('test', 0, [], Date.now());
     const result = resolveDriverTensions(force, ctx);
@@ -100,6 +101,7 @@ describe('resolveDriverTensions', () => {
     const force: DrivingForceLayer = {
       drives: [mkDrive('speed', 0.5), mkDrive('elegance', 0.45)],
       resolutionStrategy: 'dominant-wins',
+      primaryDrive: '', curiosityStyle: '', agencyExpression: '', tensionSource: '',
     };
     const ctx = computeGenerationContext('Fix this ASAP!!', 0, [], Date.now());
     const result = resolveDriverTensions(force, ctx);
@@ -114,6 +116,7 @@ describe('resolveDriverTensions', () => {
         mkDrive('thoroughness', 0.75, ['speed']),
       ],
       resolutionStrategy: 'negotiate',
+      primaryDrive: '', curiosityStyle: '', agencyExpression: '', tensionSource: '',
     };
     const ctx = computeGenerationContext('test', 0, [], Date.now());
     const result = resolveDriverTensions(force, ctx);

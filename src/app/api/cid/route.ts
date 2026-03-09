@@ -105,13 +105,15 @@ function validateWorkflowQuality(
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { systemPrompt, messages, model: requestedModel, taskType, _retryCount } = body as {
+    const { systemPrompt, messages, model: requestedModel, taskType, _retryCount, effortLevel: rawEffort } = body as {
       systemPrompt: string;
       messages: Array<{ role: 'user' | 'assistant'; content: string }>;
       model?: string;
       taskType?: 'generate' | 'execute' | 'analyze';
       _retryCount?: number;
+      effortLevel?: 'low' | 'medium' | 'high' | 'max';
     };
+    const effortLevel = rawEffort || 'medium';
 
     if (!systemPrompt || !messages || !Array.isArray(messages) || messages.length === 0) {
       return NextResponse.json(
@@ -180,19 +182,24 @@ export async function POST(req: NextRequest) {
     // Build provider-specific request
     const buildPayloadAndHeaders = (): { headers: Record<string, string>; body: string } => {
       if (provider === 'anthropic') {
+        const anthropicBody: Record<string, unknown> = {
+          model,
+          max_tokens: 4096,
+          system: systemPrompt,
+          messages,
+        };
+        if (temperature !== undefined) anthropicBody.temperature = temperature;
+        // Adaptive thinking effort (GA on Claude Opus 4.6)
+        if (effortLevel && effortLevel !== 'medium') {
+          anthropicBody.thinking = { type: 'enabled', budget_tokens: { low: 2048, medium: 4096, high: 8192, max: 16384 }[effortLevel] || 4096 };
+        }
         return {
           headers: {
             'Content-Type': 'application/json',
             'x-api-key': apiKey,
             'anthropic-version': '2023-06-01',
           },
-          body: JSON.stringify({
-            model,
-            max_tokens: 4096,
-            temperature,
-            system: systemPrompt,
-            messages,
-          }),
+          body: JSON.stringify(anthropicBody),
         };
       }
       const headers: Record<string, string> = {
@@ -205,7 +212,10 @@ export async function POST(req: NextRequest) {
       }
       // deepseek-reasoner uses reasoning tokens from the max_tokens budget,
       // so we need a larger budget to avoid truncated JSON responses
-      const maxTokens = isReasonerModel ? 16384 : 4096;
+      const effortTokenMap: Record<string, number> = { low: 4096, medium: 8192, high: 16384, max: 32768 };
+      const maxTokens = isReasonerModel
+        ? (effortTokenMap[effortLevel] || 16384)
+        : 4096;
       return {
         headers,
         body: JSON.stringify({

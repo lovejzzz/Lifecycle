@@ -1,5 +1,20 @@
 # Changelog
 
+### 2026-03-09 — Core Engine: Category-Aware Execution & Adaptive Thinking Effort
+
+**Roadmap Item 36: Category-Aware Execution Prompts** — tailored system prompts per node category:
+- Added `CATEGORY_SYSTEM_PROMPTS` map (10 categories: test, policy, review, action, cid, artifact, patch, state, dependency, note)
+- `getExecutionSystemPrompt()` builds category-specific instructions with sanitized label and upstream context
+- `executeNode()` now uses category-aware prompts instead of generic system prompt
+
+**Roadmap Item 72: Adaptive Thinking Effort per Node** — scales AI reasoning depth by task:
+- Added `_effortLevel` field to `NodeData` type (low/medium/high/max)
+- `inferEffortFromCategory()` auto-assigns effort: low for input/trigger/dependency/output, high for cid/action/artifact
+- DeepSeek: maps effort to `max_tokens` (4K/8K/16K/32K) since reasoning consumes token budget
+- Anthropic: maps effort to `thinking.budget_tokens` (2K/4K/8K/16K)
+- Effort selector dropdown in NodeDetailPanel (Auto/Low/Medium/High/Max)
+- Fixed pre-existing type errors in reflection tests (missing legacy compat fields)
+
 ### 2026-03-09 — Foundation & Safety: Prompt Sanitization, Storage Reliability, Execution Mutex
 
 **Roadmap Item 41: Prompt Injection Sanitization** — prevents LLM prompt injection via node labels:

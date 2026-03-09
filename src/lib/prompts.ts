@@ -375,6 +375,34 @@ export function sanitizeForPrompt(text: string, maxLen: number = 200): string {
     .trim();
 }
 
+// ─── Category-Aware Execution Prompts ──────────────────────────────────────
+
+const CATEGORY_SYSTEM_PROMPTS: Record<string, string> = {
+  test: 'You are a QA engineer. Generate structured test results with PASS/FAIL for each criterion. Use a table format: | Criterion | Status | Evidence |. End with a summary verdict.',
+  policy: 'You are a policy engine. Output numbered rules (1., 2., 3...) that are precise, enforceable, and measurable. Each rule must have a CONDITION and an ACTION.',
+  review: 'You are a content reviewer. Produce a checklist: ✅ Approved / ⚠️ Concern / ❌ Blocked for each review dimension. End with a verdict: APPROVE, REQUEST_CHANGES, or BLOCK.',
+  action: 'You are a task executor. Perform the requested action and report: what was done, what changed, and any side effects. Be specific and concrete.',
+  cid: 'You are an AI reasoning engine. Think through the problem step-by-step, cite your reasoning, and produce a clear conclusion or deliverable.',
+  artifact: 'You are a document author. Produce a well-structured document with headers, sections, and professional formatting. Write real, substantive content — not placeholders.',
+  patch: 'You are a code patcher. Output the exact changes in diff format or as replacement code blocks. Include before/after context and explain each change.',
+  state: 'You are a state tracker. Report the current state as structured key-value pairs. Highlight what changed from the previous state.',
+  dependency: 'You are a dependency resolver. List resolved dependencies with version, status, and any conflicts or warnings.',
+  note: 'You are a research assistant. Summarize and organize information clearly, extracting key insights and organizing them into logical sections.',
+};
+
+/** Get a category-aware system prompt for node execution. */
+export function getExecutionSystemPrompt(category: string, label: string, upstreamContext: string): string {
+  const categoryPrompt = CATEGORY_SYSTEM_PROMPTS[category] || 'You are a professional content generator. Write detailed, well-structured content.';
+  return `${categoryPrompt}\n\nYou are working on a workflow node called "${sanitizeForPrompt(label, 100)}" (category: ${category}). Return ONLY the content as markdown text. Do not wrap in JSON or code blocks.`;
+}
+
+/** Infer effort level from node category for adaptive thinking. */
+export function inferEffortFromCategory(category: string): 'low' | 'medium' | 'high' {
+  if (['input', 'trigger', 'dependency', 'output'].includes(category)) return 'low';
+  if (['cid', 'action', 'artifact'].includes(category)) return 'high';
+  return 'medium'; // review, test, policy, state, note, patch
+}
+
 // ─── Graph Serializer ───────────────────────────────────────────────────────
 
 function serializeGraph(nodes: Node<NodeData>[], edges: Edge[]): string {

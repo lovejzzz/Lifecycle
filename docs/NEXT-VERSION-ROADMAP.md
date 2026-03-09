@@ -2221,7 +2221,7 @@ Each item includes specific files, implementation steps, acceptance criteria, an
 
 ---
 
-### 36. Category-Aware Execution Prompts with NODE_CONTENT_GUIDE Injection
+### 36. Category-Aware Execution Prompts with NODE_CONTENT_GUIDE Injection [x] Done
 **Status:** [ ] Not started
 **Version target:** 2.2.0
 **Inspiration:** Dify's per-node prompt templates; LangGraph's typed state formatting inside nodes; codebase finding that `executeNode()` uses identical generic prompt for all 13 categories
@@ -5527,7 +5527,7 @@ Each item includes specific files, implementation steps, acceptance criteria, an
 
 ---
 
-### 72. Adaptive Thinking Effort Levels per Node
+### 72. Adaptive Thinking Effort Levels per Node [x] Done
 **Status:** [ ] Not started
 **Version target:** 1.72.0
 **Inspiration:** Anthropic's adaptive thinking (GA on Claude Opus 4.6) — replaces fixed `budget_tokens` with an `effort` parameter (`low`, `medium`, `high`, `max`) that lets the model decide when and how deeply to reason. Google Gemini 2.5's "thinking budget" parameter. OpenAI o3's reasoning effort slider. All three major providers now expose reasoning depth as a first-class API parameter.

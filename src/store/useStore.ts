@@ -5,7 +5,7 @@ import type { Node, Edge, Connection } from '@xyflow/react';
 import type { NodeData, LifecycleEvent, CIDMessage, NodeCategory, CIDMode, AgentPersonalityLayers, HabitLayer, GenerationLayer, ReflectionLayer, DrivingForceLayer } from '@/lib/types';
 import { registerCustomCategory, EDGE_LABEL_COLORS, BUILT_IN_CATEGORIES } from '@/lib/types';
 import { getAgent, getInterviewQuestions, buildEnrichedPrompt } from '@/lib/agents';
-import { buildSystemPrompt, buildMessages } from '@/lib/prompts';
+import { buildSystemPrompt, buildMessages, getExecutionSystemPrompt, inferEffortFromCategory } from '@/lib/prompts';
 import {
   createDefaultHabits, createDefaultGeneration, createDefaultReflection,
   migrateHabitsV1toV2, migrateReflectionV1toV2,
@@ -1279,7 +1279,8 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       let output = '';
 
       {
-        const systemPrompt = `You are a content generator for a workflow node called "${d.label}" (category: ${d.category}). Write detailed, professional content. Return ONLY the content as markdown text. Do not wrap in JSON or code blocks.`;
+        const systemPrompt = getExecutionSystemPrompt(d.category, d.label, inputContext);
+        const effortLevel = d._effortLevel || inferEffortFromCategory(d.category);
         const res = await fetch('/api/cid', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1287,6 +1288,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
             systemPrompt,
             model: store.cidAIModel,
             taskType: 'execute',
+            effortLevel,
             messages: [{ role: 'user', content: `${autoPrompt}\n\n${inputContext}` }],
           }),
         });

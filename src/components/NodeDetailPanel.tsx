@@ -705,6 +705,20 @@ export default function NodeDetailPanel() {
                   rows={3}
                   className="w-full text-[11px] text-white/60 bg-white/[0.04] rounded-lg px-3 py-2 border border-white/10 outline-none resize-none placeholder:text-white/15"
                 />
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[10px] text-white/35 uppercase tracking-wider">Effort</span>
+                  <select
+                    value={data._effortLevel ?? 'auto'}
+                    onChange={(e) => updateNodeData(node.id, { _effortLevel: e.target.value === 'auto' ? undefined : e.target.value as 'low' | 'medium' | 'high' | 'max' })}
+                    className="text-[10px] text-white/60 bg-white/[0.04] rounded px-2 py-0.5 border border-white/10 outline-none"
+                  >
+                    <option value="auto">Auto</option>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="max">Max</option>
+                  </select>
+                </div>
                 <div className="flex gap-1.5">
                   <button
                     onClick={() => executeNode(node.id)}

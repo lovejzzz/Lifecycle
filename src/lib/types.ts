@@ -246,6 +246,7 @@ export interface NodeData extends Record<string, unknown> {
   executionError?: string;   // error message if execution failed
   _executionStartedAt?: number;  // Date.now() when execution began (ephemeral)
   _executionDurationMs?: number; // total ms elapsed for this node's execution (ephemeral)
+  _effortLevel?: 'low' | 'medium' | 'high' | 'max'; // adaptive thinking effort for AI execution
   inputValue?: string;       // user-provided input value (text, URL, etc.)
 
   // Output format for download-capable output nodes
