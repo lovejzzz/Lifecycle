@@ -10,7 +10,7 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 
 **Components (UI):**
 - [x] Canvas.tsx
-- [ ] CIDPanel.tsx
+- [x] CIDPanel.tsx
 - [ ] NodeDetailPanel.tsx
 - [ ] ArtifactPanel.tsx
 - [ ] TopBar.tsx
@@ -55,6 +55,16 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 ## Cycle Log
 
 <!-- Newest entries at top -->
+
+### Cycle 2 — 2026-03-09 22:25
+- **Audited**: CIDPanel.tsx (1373 lines, full read)
+- **Tests**: 267 passing, 0 failing; coverage: 40.3% stmts (stable)
+- **Issues found**: 3
+  1. Duplicate user messages in `status` and `explain` AI handlers — `chatWithCID` adds its own user msg but handlers also called `addMessage` (fixed)
+  2. Stats bar recomputed on every render — `getHealthScore()`, `getComplexityScore()`, `getWorkflowProgress()`, orphan O(n*m) scan all in IIFEs (fixed: memoized with `useMemo`)
+  3. Blob URL revoked too early — 3 instances of sync `revokeObjectURL` after `a.click()` (fixed: delayed 1s)
+- **Fixed**: All 3 issues
+- **Test refinements**: N/A (cycle 2, not a refine cycle)
 
 ### Cycle 1 — 2026-03-09 21:25
 - **Audited**: Canvas.tsx (1407 lines, full read)

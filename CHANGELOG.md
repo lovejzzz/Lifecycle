@@ -1,5 +1,12 @@
 # Changelog
 
+### 2026-03-09 — Loop Cycle 2: CIDPanel Audit
+
+**CIDPanel.tsx audit** (1373 lines reviewed):
+- **Fix: Duplicate user messages** — `status` and `explain` AI handlers were adding a user message AND calling `chatWithCID` (which adds its own). Removed the duplicate `addMessage` calls.
+- **Fix: Stats bar performance** — memoized `getHealthScore()`, `getComplexityScore()`, `getWorkflowProgress()`, and orphan count (was O(n*m) per render). Now uses `useMemo` with proper dependencies.
+- **Fix: Blob URL revoke timing** — 3 instances of synchronous `revokeObjectURL` after `a.click()` now delayed 1s for safe downloads.
+
 ### 2026-03-09 — Loop Cycle 1: Canvas Audit & Tooltip Fixes
 
 **Canvas.tsx audit** (1407 lines reviewed):

@@ -201,6 +201,19 @@ export default function CIDPanel() {
   const agent = getAgent(cidMode);
   const isAmber = agent.accent === 'amber';
 
+  // Memoize stats bar computations to avoid recalculating on every render
+  const statsData = React.useMemo(() => {
+    if (nodes.length === 0) return null;
+    const health = getHealthScore();
+    const complexity = getComplexityScore();
+    const progress = getWorkflowProgress();
+    const edgeNodeIds = new Set<string>();
+    for (const e of edges) { edgeNodeIds.add(e.source); edgeNodeIds.add(e.target); }
+    const stale = nodes.filter(n => n.data.status === 'stale').length;
+    const orphans = nodes.filter(n => !edgeNodeIds.has(n.id)).length;
+    return { health, complexity, progress, stale, orphans };
+  }, [nodes, edges, getHealthScore, getComplexityScore, getWorkflowProgress]);
+
   // Auto-scroll: always scroll on new message count or when last message updates (streaming)
   const msgCount = messages.length;
   const lastMsgContent = msgCount > 0 ? messages[msgCount - 1].content : '';
@@ -337,7 +350,7 @@ export default function CIDPanel() {
       a.href = url;
       a.download = `lifecycle-workflow-${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
-      URL.revokeObjectURL(url);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
       addToast('Workflow exported', 'success');
       return;
     }
@@ -350,7 +363,7 @@ export default function CIDPanel() {
       a.href = url;
       a.download = `cid-conversation-${new Date().toISOString().slice(0, 10)}.md`;
       a.click();
-      URL.revokeObjectURL(url);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
       addToast('Chat exported as Markdown', 'success');
       return;
     }
@@ -408,8 +421,8 @@ export default function CIDPanel() {
     } else if (/^(?:status|report|health|dashboard)\b/i.test(prompt)) {
       // AI-powered status report when available
       if (aiEnabled && nodes.length > 0) {
+        // chatWithCID adds its own user message, so we don't add one here
         chatWithCID(`Give me a status report on this workflow. Analyze the health, identify any bottlenecks or gaps, and suggest the most impactful next step. Be concise and specific. Do NOT return a workflow, just your analysis.`);
-        addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
       } else {
         dispatchCommand(prompt, () => getStatusReport());
       }
@@ -629,8 +642,8 @@ export default function CIDPanel() {
       }
     } else if (/^(?:explain|walk\s*through|narrate|trace)\b/i.test(prompt)) {
       if (aiEnabled && nodes.length > 0) {
+        // chatWithCID adds its own user message, so we don't add one here
         chatWithCID(`Explain this workflow step by step as a narrative. Walk through each node and how they connect. Be clear and engaging. Do NOT return a workflow, just the explanation.`);
-        addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
       } else {
         dispatchCommand(prompt, () => explainWorkflow());
       }
@@ -955,7 +968,7 @@ export default function CIDPanel() {
               a.href = url;
               a.download = `cid-chat-${new Date().toISOString().slice(0, 10)}.txt`;
               a.click();
-              URL.revokeObjectURL(url);
+              setTimeout(() => URL.revokeObjectURL(url), 1000);
             }}
             title="Export chat"
             className="w-7 h-7 rounded-lg flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors"
@@ -981,33 +994,18 @@ export default function CIDPanel() {
       </div>
 
       {/* Stats Bar — only show when workflow has nodes */}
-      {nodes.length > 0 && (
+      {statsData && (
         <div className="flex items-center gap-3 px-5 py-1.5 border-b border-white/[0.04] text-[9px] text-white/30">
           <span>{nodes.length} nodes</span>
           <span className="text-white/10">·</span>
           <span>{edges.length} edges</span>
           <span className="text-white/10">·</span>
-          {(() => {
-            const score = getHealthScore();
-            const color = score >= 80 ? 'text-emerald-400/60' : score >= 50 ? 'text-amber-400/60' : 'text-rose-400/60';
-            return <span className={color}>{score}% health</span>;
-          })()}
-          {(() => {
-            const cx = getComplexityScore();
-            return <><span className="text-white/10">·</span><span className="text-white/25">{cx.label}</span></>;
-          })()}
-          {(() => {
-            const p = getWorkflowProgress();
-            return p.total > 0 ? <><span className="text-white/10">·</span><span className="text-cyan-400/50">{p.percent}%</span></> : null;
-          })()}
-          {(() => {
-            const stale = nodes.filter(n => n.data.status === 'stale').length;
-            const orphans = nodes.filter(n => !edges.some(e => e.source === n.id || e.target === n.id)).length;
-            return <>
-              {stale > 0 && <><span className="text-white/10">·</span><span className="text-amber-400/50">{stale} stale</span></>}
-              {orphans > 0 && <><span className="text-white/10">·</span><span className="text-rose-400/50">{orphans} orphan{orphans > 1 ? 's' : ''}</span></>}
-            </>;
-          })()}
+          <span className={statsData.health >= 80 ? 'text-emerald-400/60' : statsData.health >= 50 ? 'text-amber-400/60' : 'text-rose-400/60'}>{statsData.health}% health</span>
+          <span className="text-white/10">·</span>
+          <span className="text-white/25">{statsData.complexity.label}</span>
+          {statsData.progress.total > 0 && <><span className="text-white/10">·</span><span className="text-cyan-400/50">{statsData.progress.percent}%</span></>}
+          {statsData.stale > 0 && <><span className="text-white/10">·</span><span className="text-amber-400/50">{statsData.stale} stale</span></>}
+          {statsData.orphans > 0 && <><span className="text-white/10">·</span><span className="text-rose-400/50">{statsData.orphans} orphan{statsData.orphans > 1 ? 's' : ''}</span></>}
         </div>
       )}
 
