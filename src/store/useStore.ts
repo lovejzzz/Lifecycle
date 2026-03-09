@@ -15,7 +15,8 @@ import {
 } from '@/lib/reflection';
 import {
   NODE_W, NODE_H, findFreePosition,
-  topoSort, ANIMATED_LABELS, createStyledEdge, inferEdgeLabel,
+  topoSort, getParallelGroups, getUpstreamSubgraph,
+  ANIMATED_LABELS, createStyledEdge, inferEdgeLabel,
   findNodeByName, CATEGORY_LABELS, markdownToHTML,
   detectCycle, validateGraphInvariants,
 } from '@/lib/graph';
@@ -232,6 +233,7 @@ interface LifecycleStore {
   // Workflow execution
   executeNode: (nodeId: string) => Promise<void>;
   executeWorkflow: () => Promise<void>;
+  executeBranch: (nodeId: string) => Promise<void>;
 
   // Execution mutex
   _executingNodeIds: Set<string>;
@@ -1156,6 +1158,22 @@ export const useLifecycleStore = create<LifecycleStore>((set, get) => ({
 
     // For non-AI nodes (artifact, state, review, output, etc.), aggregate upstream results
     const incomingEdges = store.edges.filter(e => e.target === nodeId);
+
+    // Circuit breaker: skip if any required upstream node failed
+    const upstreamNodes = incomingEdges.map(e => store.nodes.find(n => n.id === e.source)).filter(Boolean);
+    const failedUpstream = upstreamNodes.filter(n => n!.data.executionStatus === 'error');
+    if (failedUpstream.length > 0 && d.category !== 'note') {
+      const failNames = failedUpstream.map(n => n!.data.label).join(', ');
+      store.updateNodeData(nodeId, {
+        executionStatus: 'error',
+        executionError: `Skipped: upstream node(s) failed (${failNames}). Fix upstream errors first.`,
+        _executionStartedAt: _execStart,
+        _executionDurationMs: 0,
+      });
+      get()._unlockNode(nodeId);
+      return;
+    }
+
     const upstreamResults = incomingEdges.map(e => {
       const src = store.nodes.find(n => n.id === e.source);
       return src?.data.executionResult || src?.data.content || '';
@@ -1239,22 +1257,49 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       return;
     }
 
+    // Build edge-aware context: which upstream nodes feed this one and via which relationship
+    const edgeContext = incomingEdges.map(e => {
+      const src = store.nodes.find(n => n.id === e.source);
+      const label = (typeof e.label === 'string' ? e.label : e.data?.label as string) || 'connects';
+      return { from: src?.data.label || 'Unknown', relationship: label, category: src?.data.category || '' };
+    });
+    const relationshipHint = edgeContext.length > 0
+      ? ` You receive input via: ${edgeContext.map(e => `"${e.relationship}" from "${e.from}" (${e.category})`).join(', ')}.`
+      : '';
+
+    // Downstream awareness — tell the node what consumers expect
+    const outgoingEdges = store.edges.filter(e => e.source === nodeId);
+    const downstreamHint = outgoingEdges.length > 0
+      ? ` Your output will be used by: ${outgoingEdges.map(e => {
+          const tgt = store.nodes.find(n => n.id === e.target);
+          const label = (typeof e.label === 'string' ? e.label : e.data?.label as string) || 'next step';
+          return `"${tgt?.data.label}" (${label})`;
+        }).join(', ')}. Tailor your output format accordingly.`
+      : '';
+
     // Build an execution prompt — either from explicit aiPrompt or auto-generated from node context
     const autoPrompt = d.aiPrompt || (() => {
       const cat = d.category;
       const label = d.label;
       const desc = d.description || '';
-      if (cat === 'cid') return `Process and transform the input content for "${label}". ${desc}`;
-      if (cat === 'artifact') return `Generate detailed, professional content for "${label}". ${desc} Include all relevant sections. Write real content, not placeholders. Use markdown formatting.`;
-      if (cat === 'state') return `Analyze and organize the input content for "${label}". ${desc} Structure the information clearly and extract key points.`;
-      if (cat === 'review') return `Review the following content for quality, completeness, and accuracy. Provide a brief assessment and note any issues. For "${label}": ${desc}`;
-      if (cat === 'note') return `Summarize and organize research notes for "${label}". ${desc} Extract key insights and organize them clearly.`;
-      if (cat === 'policy') return `Define and document the policy rules for "${label}". ${desc}`;
-      if (cat === 'trigger') return `Define the trigger conditions for "${label}". ${desc} Specify what events, schedules, or conditions activate this step.`;
-      if (cat === 'test') return `Design and execute tests for "${label}". ${desc} Define test cases, expected outcomes, and report pass/fail results.`;
-      if (cat === 'action') return `Execute the action for "${label}". ${desc} Describe the operation, its inputs, outputs, and any side effects.`;
-      if (cat === 'patch') return `Generate a patch or fix for "${label}". ${desc} Identify the issue, describe the fix, and provide the corrected content.`;
-      if (cat === 'dependency') return `Analyze and resolve dependencies for "${label}". ${desc} List required dependencies, their status, and any conflicts.`;
+      // Edge-semantic overrides for specific category+edge combinations
+      const hasValidatesEdge = edgeContext.some(e => e.relationship === 'validates');
+      const hasMonitorsEdge = edgeContext.some(e => e.relationship === 'monitors');
+      const hasTriggersEdge = edgeContext.some(e => e.relationship === 'triggers');
+      if (cat === 'review' && hasValidatesEdge) return `Review and validate the content received from upstream for "${label}".${relationshipHint}${downstreamHint} ${desc}`;
+      if (cat === 'policy' && hasMonitorsEdge) return `Check the content against policy rules for "${label}".${relationshipHint}${downstreamHint} ${desc}`;
+      if (cat === 'action' && hasTriggersEdge) return `Execute this action triggered by upstream for "${label}".${relationshipHint}${downstreamHint} ${desc}`;
+      if (cat === 'cid') return `Process and transform the input content for "${label}".${relationshipHint}${downstreamHint} ${desc}`;
+      if (cat === 'artifact') return `Generate detailed, professional content for "${label}".${relationshipHint}${downstreamHint} ${desc} Include all relevant sections. Write real content, not placeholders. Use markdown formatting.`;
+      if (cat === 'state') return `Analyze and organize the input content for "${label}".${relationshipHint}${downstreamHint} ${desc} Structure the information clearly and extract key points.`;
+      if (cat === 'review') return `Review the following content for quality, completeness, and accuracy. Provide a brief assessment and note any issues. For "${label}":${relationshipHint}${downstreamHint} ${desc}`;
+      if (cat === 'note') return `Summarize and organize research notes for "${label}".${relationshipHint}${downstreamHint} ${desc} Extract key insights and organize them clearly.`;
+      if (cat === 'policy') return `Define and document the policy rules for "${label}".${relationshipHint}${downstreamHint} ${desc}`;
+      if (cat === 'trigger') return `Define the trigger conditions for "${label}".${relationshipHint}${downstreamHint} ${desc} Specify what events, schedules, or conditions activate this step.`;
+      if (cat === 'test') return `Design and execute tests for "${label}".${relationshipHint}${downstreamHint} ${desc} Define test cases, expected outcomes, and report pass/fail results.`;
+      if (cat === 'action') return `Execute the action for "${label}".${relationshipHint}${downstreamHint} ${desc} Describe the operation, its inputs, outputs, and any side effects.`;
+      if (cat === 'patch') return `Generate a patch or fix for "${label}".${relationshipHint}${downstreamHint} ${desc} Identify the issue, describe the fix, and provide the corrected content.`;
+      if (cat === 'dependency') return `Analyze and resolve dependencies for "${label}".${relationshipHint}${downstreamHint} ${desc} List required dependencies, their status, and any conflicts.`;
       if (cat === 'output' && !d.outputFormat) return null; // Output nodes pass through upstream content
       return null;
     })();
@@ -1266,8 +1311,37 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       return;
     }
 
-    const inputContext = upstreamResults.length > 0
-      ? `Input from upstream nodes:\n\n${upstreamResults.join('\n\n---\n\n')}`
+    // JIT context scoping: full results from direct parents, truncated from ancestors
+    const directParentIds = new Set(incomingEdges.map(e => e.source));
+    const collectAncestors = (parentIds: Set<string>, depth: number): Array<{ label: string; result: string }> => {
+      if (depth <= 0 || parentIds.size === 0) return [];
+      const grandparentEdges = store.edges.filter(e => parentIds.has(e.target) && !directParentIds.has(e.source));
+      const grandparents = new Map<string, { label: string; result: string }>();
+      for (const e of grandparentEdges) {
+        const src = store.nodes.find(n => n.id === e.source);
+        if (src && !grandparents.has(src.id)) {
+          const result = src.data.executionResult || src.data.content || '';
+          grandparents.set(src.id, { label: src.data.label, result: result.slice(0, 200) + (result.length > 200 ? '...' : '') });
+        }
+      }
+      const gpIds = new Set(grandparents.keys());
+      return [...grandparents.values(), ...collectAncestors(gpIds, depth - 1)];
+    };
+
+    const directContext = incomingEdges.map(e => {
+      const src = store.nodes.find(n => n.id === e.source);
+      const edgeLabel = (typeof e.label === 'string' ? e.label : e.data?.label as string) || 'connects';
+      const srcResult = src?.data.executionResult || src?.data.content || '';
+      return srcResult ? `## From "${src?.data.label}" (${edgeLabel})\n${srcResult}` : '';
+    }).filter(Boolean).join('\n\n---\n\n');
+
+    const ancestors = collectAncestors(directParentIds, 2);
+    const ancestorSummary = ancestors.length > 0
+      ? `\n\n## Background context (summarized):\n${ancestors.map(a => `[${a.label}]: ${a.result}`).join('\n')}`
+      : '';
+
+    const inputContext = directContext
+      ? `## Direct inputs:\n${directContext}${ancestorSummary}`
       : d.content || 'No input provided.';
 
     store.updateNodeData(nodeId, { executionStatus: 'running', executionError: undefined, _executionStartedAt: _execStart });
@@ -1518,6 +1592,45 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     }
     store.addMessage({ id: uid(), role: 'cid', content: msg, timestamp: Date.now() });
     cidLog('executeWorkflow:complete', { nodesProcessed: order.length, errors: errorCount, skipped: skippedCount, elapsed, parallelStages: sortedLevels.length });
+  },
+
+  executeBranch: async (targetNodeId: string) => {
+    const store = get();
+    const { nodes, edges } = store;
+    const targetNode = nodes.find(n => n.id === targetNodeId);
+    if (!targetNode) return;
+
+    // Get only the upstream subgraph for this node
+    const subgraph = getUpstreamSubgraph(targetNodeId, nodes, edges);
+    const { order } = topoSort(subgraph.nodes, subgraph.edges);
+
+    // Skip already-executed nodes (cache hit)
+    const toExecute = order.filter(id => {
+      const n = store.nodes.find(x => x.id === id);
+      return n && n.data.executionStatus !== 'success';
+    });
+
+    if (toExecute.length === 0) {
+      store.addMessage({ id: uid(), role: 'cid', content: `All upstream nodes for "${targetNode.data.label}" are already executed.`, timestamp: Date.now(), _ephemeral: true });
+      return;
+    }
+
+    cidLog('executeBranch', { target: targetNode.data.label, total: order.length, toExecute: toExecute.length });
+    store.addMessage({ id: uid(), role: 'cid', content: `Running branch for "${targetNode.data.label}": ${toExecute.length} node(s) to execute...`, timestamp: Date.now(), _ephemeral: true });
+
+    for (const nodeId of toExecute) {
+      await store.executeNode(nodeId);
+    }
+
+    const elapsed = toExecute.map(id => {
+      const n = get().nodes.find(x => x.id === id);
+      return n?.data._executionDurationMs || 0;
+    }).reduce((a, b) => a + b, 0);
+
+    store.addMessage({
+      id: uid(), role: 'cid', timestamp: Date.now(),
+      content: `Branch execution complete for "${targetNode.data.label}". ${toExecute.length} node(s) in ${(elapsed / 1000).toFixed(1)}s.`,
+    });
   },
 
   // Undo/Redo

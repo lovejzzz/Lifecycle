@@ -1,5 +1,31 @@
 # Changelog
 
+### 2026-03-09 — Core Engine: Upstream Data Flow, Circuit Breaker, JIT Context, Parallel & Branch Execution
+
+**Roadmap Item 27: Upstream-Aware Execution Prompts** — structured data flow with edge semantics:
+- `inputContext` now includes source node labels, edge labels (feeds/validates/monitors), and categories
+- Edge-semantic overrides: review+validates, policy+monitors, action+triggers get specialized prompts
+- Downstream awareness: system prompt tells nodes what consumers expect, guiding output format
+
+**Roadmap Item 48: Circuit Breaker** — prevents cascading failures in workflow execution:
+- `executeNode()` checks upstream node statuses before AI call
+- If any upstream has `executionStatus: 'error'`, downstream auto-skips with descriptive error
+- Note nodes exempt (non-critical, won't block)
+
+**Roadmap Item 64: JIT Context Scoping** — distance-aware context for execution:
+- Direct parent nodes provide full execution results
+- Ancestor nodes (2+ edges away) provide truncated summaries (200 chars max)
+- Reduces token usage for deep workflows while maintaining context quality
+
+**Roadmap Item 6: Partial Branch Execution** — run only what you need:
+- Added `getUpstreamSubgraph()` in graph.ts — BFS backward to collect dependencies
+- Added `executeBranch(nodeId)` — executes only upstream chain, skips already-executed nodes
+- "Run Branch" button (Play icon) appears on hover in node footer
+
+**Roadmap Item 26: Parallel Execution Utilities** (already implemented in executeWorkflow):
+- Added `getParallelGroups()` utility in graph.ts for reuse
+- 4 new tests for getParallelGroups and getUpstreamSubgraph (74 total)
+
 ### 2026-03-09 — Core Engine: Category-Aware Execution & Adaptive Thinking Effort
 
 **Roadmap Item 36: Category-Aware Execution Prompts** — tailored system prompts per node category:

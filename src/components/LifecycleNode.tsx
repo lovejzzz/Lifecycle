@@ -4,7 +4,7 @@ import React, { memo, useState, useRef, useEffect } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { motion } from 'framer-motion';
 import {
-  Lock, AlertTriangle, Loader2, Eye, Link, Upload,
+  Lock, AlertTriangle, Loader2, Eye, Link, Upload, Play,
 } from 'lucide-react';
 import type { NodeData } from '@/lib/types';
 import { getNodeColors, CategoryIcon } from '@/lib/types';
@@ -377,6 +377,16 @@ function LifecycleNode({ data, id }: NodeProps) {
                 </span>
               )}
               <span className="text-[8px] text-white/20 capitalize tracking-wide">{status}</span>
+              {/* Run Branch button — visible on hover when node has upstream deps */}
+              {inCount > 0 && (
+                <button
+                  className="opacity-0 group-hover:opacity-100 text-white/20 hover:text-emerald-400/70 transition-all nodrag"
+                  onClick={(e) => { e.stopPropagation(); useLifecycleStore.getState().executeBranch(id); }}
+                  title="Run this branch only"
+                >
+                  <Play size={10} />
+                </button>
+              )}
               {/* Preview button — visible on hover */}
               {(nodeData.content || nodeData.executionResult) && (
                 <button

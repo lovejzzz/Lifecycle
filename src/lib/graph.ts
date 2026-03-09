@@ -73,6 +73,34 @@ export function topoSort(nodes: Node<NodeData>[], edges: Edge[]): { order: strin
   return { order, levels };
 }
 
+/** Group topologically sorted nodes into parallel execution levels.
+ *  Nodes in the same level have all dependencies satisfied by prior levels. */
+export function getParallelGroups(order: string[], levels: Map<string, number>): string[][] {
+  const maxLevel = Math.max(0, ...levels.values());
+  const groups: string[][] = Array.from({ length: maxLevel + 1 }, () => []);
+  for (const id of order) {
+    const level = levels.get(id) ?? 0;
+    groups[level].push(id);
+  }
+  return groups.filter(g => g.length > 0);
+}
+
+/** Walk backward from a target node to collect all upstream dependencies (including itself). */
+export function getUpstreamSubgraph(targetId: string, nodes: Node<NodeData>[], edges: Edge[]): { nodes: Node<NodeData>[]; edges: Edge[] } {
+  const visited = new Set<string>();
+  const queue = [targetId];
+  while (queue.length > 0) {
+    const id = queue.shift()!;
+    if (visited.has(id)) continue;
+    visited.add(id);
+    edges.filter(e => e.target === id).forEach(e => queue.push(e.source));
+  }
+  return {
+    nodes: nodes.filter(n => visited.has(n.id)),
+    edges: edges.filter(e => visited.has(e.source) && visited.has(e.target)),
+  };
+}
+
 // ─── Edge Utilities ─────────────────────────────────────────────────────────
 
 export const ANIMATED_LABELS = new Set(['monitors', 'watches', 'validates']);

@@ -242,7 +242,7 @@ Each item includes specific files, implementation steps, acceptance criteria, an
 
 ---
 
-### 6. Partial Branch Execution
+### 6. Partial Branch Execution [x] Done
 **Status:** [ ] Not started
 **Version target:** 1.6.0
 **Inspiration:** ComfyUI's "click play on any output node to execute only that branch"
@@ -1527,7 +1527,7 @@ Each item includes specific files, implementation steps, acceptance criteria, an
 
 ---
 
-### 26. Parallel Branch Execution in Preview and Workflow Runner
+### 26. Parallel Branch Execution in Preview and Workflow Runner [x] Done
 **Status:** [ ] Not started
 **Version target:** 1.26.0
 **Inspiration:** Dify's parallel branch execution (up to 10 simultaneous branches, total time = longest branch not sum of all) and LangGraph's fan-out/fan-in pattern where independent nodes run concurrently. n8n's multi-agent parallel execution also applies this pattern.
@@ -1582,7 +1582,7 @@ Each item includes specific files, implementation steps, acceptance criteria, an
 
 ---
 
-### 27. Upstream-Aware Execution Prompts with Typed Data Flow
+### 27. Upstream-Aware Execution Prompts with Typed Data Flow [x] Done
 **Status:** [ ] Not started
 **Version target:** 1.27.0
 **Inspiration:** LangGraph's typed state with reducer functions (each node receives/returns typed state, not raw strings). Rivet's typed port connections where each edge carries a specific data type (text, JSON, number, boolean). CrewAI's task delegation where each agent receives structured context about what the previous agent produced and why.
@@ -3292,7 +3292,7 @@ Each item includes specific files, implementation steps, acceptance criteria, an
 
 ---
 
-### 48. Cascading Failure Circuit Breaker in Workflow Execution
+### 48. Cascading Failure Circuit Breaker in Workflow Execution [x] Done
 **Status:** [ ] Not started
 **Version target:** 1.48.0
 **Inspiration:** LangGraph's conditional edges that route to different nodes based on success/failure. CrewAI's task failure handling with retry/skip/abort policies. n8n's error workflow triggers. AutoGen's conversation-level exception handling with agent fallback delegation.
@@ -4768,7 +4768,7 @@ Each item includes specific files, implementation steps, acceptance criteria, an
 
 ---
 
-### 64. JIT Context Window Scoping for Per-Node Execution
+### 64. JIT Context Window Scoping for Per-Node Execution [x] Done
 **Status:** [ ] Not started
 **Version target:** 1.64.0
 **Inspiration:** Composio's Agent Orchestrator "Just-in-Time" managed toolsets — the Planner decomposes objectives into sub-tasks, and the Executor receives only tool definitions relevant to the current sub-task (not all 100+ tools). This reduces token usage and parameter hallucination. Also inspired by CrewAI Flows' event-driven pipeline where each step only receives data it explicitly subscribes to, and Mastra's isolated agent memory within networks.

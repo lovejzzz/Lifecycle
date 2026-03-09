@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   nodesOverlap, findFreePosition, topoSort, inferEdgeLabel,
   findNodeByName, detectCycle, validateGraphInvariants,
+  getParallelGroups, getUpstreamSubgraph,
   NODE_W, NODE_H,
 } from '../graph';
 import type { Node, Edge } from '@xyflow/react';
@@ -276,5 +277,49 @@ describe('validateGraphInvariants', () => {
     const { valid, issues } = validateGraphInvariants([], []);
     expect(valid).toBe(true);
     expect(issues).toHaveLength(0);
+  });
+});
+
+// ─── getParallelGroups ──────────────────────────────────────────────────────
+
+describe('getParallelGroups', () => {
+  it('groups nodes by topological level', () => {
+    // A→C, B→C, C→D  ⟹  level 0: [A,B], level 1: [C], level 2: [D]
+    const nodes = [mkNode('A'), mkNode('B'), mkNode('C'), mkNode('D')];
+    const edges = [mkEdge('A', 'C'), mkEdge('B', 'C'), mkEdge('C', 'D')];
+    const { order, levels } = topoSort(nodes, edges);
+    const groups = getParallelGroups(order, levels);
+    expect(groups).toHaveLength(3);
+    expect(groups[0].sort()).toEqual(['A', 'B']);
+    expect(groups[1]).toEqual(['C']);
+    expect(groups[2]).toEqual(['D']);
+  });
+
+  it('returns single group for disconnected nodes', () => {
+    const nodes = [mkNode('A'), mkNode('B')];
+    const { order, levels } = topoSort(nodes, []);
+    const groups = getParallelGroups(order, levels);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].sort()).toEqual(['A', 'B']);
+  });
+});
+
+// ─── getUpstreamSubgraph ────────────────────────────────────────────────────
+
+describe('getUpstreamSubgraph', () => {
+  it('collects all upstream nodes for a target', () => {
+    const nodes = [mkNode('A'), mkNode('B'), mkNode('C'), mkNode('D')];
+    const edges = [mkEdge('A', 'B'), mkEdge('B', 'C'), mkEdge('A', 'D')];
+    const sub = getUpstreamSubgraph('C', nodes, edges);
+    expect(sub.nodes.map(n => n.id).sort()).toEqual(['A', 'B', 'C']);
+    expect(sub.edges).toHaveLength(2); // A→B, B→C
+  });
+
+  it('returns only the target node when it has no upstream', () => {
+    const nodes = [mkNode('A'), mkNode('B')];
+    const edges = [mkEdge('A', 'B')];
+    const sub = getUpstreamSubgraph('A', nodes, edges);
+    expect(sub.nodes.map(n => n.id)).toEqual(['A']);
+    expect(sub.edges).toHaveLength(0);
   });
 });
