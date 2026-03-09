@@ -1,5 +1,21 @@
 # Changelog
 
+### 2026-03-09 — CID Intelligence: Workflow Health Monitor
+
+**Roadmap Item 7: Workflow Health Monitor** — CID watches the workflow and surfaces problems proactively.
+
+- New `src/lib/health.ts` — structured `assessWorkflowHealth()` returning `{score, issues[], suggestions[]}`
+- 7 health checks: orphan nodes, stale nodes, long-stale (>5min), empty content, long chains without review gates, missing output nodes, execution failures
+- Each issue has priority (high/medium/low) and affected node IDs
+- Suggestions are actionable with CID chat commands (e.g., `→ retry failed`, `→ refresh stale`)
+- `runHealthCheck()` — proactive post-execution/propagation health monitoring
+- Fingerprint-based dedup: CID only surfaces *new* issues, avoids repeating the same warnings
+- Hooked into `executeWorkflow()` and `propagateStale()` completions with 500ms debounce
+- `healthBreakdown` command upgraded: now uses structured assessment with issues, suggestions, per-category breakdown, and content completeness
+- `formatHealthReport()` — renders structured report as readable markdown
+- 11 new tests for health assessment: orphans, stale, long-stale, empty content, missing output, exec failures, review gate chains, fingerprint stability
+- 99 total tests passing, build clean
+
 ### 2026-03-09 — Lifecycle Loop: Node Versioning
 
 **Roadmap Item 6: Node Versioning** — every meaningful change creates a recoverable snapshot.

@@ -23,6 +23,7 @@ import {
   detectCycle, validateGraphInvariants,
 } from '@/lib/graph';
 import { buildNodesFromPrompt } from '@/lib/intent';
+import { assessWorkflowHealth, formatHealthReport, issueFingerprint } from '@/lib/health';
 
 type Snapshot = { nodes: Node<NodeData>[]; edges: Edge[] };
 
@@ -347,6 +348,10 @@ interface LifecycleStore {
   selectAllImpactNodes: () => void;
   deselectAllImpactNodes: () => void;
   regenerateSelected: (nodeIds?: string[]) => Promise<void>;
+
+  // ── Workflow Health Monitor ──
+  _lastHealthFingerprint: string;
+  runHealthCheck: (silent?: boolean) => void;
 
   // ── Node Versioning ──
   rollbackNode: (nodeId: string, versionNumber: number) => void;
@@ -1631,6 +1636,9 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     }
     store.addMessage({ id: uid(), role: 'cid', content: msg, timestamp: Date.now() });
     cidLog('executeWorkflow:complete', { nodesProcessed: order.length, errors: errorCount, skipped: skippedCount, elapsed, parallelStages: sortedLevels.length });
+
+    // Post-execution health check
+    setTimeout(() => get().runHealthCheck(), 500);
   },
 
   executeBranch: async (targetNodeId: string) => {
@@ -2175,6 +2183,8 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     store.addMessage({ id: uid(), role: 'cid', content: doneMsg, timestamp: Date.now() });
     // Hide impact preview after regeneration
     set({ impactPreview: null });
+    // Post-propagation health check
+    setTimeout(() => get().runHealthCheck(), 500);
   },
 
   // ── Impact Preview ──
@@ -2278,6 +2288,37 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       ? `${successCount} node${successCount > 1 ? 's' : ''} regenerated in ${elapsed}s.`
       : `${successCount} regenerated, ${errorCount} failed in ${elapsed}s.`;
     store.addMessage({ id: uid(), role: 'cid', content: doneMsg, timestamp: Date.now() });
+  },
+
+  // ── Workflow Health Monitor ──
+  _lastHealthFingerprint: '',
+
+  runHealthCheck: (silent = false) => {
+    const store = get();
+    const { nodes, edges } = store;
+    if (nodes.length === 0) return;
+
+    const report = assessWorkflowHealth(nodes, edges);
+    const fingerprint = issueFingerprint(report.issues);
+
+    // Only surface new issues (avoid spam)
+    if (!silent && fingerprint !== store._lastHealthFingerprint && report.issues.length > 0) {
+      // Pick top 1-2 high-priority issues to surface
+      const highIssues = report.issues.filter(i => i.priority === 'high').slice(0, 2);
+      const toSurface = highIssues.length > 0 ? highIssues : report.issues.slice(0, 1);
+
+      if (toSurface.length > 0) {
+        const mode = store.cidMode ?? 'rowan';
+        const issueSummary = toSurface.map(i => i.message).join('. ');
+        const suggestion = report.suggestions[0];
+        const msg = mode === 'poirot'
+          ? `🔍 The little grey cells detect: ${issueSummary}.${suggestion ? ` Perhaps: ${suggestion.message}.` : ''}`
+          : `⚠ ${issueSummary}.${suggestion ? ` Suggestion: ${suggestion.message}.` : ''}`;
+        store.addMessage({ id: uid(), role: 'cid', content: msg, timestamp: Date.now(), _ephemeral: true });
+      }
+    }
+
+    set({ _lastHealthFingerprint: fingerprint });
   },
 
   // ── Node Versioning ──
@@ -5529,21 +5570,20 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     return `${header}\n\n${numbered}`;
   },
 
-  // Detailed health breakdown with per-category scoring
+  // Detailed health breakdown with structured assessment
   healthBreakdown: () => {
-    const { nodes, edges, cidMode, getHealthScore, getComplexityScore } = get();
+    const { nodes, edges, cidMode, getComplexityScore } = get();
     if (nodes.length === 0) return 'No workflow to analyze.';
 
-    const overallHealth = getHealthScore();
+    const report = assessWorkflowHealth(nodes, edges);
     const complexity = getComplexityScore();
-    const parts: string[] = ['### Health Breakdown', ''];
+    const parts: string[] = ['### Health Assessment', ''];
 
-    // Overall score with visual bar
-    const barLen = 20;
-    const filled = Math.round((overallHealth / 100) * barLen);
-    const bar = '█'.repeat(filled) + '░'.repeat(barLen - filled);
-    const scoreColor = overallHealth >= 80 ? 'healthy' : overallHealth >= 50 ? 'moderate' : 'critical';
-    parts.push(`**Overall: \`${bar}\` ${overallHealth}/100** (${scoreColor})`);
+    // Main health report
+    parts.push(formatHealthReport(report, cidMode));
+    parts.push('');
+
+    // Complexity
     parts.push(`**Complexity:** ${complexity.label} (${complexity.score})`);
     parts.push('');
 
@@ -5558,28 +5598,16 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       const icon = catHealth >= 80 ? '✓' : catHealth >= 50 ? '⚠' : '✗';
       parts.push(`- ${icon} **${cat}** — ${catNodes.length} node${catNodes.length > 1 ? 's' : ''}, ${catHealth}% active${stale > 0 ? ` (${stale} stale)` : ''}`);
     }
-    parts.push('');
-
-    // Connectivity score
-    const maxEdges = nodes.length * (nodes.length - 1) / 2;
-    const density = maxEdges > 0 ? Math.round((edges.length / maxEdges) * 100) : 0;
-    const orphans = nodes.filter(n => !edges.some(e => e.source === n.id || e.target === n.id)).length;
-    parts.push('**Connectivity**');
-    parts.push(`- Graph density: ${density}% (${edges.length} edges / ${maxEdges} possible)`);
-    if (orphans > 0) parts.push(`- ⚠ ${orphans} disconnected node${orphans > 1 ? 's' : ''}`);
-    else parts.push('- ✓ All nodes connected');
-    parts.push('');
 
     // Content completeness
     const withContent = nodes.filter(n => n.data.content || n.data.description || n.data.sections?.length).length;
     const contentPct = Math.round((withContent / nodes.length) * 100);
-    parts.push('**Content Completeness**');
-    parts.push(`- ${withContent}/${nodes.length} nodes have content or descriptions (${contentPct}%)`);
+    parts.push('');
+    parts.push(`**Content:** ${withContent}/${nodes.length} nodes have content (${contentPct}%)`);
 
-    const tail = cidMode === 'poirot'
-      ? `\n---\n*A thorough examination, mon ami. ${overallHealth >= 80 ? 'The case is strong.' : 'There are clues that warrant further investigation.'} Use \`suggest\` for recommended actions.*`
-      : `\n---\nHealth: ${overallHealth}/100. Run \`suggest\` for recommended actions.`;
-    parts.push(tail);
+    // Update health fingerprint (so proactive alerts know this was already shown)
+    set({ _lastHealthFingerprint: issueFingerprint(report.issues) });
+
     return parts.join('\n');
   },
 
