@@ -7379,6 +7379,286 @@ Each item includes specific files, implementation steps, acceptance criteria, an
 
 ---
 
+### 87. Human Input Node — Pause/Resume Workflow Execution
+**Status:** [ ] Not started
+**Version target:** 2.7.0
+**Inspiration:** Dify v1.7+ Human Input node that pauses workflow execution for human review/approval/input before continuing
+**Complexity:** Medium (2-3 hours)
+
+**Problem:** `executeWorkflow()` runs all nodes in topological order without any pause mechanism. There's no way for a user to review intermediate results, provide additional input, or approve/reject before the workflow continues. Dify's Human Input node solves this by pausing execution mid-flow and presenting a UI for the user to interact. This is essential for review gates, approval workflows, and human-in-the-loop AI pipelines.
+
+**Implementation:**
+
+1. **File: `src/lib/types.ts`** — Add `executionStatus: 'awaiting-input'` to NodeData:
+   ```typescript
+   executionStatus?: 'idle' | 'running' | 'success' | 'error' | 'awaiting-input';
+   ```
+
+2. **File: `src/store/useStore.ts`** — In `executeWorkflow()`, when a `review` or `gate` category node is reached:
+   ```typescript
+   if (d.category === 'review' && !d.executionResult) {
+     store.updateNodeData(nodeId, { executionStatus: 'awaiting-input' });
+     store._pausedWorkflowState = { remainingOrder: order.slice(orderIdx + 1), snapshot };
+     store.addToast(`Workflow paused at "${d.label}" — awaiting your input`, 'info');
+     return; // Pause execution
+   }
+   ```
+
+3. **File: `src/store/useStore.ts`** — Add `resumeWorkflow()` action:
+   ```typescript
+   resumeWorkflow: async () => {
+     const paused = get()._pausedWorkflowState;
+     if (!paused) return;
+     // Continue executing remaining nodes from where we paused
+   }
+   ```
+
+4. **File: `src/components/LifecycleNode.tsx`** — Show "Approve / Reject / Edit" buttons when `executionStatus === 'awaiting-input'`.
+
+**Acceptance criteria:**
+- [ ] Review nodes pause workflow execution and show approval UI
+- [ ] User can approve (continue), reject (abort), or edit content before continuing
+- [ ] `resumeWorkflow()` picks up exactly where execution paused
+- [ ] Paused state persists across page reloads
+- [ ] Non-review nodes execute normally without pausing
+
+---
+
+### 88. Node Result Caching with Input Hash
+**Status:** [ ] Not started
+**Version target:** 2.8.0
+**Inspiration:** LangGraph 1.0 node-level result caching — cache node outputs based on input hash, skip LLM call if same input seen before
+**Complexity:** Low-Medium (1-2 hours)
+
+**Problem:** When a user edits one node in a 9-node workflow and re-executes, ALL nodes re-execute — even those whose inputs haven't changed. Each node's LLM call costs tokens and time. LangGraph 1.0 caches node outputs keyed by a hash of their inputs; if the input hasn't changed, the cached result is returned instantly. For Lifecycle, this means editing a single node should only re-execute that node and its downstream dependents, not the entire graph.
+
+**Implementation:**
+
+1. **File: `src/store/useStore.ts`** — Add a result cache map:
+   ```typescript
+   _nodeResultCache: Map<string, { inputHash: string; result: string; timestamp: number }>;
+   ```
+
+2. **File: `src/store/useStore.ts`** — In `executeNode()`, before making the API call:
+   ```typescript
+   const inputHash = hashString(JSON.stringify({ prompt: autoPrompt, upstream: upstreamResults, config: d.aiModel }));
+   const cached = get()._nodeResultCache.get(nodeId);
+   if (cached && cached.inputHash === inputHash) {
+     store.updateNodeData(nodeId, { executionResult: cached.result, executionStatus: 'success', _executionDurationMs: 0 });
+     cidLog('executeNode:cache-hit', { nodeId });
+     return;
+   }
+   ```
+
+3. **File: `src/store/useStore.ts`** — After successful execution, store in cache:
+   ```typescript
+   get()._nodeResultCache.set(nodeId, { inputHash, result: output, timestamp: Date.now() });
+   ```
+
+4. **File: `src/store/useStore.ts`** — Invalidate cache when node content/config changes via `updateNodeData()`.
+
+**Acceptance criteria:**
+- [ ] Re-executing a node with identical inputs returns cached result instantly (0ms)
+- [ ] Changing upstream node content invalidates downstream cache entries
+- [ ] Cache is per-session (not persisted to localStorage)
+- [ ] Cache hit logged to console for debugging
+- [ ] Manual "force re-execute" option bypasses cache
+
+---
+
+### 89. Multi-Agent Council Mode — Rowan + Poirot Collaboration
+**Status:** [ ] Not started
+**Version target:** 2.9.0
+**Inspiration:** Microsoft Azure multi-agent "group chat" pattern, Google ADK multi-agent orchestration — multiple agents collaborate in a shared conversation, each contributing their specialty
+**Complexity:** High (4-5 hours)
+
+**Problem:** Rowan and Poirot are mutually exclusive — the user switches between them with a toggle. But both agents have complementary strengths: Rowan builds lean, operational workflows; Poirot builds thorough, investigative ones. A "council mode" would have both agents contribute to the same workflow: Rowan proposes structure, Poirot critiques and adds review/test gates, then Rowan finalizes. This produces higher-quality workflows that combine operational efficiency with analytical rigor.
+
+**Implementation:**
+
+1. **File: `src/lib/types.ts`** — Add `'council'` to `CIDMode`:
+   ```typescript
+   export type CIDMode = 'rowan' | 'poirot' | 'council';
+   ```
+
+2. **File: `src/store/useStore.ts`** — In `sendMessage()`, when `cidMode === 'council'`:
+   ```typescript
+   // Phase 1: Rowan generates initial workflow
+   const rowanResult = await callCID(prompt, 'rowan');
+   // Phase 2: Poirot critiques and suggests improvements
+   const poirotCritique = await callCID(`Review this workflow and suggest improvements: ${rowanResult}`, 'poirot');
+   // Phase 3: Rowan incorporates feedback
+   const finalResult = await callCID(`Incorporate this feedback: ${poirotCritique}`, 'rowan');
+   ```
+
+3. **File: `src/components/CIDPanel.tsx`** — Show both agents' messages with their respective colors (emerald for Rowan, amber for Poirot) in the council conversation thread.
+
+4. **File: `src/components/TopBar.tsx`** — Add "Council" option to agent selector (third mode alongside Rowan/Poirot).
+
+**Acceptance criteria:**
+- [ ] Council mode shows in agent selector with distinct icon/color
+- [ ] Both agents contribute to the same conversation thread with their personality colors
+- [ ] Generated workflows combine Rowan's operational efficiency with Poirot's thoroughness
+- [ ] Council mode costs ~3x tokens (3 LLM calls) — shown in token counter if available
+- [ ] User can still switch to single-agent mode mid-conversation
+
+---
+
+### 90. Dynamic Router Node — Runtime Conditional Branching
+**Status:** [ ] Not started
+**Version target:** 2.10.0
+**Inspiration:** LangGraph 1.0 `Command`-based dynamic routing — nodes decide at runtime which downstream node to execute next, bypassing pre-defined edges
+**Complexity:** Medium (2-3 hours)
+
+**Problem:** All edges in Lifecycle are static — defined at build time. There's no way for a node to evaluate its execution result and dynamically choose which branch to follow. For example, a "Sentiment Analysis" node should route positive results to "Marketing" and negative results to "Crisis Response." Currently both branches execute regardless. LangGraph's `Command` system lets nodes return routing decisions at runtime.
+
+**Implementation:**
+
+1. **File: `src/lib/types.ts`** — Add `routingRules` to NodeData:
+   ```typescript
+   routingRules?: Array<{ condition: string; targetLabel: string }>;  // e.g., [{ condition: "contains 'positive'", targetLabel: "Marketing" }]
+   ```
+
+2. **File: `src/store/useStore.ts`** — In `executeWorkflow()`, after a node with `routingRules` executes:
+   ```typescript
+   if (d.routingRules?.length) {
+     const result = d.executionResult || '';
+     const matchedTarget = d.routingRules.find(r => evaluateCondition(r.condition, result));
+     if (matchedTarget) {
+       // Only execute the matched branch, skip others
+       const targetNode = findNodeByName(matchedTarget.targetLabel, nodes);
+       // Mark non-matched downstream edges as skipped
+     }
+   }
+   ```
+
+3. **File: `src/components/NodeDetailPanel.tsx`** — Add routing rules editor for router-capable nodes.
+
+**Acceptance criteria:**
+- [ ] Nodes with routing rules dynamically select which downstream branch to execute
+- [ ] Non-matched branches are skipped (not executed)
+- [ ] Routing conditions support: contains, equals, regex, numeric comparison
+- [ ] Skipped nodes show "skipped" status with reason on canvas
+- [ ] Routing rules editable in NodeDetailPanel
+
+---
+
+### 91. Event Bus for Execution Observability
+**Status:** [ ] Not started
+**Version target:** 2.11.0
+**Inspiration:** CrewAI v1.1.0 event emitter system — fires structured events for every LLM call, tool use, and agent action, enabling real-time observability
+**Complexity:** Low (1-2 hours)
+
+**Problem:** Execution observability is scattered across `cidLog()` calls, console output, and node status updates. There's no central event system that components can subscribe to for real-time updates. The Execution Timeline Panel (#10), Token Usage Display (#14), and Node Inspector (#66) all need the same underlying event data. CrewAI's event emitter provides this infrastructure.
+
+**Implementation:**
+
+1. **File: `src/lib/eventBus.ts`** (NEW, ~50 lines) — Simple pub/sub:
+   ```typescript
+   type EventType = 'node:executing' | 'node:completed' | 'node:error' | 'llm:call' | 'llm:response' | 'workflow:start' | 'workflow:complete';
+   interface LifecycleEvent { type: EventType; nodeId?: string; data?: Record<string, unknown>; timestamp: number; }
+   const listeners = new Map<EventType, Set<(e: LifecycleEvent) => void>>();
+   export function emit(type: EventType, data?: Record<string, unknown>) { ... }
+   export function on(type: EventType, fn: (e: LifecycleEvent) => void) { ... }
+   export function off(type: EventType, fn: (e: LifecycleEvent) => void) { ... }
+   ```
+
+2. **File: `src/store/useStore.ts`** — Emit events from `executeNode()` and `executeWorkflow()`:
+   ```typescript
+   emit('node:executing', { nodeId, label: d.label });
+   // ... after execution:
+   emit('node:completed', { nodeId, durationMs, outputLength: output.length });
+   ```
+
+3. **File: `src/app/api/cid/route.ts`** — Return timing metadata in API response for client-side emission.
+
+**Acceptance criteria:**
+- [ ] EventBus emits events for all execution lifecycle stages
+- [ ] Components can subscribe to specific event types
+- [ ] Events include timing data, node IDs, and relevant metadata
+- [ ] No performance impact — events are fire-and-forget
+- [ ] EventBus is importable from any component or lib file
+
+---
+
+### 92. Multi-Key API Failover and Load Balancing
+**Status:** [ ] Not started
+**Version target:** 2.12.0
+**Inspiration:** Dify v1.7+ multi-credential load balancing — configure multiple API keys per provider, auto-failover on rate limits
+**Complexity:** Low (1 hour)
+
+**Problem:** The `/api/cid` route uses a single API key per provider (DeepSeek, Anthropic, OpenRouter). If the key hits a rate limit (429) or the provider has an outage, all requests fail. Dify solves this by accepting an array of keys and round-robin/failover across them. With DeepSeek Reasoner's 60-150s response times, rate limits are easily hit during workflow execution of 9+ nodes.
+
+**Implementation:**
+
+1. **File: `src/app/api/cid/route.ts`** — Accept comma-separated keys from env:
+   ```typescript
+   const DEEPSEEK_KEYS = (process.env.DEEPSEEK_API_KEY || '').split(',').filter(Boolean);
+   let currentKeyIndex = 0;
+   function getNextKey(): string {
+     const key = DEEPSEEK_KEYS[currentKeyIndex % DEEPSEEK_KEYS.length];
+     currentKeyIndex++;
+     return key;
+   }
+   ```
+
+2. **File: `src/app/api/cid/route.ts`** — On 429/500 response, retry with next key:
+   ```typescript
+   if (response.status === 429 || response.status >= 500) {
+     const nextKey = getNextKey();
+     // Retry with next key, max 1 retry
+   }
+   ```
+
+**Acceptance criteria:**
+- [ ] Multiple API keys accepted via comma-separated env var
+- [ ] Round-robin key selection across requests
+- [ ] Auto-failover to next key on 429 or 5xx errors
+- [ ] Max 1 retry per request (no infinite retry loops)
+- [ ] Single-key setup works identically to current behavior (backward compatible)
+
+---
+
+### 93. Agent Session Fingerprints for Traceability
+**Status:** [ ] Not started
+**Version target:** 2.13.0
+**Inspiration:** CrewAI v1.1.0 secure agent fingerprints — each agent and crew gets a unique ID for audit, traceability, and debugging
+**Complexity:** Low (1 hour)
+
+**Problem:** When reviewing a workflow, there's no way to tell which agent (Rowan or Poirot) generated which nodes, or during which session. If a user switches agents mid-session, the resulting workflow is a mix of both agents' outputs with no attribution. CrewAI fingerprints every agent action for audit trails.
+
+**Implementation:**
+
+1. **File: `src/lib/types.ts`** — Add generation metadata to NodeData:
+   ```typescript
+   _generatedBy?: { agent: CIDMode; sessionId: string; timestamp: number };
+   ```
+
+2. **File: `src/store/useStore.ts`** — Generate session ID on store init and attach to nodes:
+   ```typescript
+   const SESSION_ID = `session-${Date.now().toString(36)}`;
+   // In node creation from CID response:
+   node.data._generatedBy = { agent: store.cidMode, sessionId: SESSION_ID, timestamp: Date.now() };
+   ```
+
+3. **File: `src/components/NodeDetailPanel.tsx`** — Show generation metadata in node details:
+   ```typescript
+   {d._generatedBy && (
+     <span className="text-[9px] text-white/20">
+       Generated by {d._generatedBy.agent} · {relativeTime(d._generatedBy.timestamp)}
+     </span>
+   )}
+   ```
+
+**Acceptance criteria:**
+- [ ] Every CID-generated node carries `_generatedBy` metadata
+- [ ] Session ID is unique per page load
+- [ ] Agent attribution visible in node detail panel
+- [ ] Manually created nodes have no `_generatedBy` (distinguishable from AI-generated)
+- [ ] Metadata is ephemeral (not persisted to localStorage, uses `_` prefix)
+
+---
+
 ## Completed
 
 _(Move items here after implementation)_
