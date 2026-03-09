@@ -1,5 +1,24 @@
 # Changelog
 
+### 2026-03-09 — Lifecycle Loop: Node Versioning
+
+**Roadmap Item 6: Node Versioning** — every meaningful change creates a recoverable snapshot.
+
+- Added `_versionHistory` to NodeData type — array of `{version, content, timestamp, trigger}`
+- Semantic/structural edits in `updateNodeData()` auto-snapshot current content before overwriting
+- Execution results snapshot previous result before overwrite in `executeNode()`
+- Version history capped at 10 entries per node (oldest pruned)
+- Cosmetic/local edits do NOT create versions (uses edit classification from Item 3)
+- `rollbackNode(nodeId, version)` — restores content from any historical version
+- Rollback creates its own version entry (trigger: 'rollback') for full audit trail
+- Rollback triggers staleness propagation on downstream nodes
+- `VersionHistory` component in NodeDetailPanel — expandable list of versions
+- Each entry shows version number, trigger type (Edit/Execution/Refinement/Rollback), timestamp
+- Click a version to preview its content inline
+- "Restore" button with confirmation dialog on each entry
+- Version counter auto-increments on meaningful changes
+- 88 tests passing, build clean
+
 ### 2026-03-09 — Lifecycle Loop: Note Refinement
 
 **Roadmap Item 5: Note Refinement** — CID extracts structured nodes and connections from rough notes.

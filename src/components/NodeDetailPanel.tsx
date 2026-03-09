@@ -337,6 +337,77 @@ function SectionEditor({
   );
 }
 
+// ─── Version History ─────────────────────────────────────────────────────────
+
+function VersionHistory({ nodeId, history, currentVersion }: {
+  nodeId: string;
+  history: Array<{ version: number; content: string; timestamp: number; trigger: string }>;
+  currentVersion: number;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [viewingVersion, setViewingVersion] = useState<number | null>(null);
+  const rollbackNode = useLifecycleStore((s) => s.rollbackNode);
+
+  const triggerLabels: Record<string, string> = {
+    'user-edit': 'Edit',
+    'execution': 'Execution',
+    'refinement': 'Refinement',
+    'rollback': 'Rollback',
+  };
+
+  const viewingEntry = viewingVersion !== null ? history.find(v => v.version === viewingVersion) : null;
+
+  return (
+    <div>
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center gap-1.5 text-[10px] text-white/35 uppercase tracking-wider hover:text-white/50 transition-colors"
+      >
+        <Clock size={9} />
+        <span>History ({history.length} version{history.length !== 1 ? 's' : ''})</span>
+        <ChevronDown size={9} className={`transition-transform ${expanded ? 'rotate-180' : ''}`} />
+      </button>
+      {expanded && (
+        <div className="mt-1.5 space-y-1">
+          {[...history].reverse().map((entry) => (
+            <div
+              key={entry.version}
+              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                viewingVersion === entry.version
+                  ? 'border-violet-500/20 bg-violet-500/5'
+                  : 'border-white/[0.04] bg-white/[0.02] hover:bg-white/[0.04]'
+              }`}
+              onClick={() => setViewingVersion(viewingVersion === entry.version ? null : entry.version)}
+            >
+              <span className="text-[10px] text-white/30 font-mono w-6">v{entry.version}</span>
+              <span className="text-[9px] text-white/20 flex-1">{triggerLabels[entry.trigger] || entry.trigger}</span>
+              <span className="text-[8px] text-white/15">{new Date(entry.timestamp).toLocaleTimeString()}</span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (window.confirm(`Restore v${entry.version}? This will mark downstream nodes stale.`)) {
+                    rollbackNode(nodeId, entry.version);
+                    setViewingVersion(null);
+                  }
+                }}
+                className="text-[9px] text-violet-400/50 hover:text-violet-400 transition-colors px-1.5 py-0.5 rounded bg-violet-500/[0.06] hover:bg-violet-500/10"
+                title={`Restore to v${entry.version}`}
+              >
+                Restore
+              </button>
+            </div>
+          ))}
+          {viewingEntry && (
+            <div className="mt-1.5 text-[10px] text-white/40 bg-white/[0.02] rounded-lg px-3 py-2 border border-white/[0.06] max-h-[100px] overflow-y-auto whitespace-pre-wrap font-mono">
+              {viewingEntry.content.slice(0, 500)}{viewingEntry.content.length > 500 ? '...' : ''}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Panel ──────────────────────────────────────────────────────────────
 
 export default function NodeDetailPanel() {
@@ -803,6 +874,15 @@ export default function NodeDetailPanel() {
                 <Bot size={10} />
                 Generate content with AI
               </button>
+            )}
+
+            {/* Version History */}
+            {data._versionHistory && (data._versionHistory as Array<{ version: number; content: string; timestamp: number; trigger: string }>).length > 0 && (
+              <VersionHistory
+                nodeId={node.id}
+                history={data._versionHistory as Array<{ version: number; content: string; timestamp: number; trigger: string }>}
+                currentVersion={data.version ?? 1}
+              />
             )}
 
             {/* Sections */}

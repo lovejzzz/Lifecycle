@@ -348,6 +348,9 @@ interface LifecycleStore {
   deselectAllImpactNodes: () => void;
   regenerateSelected: (nodeIds?: string[]) => Promise<void>;
 
+  // ── Node Versioning ──
+  rollbackNode: (nodeId: string, versionNumber: number) => void;
+
   // ── Note Refinement ──
   refineNote: (nodeId: string) => Promise<void>;
   applyRefinementSuggestion: (suggestion: { type: 'node'; label: string; category: string; content: string; connectTo?: string; edgeLabel?: string } | { type: 'edge'; from: string; to: string; label: string } | { type: 'clean'; content: string; nodeId: string }) => void;
@@ -1405,6 +1408,21 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       }
 
       const _execDuration = Date.now() - _execStart;
+      // Version snapshot before overwriting execution result
+      const preExecNode = get().nodes.find(n => n.id === nodeId);
+      const prevResult = preExecNode?.data.executionResult;
+      if (prevResult && prevResult !== output) {
+        const history = [...(preExecNode?.data._versionHistory || [])];
+        const currentVersion = preExecNode?.data.version ?? 1;
+        history.push({
+          version: currentVersion,
+          content: prevResult,
+          timestamp: Date.now(),
+          trigger: 'execution' as const,
+        });
+        if (history.length > 10) history.splice(0, history.length - 10);
+        store.updateNodeData(nodeId, { _versionHistory: history, version: currentVersion + 1 });
+      }
       store.updateNodeData(nodeId, { executionResult: output, executionStatus: 'success', executionError: undefined, apiKey: undefined, _executionDurationMs: _execDuration });
       store.updateNodeStatus(nodeId, 'active');
       store.addEvent({ id: uid(), type: 'regenerated', message: `Executed "${d.label}" successfully (${(_execDuration / 1000).toFixed(1)}s)`, timestamp: Date.now(), nodeId, agent: true });
@@ -1975,9 +1993,28 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     );
 
     set((s) => {
-      const nodes = s.nodes.map((n) =>
-        n.id === id ? { ...n, data: { ...n.data, ...partial, lastUpdated: Date.now() } } : n
-      );
+      const nodes = s.nodes.map((n) => {
+        if (n.id !== id) return n;
+        const updated = { ...n.data, ...partial, lastUpdated: Date.now() };
+
+        // Version snapshot: save current content before overwriting on semantic/structural edits
+        if ((edit.type === 'semantic' || edit.type === 'structural') && n.data.content) {
+          const history = [...(n.data._versionHistory || [])];
+          const currentVersion = n.data.version ?? 1;
+          history.push({
+            version: currentVersion,
+            content: n.data.content,
+            timestamp: Date.now(),
+            trigger: 'user-edit' as const,
+          });
+          // Cap at 10 versions
+          if (history.length > 10) history.splice(0, history.length - 10);
+          updated._versionHistory = history;
+          updated.version = currentVersion + 1;
+        }
+
+        return { ...n, data: updated };
+      });
       saveToStorage({ nodes, edges: s.edges, events: s.events, messages: s.messages });
       return { nodes };
     });
@@ -2241,6 +2278,58 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       ? `${successCount} node${successCount > 1 ? 's' : ''} regenerated in ${elapsed}s.`
       : `${successCount} regenerated, ${errorCount} failed in ${elapsed}s.`;
     store.addMessage({ id: uid(), role: 'cid', content: doneMsg, timestamp: Date.now() });
+  },
+
+  // ── Node Versioning ──
+  rollbackNode: (nodeId: string, versionNumber: number) => {
+    const store = get();
+    const node = store.nodes.find(n => n.id === nodeId);
+    if (!node) return;
+    const history = node.data._versionHistory || [];
+    const target = history.find(v => v.version === versionNumber);
+    if (!target) return;
+
+    store.pushHistory();
+
+    // Snapshot current content before rollback
+    const currentContent = node.data.content || node.data.executionResult || '';
+    const currentVersion = node.data.version ?? 1;
+    const newHistory = [...history];
+    if (currentContent) {
+      newHistory.push({
+        version: currentVersion,
+        content: currentContent,
+        timestamp: Date.now(),
+        trigger: 'rollback' as const,
+      });
+      if (newHistory.length > 10) newHistory.splice(0, newHistory.length - 10);
+    }
+
+    // Restore content — if the versioned content was an execution result, restore as executionResult
+    const isExecResult = target.trigger === 'execution';
+    const updates: Partial<NodeData> = {
+      _versionHistory: newHistory,
+      version: currentVersion + 1,
+    };
+    if (isExecResult) {
+      updates.executionResult = target.content;
+    } else {
+      updates.content = target.content;
+    }
+
+    store.updateNodeData(nodeId, updates);
+    // Propagate staleness — downstream nodes may depend on old content
+    store.updateNodeStatus(nodeId, 'stale');
+    store.addEvent({
+      id: `ev-${Date.now()}-${nodeId}`, type: 'edited',
+      message: `Rolled back "${node.data.label}" to v${versionNumber}`,
+      timestamp: Date.now(), nodeId,
+    });
+    store.addMessage({
+      id: uid(), role: 'cid',
+      content: `Rolled back "${node.data.label}" to version ${versionNumber}. Downstream nodes marked stale.`,
+      timestamp: Date.now(), _ephemeral: true,
+    });
   },
 
   // ── Note Refinement ──

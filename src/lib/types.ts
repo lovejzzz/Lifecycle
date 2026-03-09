@@ -249,6 +249,14 @@ export interface NodeData extends Record<string, unknown> {
   _effortLevel?: 'low' | 'medium' | 'high' | 'max'; // adaptive thinking effort for AI execution
   inputValue?: string;       // user-provided input value (text, URL, etc.)
 
+  // Version history — snapshots of content at meaningful change points
+  _versionHistory?: Array<{
+    version: number;
+    content: string;
+    timestamp: number;
+    trigger: 'user-edit' | 'execution' | 'refinement' | 'rollback';
+  }>;
+
   // Output format for download-capable output nodes
   outputFormat?: string;     // e.g. 'pdf', 'docx', 'csv', 'md', 'html'
   outputMimeType?: string;   // e.g. 'application/pdf'
