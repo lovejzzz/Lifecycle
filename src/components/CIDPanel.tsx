@@ -51,7 +51,7 @@ const COMMAND_HINTS_BY_SECTION: { section: string; hints: { trigger: string; lab
     { trigger: 'reverse', label: 'reverse <name> — Flip edge directions' },
     { trigger: 'relabel', label: 'relabel all — Re-infer edge labels' },
     { trigger: 'swap', label: 'swap <A> and <B> — Swap positions' },
-    { trigger: 'optimize', label: 'optimize — Auto-arrange layout' },
+    { trigger: 'optimize', label: 'optimize — Structural analysis + layout' },
     { trigger: 'group', label: 'group — Arrange nodes by category' },
     { trigger: 'isolate', label: 'isolate <name> — Show connected subgraph' },
   ]},
@@ -150,6 +150,7 @@ export default function CIDPanel() {
     retryFailed, clearExecutionResults, getPreFlightSummary, diffLastRun,
     refineNote, applyRefinementSuggestion, selectedNodeId,
     applySuggestion, dismissSuggestion,
+    analyzeOptimizations, applyOptimization,
   } = useLifecycleStore();
   const [input, setInput] = useState('');
   const [_editingMsgId, _setEditingMsgId] = useState<string | null>(null);
@@ -416,8 +417,12 @@ export default function CIDPanel() {
           sendStreamingResponse(agent.responses.propagateClean());
         }, 300);
       }
-    } else if (/^(?:optimi|layout|arrange)\b/i.test(prompt)) {
+    } else if (/^(?:layout|arrange)\b/i.test(prompt)) {
       dispatchCommand(prompt, () => agent.responses.optimized(nodes.length), 600, optimizeLayout);
+    } else if (/^optimi/i.test(prompt)) {
+      // Structural optimization analysis + layout
+      analyzeOptimizations();
+      optimizeLayout();
     } else if (/^(?:approve\s+all|batch\s+approve)\b/i.test(prompt)) {
       dispatchCommand(prompt, () => {
         const count = batchUpdateStatus('reviewing', 'active');
@@ -788,7 +793,8 @@ export default function CIDPanel() {
         return sc > 0 ? agent.responses.qaPropagated(sc) : agent.responses.qaPropagateClean();
       }, 500);
     } else if (/optimi/i.test(prompt)) {
-      dispatchCommand(prompt, () => agent.responses.qaOptimized(nodes.length), 500, optimizeLayout);
+      analyzeOptimizations();
+      optimizeLayout();
     } else {
       chatWithCID(prompt);
     }
@@ -1107,7 +1113,11 @@ export default function CIDPanel() {
                         onClick={() => {
                           if (isAction) {
                             const actionId = s.split('|')[0].replace('action:', '');
-                            applySuggestion(actionId);
+                            if (actionId.startsWith('opt-')) {
+                              applyOptimization(actionId);
+                            } else {
+                              applySuggestion(actionId);
+                            }
                           } else if (isRefinement) {
                             handleRefinementClick(s);
                           } else {

@@ -1,5 +1,29 @@
 # Changelog
 
+### 2026-03-09 — CID Intelligence: Workflow Optimization
+
+**Roadmap Item 10: Workflow Optimization** — CID analyzes graph structure and proposes concrete improvements.
+
+- New `src/lib/optimizer.ts` — `analyzeGraphForOptimization()` with 5 detection patterns:
+  - Duplicate nodes (same category + Levenshtein distance < 3 on labels)
+  - Overloaded fan-out (5+ downstream connections from one node)
+  - Orphan chains (disconnected subgraphs not connected to main workflow)
+  - Missing feedback loops (output nodes without review/policy upstream)
+  - Redundant edges (transitive shortcuts that can be simplified)
+- `levenshtein()` — edit distance function for label similarity detection
+- `formatOptimizations()` — renders proposals as numbered CID message with action chips
+- Store: `analyzeOptimizations()` runs analysis and presents results as CID message
+- Store: `applyOptimization(id)` executes accepted proposals:
+  - Duplicate merge: combines content, re-links edges, removes duplicate node
+  - Redundant edge removal: deletes the shortcut edge
+  - Missing feedback: triggers `add review gate` command
+  - Orphan chains: triggers `solve` to auto-connect
+- CIDPanel: `optimize` command now runs structural analysis + layout (was layout-only)
+- CIDPanel: `layout`/`arrange` commands remain pure layout optimization
+- Action chips with `opt-*` prefix route to `applyOptimization` handler
+- 13 new tests: levenshtein, duplicate detection, input/output exclusion, fan-out, orphan chains, feedback loops, redundant edges, formatting
+- 137 total tests passing, build clean
+
 ### 2026-03-09 — CID Intelligence: Semantic Diff View
 
 **Roadmap Item 9: Semantic Diff View** — visual inline diff showing what changed in node content after execution/regeneration.

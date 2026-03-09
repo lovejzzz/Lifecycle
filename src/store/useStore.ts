@@ -26,6 +26,8 @@ import { buildNodesFromPrompt } from '@/lib/intent';
 import { assessWorkflowHealth, formatHealthReport, issueFingerprint } from '@/lib/health';
 import { generateProactiveSuggestions, formatSuggestionsMessage } from '@/lib/suggestions';
 import type { ProactiveSuggestion } from '@/lib/suggestions';
+import { analyzeGraphForOptimization, formatOptimizations } from '@/lib/optimizer';
+import type { Optimization } from '@/lib/optimizer';
 
 type Snapshot = { nodes: Node<NodeData>[]; edges: Edge[] };
 
@@ -360,6 +362,11 @@ interface LifecycleStore {
   _dismissedSuggestionIds: Set<string>;
   applySuggestion: (suggestionId: string) => void;
   dismissSuggestion: (suggestionId: string) => void;
+
+  // ── Workflow Optimization ──
+  _lastOptimizations: Optimization[];
+  analyzeOptimizations: () => void;
+  applyOptimization: (optimizationId: string) => void;
 
   // ── Node Versioning ──
   rollbackNode: (nodeId: string, versionNumber: number) => void;
@@ -2410,6 +2417,115 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       _dismissedSuggestionIds: new Set([...s._dismissedSuggestionIds, suggestionId]),
       _lastSuggestions: s._lastSuggestions.filter(x => x.id !== suggestionId),
     }));
+  },
+
+  // ── Workflow Optimization ──
+  _lastOptimizations: [],
+
+  analyzeOptimizations: () => {
+    const store = get();
+    const { nodes, edges } = store;
+    const agent = getAgent(store.cidMode);
+    const opts = analyzeGraphForOptimization(nodes, edges);
+    set({ _lastOptimizations: opts });
+
+    if (opts.length === 0) {
+      store.addMessage({
+        id: uid(), role: 'cid',
+        content: store.cidMode === 'poirot'
+          ? 'I have examined every corner of this workflow, mon ami. The structure, it is already quite optimal — no redundancies, no bottlenecks.'
+          : 'Workflow structure looks clean — no duplicates, bottlenecks, or disconnected chains found.',
+        timestamp: Date.now(),
+      });
+      // Still do layout optimization
+      if (nodes.length > 2) store.optimizeLayout();
+      return;
+    }
+
+    const formatted = formatOptimizations(opts);
+    if (formatted) {
+      store.addMessage({
+        id: uid(), role: 'cid',
+        content: formatted.content,
+        timestamp: Date.now(),
+        suggestions: formatted.suggestionChips,
+      });
+    }
+  },
+
+  applyOptimization: (optimizationId: string) => {
+    const store = get();
+    // Strip the "opt-" prefix added by formatOptimizations
+    const cleanId = optimizationId.startsWith('opt-') ? optimizationId.slice(4) : optimizationId;
+    const opt = store._lastOptimizations.find(o => o.id === cleanId);
+    if (!opt) {
+      cidLog('applyOptimization', `optimization not found: ${optimizationId}`);
+      return;
+    }
+
+    if (opt.type === 'duplicate-nodes' && opt.mergeTargets) {
+      const [keepId, removeId] = opt.mergeTargets;
+      const keepNode = store.nodes.find(n => n.id === keepId);
+      const removeNode = store.nodes.find(n => n.id === removeId);
+      if (!keepNode || !removeNode) return;
+
+      // Use existing mergeByName logic pattern
+      store.pushHistory();
+      const mergedContent = [keepNode.data.content, removeNode.data.content].filter(Boolean).join('\n\n---\n\n');
+      const mergedDesc = [keepNode.data.description, removeNode.data.description].filter(Boolean).join(' | ');
+
+      store.updateNodeData(keepId, {
+        description: mergedDesc || undefined,
+        content: mergedContent || undefined,
+        version: (keepNode.data.version ?? 1) + 1,
+      });
+
+      // Re-link edges
+      const updatedEdges = store.edges.map(e => {
+        if (e.source === removeId && e.target !== keepId) return { ...e, id: `e-${keepId}-${e.target}`, source: keepId };
+        if (e.target === removeId && e.source !== keepId) return { ...e, id: `e-${e.source}-${keepId}`, target: keepId };
+        return e;
+      }).filter(e => !(e.source === removeId || e.target === removeId));
+
+      // Dedup edges
+      const seen = new Set<string>();
+      const dedupEdges = updatedEdges.filter(e => {
+        const key = `${e.source}-${e.target}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
+      const newNodes = store.nodes.filter(n => n.id !== removeId);
+      saveToStorage({ nodes: newNodes, edges: dedupEdges, events: store.events, messages: store.messages });
+      set({ nodes: newNodes, edges: dedupEdges });
+      store.addMessage({ id: uid(), role: 'cid', content: `Merged **${removeNode.data.label}** into **${keepNode.data.label}** — content combined, edges re-linked.`, timestamp: Date.now() });
+
+    } else if (opt.type === 'redundant-edge' && opt.edgeId) {
+      store.pushHistory();
+      const newEdges = store.edges.filter(e => e.id !== opt.edgeId);
+      saveToStorage({ nodes: store.nodes, edges: newEdges, events: store.events, messages: store.messages });
+      set({ edges: newEdges });
+      store.addMessage({ id: uid(), role: 'cid', content: `Removed redundant edge — ${opt.description.split(' — ')[1] || 'graph simplified'}.`, timestamp: Date.now() });
+
+    } else if (opt.type === 'missing-feedback') {
+      // Add a review gate before the output node
+      const targetId = opt.affectedNodeIds[0];
+      const targetNode = store.nodes.find(n => n.id === targetId);
+      if (!targetNode) return;
+      store.chatWithCID(`add a review gate before ${targetNode.data.label}`);
+
+    } else if (opt.type === 'orphan-chain') {
+      // Try to connect the orphan chain to the main workflow
+      store.chatWithCID('solve');
+
+    } else {
+      // For overloaded-fanout and others, present as advisory
+      store.addMessage({ id: uid(), role: 'cid', content: `This optimization requires manual restructuring: ${opt.proposedAction}`, timestamp: Date.now() });
+    }
+
+    // Remove applied optimization from list
+    set(s => ({ _lastOptimizations: s._lastOptimizations.filter(o => o.id !== cleanId) }));
   },
 
   // ── Node Versioning ──
