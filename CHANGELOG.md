@@ -1,5 +1,21 @@
 # Changelog
 
+### 2026-03-09 — Lifecycle Loop: Edit Interpretation
+
+**Roadmap Item 3: Edit Interpretation** — not every edit should trigger a cascade.
+
+- New `src/lib/edits.ts` — heuristic edit classifier (no LLM calls, local-ready)
+- Four edit types: cosmetic (formatting/whitespace), local (minor rewording), semantic (real content change), structural (label/category change)
+- Cosmetic edits: silent save, no propagation, no event
+- Local edits: save + lifecycle event, no propagation (CID notes "minor edit")
+- Semantic edits: save + propagate staleness downstream + lifecycle event
+- Structural edits: save + propagate + structural event recorded
+- Fuzzy term matching (Levenshtein distance ≤ 2) so typo fixes aren't misclassified as semantic changes
+- Key term extraction with stop-word filtering for Jaccard similarity
+- Markdown stripping for cosmetic detection (bold/italic/headers don't matter)
+- 14 new tests including real-world education scenario (adding homework to lesson plan = semantic, fixing "studnts" typo = local)
+- 88 total tests passing
+
 ### 2026-03-09 — Lifecycle Loop: Staleness Propagation & Selective Regeneration
 
 **Roadmap Items 1 & 2: Staleness Propagation + Selective Regeneration**

@@ -6,6 +6,7 @@ import type { NodeData, LifecycleEvent, CIDMessage, NodeCategory, CIDMode, Agent
 import { registerCustomCategory, EDGE_LABEL_COLORS, BUILT_IN_CATEGORIES } from '@/lib/types';
 import { getAgent, getInterviewQuestions, buildEnrichedPrompt } from '@/lib/agents';
 import { buildSystemPrompt, buildMessages, getExecutionSystemPrompt, inferEffortFromCategory } from '@/lib/prompts';
+import { classifyEdit } from '@/lib/edits';
 import {
   createDefaultHabits, createDefaultGeneration, createDefaultReflection,
   migrateHabitsV1toV2, migrateReflectionV1toV2,
@@ -1942,16 +1943,16 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       }
     }
 
-    // Detect meaningful content changes for staleness propagation
+    // Classify the edit to determine propagation behavior
     const currentNode = get().nodes.find(n => n.id === id);
-    const oldContent = currentNode?.data.content || '';
-    const newContent = partial.content;
-    const labelChanged = partial.label !== undefined && partial.label !== currentNode?.data.label;
-    const categoryChanged = partial.category !== undefined && partial.category !== currentNode?.data.category;
-    // Content change: normalize whitespace and compare
-    const contentChanged = newContent !== undefined && newContent !== oldContent
-      && newContent.replace(/\s+/g, ' ').trim() !== oldContent.replace(/\s+/g, ' ').trim();
-    const shouldPropagate = contentChanged || labelChanged || categoryChanged;
+    const edit = classifyEdit(
+      currentNode?.data.content || '',
+      partial.content,
+      currentNode?.data.label || '',
+      partial.label,
+      currentNode?.data.category || '',
+      partial.category,
+    );
 
     set((s) => {
       const nodes = s.nodes.map((n) =>
@@ -1961,16 +1962,24 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       return { nodes };
     });
 
-    // Propagate staleness to downstream nodes after a meaningful edit
-    if (shouldPropagate && !get()._executingNodeIds.has(id)) {
+    // Only propagate for semantic and structural edits (not cosmetic or local)
+    if (edit.shouldPropagate && !get()._executingNodeIds.has(id)) {
       get().updateNodeStatus(id, 'stale');
-      const changeType = categoryChanged ? 'category' : labelChanged ? 'label' : 'content';
       get().addEvent({
         id: `ev-${Date.now()}-${id}`, type: 'edited',
-        message: `${currentNode?.data.label ?? id}: ${changeType} changed, downstream marked stale`,
+        message: `${currentNode?.data.label ?? id}: ${edit.type} edit — ${edit.reason}`,
+        timestamp: Date.now(), nodeId: id,
+      });
+      cidLog('updateNodeData:propagate', { id, editType: edit.type, reason: edit.reason });
+    } else if (edit.type === 'local') {
+      // Local edits: record but don't propagate
+      get().addEvent({
+        id: `ev-${Date.now()}-${id}`, type: 'edited',
+        message: `${currentNode?.data.label ?? id}: minor edit — ${edit.reason}`,
         timestamp: Date.now(), nodeId: id,
       });
     }
+    // Cosmetic edits: no event, no propagation — silent save
   },
 
   deleteNode: (id) => {
