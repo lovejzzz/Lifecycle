@@ -563,7 +563,7 @@ Phase 1 makes workflows alive. Phase 2 makes CID intelligent. Phase 3 makes the 
 
 ---
 
-### 13. Project Persistence & Multi-Project
+### 13. Project Persistence & Multi-Project ✅
 
 **Why**: Everything is in localStorage right now. One project, one browser, no sharing. For real use, users need to save multiple projects and switch between them. The spec requires "persistent memory of work" (11.1) and "project metadata" (Section 16).
 

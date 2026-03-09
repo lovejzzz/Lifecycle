@@ -29,6 +29,12 @@ import type { ProactiveSuggestion } from '@/lib/suggestions';
 import { analyzeGraphForOptimization, formatOptimizations } from '@/lib/optimizer';
 import { compileDocument, exportAndDownload } from '@/lib/export';
 import type { ExportFormat } from '@/lib/export';
+import {
+  listProjects as listStorageProjects, loadProject, saveProject as saveStorageProject,
+  deleteProject as deleteStorageProject, createProject as createStorageProject,
+  renameProject as renameStorageProject, migrateLegacyProject,
+} from '@/lib/storage';
+import type { ProjectMeta } from '@/lib/storage';
 import type { Optimization } from '@/lib/optimizer';
 
 type Snapshot = { nodes: Node<NodeData>[]; edges: Edge[] };
@@ -139,8 +145,14 @@ interface LifecycleStore {
   // Edit & resend
   deleteMessage: (id: string) => void;
 
-  // New project
+  // Projects
+  currentProjectId: string | null;
+  currentProjectName: string;
   newProject: () => void;
+  switchProject: (id: string) => void;
+  renameCurrentProject: (name: string) => void;
+  deleteCurrentProject: () => void;
+  listProjects: () => ProjectMeta[];
 
   // Load a workflow template by name
   loadTemplate: (templateName: string) => void;
@@ -382,14 +394,6 @@ interface LifecycleStore {
   refineNote: (nodeId: string) => Promise<void>;
   applyRefinementSuggestion: (suggestion: { type: 'node'; label: string; category: string; content: string; connectTo?: string; edgeLabel?: string } | { type: 'edge'; from: string; to: string; label: string } | { type: 'clean'; content: string; nodeId: string }) => void;
 
-  // ── Project Management ──
-  projects: Map<string, { nodes: Node<NodeData>[]; edges: Edge[]; messages: CIDMessage[]; cidMode: CIDMode; cidAIModel: string; createdAt: number; updatedAt: number }>;
-  currentProjectName: string | null;
-  saveProject: (name: string) => string;
-  loadProject: (name: string) => { success: boolean; message: string };
-  deleteProject: (name: string) => { success: boolean; message: string };
-  listProjects: () => string;
-  renameProject: (oldName: string, newName: string) => { success: boolean; message: string };
 }
 
 // ── Agent activity logger — visible in browser console for debugging ──
@@ -561,7 +565,20 @@ function flushSave() {
   }
 
   try {
+    // Save to legacy key (backward compat) + project-specific key
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+
+    // Also persist to current project
+    const store = useLifecycleStore.getState();
+    if (store.currentProjectId) {
+      saveStorageProject(
+        store.currentProjectId,
+        store.currentProjectName,
+        data,
+        saveNodes.length,
+        state.edges.length,
+      );
+    }
   } catch (e) {
     console.error('[Storage] Save failed:', e);
     // Emergency save with aggressive trimming
@@ -773,6 +790,27 @@ const persisted = loadFromStorage();
 const persistedMode: CIDMode = (persisted as any)?.cidMode === 'poirot' ? 'poirot' : 'rowan';
 const persistedModel: string = (persisted as any)?.cidAIModel || 'deepseek-chat';
 let currentAIModel: string = persistedModel;
+
+// Multi-project migration: move legacy data into a named project on first load
+const migratedProjectId = migrateLegacyProject();
+// Determine current project from migration or first existing project
+let initialProjectId: string | null = null;
+let initialProjectName = 'Untitled';
+const existingProjects = listStorageProjects();
+if (migratedProjectId) {
+  initialProjectId = migratedProjectId;
+  initialProjectName = 'My Workflow';
+} else if (existingProjects.length > 0) {
+  // Find most recently modified
+  const sorted = [...existingProjects].sort((a, b) => b.lastModified - a.lastModified);
+  initialProjectId = sorted[0].id;
+  initialProjectName = sorted[0].name;
+} else if (persisted) {
+  // Data exists but no projects — create one
+  const id = createStorageProject('My Workflow');
+  initialProjectId = id;
+  initialProjectName = 'My Workflow';
+}
 
 // CID Rules persistence
 const RULES_KEY = 'lifecycle-cid-rules';
@@ -4087,8 +4125,23 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     });
   },
 
+  // ── Projects ──
+  currentProjectId: initialProjectId,
+  currentProjectName: initialProjectName,
+
   newProject: () => {
-    const agent = getAgent(get().cidMode);
+    const store = get();
+    const agent = getAgent(store.cidMode);
+
+    // Save current project before creating new one
+    if (store.currentProjectId) {
+      flushSave();
+    }
+
+    // Create new project in storage
+    const projectName = `Project ${listStorageProjects().length + 1}`;
+    const newId = createStorageProject(projectName);
+
     const fresh = {
       nodes: [] as Node<NodeData>[],
       edges: [] as Edge[],
@@ -4100,10 +4153,83 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       history: [] as Snapshot[],
       future: [] as Snapshot[],
       poirotContext: { phase: 'idle' as const, originalPrompt: '', answers: {}, questionIndex: 0 },
+      currentProjectId: newId,
+      currentProjectName: projectName,
     };
     set(fresh);
     saveToStorage({ nodes: fresh.nodes, edges: fresh.edges, events: fresh.events, messages: fresh.messages });
   },
+
+  switchProject: (id: string) => {
+    const store = get();
+    // Save current project first
+    if (store.currentProjectId) {
+      flushSave();
+    }
+
+    // Load target project
+    const data = loadProject(id);
+    if (!data) {
+      store.addToast('Project not found', 'error');
+      return;
+    }
+
+    const projects = listStorageProjects();
+    const meta = projects.find(p => p.id === id);
+
+    // Restore nodeCounter from loaded nodes
+    const loadedNodes = (data.nodes || []) as Node<NodeData>[];
+    const maxId = loadedNodes.reduce((max, n) => {
+      const num = parseInt(n.id.replace('node-', ''), 10);
+      return isNaN(num) ? max : Math.max(max, num);
+    }, 0);
+    if (maxId >= nodeCounter) nodeCounter = maxId + 1;
+
+    set({
+      nodes: loadedNodes,
+      edges: (data.edges || []) as Edge[],
+      events: (data.events || []) as LifecycleEvent[],
+      messages: (data.messages || []) as CIDMessage[],
+      selectedNodeId: null,
+      history: [] as Snapshot[],
+      future: [] as Snapshot[],
+      isProcessing: false,
+      currentProjectId: id,
+      currentProjectName: meta?.name || 'Untitled',
+    });
+
+    // Update legacy key too
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    cidLog('switchProject', `Loaded project "${meta?.name}" (${loadedNodes.length} nodes)`);
+  },
+
+  renameCurrentProject: (name: string) => {
+    const { currentProjectId } = get();
+    if (!currentProjectId) return;
+    renameStorageProject(currentProjectId, name);
+    set({ currentProjectName: name });
+  },
+
+  deleteCurrentProject: () => {
+    const store = get();
+    if (!store.currentProjectId) return;
+
+    const projects = listStorageProjects();
+    if (projects.length <= 1) {
+      store.addToast('Cannot delete the only project', 'warning');
+      return;
+    }
+
+    deleteStorageProject(store.currentProjectId);
+
+    // Switch to another project
+    const remaining = listStorageProjects();
+    if (remaining.length > 0) {
+      store.switchProject(remaining[0].id);
+    }
+  },
+
+  listProjects: () => listStorageProjects(),
 
   loadTemplate: (templateName) => {
     const store = get();
@@ -6158,109 +6284,4 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     return downstream;
   },
 
-  // ── Project Management ──
-  projects: (() => {
-    try {
-      const raw = typeof window !== 'undefined' ? localStorage.getItem('lifecycle-projects') : null;
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        return new Map(Object.entries(parsed));
-      }
-    } catch { /* ignore */ }
-    return new Map();
-  })(),
-  currentProjectName: null,
-
-  saveProject: (name) => {
-    const { nodes, edges, messages, cidMode, cidAIModel, projects } = get();
-    const trimmed = name.trim();
-    if (!trimmed) return 'Project name cannot be empty.';
-    if (nodes.length === 0) return 'No workflow to save. Build something first.';
-
-    const existing = projects.get(trimmed);
-    const now = Date.now();
-    const project = {
-      nodes: structuredClone(nodes),
-      edges: structuredClone(edges),
-      messages: messages.filter(m => !m._ephemeral),
-      cidMode,
-      cidAIModel,
-      createdAt: existing?.createdAt || now,
-      updatedAt: now,
-    };
-    const updated = new Map(projects);
-    updated.set(trimmed, project);
-    set({ projects: updated, currentProjectName: trimmed });
-    try { localStorage.setItem('lifecycle-projects', JSON.stringify(Object.fromEntries(updated))); } catch { /* quota */ }
-    return existing
-      ? `Updated project **"${trimmed}"** (${nodes.length} nodes, ${edges.length} edges).`
-      : `Saved project **"${trimmed}"** (${nodes.length} nodes, ${edges.length} edges).`;
-  },
-
-  loadProject: (name) => {
-    const { projects } = get();
-    const trimmed = name.trim();
-    const project = projects.get(trimmed);
-    if (!project) {
-      const available = [...projects.keys()];
-      return { success: false, message: available.length > 0 ? `No project "${trimmed}". Available: ${available.join(', ')}.` : 'No saved projects. Use `save <name>` to create one.' };
-    }
-    const store = get();
-    store.pushHistory();
-    // Restore nodeCounter to prevent ID collisions
-    if (project.nodes.length > 0) {
-      const maxId = project.nodes.reduce((max: number, n: Node<NodeData>) => {
-        const num = parseInt(n.id.replace('node-', ''), 10);
-        return isNaN(num) ? max : Math.max(max, num);
-      }, 0);
-      if (maxId >= nodeCounter) nodeCounter = maxId + 1;
-    }
-    set({
-      nodes: structuredClone(project.nodes),
-      edges: structuredClone(project.edges),
-      messages: project.messages ? structuredClone(project.messages) : [],
-      cidMode: project.cidMode || 'rowan',
-      cidAIModel: project.cidAIModel || 'deepseek-chat',
-      currentProjectName: trimmed,
-    });
-    saveToStorage({ nodes: project.nodes, edges: project.edges, events: get().events, messages: project.messages || [] });
-    return { success: true, message: `Loaded project **"${trimmed}"** (${project.nodes.length} nodes, ${project.edges.length} edges).` };
-  },
-
-  deleteProject: (name) => {
-    const { projects } = get();
-    const trimmed = name.trim();
-    if (!projects.has(trimmed)) return { success: false, message: `No project "${trimmed}" found.` };
-    const updated = new Map(projects);
-    updated.delete(trimmed);
-    set({ projects: updated, currentProjectName: get().currentProjectName === trimmed ? null : get().currentProjectName });
-    try { localStorage.setItem('lifecycle-projects', JSON.stringify(Object.fromEntries(updated))); } catch { /* quota */ }
-    return { success: true, message: `Deleted project **"${trimmed}"**.` };
-  },
-
-  listProjects: () => {
-    const { projects, currentProjectName } = get();
-    if (projects.size === 0) return 'No saved projects. Use `save <name>` to create one.';
-    const lines = [...projects.entries()].map(([name, p]) => {
-      const date = new Date(p.updatedAt).toLocaleString();
-      const current = name === currentProjectName ? ' ← current' : '';
-      return `- **${name}** — ${p.nodes.length} nodes, ${p.edges.length} edges (${date})${current}`;
-    });
-    return `### Projects (${projects.size})\n${lines.join('\n')}\n\nUse \`load <name>\` to open a project.`;
-  },
-
-  renameProject: (oldName, newName) => {
-    const { projects } = get();
-    const trimOld = oldName.trim();
-    const trimNew = newName.trim();
-    if (!projects.has(trimOld)) return { success: false, message: `No project "${trimOld}" found.` };
-    if (projects.has(trimNew)) return { success: false, message: `Project "${trimNew}" already exists.` };
-    const updated = new Map(projects);
-    const project = updated.get(trimOld)!;
-    updated.delete(trimOld);
-    updated.set(trimNew, project);
-    set({ projects: updated, currentProjectName: get().currentProjectName === trimOld ? trimNew : get().currentProjectName });
-    try { localStorage.setItem('lifecycle-projects', JSON.stringify(Object.fromEntries(updated))); } catch { /* quota */ }
-    return { success: true, message: `Renamed project **"${trimOld}"** → **"${trimNew}"**.` };
-  },
 }));

@@ -1,5 +1,28 @@
 # Changelog
 
+### 2026-03-09 — Product Completeness: Project Persistence & Multi-Project
+
+**Roadmap Item 13: Project Persistence & Multi-Project** — namespaced localStorage with project switcher UI.
+
+- New `src/lib/storage.ts` — multi-project CRUD module:
+  - `ProjectMeta` / `ProjectData` interfaces for index + data separation
+  - `createProject(name)`, `saveProject()`, `loadProject()`, `deleteProject()`, `renameProject()`
+  - `migrateLegacyProject()` — auto-migrates single `lifecycle-store` into the new namespaced system
+  - Each project stored under `lifecycle-project-{id}`, index at `lifecycle-projects`
+  - Storage-full fallback: trims large execution results before retry
+- Store: `currentProjectId`, `currentProjectName` state fields
+- Store: `newProject()` — saves current work, creates blank project, switches to it
+- Store: `switchProject(id)` — persists current project, loads target project data into canvas
+- Store: `renameCurrentProject(name)`, `deleteCurrentProject()`, `listProjects()` actions
+- Store: `flushSave()` now also persists to project-specific localStorage key
+- Store: migration on first load — detects legacy data and creates initial project
+- TopBar: **Project switcher dropdown** — shows current project name, lists all projects sorted by last modified
+  - Inline rename with pencil icon
+  - Switch between projects with click
+  - Delete project with confirmation (hidden when only 1 project)
+  - "New Project" button
+- 8 new tests in `storage.test.ts`, 162 total tests passing, build clean
+
 ### 2026-03-09 — Product Completeness: Artifact Preview Panel
 
 **Roadmap Item 12: Artifact Preview Panel** — browse all executed nodes as formatted content with navigation and live updates.

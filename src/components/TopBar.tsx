@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Bot, Activity, Layers, Circle, Plus, Undo2, Redo2, Search,
   Download, Upload, Heart, FilePlus2, Play,
+  ChevronDown, Trash2, Pencil, Check, FolderOpen,
 } from 'lucide-react';
 import { useLifecycleStore } from '@/store/useStore';
 import type { NodeCategory } from '@/lib/types';
@@ -27,12 +28,16 @@ const BUILT_IN_TYPES: { category: NodeCategory; label: string }[] = [
 ];
 
 export default function TopBar() {
-  const { nodes, toggleCIDPanel, toggleActivityPanel, togglePreviewPanel, showCIDPanel, showActivityPanel, showPreviewPanel, createNewNode, undo, redo, history, future, cidMode, exportWorkflow, importWorkflow, newProject, messages, getHealthScore, showImpactPreview } = useLifecycleStore();
+  const { nodes, toggleCIDPanel, toggleActivityPanel, togglePreviewPanel, showCIDPanel, showActivityPanel, showPreviewPanel, createNewNode, undo, redo, history, future, cidMode, exportWorkflow, importWorkflow, newProject, messages, getHealthScore, showImpactPreview, currentProjectName, renameCurrentProject, switchProject, deleteCurrentProject, listProjects, currentProjectId } = useLifecycleStore();
   const agent = getAgent(cidMode);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showAddMenu, setShowAddMenu] = useState(false);
+  const [showProjectMenu, setShowProjectMenu] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
   const [mounted, setMounted] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const projectMenuRef = useRef<HTMLDivElement>(null);
   const lastSeenCount = useRef(0);
 
   useEffect(() => { setMounted(true); }, []);
@@ -68,15 +73,18 @@ export default function TopBar() {
   }, [nodes]);
 
   useEffect(() => {
-    if (!showAddMenu) return;
+    if (!showAddMenu && !showProjectMenu) return;
     const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as HTMLElement)) {
+      if (showAddMenu && menuRef.current && !menuRef.current.contains(e.target as HTMLElement)) {
         setShowAddMenu(false);
+      }
+      if (showProjectMenu && projectMenuRef.current && !projectMenuRef.current.contains(e.target as HTMLElement)) {
+        setShowProjectMenu(false);
       }
     };
     window.addEventListener('mousedown', handler);
     return () => window.removeEventListener('mousedown', handler);
-  }, [showAddMenu]);
+  }, [showAddMenu, showProjectMenu]);
 
   return (
     <div className="h-12 border-b border-white/[0.06] bg-[#0a0a0f]/90 backdrop-blur-xl flex items-center justify-between px-5 z-30 relative">
@@ -90,18 +98,96 @@ export default function TopBar() {
         </div>
         <div className="h-4 w-px bg-white/[0.08]" />
 
-        {/* New Project */}
-        <button
-          onClick={() => {
-            if (nodes.length > 0 && !window.confirm('Start a new project? Current workflow will be cleared.')) return;
-            newProject();
-          }}
-          title="New project"
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] text-white/40 text-[11px] font-medium hover:text-white/70 hover:bg-white/[0.07] transition-colors"
-        >
-          <FilePlus2 size={12} />
-          New
-        </button>
+        {/* Project Switcher */}
+        <div className="relative" ref={projectMenuRef}>
+          {editingName ? (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (nameDraft.trim()) renameCurrentProject(nameDraft.trim());
+                setEditingName(false);
+              }}
+              className="flex items-center gap-1"
+            >
+              <input
+                autoFocus
+                value={nameDraft}
+                onChange={(e) => setNameDraft(e.target.value)}
+                onBlur={() => { if (nameDraft.trim()) renameCurrentProject(nameDraft.trim()); setEditingName(false); }}
+                onKeyDown={(e) => { if (e.key === 'Escape') setEditingName(false); }}
+                className="text-[11px] text-white/80 bg-white/[0.06] border border-white/[0.12] rounded px-2 py-1 outline-none w-[120px]"
+              />
+              <button type="submit" className="text-emerald-400/60 hover:text-emerald-400 p-0.5"><Check size={11} /></button>
+            </form>
+          ) : (
+            <button
+              onClick={() => setShowProjectMenu(!showProjectMenu)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] text-white/50 text-[11px] font-medium hover:text-white/80 hover:bg-white/[0.07] transition-colors max-w-[180px]"
+            >
+              <FolderOpen size={11} className="shrink-0" />
+              <span className="truncate">{currentProjectName}</span>
+              <ChevronDown size={10} className="shrink-0 text-white/25" />
+            </button>
+          )}
+          {showProjectMenu && (
+            <div className="absolute top-full left-0 mt-1 min-w-[220px] rounded-xl border border-white/[0.08] bg-[#0e0e18]/95 backdrop-blur-xl overflow-hidden shadow-2xl z-50">
+              <div className="py-1">
+                {/* Current projects */}
+                {listProjects()
+                  .sort((a, b) => b.lastModified - a.lastModified)
+                  .map(p => (
+                  <button
+                    key={p.id}
+                    onClick={() => { if (p.id !== currentProjectId) switchProject(p.id); setShowProjectMenu(false); }}
+                    className={`w-full flex items-center justify-between px-3 py-1.5 text-[11px] transition-colors ${
+                      p.id === currentProjectId
+                        ? 'bg-white/[0.06] text-white/80'
+                        : 'text-white/40 hover:bg-white/[0.04] hover:text-white/70'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="truncate">{p.name}</span>
+                    </div>
+                    <span className="text-[9px] text-white/20 shrink-0 ml-2">{p.nodeCount}n</span>
+                  </button>
+                ))}
+                <div className="border-t border-white/[0.06] mt-1 pt-1">
+                  {/* New project */}
+                  <button
+                    onClick={() => { newProject(); setShowProjectMenu(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-emerald-400/60 hover:bg-white/[0.04] hover:text-emerald-400 transition-colors"
+                  >
+                    <FilePlus2 size={11} />
+                    New Project
+                  </button>
+                  {/* Rename */}
+                  <button
+                    onClick={() => { setNameDraft(currentProjectName); setEditingName(true); setShowProjectMenu(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-white/30 hover:bg-white/[0.04] hover:text-white/60 transition-colors"
+                  >
+                    <Pencil size={11} />
+                    Rename
+                  </button>
+                  {/* Delete */}
+                  {listProjects().length > 1 && (
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`Delete "${currentProjectName}"? This cannot be undone.`)) {
+                          deleteCurrentProject();
+                          setShowProjectMenu(false);
+                        }
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-rose-400/40 hover:bg-rose-500/[0.06] hover:text-rose-400/80 transition-colors"
+                    >
+                      <Trash2 size={11} />
+                      Delete Project
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Add Node */}
         <div className="relative" ref={menuRef}>
