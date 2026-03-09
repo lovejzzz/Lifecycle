@@ -4360,6 +4360,9 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       flushSave();
     }
 
+    // Reset nodeCounter for fresh project to avoid ID collisions
+    nodeCounter = 100;
+
     // Create new project in storage
     const projectName = `Project ${listStorageProjects().length + 1}`;
     const newId = createStorageProject(projectName);
@@ -4399,13 +4402,13 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     const projects = listStorageProjects();
     const meta = projects.find(p => p.id === id);
 
-    // Restore nodeCounter from loaded nodes
+    // Restore nodeCounter from loaded nodes (always reset to match this project)
     const loadedNodes = (data.nodes || []) as Node<NodeData>[];
     const maxId = loadedNodes.reduce((max, n) => {
       const num = parseInt(n.id.replace('node-', ''), 10);
       return isNaN(num) ? max : Math.max(max, num);
     }, 0);
-    if (maxId >= nodeCounter) nodeCounter = maxId + 1;
+    nodeCounter = Math.max(maxId + 1, 100);
 
     set({
       nodes: loadedNodes,
@@ -4413,6 +4416,9 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       events: (data.events || []) as LifecycleEvent[],
       messages: (data.messages || []) as CIDMessage[],
       selectedNodeId: null,
+      showActivityPanel: false,
+      activeArtifactNodeId: null,
+      contextMenu: null,
       history: [] as UndoOperation[],
       future: [] as UndoOperation[],
       isProcessing: false,
@@ -4428,6 +4434,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
   renameCurrentProject: (name: string) => {
     const { currentProjectId } = get();
     if (!currentProjectId) return;
+    flushSave();
     renameStorageProject(currentProjectId, name);
     set({ currentProjectName: name });
   },

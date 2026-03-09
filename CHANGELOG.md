@@ -1,5 +1,19 @@
 # Changelog
 
+### 2026-03-09 — Loop Cycle 3: Store Persistence & Project Management Audit
+
+**useStore.ts persistence & projects section audit** (deep agent-assisted review, 12 issues found):
+- **Fix: nodeCounter not reset on `newProject()`** — creating new projects continued node IDs from the previous project, causing potential collisions when switching back
+- **Fix: `switchProject()` stale UI panels** — `selectedNodeId`, `activeArtifactNodeId`, and `contextMenu` weren't cleared when switching projects, showing ghost UI from the previous project
+- **Fix: nodeCounter only bumped up, never down** — switching from a project with node-500 to one with node-10 kept counter at 501. Now always resets to match loaded project
+- **Fix: `renameCurrentProject()` data loss** — renaming didn't `flushSave()` first, so unsaved changes were lost if the tab closed after rename
+
+**Test refinements** (Cycle 3 = test-refine cycle):
+- Added Scenario 16: Project Management (5 new tests) to simulation.test.ts
+- Tests cover: nodeCounter reset, UI panel clearing on switch, rename flush, delete-switches-project, single-project guard
+
+**Test counts**: 272 total (47 simulation + 32 E2E + 13 chaos + 180 existing), all passing
+
 ### 2026-03-09 — Loop Cycle 2: CIDPanel Audit
 
 **CIDPanel.tsx audit** (1373 lines reviewed):

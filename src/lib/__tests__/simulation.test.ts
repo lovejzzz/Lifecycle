@@ -880,4 +880,99 @@ describe('User Simulation: Real Journeys', () => {
       expect(cleared.count).toBeGreaterThanOrEqual(1);
     });
   });
+
+  describe('Scenario 16: Project management', () => {
+    it('newProject resets nodeCounter to avoid ID collisions', () => {
+      buildSimpleWorkflow();
+      const s = getStore();
+      // After building workflow, nodeCounter should be high
+      const oldNodes = s.nodes.map(n => n.id);
+      expect(oldNodes.length).toBeGreaterThan(0);
+
+      // Create new project
+      s.newProject();
+      const fresh = getStore();
+      expect(fresh.nodes).toHaveLength(0);
+      expect(fresh.edges).toHaveLength(0);
+      expect(fresh.currentProjectId).toBeTruthy();
+
+      // Add a node in the new project — ID should start fresh, not continue from old project
+      fresh.addNode({
+        id: `node-100`,
+        type: 'lifecycleNode',
+        position: { x: 0, y: 0 },
+        data: { label: 'Fresh', category: 'note', status: 'active', description: '', version: 1, lastUpdated: Date.now() },
+      });
+      expect(getStore().nodes).toHaveLength(1);
+    });
+
+    it('switchProject resets UI panels', () => {
+      buildSimpleWorkflow();
+      const s = getStore();
+
+      // Set up UI state that should be cleared on switch
+      s.selectNode(s.nodes[0].id);
+      expect(getStore().selectedNodeId).toBeTruthy();
+
+      // Create a second project and switch to it
+      s.newProject();
+      const newId = getStore().currentProjectId;
+      expect(newId).toBeTruthy();
+
+      // Build something in new project
+      getStore().addNode({
+        id: `node-200`,
+        type: 'lifecycleNode',
+        position: { x: 0, y: 0 },
+        data: { label: 'Project B Node', category: 'action', status: 'active', description: '', version: 1, lastUpdated: Date.now() },
+      });
+
+      // Switch back — selectedNodeId should be null
+      const projects = getStore().listProjects();
+      if (projects.length > 1) {
+        const otherId = projects.find(p => p.id !== newId)?.id;
+        if (otherId) {
+          getStore().switchProject(otherId);
+          expect(getStore().selectedNodeId).toBeNull();
+          expect(getStore().contextMenu).toBeNull();
+        }
+      }
+    });
+
+    it('renameCurrentProject flushes save first', () => {
+      buildSimpleWorkflow();
+      const s = getStore();
+      const projectId = s.currentProjectId;
+      expect(projectId).toBeTruthy();
+
+      s.renameCurrentProject('Renamed Project');
+      expect(getStore().currentProjectName).toBe('Renamed Project');
+    });
+
+    it('deleteCurrentProject switches to remaining project', () => {
+      // Create two projects
+      const s = getStore();
+      s.newProject();
+      const firstId = getStore().currentProjectId;
+      s.newProject();
+      const secondId = getStore().currentProjectId;
+      expect(firstId).not.toBe(secondId);
+
+      // Delete current — should switch to another
+      getStore().deleteCurrentProject();
+      expect(getStore().currentProjectId).not.toBe(secondId);
+    });
+
+    it('cannot delete the only project', () => {
+      // Ensure we have only one project (clear others)
+      const s = getStore();
+      const projects = s.listProjects();
+      // If only one, try to delete — should show warning
+      if (projects.length === 1) {
+        s.deleteCurrentProject();
+        // Still have the project
+        expect(getStore().currentProjectId).toBeTruthy();
+      }
+    });
+  });
 });

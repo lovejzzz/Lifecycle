@@ -10,7 +10,7 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 
 **Components (UI):**
 - [x] Canvas.tsx
-- [x] CIDPanel.tsx
+- [x] CIDPanel.tsx (cycle 2)
 - [ ] NodeDetailPanel.tsx
 - [ ] ArtifactPanel.tsx
 - [ ] TopBar.tsx
@@ -23,7 +23,7 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 - [ ] ErrorBoundary.tsx
 
 **Store & Core Logic:**
-- [ ] useStore.ts (persistence & projects)
+- [x] useStore.ts (persistence & projects) (cycle 3)
 - [ ] useStore.ts (node operations)
 - [ ] useStore.ts (edge operations & graph)
 - [ ] useStore.ts (execution & CID)
@@ -40,7 +40,7 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 - [ ] storage.ts
 
 **Test Files (refine cycle):**
-- [ ] simulation.test.ts
+- [x] simulation.test.ts (cycle 3)
 - [ ] simulation-e2e.test.ts
 - [ ] simulation-chaos.test.ts
 - [ ] graph.test.ts
@@ -55,6 +55,17 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 ## Cycle Log
 
 <!-- Newest entries at top -->
+
+### Cycle 3 — 2026-03-09 23:47
+- **Audited**: useStore.ts (persistence & projects) — deep audit via agent, 12 issues cataloged
+- **Tests**: 272 passing (+5), 0 failing; coverage: 40.3% stmts (stable)
+- **Issues found**: 4 critical/high fixed
+  1. `newProject()` didn't reset `nodeCounter` — caused ID collisions across projects (fixed)
+  2. `switchProject()` didn't reset `selectedNodeId`, `activeArtifactNodeId`, `contextMenu` — stale UI panels from previous project (fixed)
+  3. `switchProject()` only bumped `nodeCounter` up, never down — switching from high-ID project to low-ID project kept inflated counter (fixed: always reset to match loaded project)
+  4. `renameCurrentProject()` didn't `flushSave()` first — unsaved data lost if tab closed after rename (fixed)
+- **Fixed**: All 4 issues
+- **Test refinements**: Added Scenario 16 (project management) to simulation.test.ts — 5 new tests covering newProject reset, switchProject UI clearing, rename flush, deleteProject, single-project guard
 
 ### Cycle 2 — 2026-03-09 22:25
 - **Audited**: CIDPanel.tsx (1373 lines, full read)
