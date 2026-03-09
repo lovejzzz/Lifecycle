@@ -1,5 +1,25 @@
 # Changelog
 
+### 2026-03-09 — Product Completeness: Rich Output Export
+
+**Roadmap Item 11: Rich Output Export** — export node content and compiled workflow outputs as real files.
+
+- New `src/lib/export.ts` — reusable export utilities:
+  - `exportContent(content, format, title)` — converts to Blob (md/html/txt)
+  - `stripMarkdown(md)` — removes formatting for plain text export
+  - `exportAndDownload(content, format, label)` — one-call download trigger
+  - `compileDocument(sections, title)` — assembles multiple node outputs into a single document
+  - `slugify(text)` — filename-safe label conversion
+  - `downloadBlob(blob, filename)` — reusable browser download helper
+- Store: `compileWorkflow(format)` — aggregates all node execution results in topological order into a single downloadable document
+- NodeDetailPanel: `ExportDropdown` component on every execution result — click the download icon to choose Markdown, HTML, or Plain Text
+- CIDPanel: `compile [html|txt]` command — downloads combined workflow output
+- CIDPanel: `download <name> [as html|txt]` command — exports a single node's content
+- Command hints added for compile and download
+- HTML export includes full Georgia serif styling with proper typography
+- 17 new tests: stripMarkdown, exportContent formats, slugify, compileDocument structure/title/date
+- 154 total tests passing, build clean
+
 ### 2026-03-09 — CID Intelligence: Workflow Optimization
 
 **Roadmap Item 10: Workflow Optimization** — CID analyzes graph structure and proposes concrete improvements.

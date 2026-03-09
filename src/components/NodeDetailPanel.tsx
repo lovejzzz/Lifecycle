@@ -5,12 +5,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, Lock, Unlock, CheckCircle2, RefreshCw, Clock, Trash2,
   Pencil, Check, Eye,
-  Plus, Trash, ChevronDown, Copy, Bot,
+  Plus, Trash, ChevronDown, Copy, Bot, Download,
 } from 'lucide-react';
 import { useLifecycleStore } from '@/store/useStore';
 import { getNodeColors, CategoryIcon, BUILT_IN_CATEGORIES, EDGE_LABEL_COLORS, relativeTime } from '@/lib/types';
 import type { NodeData, NodeCategory } from '@/lib/types';
 import DiffView from './DiffView';
+import { exportAndDownload } from '@/lib/export';
+import type { ExportFormat } from '@/lib/export';
 
 const ALL_STATUSES: NodeData['status'][] = ['active', 'stale', 'pending', 'locked', 'generating', 'reviewing'];
 
@@ -333,6 +335,56 @@ function SectionEditor({
       )}
       {sections.length === 0 && (
         <p className="text-[10px] text-white/25 italic">No sections — click + to add</p>
+      )}
+    </div>
+  );
+}
+
+// ─── Export Dropdown ─────────────────────────────────────────────────────────
+
+function ExportDropdown({ content, label }: { content: string; label: string }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as HTMLElement)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const formats: { format: ExportFormat; label: string }[] = [
+    { format: 'md', label: 'Markdown' },
+    { format: 'html', label: 'HTML' },
+    { format: 'txt', label: 'Plain Text' },
+  ];
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="text-white/20 hover:text-white/50 transition-colors"
+        title="Download as..."
+      >
+        <Download size={9} />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 z-50 bg-[#1a1a2e] border border-white/10 rounded-lg shadow-xl overflow-hidden">
+          {formats.map(f => (
+            <button
+              key={f.format}
+              onClick={() => {
+                exportAndDownload(content, f.format, label);
+                setOpen(false);
+              }}
+              className="block w-full text-left px-3 py-1.5 text-[10px] text-white/50 hover:bg-white/[0.06] hover:text-white/80 transition-colors whitespace-nowrap"
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -905,6 +957,7 @@ export default function NodeDetailPanel() {
                     >
                       <Copy size={9} />
                     </button>
+                    <ExportDropdown content={data.executionResult!} label={data.label} />
                   </div>
                 </div>
                 <div className="text-[10px] text-emerald-300/60 bg-emerald-500/[0.03] rounded-lg px-3 py-2 border border-emerald-500/10 max-h-[120px] overflow-y-auto whitespace-pre-wrap font-mono">

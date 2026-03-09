@@ -13,6 +13,7 @@ import { getAgent } from '@/lib/agents';
 import type { CIDCard } from '@/lib/types';
 import { relativeTime } from '@/lib/types';
 import { renderMarkdown } from '@/lib/markdown';
+import { exportAndDownload } from '@/lib/export';
 
 const COMMAND_HINTS_BY_SECTION: { section: string; hints: { trigger: string; label: string }[] }[] = [
   { section: '📊 Analysis', hints: [
@@ -65,6 +66,8 @@ const COMMAND_HINTS_BY_SECTION: { section: string; hints: { trigger: string; lab
     { trigger: 'clear results', label: 'clear results — Reset execution state' },
     { trigger: 'diff last run', label: 'diff last run — Compare vs previous run' },
     { trigger: 'refine', label: 'refine — Extract structured nodes from a note' },
+    { trigger: 'compile', label: 'compile [html|txt] — Download combined output document' },
+    { trigger: 'download', label: 'download <name> [as html|txt] — Export a node' },
   ]},
   { section: '🛠 Batch & Fix', hints: [
     { trigger: 'solve', label: 'solve — Fix structural problems' },
@@ -151,6 +154,7 @@ export default function CIDPanel() {
     refineNote, applyRefinementSuggestion, selectedNodeId,
     applySuggestion, dismissSuggestion,
     analyzeOptimizations, applyOptimization,
+    compileWorkflow,
   } = useLifecycleStore();
   const [input, setInput] = useState('');
   const [_editingMsgId, _setEditingMsgId] = useState<string | null>(null);
@@ -350,6 +354,12 @@ export default function CIDPanel() {
       addToast('Chat exported as Markdown', 'success');
       return;
     }
+    if (/^(?:compile|\/compile)\b/i.test(prompt)) {
+      const formatMatch = prompt.match(/\b(html|txt|text|md|markdown)\b/i);
+      const format = formatMatch ? (formatMatch[1].replace('text', 'txt').replace('markdown', 'md') as 'md' | 'html' | 'txt') : 'md';
+      compileWorkflow(format);
+      return;
+    }
     if (prompt === '/mode' || prompt === '/switch') {
       setCIDMode(cidMode === 'rowan' ? 'poirot' : 'rowan');
       return;
@@ -501,6 +511,19 @@ export default function CIDPanel() {
       dispatchCommand(prompt, () => swapByName(prompt).message);
     } else if (/^(?:content|write|fill)\s+.+(?::|=)\s+/i.test(prompt)) {
       dispatchCommand(prompt, () => contentByName(prompt).message);
+    } else if (/^(?:download|export\s+node)\s+/i.test(prompt)) {
+      dispatchCommand(prompt, () => {
+        const nameMatch = prompt.match(/(?:download|export\s+node)\s+["']?(.+?)["']?\s*(?:as\s+(\w+))?\s*$/i);
+        if (!nameMatch) return 'Usage: download <node name> [as md|html|txt]';
+        const nodeName = nameMatch[1];
+        const format = (nameMatch[2]?.toLowerCase().replace('text', 'txt').replace('markdown', 'md') || 'md') as 'md' | 'html' | 'txt';
+        const found = nodes.find(n => n.data.label.toLowerCase() === nodeName.toLowerCase());
+        if (!found) return `No node named "${nodeName}".`;
+        const content = found.data.executionResult || found.data.content;
+        if (!content) return `"${found.data.label}" has no content to export.`;
+        exportAndDownload(content, format, found.data.label);
+        return `Downloaded "${found.data.label}" as ${format.toUpperCase()}.`;
+      });
     } else if (/^undo\s*$/i.test(prompt)) {
       dispatchCommand(prompt, () => {
         if (history.length > 0) { undo(); return 'Done. Reverted to previous state.'; }

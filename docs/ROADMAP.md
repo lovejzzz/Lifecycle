@@ -494,7 +494,7 @@ Phase 1 makes workflows alive. Phase 2 makes CID intelligent. Phase 3 makes the 
 
 ---
 
-### 11. Rich Output Export
+### 11. Rich Output Export ✅
 
 **Why**: Execution results live inside nodes. But real users need deliverables: a PDF report, an HTML page, a markdown document, a structured dataset. Right now, the only export is a raw JSON workflow dump. The spec says the system manages "artifacts" (9.2) — generated or maintained outputs such as docs, slides, sheets, prompts, files.
 

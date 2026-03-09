@@ -27,6 +27,8 @@ import { assessWorkflowHealth, formatHealthReport, issueFingerprint } from '@/li
 import { generateProactiveSuggestions, formatSuggestionsMessage } from '@/lib/suggestions';
 import type { ProactiveSuggestion } from '@/lib/suggestions';
 import { analyzeGraphForOptimization, formatOptimizations } from '@/lib/optimizer';
+import { compileDocument, exportAndDownload } from '@/lib/export';
+import type { ExportFormat } from '@/lib/export';
 import type { Optimization } from '@/lib/optimizer';
 
 type Snapshot = { nodes: Node<NodeData>[]; edges: Edge[] };
@@ -99,6 +101,7 @@ interface LifecycleStore {
   chatWithCID: (prompt: string) => void;
   aiEnabled: boolean;
   exportWorkflow: () => string;
+  compileWorkflow: (format?: 'md' | 'html' | 'txt') => void;
   importWorkflow: (json: string) => boolean;
 
   // Search
@@ -3059,6 +3062,42 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       data: { ...n.data, apiKey: undefined },
     }));
     return JSON.stringify({ _format: 'lifecycle-agent', _version: 1, nodes: safeNodes, edges, events, messages }, null, 2);
+  },
+
+  compileWorkflow: (format: ExportFormat = 'md') => {
+    const store = get();
+    const { nodes, edges } = store;
+    if (nodes.length === 0) {
+      store.addMessage({ id: uid(), role: 'cid', content: 'No nodes to compile.', timestamp: Date.now() });
+      return;
+    }
+
+    // Topological order for document structure
+    const { order } = topoSort(nodes, edges);
+    const nodeById = new Map(nodes.map(n => [n.id, n]));
+
+    const sections = order
+      .map(id => nodeById.get(id))
+      .filter((n): n is Node<NodeData> => !!n)
+      .filter(n => n.data.executionResult || n.data.content)
+      .map(n => ({
+        label: n.data.label,
+        category: n.data.category,
+        content: n.data.executionResult || n.data.content || '',
+      }));
+
+    if (sections.length === 0) {
+      store.addMessage({ id: uid(), role: 'cid', content: 'No executed content to compile. Run the workflow first.', timestamp: Date.now() });
+      return;
+    }
+
+    const compiled = compileDocument(sections, 'Workflow Output');
+    exportAndDownload(compiled, format, 'workflow-output');
+    store.addMessage({
+      id: uid(), role: 'cid',
+      content: `Compiled **${sections.length}** node outputs into a single ${format.toUpperCase()} document and downloaded.`,
+      timestamp: Date.now(),
+    });
   },
 
   importWorkflow: (json) => {
