@@ -2779,7 +2779,7 @@ Each item includes specific files, implementation steps, acceptance criteria, an
 ---
 
 ### 43. Automated Test Infrastructure for Core Algorithms
-**Status:** [ ] Not started
+**Status:** [x] Done
 **Version target:** 2.3.0
 **Inspiration:** Every production-grade competitor (LangGraph, Dify, n8n, CrewAI) has comprehensive test suites; Lifecycle has zero automated tests despite having pure-function-rich architecture ideal for unit testing
 **Complexity:** Medium-High (4 hours)
@@ -3695,7 +3695,7 @@ Each item includes specific files, implementation steps, acceptance criteria, an
 - [ ] Total auto-test adds < 30s to workflow delivery time (parallel node testing where possible)
 
 ### 52. Cycle Detection Guard for Modification Edge Operations
-**Status:** [ ] Not started
+**Status:** [x] Done
 **Version target:** 1.52.0
 **Inspiration:** LangGraph's compile-time graph validation that rejects cyclic state machines (only DAGs allowed in execution mode). Rivet's type-safe edge connections that prevent invalid topologies at draw time. n8n's workflow validation step that flags impossible loops before execution.
 **Complexity:** Low-Medium (2 hours)
@@ -4224,7 +4224,7 @@ Each item includes specific files, implementation steps, acceptance criteria, an
 ---
 
 ### 58. Import/Export Graph Invariant Validation (Self-Loops, Multi-Edges, Structural Integrity)
-**Status:** [ ] Not started
+**Status:** [x] Done
 **Version target:** 1.58.0
 **Inspiration:** LangGraph's compile-time graph validation that rejects structurally invalid state machines before execution. Rivet's type-safe edge connections that prevent invalid topologies at draw time. ComfyUI's subgraph publishing validation that checks all inputs/outputs are properly connected before allowing publish.
 **Complexity:** Low (1-2 hours)
@@ -6541,7 +6541,7 @@ Each item includes specific files, implementation steps, acceptance criteria, an
 ---
 
 ### 80. User-Facing Error Toast Notifications for API and Execution Failures
-**Status:** [ ] Not started
+**Status:** [x] Done
 **Version target:** 1.80.0
 **Inspiration:** Gradio's native error display with collapsible tracebacks in chat. Sim Studio's real-time feedback system with visual status indicators. Vercel AI SDK 6's `onError` callback pattern that surfaces errors to the UI layer. LangSmith's trace-level error visibility with inline debugging.
 **Complexity:** Low (1-2 hours)

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, CheckCircle2, Info, AlertTriangle } from 'lucide-react';
+import { X, CheckCircle2, Info, AlertTriangle, XCircle } from 'lucide-react';
 import TopBar from '@/components/TopBar';
 import Canvas from '@/components/Canvas';
 import PreviewPanel from '@/components/PreviewPanel';
@@ -13,6 +13,7 @@ const TOAST_ICONS = {
   success: { icon: CheckCircle2, color: 'text-emerald-400', border: 'border-emerald-500/20', bg: 'bg-emerald-500/[0.08]' },
   info: { icon: Info, color: 'text-cyan-400', border: 'border-cyan-500/20', bg: 'bg-cyan-500/[0.08]' },
   warning: { icon: AlertTriangle, color: 'text-amber-400', border: 'border-amber-500/20', bg: 'bg-amber-500/[0.08]' },
+  error: { icon: XCircle, color: 'text-red-400', border: 'border-red-500/20', bg: 'bg-red-500/[0.08]' },
 };
 
 function Toasts() {

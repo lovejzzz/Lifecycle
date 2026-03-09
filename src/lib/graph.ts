@@ -135,6 +135,86 @@ export function findNodeByName(name: string, nodes: Node<NodeData>[]): Node<Node
          nodes.find(n => lower.includes(n.data.label.toLowerCase()));
 }
 
+// ─── Graph Validation ──────────────────────────────────────────────────────
+
+/** Detect cycles in a directed graph using DFS with recursion stack. */
+export function detectCycle(
+  nodes: Array<{ id: string }>,
+  edges: Array<{ source: string; target: string; label?: string }>,
+  options?: { excludeLabels?: string[] },
+): { hasCycle: boolean; cycleNodes: string[] } {
+  const excludeLabels = new Set(options?.excludeLabels || ['refines']);
+  const filteredEdges = edges.filter(e => !excludeLabels.has(e.label || ''));
+
+  const adj = new Map<string, string[]>();
+  for (const n of nodes) adj.set(n.id, []);
+  for (const e of filteredEdges) adj.get(e.source)?.push(e.target);
+
+  const visited = new Set<string>();
+  const recStack = new Set<string>();
+  const cycleNodes: string[] = [];
+
+  function dfs(nodeId: string): boolean {
+    visited.add(nodeId);
+    recStack.add(nodeId);
+    for (const neighbor of (adj.get(nodeId) || [])) {
+      if (!visited.has(neighbor)) {
+        if (dfs(neighbor)) { cycleNodes.push(nodeId); return true; }
+      } else if (recStack.has(neighbor)) {
+        cycleNodes.push(neighbor, nodeId);
+        return true;
+      }
+    }
+    recStack.delete(nodeId);
+    return false;
+  }
+
+  for (const n of nodes) {
+    if (!visited.has(n.id) && dfs(n.id)) {
+      return { hasCycle: true, cycleNodes: [...new Set(cycleNodes)] };
+    }
+  }
+  return { hasCycle: false, cycleNodes: [] };
+}
+
+/** Validate graph invariants: no self-loops, no duplicate edges, no dangling references. */
+export interface GraphValidationResult {
+  valid: boolean;
+  issues: Array<{ code: string; message: string; severity: 'error' | 'warning' }>;
+}
+
+export function validateGraphInvariants(
+  nodes: Array<{ id: string }>,
+  edges: Array<{ source: string; target: string; label?: string }>,
+): GraphValidationResult {
+  const issues: GraphValidationResult['issues'] = [];
+  const nodeIds = new Set(nodes.map(n => n.id));
+
+  for (const e of edges) {
+    if (e.source === e.target) {
+      issues.push({ code: 'self-loop', message: `Edge loops back to itself on node "${e.source}"`, severity: 'error' });
+    }
+  }
+
+  const edgeKeys = new Set<string>();
+  for (const e of edges) {
+    const key = `${e.source}→${e.target}`;
+    if (edgeKeys.has(key)) {
+      issues.push({ code: 'duplicate-edge', message: `Duplicate edge: ${key}`, severity: 'warning' });
+    }
+    edgeKeys.add(key);
+  }
+
+  for (const e of edges) {
+    if (!nodeIds.has(e.source)) issues.push({ code: 'dangling-source', message: `Edge source "${e.source}" not found`, severity: 'error' });
+    if (!nodeIds.has(e.target)) issues.push({ code: 'dangling-target', message: `Edge target "${e.target}" not found`, severity: 'error' });
+  }
+
+  return { valid: issues.filter(i => i.severity === 'error').length === 0, issues };
+}
+
+// ─── Node Utilities ─────────────────────────────────────────────────────────
+
 export const CATEGORY_LABELS: Record<NodeCategory, string> = {
   input: 'Input',
   output: 'Output',

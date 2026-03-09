@@ -17,6 +17,7 @@ import {
   NODE_W, NODE_H, findFreePosition,
   topoSort, ANIMATED_LABELS, createStyledEdge, inferEdgeLabel,
   findNodeByName, CATEGORY_LABELS, markdownToHTML,
+  detectCycle, validateGraphInvariants,
 } from '@/lib/graph';
 import { buildNodesFromPrompt } from '@/lib/intent';
 
@@ -113,8 +114,8 @@ interface LifecycleStore {
   generateNodeContent: (nodeId: string) => void;
 
   // Toast notifications
-  toasts: Array<{ id: string; message: string; type: 'success' | 'info' | 'warning' }>;
-  addToast: (message: string, type?: 'success' | 'info' | 'warning') => void;
+  toasts: Array<{ id: string; message: string; type: 'success' | 'info' | 'warning' | 'error' }>;
+  addToast: (message: string, type?: 'success' | 'info' | 'warning' | 'error', autoDismissMs?: number) => void;
   removeToast: (id: string) => void;
 
   // Chat management
@@ -1252,6 +1253,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       const errMsg = err instanceof Error ? err.message : 'Execution failed';
       store.updateNodeData(nodeId, { executionStatus: 'error', executionError: errMsg, _executionDurationMs: Date.now() - _execStart });
       store.updateNodeStatus(nodeId, 'active');
+      store.addToast(`Node "${d.label}" failed: ${errMsg.slice(0, 80)}`, 'error');
       cidLog('executeNode:error', errMsg);
     }
   },
@@ -2152,6 +2154,14 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
 
   exportWorkflow: () => {
     const { nodes, edges, events, messages } = get();
+    // Validate graph integrity before export
+    const { issues } = validateGraphInvariants(
+      nodes.map(n => ({ id: n.id })),
+      edges.map(e => ({ source: e.source, target: e.target })),
+    );
+    if (issues.length > 0) {
+      console.warn(`[Export] Graph has ${issues.length} issue(s):`, issues);
+    }
     // Strip sensitive data (API keys) from node data before export
     const safeNodes = nodes.map(n => ({
       ...n,
@@ -2175,6 +2185,23 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         for (const e of data.edges) {
           if (!e.id || !e.source || !e.target) return false;
           if (!nodeIds.has(e.source) || !nodeIds.has(e.target)) return false;
+        }
+        // Graph invariant validation: remove self-loops & dedup edges
+        const { issues } = validateGraphInvariants(
+          data.nodes.map((n: any) => ({ id: n.id })),
+          data.edges.map((e: any) => ({ source: e.source, target: e.target })),
+        );
+        if (issues.length > 0) {
+          const seen = new Set<string>();
+          data.edges = data.edges.filter((e: any) => {
+            if (e.source === e.target) return false;
+            const key = `${e.source}→${e.target}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+          const fixCount = issues.length;
+          setTimeout(() => get().addToast(`Import auto-fixed ${fixCount} graph issue(s)`, 'warning'), 100);
         }
       }
       const store = get();
@@ -2318,12 +2345,15 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
 
   // Toast notifications
   toasts: [],
-  addToast: (message, type = 'info') => {
+  addToast: (message, type = 'info', autoDismissMs) => {
     const id = `toast-${Date.now()}`;
-    set(s => ({ toasts: [...s.toasts, { id, message, type }] }));
-    setTimeout(() => {
-      set(s => ({ toasts: s.toasts.filter(t => t.id !== id) }));
-    }, 3500);
+    const dismissMs = autoDismissMs ?? (type === 'error' ? 8000 : 3500);
+    set(s => ({ toasts: [...s.toasts.slice(-4), { id, message, type }] })); // cap at 5 visible
+    if (dismissMs > 0) {
+      setTimeout(() => {
+        set(s => ({ toasts: s.toasts.filter(t => t.id !== id) }));
+      }, dismissMs);
+    }
   },
   removeToast: (id) => set(s => ({ toasts: s.toasts.filter(t => t.id !== id) })),
 
@@ -2541,17 +2571,33 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
           }
         }
 
-        // 5. Add edges
+        // 5. Add edges (with cycle detection guard)
         if (mods.add_edges?.length) {
+          const addedEdgeIds: string[] = [];
           for (const edgeDef of mods.add_edges) {
             const srcNode = get().nodes.find(n => n.data.label.toLowerCase() === edgeDef.from_label.toLowerCase());
             const tgtNode = get().nodes.find(n => n.data.label.toLowerCase() === edgeDef.to_label.toLowerCase());
             if (srcNode && tgtNode) {
               const exists = get().edges.some(e => e.source === srcNode.id && e.target === tgtNode.id);
               if (!exists) {
-                get().addEdge(createStyledEdge(srcNode.id, tgtNode.id, edgeDef.label || 'drives'));
+                const newEdge = createStyledEdge(srcNode.id, tgtNode.id, edgeDef.label || 'drives');
+                get().addEdge(newEdge);
+                addedEdgeIds.push(newEdge.id);
                 modCount++;
               }
+            }
+          }
+          // Cycle detection: revert edges that create cycles
+          if (addedEdgeIds.length > 0) {
+            const { hasCycle, cycleNodes } = detectCycle(
+              get().nodes.map(n => ({ id: n.id })),
+              get().edges.map(e => ({ source: e.source, target: e.target, label: typeof e.label === 'string' ? e.label : undefined })),
+            );
+            if (hasCycle) {
+              set({ edges: get().edges.filter(e => !addedEdgeIds.includes(e.id)) });
+              modCount -= addedEdgeIds.length;
+              const nodeLabels = cycleNodes.map(id => get().nodes.find(n => n.id === id)?.data.label || id).join(', ');
+              store.addMessage({ id: uid(), role: 'cid', content: `⚠️ Blocked ${addedEdgeIds.length} edge(s) that would create a cycle involving: ${nodeLabels}. Cycles prevent workflow execution.`, timestamp: Date.now(), _ephemeral: true });
             }
           }
         }

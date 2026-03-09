@@ -1,6 +1,6 @@
 {
   "name": "lifecycle",
-  "version": "1.0.0",
+  "version": "1.4.0",
   "main": "index.js",
   "scripts": {
     "dev": "next dev",
@@ -8,6 +8,9 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "check": "npm run typecheck && npm run lint && npm run build"
   },
   "keywords": [],
@@ -33,7 +36,9 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",
+    "@vitest/coverage-v8": "^4.0.18",
     "eslint": "^9.39.4",
-    "eslint-config-next": "^16.1.6"
+    "eslint-config-next": "^16.1.6",
+    "vitest": "^4.0.18"
   }
 }

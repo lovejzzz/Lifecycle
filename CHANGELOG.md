@@ -1,5 +1,32 @@
 # Changelog
 
+### 2026-03-09 — Foundation & Safety: Test Infrastructure, Graph Validation, Cycle Detection, Enhanced Toasts
+
+**Roadmap Item 43: Automated Test Infrastructure** (v1.1.0) — Vitest test suite with 62 tests:
+- Installed Vitest + @vitest/coverage-v8, created `vitest.config.ts` with `@/` path alias
+- Added `npm run test`, `test:watch`, `test:coverage` scripts
+- `graph.test.ts`: 35 tests covering `topoSort`, `inferEdgeLabel`, `findNodeByName`, `nodesOverlap`, `findFreePosition`, `detectCycle`, `validateGraphInvariants`
+- `intent.test.ts`: 10 tests covering `analyzeIntent` — service detection, file types, transformations, output formats
+- `reflection.test.ts`: 17 tests covering `computeGenerationContext`, `resolveDriverTensions`, default layer creators
+
+**Roadmap Item 52: Cycle Detection Guard** (v1.2.0) — prevents cyclic workflows:
+- Added `detectCycle()` to `graph.ts` using DFS with recursion stack
+- Excludes "refines" edges by default (intentional feedback loops)
+- `add_edges` modification handler in store now validates after adding — reverts edges that create cycles
+- User sees ephemeral CID message identifying which nodes would form a cycle
+
+**Roadmap Item 58: Graph Invariant Validation** (v1.3.0) — structural integrity checks:
+- Added `validateGraphInvariants()` to `graph.ts` — detects self-loops, duplicate edges, dangling references
+- `importWorkflow()` now auto-fixes self-loops and deduplicates edges on import
+- `exportWorkflow()` logs warnings for any graph integrity issues before export
+- Import shows toast notification when auto-fixing is applied
+
+**Roadmap Item 80: Enhanced Toast Notifications** (v1.4.0) — error type + smart dismiss:
+- Added `error` toast type (red, XCircle icon) alongside existing success/info/warning
+- Configurable auto-dismiss timeout (errors: 8s default, others: 3.5s)
+- Toast calls added to `executeNode` error paths — users see immediate failure feedback
+- Max 5 toasts visible at once (oldest auto-removed)
+
 ### 2026-03-08 — Self-Correcting Retry Loop + Agent Goal Declarations + ArtifactPanel Polish
 
 **Roadmap Item 1: Self-Correcting Retry Loop** (v1.1.0) — LangGraph-inspired generate-check-reflect pattern:
