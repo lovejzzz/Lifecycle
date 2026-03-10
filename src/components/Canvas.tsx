@@ -260,20 +260,26 @@ function CanvasInner() {
   useEffect(() => { setMounted(true); }, []);
   const isEmpty = !mounted || nodes.length === 0;
   const agent = getAgent(cidMode);
-  const { fitView, screenToFlowPosition } = useReactFlow();
+  const { fitView, setCenter, getZoom, screenToFlowPosition } = useReactFlow();
   const viewport = useViewport();
 
-  // Pan to selected node when it changes (from search, activity, connection clicks)
+  // Smooth scroll to selected node when it changes (from search, breadcrumb, activity clicks)
   const prevSelectedRef = useRef<string | null>(null);
   useEffect(() => {
     if (selectedNodeId && selectedNodeId !== prevSelectedRef.current && mounted && nodes.length > 0) {
-      // Small delay to let React Flow render first
-      setTimeout(() => {
-        fitView({ nodes: [{ id: selectedNodeId }], duration: 400, padding: 0.5, maxZoom: 1.2 });
-      }, 50);
+      const targetNode = nodes.find(n => n.id === selectedNodeId);
+      if (targetNode) {
+        // Use setCenter to preserve the user's current zoom level (less jarring than fitView)
+        const zoom = getZoom();
+        const x = targetNode.position.x + ((targetNode.measured?.width ?? 240) / 2);
+        const y = targetNode.position.y + ((targetNode.measured?.height ?? 120) / 2);
+        setTimeout(() => {
+          setCenter(x, y, { zoom: Math.max(zoom, 0.6), duration: 500 });
+        }, 50);
+      }
     }
     prevSelectedRef.current = selectedNodeId;
-  }, [selectedNodeId, fitView, mounted, nodes.length]);
+  }, [selectedNodeId, setCenter, getZoom, mounted, nodes]);
 
   // Auto-fit when nodes are being built (store requests fitView)
   useEffect(() => {

@@ -49,6 +49,18 @@ function LifecycleNode({ data, id, dragging }: NodeProps) {
   });
   const outCount = totalConns - inCount;
 
+  // Highlight pulse when node becomes selected (e.g. from search, breadcrumb, activity)
+  const [showPulse, setShowPulse] = useState(false);
+  const prevSelectedRef = useRef(isSelected);
+  useEffect(() => {
+    if (isSelected && !prevSelectedRef.current) {
+      setShowPulse(true);
+      const t = setTimeout(() => setShowPulse(false), 800);
+      return () => clearTimeout(t);
+    }
+    prevSelectedRef.current = isSelected;
+  }, [isSelected]);
+
   // Inline label editing
   const [editingLabel, setEditingLabel] = useState(false);
   const [labelDraft, setLabelDraft] = useState(label);
@@ -97,6 +109,15 @@ function LifecycleNode({ data, id, dragging }: NodeProps) {
           maxWidth: 270,
         }}
       >
+        {/* Scroll-to highlight pulse ring */}
+        {showPulse && (
+          <motion.div
+            className="absolute inset-0 rounded-xl pointer-events-none"
+            initial={{ boxShadow: `0 0 0 0px ${colors.primary}60`, opacity: 1 }}
+            animate={{ boxShadow: `0 0 0 12px ${colors.primary}00`, opacity: 0 }}
+            transition={{ duration: 0.8, ease: 'easeOut' }}
+          />
+        )}
         {/* Top accent line */}
         <div
           className="h-px rounded-t-xl opacity-80"

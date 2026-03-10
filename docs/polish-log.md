@@ -23,7 +23,7 @@ Tracks the systematic UI/UX polish pass across 20 items in 4 rounds.
 - [x] 12. Dropdown keyboard navigation (arrow keys, Enter, Escape)
 - [x] 13. Drag feedback on canvas nodes
 - [x] 14. Panel resize handles
-- [ ] 15. Smooth scroll to node on search/breadcrumb select
+- [x] 15. Smooth scroll to node on search/breadcrumb select
 
 ### Round 4 — Content & Copy
 - [ ] 16. Context-aware loading state copy
@@ -37,6 +37,16 @@ Tracks the systematic UI/UX polish pass across 20 items in 4 rounds.
 ## Cycle Log
 
 <!-- Newest entries at top -->
+
+### Polish 15 — Smooth scroll to node on search/breadcrumb select
+- **Changed**: Canvas.tsx, LifecycleNode.tsx
+- Replaced `fitView` with `setCenter` for auto-panning to selected nodes — preserves the user's current zoom level instead of zooming to fit a single node
+- Uses `getZoom()` to read current zoom, with a floor of 0.6 to prevent navigation at unusably small zoom
+- Centers on node midpoint using `measured.width`/`measured.height` from React Flow (falls back to 240×120)
+- Smooth 500ms animation via React Flow's built-in `setCenter` duration option
+- Added expanding ring pulse animation on LifecycleNode when it becomes selected: a colored ring expands outward from the node border and fades over 800ms
+- Pulse uses node's category `colors.primary` for the ring color — visually consistent with node theme
+- `prevSelectedRef` tracks previous selection to only trigger pulse on *newly* selected nodes, not re-renders
 
 ### Polish 14 — Panel resize handles
 - **Changed**: CIDPanel.tsx
