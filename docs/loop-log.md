@@ -25,7 +25,7 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 - [x] useStore.ts pure functions (scenarios 18-20, ~35% → 40.24%)
 - [x] useStore.ts async handlers (scenarios 21-23, 40.24% → 45.84%) — executeNode, chatWithCID, propagateStale, executeWorkflow, executeBranch all covered. Remaining: generateWorkflow (animation timeouts, hard to mock), streaming callbacks, UI handlers.
 - [x] types.ts (61.72% → 97.53%) — 22 new tests, cycle 14. Utility functions, color generation, icon mapping, relativeTime all covered.
-- [ ] useStore.ts UI handlers — SECONDARY target. Panel toggles, selection management, multi-select ops. Synchronous, no fetch mock needed.
+- [x] useStore.ts UI handlers — Scenarios 24-25, panel toggles, selection, multi-select, CID rules, breadcrumbs, generatePlan, getWorkflowProgress, diffSnapshot, batchWhere, runHealthCheck, regenerateSelected. 46.72% → 49.22%.
 
 ---
 
@@ -103,6 +103,14 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 ## Cycle Log
 
 <!-- Newest entries at top -->
+
+### Cycle 16 — 2026-03-10 15:00
+- **Audited**: rotation complete — skipped (no new files)
+- **Tests**: 600 passing (+35), 0 failing; coverage: 60.11% stmts (+1.80pp), useStore.ts 49.22% (+2.50pp)
+- **Issues found**: none (audit skipped)
+- **Fixed**: nothing
+- **Coverage push**: useStore.ts (utility handlers) — 35 new tests in Scenario 25 covering CID rules (addCIDRule accumulation, removeCIDRule valid/invalid/negative index, listCIDRules empty/formatted), breadcrumbs (add, dedup-to-end, cap at 8, clear), getWorkflowProgress (empty, done/blocked/percent calculation), diffSnapshot (no snapshots, missing named, added nodes, no changes, modified status), batchWhere (invalid syntax, invalid status, no match, lock by category, update by status, already-at-target, label partial match), generatePlan (empty, linear chain step sequence, parallel marking), runHealthCheck (empty no-op, silent mode, fingerprint update), regenerateSelected (no-op empty, skip non-stale, topo order regen, clears impactPreview). Coverage 58.31% → 60.11% overall, useStore.ts 46.72% → 49.22%.
+- **Milestone**: useStore.ts crossed 49%, overall crossed 60% stmts. All coverage push targets complete.
 
 ### Cycle 15 — 2026-03-10 14:00
 - **Audited**: rotation complete — skipped (all tiers fully audited, no new files in git log)

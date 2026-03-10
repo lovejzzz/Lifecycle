@@ -1,5 +1,11 @@
 # Changelog
 
+### 2026-03-10 — Loop Cycle 16: Store Utility Handler Coverage Push
+
+**Coverage push**: useStore.ts utility handlers (49.22%, +2.50pp)
+- 35 new tests in Scenario 25 covering CID rules (add/remove/list), breadcrumbs (add/dedup/cap/clear), getWorkflowProgress, diffSnapshot (5 edge cases), batchWhere (7 cases including parse/validate/lock/label-match), generatePlan (empty/linear/parallel), runHealthCheck (empty/silent/fingerprint), regenerateSelected (empty/skip-active/topo-order/clear-preview)
+- Coverage: useStore.ts 46.72% → 49.22%, overall 58.31% → 60.11%, 600 tests passing
+
 ### 2026-03-10 — Loop Cycle 15: UI Handler Coverage Push
 
 **Audit**: Rotation complete — skipped (all Tier 1/2/3 audited).

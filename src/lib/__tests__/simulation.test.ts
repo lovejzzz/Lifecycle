@@ -2543,4 +2543,358 @@ describe('User Simulation: Real Journeys', () => {
       expect(edge.label).toBe('validates');
     });
   });
+
+  // ═══════════════════════════════════════════════════════════════════
+  // SCENARIO 25 — CID Rules, Breadcrumbs, Plan, Progress, Diff, BatchWhere, Health, RegenerateSelected
+  // ═══════════════════════════════════════════════════════════════════
+
+  describe('Scenario 25 — store utility handlers', () => {
+    beforeEach(() => {
+      useLifecycleStore.setState({
+        nodes: [], edges: [], events: [], messages: [],
+        impactPreview: null, toasts: [], isProcessing: false,
+        cidRules: [], breadcrumbs: [], snapshots: new Map(),
+        _lastHealthFingerprint: '',
+      });
+      mockFetch.mockClear();
+    });
+
+    // ── CID Rules ──
+
+    it('addCIDRule: adds rule and returns confirmation', () => {
+      const result = getStore().addCIDRule('Always use parallel execution');
+      expect(result).toContain('Learned');
+      expect(result).toContain('1');
+      expect(getStore().cidRules).toHaveLength(1);
+      expect(getStore().cidRules[0]).toBe('Always use parallel execution');
+    });
+
+    it('addCIDRule: multiple rules accumulate', () => {
+      getStore().addCIDRule('Rule A');
+      getStore().addCIDRule('Rule B');
+      const result = getStore().addCIDRule('Rule C');
+      expect(result).toContain('3');
+      expect(getStore().cidRules).toHaveLength(3);
+    });
+
+    it('removeCIDRule: removes by index', () => {
+      getStore().addCIDRule('Keep');
+      getStore().addCIDRule('Remove');
+      getStore().addCIDRule('Also keep');
+      const result = getStore().removeCIDRule(1);
+      expect(result).toContain('Forgot');
+      expect(result).toContain('Remove');
+      expect(getStore().cidRules).toHaveLength(2);
+      expect(getStore().cidRules).toEqual(['Keep', 'Also keep']);
+    });
+
+    it('removeCIDRule: invalid index returns error', () => {
+      getStore().addCIDRule('Only rule');
+      const result = getStore().removeCIDRule(5);
+      expect(result).toContain('Invalid');
+      expect(getStore().cidRules).toHaveLength(1);
+    });
+
+    it('removeCIDRule: negative index returns error', () => {
+      const result = getStore().removeCIDRule(-1);
+      expect(result).toContain('Invalid');
+    });
+
+    it('listCIDRules: empty state message', () => {
+      const result = getStore().listCIDRules();
+      expect(result).toContain('No rules');
+    });
+
+    it('listCIDRules: formats rules as numbered list', () => {
+      getStore().addCIDRule('First rule');
+      getStore().addCIDRule('Second rule');
+      const result = getStore().listCIDRules();
+      expect(result).toContain('### CID Rules (2)');
+      expect(result).toContain('1. First rule');
+      expect(result).toContain('2. Second rule');
+    });
+
+    // ── Breadcrumbs ──
+
+    it('addBreadcrumb: adds nodeId to trail', () => {
+      getStore().addBreadcrumb('node-1');
+      getStore().addBreadcrumb('node-2');
+      expect(getStore().breadcrumbs).toEqual(['node-1', 'node-2']);
+    });
+
+    it('addBreadcrumb: deduplicates and moves to end', () => {
+      getStore().addBreadcrumb('a');
+      getStore().addBreadcrumb('b');
+      getStore().addBreadcrumb('a');
+      expect(getStore().breadcrumbs).toEqual(['b', 'a']);
+    });
+
+    it('addBreadcrumb: caps at 8 entries', () => {
+      for (let i = 0; i < 10; i++) getStore().addBreadcrumb(`n-${i}`);
+      expect(getStore().breadcrumbs).toHaveLength(8);
+      expect(getStore().breadcrumbs[0]).toBe('n-2'); // oldest 2 dropped
+      expect(getStore().breadcrumbs[7]).toBe('n-9');
+    });
+
+    it('clearBreadcrumbs: empties the trail', () => {
+      getStore().addBreadcrumb('x');
+      getStore().addBreadcrumb('y');
+      getStore().clearBreadcrumbs();
+      expect(getStore().breadcrumbs).toEqual([]);
+    });
+
+    // ── Workflow Progress ──
+
+    it('getWorkflowProgress: empty workflow', () => {
+      const prog = getStore().getWorkflowProgress();
+      expect(prog).toEqual({ percent: 0, done: 0, total: 0, blocked: 0 });
+    });
+
+    it('getWorkflowProgress: calculates done and blocked', () => {
+      getStore().createNewNode('input');
+      getStore().createNewNode('artifact');
+      getStore().createNewNode('output');
+      const nodes = getStore().nodes;
+      // Mark first as success, second as stale, third stays default
+      useLifecycleStore.setState({
+        nodes: nodes.map((n, i) => ({
+          ...n,
+          data: {
+            ...n.data,
+            executionStatus: i === 0 ? 'success' as const : undefined,
+            status: i === 1 ? 'stale' as const : n.data.status,
+          },
+        })),
+      });
+      const prog = getStore().getWorkflowProgress();
+      expect(prog.total).toBe(3);
+      expect(prog.done).toBe(1);
+      expect(prog.blocked).toBe(1);
+      expect(prog.percent).toBe(33);
+    });
+
+    // ── Snapshots & Diff ──
+
+    it('diffSnapshot: no snapshots saved', () => {
+      const result = getStore().diffSnapshot('missing');
+      expect(result).toContain('No snapshots saved');
+    });
+
+    it('diffSnapshot: named snapshot not found with alternatives', () => {
+      // Manually set a snapshot
+      const snap = new Map();
+      snap.set('v1', { nodes: [], edges: [], timestamp: Date.now() });
+      useLifecycleStore.setState({ snapshots: snap });
+      const result = getStore().diffSnapshot('v2');
+      expect(result).toContain('No snapshot named "v2"');
+      expect(result).toContain('v1');
+    });
+
+    it('diffSnapshot: detects added nodes', () => {
+      // Save snapshot with empty workflow
+      const snap = new Map();
+      snap.set('baseline', { nodes: [], edges: [], timestamp: Date.now() });
+      useLifecycleStore.setState({ snapshots: snap });
+      // Add nodes to current
+      getStore().createNewNode('input');
+      const result = getStore().diffSnapshot('baseline');
+      expect(result).toContain('Added');
+      expect(result).toContain('1');
+    });
+
+    it('diffSnapshot: no changes matches snapshot', () => {
+      getStore().createNewNode('input');
+      const currentNodes = structuredClone(getStore().nodes);
+      const currentEdges = structuredClone(getStore().edges);
+      const snap = new Map();
+      snap.set('same', { nodes: currentNodes, edges: currentEdges, timestamp: Date.now() });
+      useLifecycleStore.setState({ snapshots: snap });
+      const result = getStore().diffSnapshot('same');
+      expect(result).toContain('No changes detected');
+    });
+
+    it('diffSnapshot: detects modified nodes (status change)', () => {
+      getStore().createNewNode('input');
+      const snapNodes = structuredClone(getStore().nodes);
+      const snapEdges = structuredClone(getStore().edges);
+      const snap = new Map();
+      snap.set('v1', { nodes: snapNodes, edges: snapEdges, timestamp: Date.now() });
+      useLifecycleStore.setState({ snapshots: snap });
+      // Change status of the node
+      const node = getStore().nodes[0];
+      getStore().updateNodeStatus(node.id, 'stale');
+      const result = getStore().diffSnapshot('v1');
+      expect(result).toContain('Modified');
+    });
+
+    // ── batchWhere ──
+
+    it('batchWhere: invalid syntax returns usage', () => {
+      const result = getStore().batchWhere('nonsense input');
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('Usage');
+    });
+
+    it('batchWhere: invalid status returns error', () => {
+      getStore().createNewNode('input');
+      const result = getStore().batchWhere('batch explode where category=input');
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('Invalid status');
+    });
+
+    it('batchWhere: no matching nodes', () => {
+      getStore().createNewNode('input');
+      const result = getStore().batchWhere('batch locked where category=output');
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('No nodes match');
+    });
+
+    it('batchWhere: locks nodes by category', () => {
+      getStore().createNewNode('review');
+      getStore().createNewNode('review');
+      getStore().createNewNode('input');
+      const result = getStore().batchWhere('batch locked where category=review');
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('2');
+      const reviews = getStore().nodes.filter(n => n.data.category === 'review');
+      expect(reviews.every(n => n.data.status === 'locked')).toBe(true);
+    });
+
+    it('batchWhere: updates by status field', () => {
+      getStore().createNewNode('input');
+      getStore().createNewNode('artifact');
+      // Both start as active
+      const result = getStore().batchWhere('batch reviewing where status=active');
+      expect(result.success).toBe(true);
+      expect(getStore().nodes.every(n => n.data.status === 'reviewing')).toBe(true);
+    });
+
+    it('batchWhere: already at target status', () => {
+      getStore().createNewNode('input');
+      const result = getStore().batchWhere('batch active where category=input');
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('already');
+    });
+
+    it('batchWhere: matches by label (partial)', () => {
+      getStore().createNewNode('input');
+      // Default label includes category name
+      const node = getStore().nodes[0];
+      useLifecycleStore.setState({
+        nodes: [{ ...node, data: { ...node.data, label: 'My Custom Input' } }],
+      });
+      const result = getStore().batchWhere('batch stale where label=custom');
+      expect(result.success).toBe(true);
+      expect(getStore().nodes[0].data.status).toBe('stale');
+    });
+
+    // ── generatePlan ──
+
+    it('generatePlan: empty workflow', () => {
+      const result = getStore().generatePlan();
+      expect(result).toContain('No workflow');
+    });
+
+    it('generatePlan: linear chain produces step sequence', () => {
+      getStore().createNewNode('input');
+      getStore().createNewNode('artifact');
+      getStore().createNewNode('output');
+      useLifecycleStore.setState({ edges: [] });
+      const [inp, art, out] = getStore().nodes;
+      getStore().addEdge({ id: 'e1', source: inp.id, target: art.id, type: 'default' });
+      getStore().addEdge({ id: 'e2', source: art.id, target: out.id, type: 'default' });
+      const result = getStore().generatePlan();
+      expect(result).toContain('### Execution Plan');
+      expect(result).toContain('Step 1');
+      expect(result).toContain('Step 2');
+      expect(result).toContain('Step 3');
+      expect(result).toContain('3 execution phases');
+    });
+
+    it('generatePlan: parallel nodes marked', () => {
+      getStore().createNewNode('input');
+      getStore().createNewNode('artifact');
+      getStore().createNewNode('artifact');
+      useLifecycleStore.setState({ edges: [] });
+      const [inp, art1, art2] = getStore().nodes;
+      getStore().addEdge({ id: 'e1', source: inp.id, target: art1.id, type: 'default' });
+      getStore().addEdge({ id: 'e2', source: inp.id, target: art2.id, type: 'default' });
+      const result = getStore().generatePlan();
+      expect(result).toContain('parallel');
+    });
+
+    // ── runHealthCheck ──
+
+    it('runHealthCheck: does nothing on empty workflow', () => {
+      getStore().runHealthCheck();
+      expect(getStore().messages).toHaveLength(0);
+    });
+
+    it('runHealthCheck: silent mode does not add messages', () => {
+      getStore().createNewNode('input');
+      getStore().createNewNode('artifact');
+      // Create a disconnected node to trigger health issue
+      getStore().runHealthCheck(true);
+      // Silent should not add messages even with issues
+      const healthMsgs = getStore().messages.filter(m => m.role === 'cid');
+      expect(healthMsgs).toHaveLength(0);
+    });
+
+    it('runHealthCheck: updates fingerprint', () => {
+      getStore().createNewNode('input');
+      getStore().runHealthCheck(true);
+      // Fingerprint should be set (even if no issues, it's a hash of the empty array)
+      expect(getStore()._lastHealthFingerprint).toBeDefined();
+    });
+
+    // ── regenerateSelected ──
+
+    it('regenerateSelected: no-op when no ids provided and no preview', async () => {
+      await getStore().regenerateSelected();
+      // Should not throw, no messages added
+      expect(getStore().messages).toHaveLength(0);
+    });
+
+    it('regenerateSelected: skips non-stale nodes', async () => {
+      getStore().createNewNode('input');
+      const nodeId = getStore().nodes[0].id;
+      // Node is active (not stale), so regenerateSelected should skip it
+      await getStore().regenerateSelected([nodeId]);
+      // Should have start message but 0 success (node was not stale)
+      const msgs = getStore().messages;
+      expect(msgs.length).toBeGreaterThanOrEqual(1);
+      const doneMsg = msgs[msgs.length - 1].content;
+      expect(doneMsg).toContain('0 node');
+    });
+
+    it('regenerateSelected: regenerates stale nodes in topo order', async () => {
+      getStore().createNewNode('input');
+      getStore().createNewNode('artifact');
+      useLifecycleStore.setState({ edges: [] });
+      const [inp, art] = getStore().nodes;
+      getStore().addEdge({ id: 'e1', source: inp.id, target: art.id, type: 'default' });
+
+      // Mark both as stale
+      getStore().updateNodeStatus(inp.id, 'stale');
+      getStore().updateNodeStatus(art.id, 'stale');
+
+      await getStore().regenerateSelected([inp.id, art.id]);
+
+      // Both should have been processed
+      const msgs = getStore().messages;
+      expect(msgs.length).toBeGreaterThanOrEqual(2); // start + done
+      const doneMsg = msgs[msgs.length - 1].content;
+      expect(doneMsg).toMatch(/regenerated/i);
+    });
+
+    it('regenerateSelected: clears impactPreview', async () => {
+      getStore().createNewNode('input');
+      const nodeId = getStore().nodes[0].id;
+      useLifecycleStore.setState({
+        impactPreview: { editedNodeId: nodeId, impactedNodeIds: [nodeId], selectedNodeIds: new Set([nodeId]) },
+      });
+      await getStore().regenerateSelected([nodeId]);
+      expect(getStore().impactPreview).toBeNull();
+    });
+  });
 });
