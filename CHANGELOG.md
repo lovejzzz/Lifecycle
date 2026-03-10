@@ -1,5 +1,19 @@
 # Changelog
 
+### 2026-03-10 — Loop Cycle 8: Commands & Dispatch Audit + Store Coverage Push
+
+**useStore.ts commands & dispatch audit** (deep review, last Tier 1 store section):
+- **Fix: `deleteNode()` allowed deleting executing nodes** — no check against `_executingNodeIds`, causing orphaned locks and inconsistent state. Added execution guard with user-facing toast warning.
+- **Fix: `executeWorkflow()` lacked concurrent execution guard** — calling it twice simultaneously caused race conditions. Added `isProcessing` early return.
+
+**Coverage push**: useStore.ts (NLP command handlers)
+- 27 new tests in Scenario 18 covering addNodeByName, renameByName, deleteByName, connectByName, disconnectByName, explainWorkflow, exportWorkflow, importWorkflow, setStatusByName, deleteNode execution lock guard
+- Coverage: useStore.ts ~35% → 39.19%, overall 48.96% → 52.38%
+
+**OOM fix**: Replaced 5 tests using `while` loops to delete all nodes/edges (each triggering pushHistory + saveToStorage + structuredClone) with non-destructive alternatives.
+
+**Test counts**: 440 total (75 simulation + 44 prompts + 64 reflection + 42 intent + 32 E2E + 13 chaos + 25 agents + 145 existing), all passing
+
 ### 2026-03-10 — Loop Cycle 7: Edge Operations & Graph Audit + Coverage Push
 
 **useStore.ts edge operations & graph audit** (deep agent-assisted review):

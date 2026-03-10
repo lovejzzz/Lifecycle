@@ -1032,4 +1032,205 @@ describe('User Simulation: Real Journeys', () => {
       expect(uniqueIds.size).toBe(ids.length);
     });
   });
+
+  // ─── Scenario 18: Command handlers ─────────────────────────────────────
+  describe('Scenario 18 — NLP command handlers', () => {
+    beforeEach(() => {
+      // Set up a small workflow for testing commands
+      const s = getStore();
+      s.createNewNode('input');
+      s.createNewNode('artifact');
+      s.createNewNode('review');
+    });
+
+    it('addNodeByName creates node with valid category', () => {
+      const before = getStore().nodes.length;
+      const result = getStore().addNodeByName('add note called "Research Notes"');
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('Research Notes');
+      expect(getStore().nodes.length).toBe(before + 1);
+      const newNode = getStore().nodes.find(n => n.data.label === 'Research Notes');
+      expect(newNode).toBeDefined();
+      expect(newNode!.data.category).toBe('note');
+    });
+
+    it('addNodeByName fails with unparseable input', () => {
+      const result = getStore().addNodeByName('do something weird');
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('Could not parse');
+    });
+
+    it('addNodeByName registers custom category', () => {
+      const result = getStore().addNodeByName('add mycustomtype called "Custom Thing"');
+      expect(result.success).toBe(true);
+      expect(getStore().nodes.find(n => n.data.label === 'Custom Thing')!.data.category).toBe('mycustomtype');
+    });
+
+    it('renameByName renames existing node', () => {
+      const node = getStore().nodes[0];
+      const oldLabel = node.data.label;
+      const result = getStore().renameByName(`rename ${oldLabel} to "Better Name"`);
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('Better Name');
+      expect(getStore().nodes.find(n => n.id === node.id)!.data.label).toBe('Better Name');
+    });
+
+    it('renameByName fails for non-existent node', () => {
+      const result = getStore().renameByName('rename NonExistentNode to Something');
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('No node matching');
+    });
+
+    it('renameByName fails with unparseable input', () => {
+      const result = getStore().renameByName('rename');
+      expect(result.success).toBe(false);
+    });
+
+    it('deleteByName deletes existing node', () => {
+      const before = getStore().nodes.length;
+      const label = getStore().nodes[0].data.label;
+      const result = getStore().deleteByName(`delete ${label}`);
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('Deleted');
+      expect(getStore().nodes.length).toBe(before - 1);
+    });
+
+    it('deleteByName fails for non-existent node', () => {
+      const result = getStore().deleteByName('delete GhostNode');
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('No node matching');
+    });
+
+    it('deleteByName reports count of removed connections', () => {
+      const nodes = getStore().nodes;
+      // Connect first two nodes, then delete the first
+      getStore().connectByName(`connect ${nodes[0].data.label} to ${nodes[1].data.label}`);
+      const result = getStore().deleteByName(`delete ${nodes[0].data.label}`);
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('connection');
+    });
+
+    it('connectByName connects two nodes', () => {
+      const nodes = getStore().nodes;
+      const edgesBefore = getStore().edges.length;
+      const result = getStore().connectByName(`connect ${nodes[0].data.label} to ${nodes[1].data.label}`);
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('Connected');
+      expect(getStore().edges.length).toBe(edgesBefore + 1);
+    });
+
+    it('connectByName rejects self-connection', () => {
+      const label = getStore().nodes[0].data.label;
+      const result = getStore().connectByName(`connect ${label} to ${label}`);
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('Cannot connect a node to itself');
+    });
+
+    it('connectByName rejects duplicate connection', () => {
+      const nodes = getStore().nodes;
+      getStore().connectByName(`connect ${nodes[0].data.label} to ${nodes[1].data.label}`);
+      const result = getStore().connectByName(`connect ${nodes[0].data.label} to ${nodes[1].data.label}`);
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('already connected');
+    });
+
+    it('connectByName fails with non-existent node names', () => {
+      const result = getStore().connectByName('connect ZZZNonExistent to YYYAlsoFake');
+      expect(result.success).toBe(false);
+    });
+
+    it('connectByName fails with unparseable input', () => {
+      const result = getStore().connectByName('connect');
+      expect(result.success).toBe(false);
+    });
+
+    it('disconnectByName removes edge between two nodes', () => {
+      const nodes = getStore().nodes;
+      getStore().connectByName(`connect ${nodes[0].data.label} to ${nodes[1].data.label}`);
+      const edgesAfterConnect = getStore().edges.length;
+      const result = getStore().disconnectByName(`disconnect ${nodes[0].data.label} from ${nodes[1].data.label}`);
+      expect(result.success).toBe(true);
+      expect(getStore().edges.length).toBe(edgesAfterConnect - 1);
+    });
+
+    it('disconnectByName fails with non-existent connection', () => {
+      const result = getStore().disconnectByName('disconnect ZZZFake from YYYAlsoFake');
+      expect(result.success).toBe(false);
+    });
+
+    it('explainWorkflow produces narrative for non-empty graph', () => {
+      const nodes = getStore().nodes;
+      getStore().connectByName(`connect ${nodes[0].data.label} to ${nodes[1].data.label}`);
+      const result = getStore().explainWorkflow();
+      expect(result).toContain('Workflow Narrative');
+      expect(result).toContain('nodes');
+      expect(result).toContain('edges');
+    });
+
+    it('explainWorkflow includes node labels in narrative', () => {
+      const nodes = getStore().nodes;
+      const result = getStore().explainWorkflow();
+      // Should mention at least one node label
+      const mentionsANode = nodes.some(n => result.includes(n.data.label));
+      expect(mentionsANode).toBe(true);
+    });
+
+    it('exportWorkflow returns valid JSON', () => {
+      const json = getStore().exportWorkflow();
+      const data = JSON.parse(json);
+      expect(data._format).toBe('lifecycle-agent');
+      expect(data._version).toBe(1);
+      expect(data.nodes.length).toBe(getStore().nodes.length);
+    });
+
+    it('importWorkflow with valid data succeeds', () => {
+      const json = getStore().exportWorkflow();
+      const data = JSON.parse(json);
+      // Import on top of existing — should succeed and set nodes from the data
+      const result = getStore().importWorkflow(json);
+      expect(result).toBe(true);
+      expect(getStore().nodes.length).toBe(data.nodes.length);
+    });
+
+    it('importWorkflow with invalid JSON returns false', () => {
+      expect(getStore().importWorkflow('not json')).toBe(false);
+    });
+
+    it('importWorkflow with missing nodes returns false', () => {
+      expect(getStore().importWorkflow('{"edges":[]}')).toBe(false);
+    });
+
+    it('importWorkflow rejects edges referencing non-existent nodes', () => {
+      const json = JSON.stringify({
+        nodes: [{ id: 'n1', position: { x: 0, y: 0 }, data: { label: 'A', category: 'input', status: 'active' } }],
+        edges: [{ id: 'e1', source: 'n1', target: 'n999' }],
+      });
+      expect(getStore().importWorkflow(json)).toBe(false);
+    });
+
+    it('setStatusByName changes node status', () => {
+      const label = getStore().nodes[0].data.label;
+      const result = getStore().setStatusByName(`set ${label} to stale`);
+      expect(result.success).toBe(true);
+      expect(getStore().nodes[0].data.status).toBe('stale');
+    });
+
+    it('setStatusByName rejects invalid status', () => {
+      const label = getStore().nodes[0].data.label;
+      const result = getStore().setStatusByName(`set ${label} to banana`);
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('Invalid status');
+    });
+
+    it('deleteNode blocks deletion of executing node', () => {
+      const nodeId = getStore().nodes[0].id;
+      // Manually lock the node
+      getStore()._lockNode(nodeId);
+      const before = getStore().nodes.length;
+      getStore().deleteNode(nodeId);
+      // Node should still exist
+      expect(getStore().nodes.length).toBe(before);
+      getStore()._unlockNode(nodeId);
+    });
+  });
 });

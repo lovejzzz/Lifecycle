@@ -1713,6 +1713,8 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
 
   executeWorkflow: async () => {
     const store = get();
+    // Prevent concurrent workflow execution
+    if (store.isProcessing) return;
     const { nodes, edges } = store;
     cidLog('executeWorkflow', { nodeCount: nodes.length, edgeCount: edges.length });
     if (nodes.length === 0) return;
@@ -2357,6 +2359,11 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
 
   deleteNode: (id) => {
     const store = get();
+    // Prevent deleting a node that is currently being executed
+    if (store._executingNodeIds.has(id)) {
+      store.addToast('Cannot delete node while it is executing', 'error');
+      return;
+    }
     store.pushHistory();
     set((s) => {
       const deletedNode = s.nodes.find((n) => n.id === id);

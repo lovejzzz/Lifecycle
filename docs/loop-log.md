@@ -8,51 +8,56 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 
 ### Rotation Queue (reset when all checked)
 
-**Priority Queue** (reordered by Meta-Refinement 1 — store-first, risk-weighted):
+**Priority Queue** (reordered by Meta-Refinement 2 — store coverage pivot, lib batch):
 
-*Tier 1 — Store (highest bug yield):*
+*Tier 1 — Store (last section + coverage pivot):*
 - [x] useStore.ts (persistence & projects) (cycle 3)
 - [x] useStore.ts (node operations) (cycle 4)
 - [x] useStore.ts (execution & CID) (cycle 5)
 - [x] useStore.ts (undo/redo & history) (cycle 6)
 - [x] useStore.ts (edge operations & graph) (cycle 7)
-- [ ] useStore.ts (commands & dispatch)
+- [x] useStore.ts (commands & dispatch) (cycle 8)
 
-*Tier 2 — Core lib (logic-heavy, low coverage):*
-- [ ] intent.ts (30% coverage)
-- [x] reflection.ts (covered cycle 6 — 31.21%→80.92%)
-- [x] prompts.ts (covered cycle 7 — 51.63%→92.39%)
+*Tier 2 — Core lib (audit for bugs, coverage already high):*
 - [x] agents.ts (covered cycle 4 — 3.65%→64.02%)
 - [x] intent.ts (covered cycle 5 — 29.95%→93.39%)
-- [ ] storage.ts
-- [ ] graph.ts
-- [ ] health.ts
-- [ ] optimizer.ts
-- [ ] edits.ts
+- [x] reflection.ts (covered cycle 6 — 31.21%→80.92%)
+- [x] prompts.ts (covered cycle 7 — 51.63%→92.39%)
+- [ ] storage.ts + graph.ts (batch — already 81%/92% coverage, audit for logic bugs only)
+- [ ] health.ts + optimizer.ts + edits.ts (batch — already 80%/98%/94%, quick scan)
 
 *Tier 3 — Components (batch small ones together):*
 - [x] Canvas.tsx (cycle 1)
 - [x] CIDPanel.tsx (cycle 2)
-- [ ] NodeDetailPanel.tsx
-- [ ] ArtifactPanel.tsx
+- [ ] NodeDetailPanel.tsx + ArtifactPanel.tsx (batch — both are detail panels)
 - [ ] TopBar.tsx + LifecycleNode.tsx (batch)
 - [ ] ActivityPanel.tsx + PreviewPanel.tsx (batch)
 - [ ] DiffView.tsx + ImpactPreview.tsx + NodeContextMenu.tsx + ErrorBoundary.tsx (batch)
 
-**Test Files (refine cycle):**
-- [x] simulation.test.ts (cycle 3)
-- [ ] simulation-e2e.test.ts
-- [ ] simulation-chaos.test.ts
-- [ ] graph.test.ts
-- [ ] intent.test.ts
-- [ ] edits.test.ts
-- [ ] health.test.ts
-- [ ] storage.test.ts
-- [ ] undo.test.ts
+*Coverage Push Target:*
+- [ ] useStore.ts (~35% → target 50%+) — biggest uncovered surface, highest overall impact
 
 ---
 
 ## Meta-Refinements
+
+### Meta-Refinement 2 — 2026-03-10 04:17
+- **Cycles reviewed**: 5 through 7
+- **Patterns observed**:
+  - Store audits continue to be the #1 bug source — every cycle found at least 1 CRITICAL (executeNode deadlock, undo nodeCounter desync, deleteEdge missing history). Store-first strategy validated.
+  - Recurring bug class: "undo/redo integration gaps" — missing `pushHistory()` before mutations (cycles 6-7) and nodeCounter not synced (cycles 3, 6). Store primitives (addEdge, setEdges, deleteEdge) were designed without undo awareness.
+  - Coverage push is extremely productive — every lib file jumped 40-63pp in one cycle. All 4 core lib files now 64-93%. But overall gains are slowing (+2.45, +2.92, +1.34pp) because lib files are small.
+  - Remaining lib files (storage 81%, graph 92%, health 80%, optimizer 98%, edits 94%) already well-covered — diminishing returns on coverage push there.
+  - The big coverage opportunity is useStore.ts itself (~35% on 6500 lines). One store coverage push cycle could move overall by 3-5pp.
+  - "Every 3rd cycle" test refinement hasn't fired since cycle 3 — not enforced, not producing value. Drop it.
+  - Tier 3 components untouched since cycle 2 — 5 batches remain but yield only UX/perf bugs. Keep deprioritized.
+- **Changes made**:
+  1. Pivoted coverage push target to useStore.ts (~35%) — biggest uncovered surface, highest overall impact. Lib files are done.
+  2. Batched remaining Tier 2 lib files into 2 groups (storage+graph, health+optimizer+edits) — audit for logic bugs only, no coverage push needed.
+  3. Batched NodeDetailPanel+ArtifactPanel together (both are detail panels with similar structure).
+  4. Dropped "every 3rd cycle" test refinement phase — replaced with "refine tests when audit finds bugs that existing tests should have caught."
+  5. Added "undo integration check" as mandatory spot-check for any new store mutation: does it call pushHistory? Does undo properly revert it?
+  6. Kept 1-hour interval — each cycle still produces 2+ fixes and 30+ tests.
 
 ### Meta-Refinement 1 — 2026-03-10 01:17
 - **Cycles reviewed**: 1 through 4
@@ -74,6 +79,17 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 ## Cycle Log
 
 <!-- Newest entries at top -->
+
+### Cycle 8 — 2026-03-10 05:10
+- **Audited**: useStore.ts (commands & dispatch) — deep review, 10 issues cataloged
+- **Tests**: 440 passing (+26), 0 failing; coverage: 52.38% stmts (+3.42pp), useStore.ts 39.19% (+4.19pp)
+- **Issues found**: 2 fixed
+  1. HIGH: `deleteNode()` didn't check `_executingNodeIds` — deleting an executing node caused orphaned lock and inconsistent state (fixed: added execution guard with toast warning)
+  2. HIGH: `executeWorkflow()` had no concurrent execution guard — calling it twice simultaneously caused race conditions (fixed: added isProcessing early return)
+  - Also noted (not fixed): stale closures in NLP handlers reading cached state, importWorkflow doesn't validate node category values, explainWorkflow narrative is basic
+- **Fixed**: deleteNode execution guard, executeWorkflow concurrency guard
+- **Coverage push**: useStore.ts — 27 new tests in Scenario 18 (NLP command handlers) covering addNodeByName (basic, with category, unparseable), renameByName (success, not found, unparseable), deleteByName (success, not found, with connections), connectByName (success, duplicate, non-existent, unparseable), disconnectByName (success, non-existent), explainWorkflow (narrative, node labels), exportWorkflow (valid JSON), importWorkflow (success, invalid JSON, missing nodes, bad edges), setStatusByName (success, not found), deleteNode execution lock guard. Coverage 48.96% → 52.38% overall, useStore.ts ~35% → 39.19%.
+- **OOM fix**: Replaced 5 tests with `while` loops deleting all nodes/edges (each triggering pushHistory + saveToStorage + structuredClone) with non-destructive alternatives.
 
 ### Cycle 7 — 2026-03-10 03:55
 - **Audited**: useStore.ts (edge operations & graph) — deep agent-assisted review, 7 issues cataloged
