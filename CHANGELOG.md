@@ -1,5 +1,17 @@
 # Changelog
 
+### 2026-03-10 — Loop Cycle 9: storage.ts + graph.ts Audit + Store Analytics Coverage
+
+**Tier 2 batch audit**: storage.ts + graph.ts (logic bugs only)
+- **Fix: `saveProject()` trimmed-save retry uncaught** — if both original and trimmed localStorage writes failed, exception propagated uncaught. Wrapped retry in try-catch with early return to prevent orphan index entries.
+- graph.ts: clean — 13 theoretical issues reviewed, none actionable.
+
+**Coverage push**: useStore.ts (analytics, chat, impact preview, toasts)
+- 27 new tests in Scenario 19 covering getHealthScore, getComplexityScore, getStatusReport, exportChatHistory, clearMessages, deleteMessage, stopProcessing, addToast/removeToast, showImpactPreview, toggleImpactNodeSelection, selectAll/deselectAll, hideImpactPreview
+- Coverage: useStore.ts 39.19% → 40.2%, overall 52.38% → 53.07%
+
+**Test counts**: 467 total, all passing
+
 ### 2026-03-10 — Loop Cycle 8: Commands & Dispatch Audit + Store Coverage Push
 
 **useStore.ts commands & dispatch audit** (deep review, last Tier 1 store section):

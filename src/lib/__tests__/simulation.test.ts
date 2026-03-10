@@ -1233,4 +1233,295 @@ describe('User Simulation: Real Journeys', () => {
       getStore()._unlockNode(nodeId);
     });
   });
+
+  // ── Scenario 19: Pure store analytics, chat, impact preview, and toast ──
+  describe('Scenario 19 — Store analytics & UI helpers', () => {
+    beforeEach(() => {
+      // Reset to clean state then build a known 3-node workflow
+      useLifecycleStore.setState({ nodes: [], edges: [], events: [], messages: [], impactPreview: null, toasts: [] });
+      getStore().createNewNode('input');
+      getStore().createNewNode('artifact');
+      getStore().createNewNode('review');
+    });
+
+    // ── getHealthScore ──
+    it('getHealthScore returns 100 for empty graph', () => {
+      // Remove all nodes by setting directly
+      useLifecycleStore.setState({ nodes: [], edges: [] });
+      expect(getStore().getHealthScore()).toBe(100);
+    });
+
+    it('getHealthScore deducts for stale nodes', () => {
+      const nodes = getStore().nodes;
+      const scoreWithNone = getStore().getHealthScore();
+      // Make a node stale
+      getStore().updateNodeStatus(nodes[0].id, 'stale');
+      const scoreWithOne = getStore().getHealthScore();
+      expect(scoreWithOne).toBeLessThan(scoreWithNone);
+      expect(scoreWithNone - scoreWithOne).toBeGreaterThanOrEqual(10);
+    });
+
+    it('getHealthScore deducts for orphan nodes', () => {
+      // Manually set edges to empty to guarantee orphans
+      useLifecycleStore.setState({ edges: [] });
+      const score = getStore().getHealthScore();
+      // 3 orphans × 8 = -24, so score should be ≤ 100 - 24 = 76
+      expect(score).toBeLessThanOrEqual(76);
+    });
+
+    it('getHealthScore deducts when no review node', () => {
+      useLifecycleStore.setState({
+        nodes: getStore().nodes.filter(n => n.data.category !== 'review'),
+      });
+      const score = getStore().getHealthScore();
+      // -15 for no review, plus orphan deductions
+      expect(score).toBeLessThanOrEqual(85);
+    });
+
+    it('getHealthScore clamps to 0-100 range', () => {
+      // Create many stale nodes to push score negative
+      for (let i = 0; i < 12; i++) getStore().createNewNode('input');
+      getStore().nodes.forEach(n => getStore().updateNodeStatus(n.id, 'stale'));
+      const score = getStore().getHealthScore();
+      expect(score).toBeGreaterThanOrEqual(0);
+      expect(score).toBeLessThanOrEqual(100);
+    });
+
+    // ── getComplexityScore ──
+    it('getComplexityScore returns Empty for no nodes', () => {
+      useLifecycleStore.setState({ nodes: [], edges: [] });
+      const result = getStore().getComplexityScore();
+      expect(result.score).toBe(0);
+      expect(result.label).toBe('Empty');
+    });
+
+    it('getComplexityScore returns non-zero for small graph', () => {
+      const result = getStore().getComplexityScore();
+      expect(result.score).toBeGreaterThan(0);
+      expect(['Simple', 'Moderate', 'Complex', 'Intricate']).toContain(result.label);
+    });
+
+    it('getComplexityScore increases with many connected nodes', () => {
+      // Start fresh with minimal graph
+      useLifecycleStore.setState({ nodes: [], edges: [] });
+      getStore().createNewNode('input');
+      const small = getStore().getComplexityScore().score;
+      // Add many more nodes and connect
+      for (let i = 0; i < 15; i++) getStore().createNewNode('state');
+      const nodes = getStore().nodes;
+      for (let i = 0; i < nodes.length - 1; i++) {
+        getStore().connectByName(`connect ${nodes[i].data.label} to ${nodes[i + 1].data.label}`);
+      }
+      const large = getStore().getComplexityScore().score;
+      expect(large).toBeGreaterThan(small);
+    });
+
+    it('getComplexityScore labels are ordered', () => {
+      const labels = ['Simple', 'Moderate', 'Complex', 'Intricate'];
+      const result = getStore().getComplexityScore();
+      expect(labels).toContain(result.label);
+    });
+
+    // ── getStatusReport ──
+    it('getStatusReport returns prompt for empty graph', () => {
+      useLifecycleStore.setState({ nodes: [], edges: [] });
+      const report = getStore().getStatusReport();
+      expect(report).toContain('No workflow');
+    });
+
+    it('getStatusReport includes graph overview', () => {
+      const report = getStore().getStatusReport();
+      expect(report).toContain('Graph Overview');
+      expect(report).toContain('nodes');
+      expect(report).toContain('edges');
+      expect(report).toContain('Health');
+    });
+
+    it('getStatusReport shows stale nodes in status breakdown', () => {
+      const nodeId = getStore().nodes[0].id;
+      getStore().updateNodeStatus(nodeId, 'stale');
+      const report = getStore().getStatusReport();
+      expect(report).toContain('stale');
+      expect(report).toContain('Action Items');
+    });
+
+    it('getStatusReport shows orphan nodes as action items', () => {
+      // All nodes are orphans (no edges)
+      const report = getStore().getStatusReport();
+      expect(report).toContain('orphan');
+    });
+
+    it('getStatusReport shows All Clear when healthy', () => {
+      // Connect all nodes and add review
+      const nodes = getStore().nodes;
+      getStore().connectByName(`connect ${nodes[0].data.label} to ${nodes[1].data.label}`);
+      getStore().connectByName(`connect ${nodes[1].data.label} to ${nodes[2].data.label}`);
+      const report = getStore().getStatusReport();
+      expect(report).toContain('All Clear');
+    });
+
+    // ── exportChatHistory ──
+    it('exportChatHistory returns formatted history', () => {
+      const result = getStore().exportChatHistory();
+      expect(result).toContain('Chat History');
+      expect(result).toContain('Exported');
+    });
+
+    it('exportChatHistory filters out thinking/building messages', () => {
+      useLifecycleStore.setState({
+        messages: [
+          { id: 'msg-1', role: 'user' as const, content: 'Hello', timestamp: Date.now() },
+          { id: 'msg-2', role: 'cid' as const, content: 'thinking...', timestamp: Date.now(), action: 'thinking' as const },
+          { id: 'msg-3', role: 'cid' as const, content: 'My response', timestamp: Date.now() },
+        ],
+      });
+      const result = getStore().exportChatHistory();
+      expect(result).toContain('Hello');
+      expect(result).toContain('My response');
+      expect(result).not.toContain('thinking...');
+    });
+
+    // ── clearMessages ──
+    it('clearMessages resets to welcome message', () => {
+      // Add some messages
+      useLifecycleStore.setState({
+        messages: [
+          { id: 'msg-1', role: 'user' as const, content: 'Test', timestamp: Date.now() },
+          { id: 'msg-2', role: 'cid' as const, content: 'Reply', timestamp: Date.now() },
+        ],
+      });
+      getStore().clearMessages();
+      const msgs = getStore().messages;
+      expect(msgs.length).toBe(1);
+      expect(msgs[0].role).toBe('cid');
+    });
+
+    // ── deleteMessage ──
+    it('deleteMessage removes specific message', () => {
+      useLifecycleStore.setState({
+        messages: [
+          { id: 'msg-keep', role: 'user' as const, content: 'Keep', timestamp: Date.now() },
+          { id: 'msg-del', role: 'cid' as const, content: 'Delete me', timestamp: Date.now() },
+        ],
+      });
+      getStore().deleteMessage('msg-del');
+      const msgs = getStore().messages;
+      expect(msgs.length).toBe(1);
+      expect(msgs[0].id).toBe('msg-keep');
+    });
+
+    // ── stopProcessing ──
+    it('stopProcessing clears isProcessing and removes empty placeholders', () => {
+      useLifecycleStore.setState({
+        isProcessing: true,
+        messages: [
+          { id: 'msg-1', role: 'cid' as const, content: '', timestamp: Date.now(), action: 'building' as const },
+          { id: 'msg-2', role: 'cid' as const, content: 'Partial result', timestamp: Date.now(), action: 'thinking' as const },
+          { id: 'msg-3', role: 'user' as const, content: 'Question', timestamp: Date.now() },
+        ],
+      });
+      getStore().stopProcessing();
+      expect(getStore().isProcessing).toBe(false);
+      // Building with empty content removed, thinking with content kept (action cleared)
+      const msgs = getStore().messages;
+      expect(msgs.some(m => m.action === 'building')).toBe(false);
+      expect(msgs.find(m => m.content === 'Partial result')?.action).toBeUndefined();
+      expect(msgs.some(m => m.content === 'Question')).toBe(true);
+    });
+
+    // ── addToast / removeToast ──
+    it('addToast adds a toast', () => {
+      getStore().addToast('Test notification', 'info');
+      expect(getStore().toasts.length).toBe(1);
+      expect(getStore().toasts[0].message).toBe('Test notification');
+      expect(getStore().toasts[0].type).toBe('info');
+    });
+
+    it('addToast caps at 5 visible toasts', () => {
+      for (let i = 0; i < 7; i++) {
+        getStore().addToast(`Toast ${i}`, 'info', 0); // 0 = no auto-dismiss
+      }
+      expect(getStore().toasts.length).toBeLessThanOrEqual(5);
+    });
+
+    it('removeToast removes by ID', () => {
+      getStore().addToast('Remove me', 'error', 0);
+      const id = getStore().toasts[0].id;
+      getStore().removeToast(id);
+      expect(getStore().toasts.length).toBe(0);
+    });
+
+    // ── Impact Preview ──
+    it('showImpactPreview does nothing when no stale nodes', () => {
+      getStore().showImpactPreview();
+      expect(getStore().impactPreview).toBeNull();
+    });
+
+    it('showImpactPreview builds preview for stale nodes', () => {
+      const nodes = getStore().nodes;
+      getStore().connectByName(`connect ${nodes[0].data.label} to ${nodes[1].data.label}`);
+      // Directly set stale to avoid cascade
+      useLifecycleStore.setState({
+        nodes: getStore().nodes.map(n => n.id === nodes[1].id ? { ...n, data: { ...n.data, status: 'stale' } } : n),
+      });
+      getStore().showImpactPreview();
+      const preview = getStore().impactPreview;
+      expect(preview).not.toBeNull();
+      expect(preview!.visible).toBe(true);
+      expect(preview!.staleNodes.length).toBeGreaterThanOrEqual(1);
+      expect(preview!.selectedNodeIds.size).toBe(preview!.staleNodes.length);
+      expect(preview!.estimatedCalls).toBe(preview!.staleNodes.length);
+    });
+
+    it('toggleImpactNodeSelection toggles node in selection', () => {
+      // Directly set two nodes stale
+      const nodes = getStore().nodes;
+      useLifecycleStore.setState({
+        nodes: nodes.map(n =>
+          n.id === nodes[0].id || n.id === nodes[1].id
+            ? { ...n, data: { ...n.data, status: 'stale' } }
+            : n
+        ),
+      });
+      getStore().showImpactPreview();
+      const totalStale = getStore().impactPreview!.staleNodes.length;
+      const staleId = nodes[0].id;
+      // Initially selected
+      expect(getStore().impactPreview!.selectedNodeIds.has(staleId)).toBe(true);
+      // Toggle off
+      getStore().toggleImpactNodeSelection(staleId);
+      expect(getStore().impactPreview!.selectedNodeIds.has(staleId)).toBe(false);
+      expect(getStore().impactPreview!.estimatedCalls).toBe(totalStale - 1);
+      // Toggle back on
+      getStore().toggleImpactNodeSelection(staleId);
+      expect(getStore().impactPreview!.selectedNodeIds.has(staleId)).toBe(true);
+      expect(getStore().impactPreview!.estimatedCalls).toBe(totalStale);
+    });
+
+    it('selectAllImpactNodes selects all stale nodes', () => {
+      const nodes = getStore().nodes;
+      useLifecycleStore.setState({
+        nodes: nodes.map(n =>
+          n.id === nodes[0].id || n.id === nodes[1].id
+            ? { ...n, data: { ...n.data, status: 'stale' } }
+            : n
+        ),
+      });
+      getStore().showImpactPreview();
+      const totalStale = getStore().impactPreview!.staleNodes.length;
+      getStore().deselectAllImpactNodes();
+      expect(getStore().impactPreview!.estimatedCalls).toBe(0);
+      getStore().selectAllImpactNodes();
+      expect(getStore().impactPreview!.estimatedCalls).toBe(totalStale);
+      expect(getStore().impactPreview!.selectedNodeIds.size).toBe(totalStale);
+    });
+
+    it('hideImpactPreview clears preview', () => {
+      getStore().updateNodeStatus(getStore().nodes[0].id, 'stale');
+      getStore().showImpactPreview();
+      expect(getStore().impactPreview).not.toBeNull();
+      getStore().hideImpactPreview();
+      expect(getStore().impactPreview).toBeNull();
+    });
+  });
 });

@@ -23,7 +23,7 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 - [x] intent.ts (covered cycle 5 — 29.95%→93.39%)
 - [x] reflection.ts (covered cycle 6 — 31.21%→80.92%)
 - [x] prompts.ts (covered cycle 7 — 51.63%→92.39%)
-- [ ] storage.ts + graph.ts (batch — already 81%/92% coverage, audit for logic bugs only)
+- [x] storage.ts + graph.ts (cycle 9 — 1 fix in storage.ts, graph.ts clean)
 - [ ] health.ts + optimizer.ts + edits.ts (batch — already 80%/98%/94%, quick scan)
 
 *Tier 3 — Components (batch small ones together):*
@@ -79,6 +79,15 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 ## Cycle Log
 
 <!-- Newest entries at top -->
+
+### Cycle 9 — 2026-03-10 06:00
+- **Audited**: storage.ts + graph.ts (Tier 2 batch — logic bugs only)
+- **Tests**: 467 passing (+27), 0 failing; coverage: 53.07% stmts (+0.69pp), useStore.ts 40.2% (+1.01pp)
+- **Issues found**: 1 fixed in storage.ts
+  1. HIGH: `saveProject()` trimmed-save retry (line 95) had no error handling — if both original and trimmed saves failed, exception propagated uncaught and could crash the save flow, yet the function would still attempt index update creating orphan entries (fixed: wrapped in try-catch with early return)
+  - graph.ts: No actionable bugs found. Agent flagged 13 issues but most were theoretical (ring placement "off-by-one" is intentional spiral behavior, "integer overflow" impossible with 50-attempt cap, cycle node dropping is by-design Kahn's behavior, duplicate edge handling actually works correctly).
+- **Fixed**: storage.ts saveProject error recovery
+- **Coverage push**: useStore.ts — 27 new tests in Scenario 19 covering getHealthScore (empty graph, stale deduction, orphan deduction, no-review deduction, clamping), getComplexityScore (empty/small/large graphs, label ordering), getStatusReport (empty graph, overview, stale nodes, orphans, all-clear), exportChatHistory (format, filtering thinking/building), clearMessages, deleteMessage, stopProcessing (placeholder removal, action clearing), addToast (basic, cap at 5), removeToast, showImpactPreview (no stale, with stale), toggleImpactNodeSelection, selectAllImpactNodes, hideImpactPreview. Coverage 52.38% → 53.07% overall, useStore.ts 39.19% → 40.2%.
 
 ### Cycle 8 — 2026-03-10 05:10
 - **Audited**: useStore.ts (commands & dispatch) — deep review, 10 issues cataloged

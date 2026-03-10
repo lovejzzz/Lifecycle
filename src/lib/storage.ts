@@ -86,13 +86,19 @@ export function saveProject(
     localStorage.setItem(PROJECT_PREFIX + id, JSON.stringify(data));
   } catch {
     // Storage full — try trimming execution results
-    const trimmed = { ...data, nodes: (data.nodes as Array<{ data?: { executionResult?: string } }>).map(n => {
-      if (n.data?.executionResult && n.data.executionResult.length > 1000) {
-        return { ...n, data: { ...n.data, executionResult: n.data.executionResult.slice(0, 1000) + '\n... (truncated)' } };
-      }
-      return n;
-    })};
-    localStorage.setItem(PROJECT_PREFIX + id, JSON.stringify(trimmed));
+    try {
+      const trimmed = { ...data, nodes: (data.nodes as Array<{ data?: { executionResult?: string } }>).map(n => {
+        if (n.data?.executionResult && n.data.executionResult.length > 1000) {
+          return { ...n, data: { ...n.data, executionResult: n.data.executionResult.slice(0, 1000) + '\n... (truncated)' } };
+        }
+        return n;
+      })};
+      localStorage.setItem(PROJECT_PREFIX + id, JSON.stringify(trimmed));
+    } catch {
+      // Both saves failed — skip index update to avoid orphan entry
+      console.warn(`[storage] Failed to save project ${id} — storage quota exceeded`);
+      return;
+    }
   }
 
   // Update index
