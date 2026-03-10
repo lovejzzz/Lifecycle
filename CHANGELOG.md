@@ -1,5 +1,9 @@
 # Changelog
 
+### 2026-03-10 — Polish 11: Focus Ring Styling
+
+Added global `focus-visible` styles for keyboard navigation accessibility. Buttons get an emerald outline ring (only on Tab focus, not mouse clicks). Inputs get a border-color glow and box-shadow instead. React Flow canvas elements are excluded since they have their own selection state.
+
 ### 2026-03-10 — Polish 10: Keyboard Shortcut Tooltips
 
 Added platform-aware keyboard shortcut hints to all TopBar buttons. Tooltips show ⌘ on Mac and Ctrl+ on other platforms. Undo, Redo, Export, CID toggle, Preview, Activity, and Add Node buttons now show their shortcuts on hover.

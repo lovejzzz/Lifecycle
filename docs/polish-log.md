@@ -19,7 +19,7 @@ Tracks the systematic UI/UX polish pass across 20 items in 4 rounds.
 - [x] 10. Keyboard shortcut tooltips on buttons
 
 ### Round 3 — Interaction Polish
-- [ ] 11. Focus ring styling for keyboard navigation
+- [x] 11. Focus ring styling for keyboard navigation
 - [ ] 12. Dropdown keyboard navigation (arrow keys, Enter, Escape)
 - [ ] 13. Drag feedback on canvas nodes
 - [ ] 14. Panel resize handles
@@ -37,6 +37,14 @@ Tracks the systematic UI/UX polish pass across 20 items in 4 rounds.
 ## Cycle Log
 
 <!-- Newest entries at top -->
+
+### Polish 11 — Focus ring styling for keyboard navigation
+- **Changed**: globals.css
+- Added `*:focus-visible` rule: 1px emerald outline with 2px offset and 6px border-radius
+- Only appears during keyboard navigation (Tab/Shift+Tab), not mouse clicks
+- Input/textarea/select: separate rule with `outline: none`, border-color glow to emerald/40%, and subtle box-shadow instead of outline (cleaner for bordered inputs)
+- React Flow elements: excluded via `.react-flow *:focus-visible { outline: none }` since selection state already provides visual feedback
+- All existing `outline-none` on inputs still works for mouse focus; `focus-visible` adds keyboard-only enhancement
 
 ### Polish 10 — Keyboard shortcut tooltips on buttons
 - **Changed**: TopBar.tsx

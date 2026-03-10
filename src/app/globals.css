@@ -26,6 +26,27 @@ body {
   overflow: hidden;
 }
 
+/* Focus rings — only visible during keyboard navigation */
+*:focus-visible {
+  outline: 1px solid rgba(16, 185, 129, 0.5);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Inputs/textareas: subtle border glow instead of outline */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+  border-color: rgba(16, 185, 129, 0.4) !important;
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.15);
+}
+
+/* React Flow nodes/canvas: no focus ring (handled by selection state) */
+.react-flow *:focus-visible {
+  outline: none;
+}
+
 /* Scrollbar */
 .scrollbar-thin::-webkit-scrollbar {
   width: 4px;
