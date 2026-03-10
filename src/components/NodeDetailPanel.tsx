@@ -582,27 +582,8 @@ export default function NodeDetailPanel() {
   const isRoot = incomingEdges.length === 0 && outgoingEdges.length > 0;
   const isLeaf = outgoingEdges.length === 0 && incomingEdges.length > 0;
 
-  const handleRegenerate = () => {
-    updateNodeStatus(node.id, 'generating');
-    addEvent({
-      id: `ev-${Date.now()}`,
-      type: 'regenerated',
-      message: `Regenerating ${data.label}...`,
-      timestamp: Date.now(),
-      nodeId: node.id,
-      agent: true,
-    });
-    setTimeout(() => {
-      updateNodeStatus(node.id, 'active');
-      addEvent({
-        id: `ev-${Date.now()}`,
-        type: 'regenerated',
-        message: `${data.label} regenerated successfully`,
-        timestamp: Date.now(),
-        nodeId: node.id,
-        agent: true,
-      });
-    }, 2000);
+  const handleRegenerate = async () => {
+    await executeNode(node.id);
   };
 
   const startEditLabel = () => {

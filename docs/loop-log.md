@@ -16,7 +16,7 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 *Tier 3 — Components (batch small ones, scan for data-flow bugs):*
 - [x] Canvas.tsx (cycle 1)
 - [x] CIDPanel.tsx (cycle 2)
-- [ ] NodeDetailPanel.tsx + ArtifactPanel.tsx (batch — detail panels, moderate complexity)
+- [x] NodeDetailPanel.tsx + ArtifactPanel.tsx (cycle 11 — 2 bugs fixed)
 - [ ] TopBar.tsx + LifecycleNode.tsx (batch — quick scan)
 - [ ] ActivityPanel.tsx + PreviewPanel.tsx (batch — quick scan)
 - [ ] DiffView.tsx + ImpactPreview.tsx + NodeContextMenu.tsx + ErrorBoundary.tsx (batch — quick scan)
@@ -85,6 +85,16 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 ## Cycle Log
 
 <!-- Newest entries at top -->
+
+### Cycle 11 — 2026-03-10 08:00
+- **Audited**: NodeDetailPanel.tsx + ArtifactPanel.tsx (Tier 3 batch — detail panels)
+- **Tests**: 495 passing (+14), 0 failing; coverage: 53.48% stmts (+0.38pp), useStore.ts 40.77% (+0.53pp)
+- **Issues found**: 2 fixed
+  1. MEDIUM: `handleRegenerate` in NodeDetailPanel was a fake regeneration — used `setTimeout(() => updateNodeStatus('active'), 2000)` instead of calling `executeNode()`. Pressing "Regenerate" did NOT actually re-execute the node. (fixed: replaced with `await executeNode(node.id)`)
+  2. MEDIUM: ArtifactPanel `handleSave` double-propagated staleness — `updateNodeData()` already triggers classifyEdit cascade, but `handleSave` also manually looped over downstream nodes calling `updateNodeStatus(d.id, 'stale')`. This created duplicate cascade events. (fixed: removed manual downstream loop, let updateNodeData handle it)
+  - Also noted (not fixed, perf): Both panels destructure entire store via `useLifecycleStore()` without selectors, causing re-renders on every state change. Low priority.
+- **Fixed**: fake regeneration, double staleness cascade
+- **Coverage push**: useStore.ts (async executeNode paths) — 14 new tests in Scenario 21 covering input/trigger/dependency passthrough, mutex double-execution guard, non-existent node no-op, circuit breaker on upstream failure, rich content passthrough, API success with fetch mock, API error (status 500), API error field (no_api_key), network error (fetch throws), node unlock after execution, executeWorkflow concurrent guard. Coverage 53.10% → 53.48% overall, useStore.ts 40.24% → 40.77%.
 
 ### Cycle 10 — 2026-03-10 06:55
 - **Audited**: health.ts + optimizer.ts + edits.ts (Tier 2 batch — quick scan)

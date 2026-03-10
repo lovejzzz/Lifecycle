@@ -646,10 +646,8 @@ export default function ArtifactPanel() {
     });
     // In split view, stay in edit mode — both panes are always visible
     if (!isSplitView) setArtifactMode('preview');
-    // Auto-mark downstream nodes stale after save
-    if (downstream.length > 0) {
-      for (const d of downstream) updateNodeStatus(d.id, 'stale');
-    }
+    // Note: staleness propagation is handled by updateNodeData via classifyEdit —
+    // no need to manually mark downstream nodes stale here (was causing double cascade)
   };
 
   // Keep save ref current for keyboard shortcut

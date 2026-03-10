@@ -1693,4 +1693,185 @@ describe('User Simulation: Real Journeys', () => {
       expect(getStore().events[0].type).toBe('approved');
     });
   });
+
+  // ── Scenario 21: Async executeNode with fetch mock ──
+  describe('Scenario 21 — executeNode async paths', () => {
+    beforeEach(() => {
+      useLifecycleStore.setState({ nodes: [], edges: [], events: [], messages: [], impactPreview: null, toasts: [] });
+    });
+
+    // ── Passthrough categories (no fetch needed) ──
+    it('executeNode: input category passes through inputValue', async () => {
+      getStore().createNewNode('input');
+      const node = getStore().nodes[0];
+      getStore().updateNodeData(node.id, { inputValue: 'My input data' });
+      await getStore().executeNode(node.id);
+      const updated = getStore().nodes.find(n => n.id === node.id)!;
+      expect(updated.data.executionResult).toBe('My input data');
+      expect(updated.data.executionStatus).toBe('success');
+    });
+
+    it('executeNode: input with no value sets idle', async () => {
+      getStore().createNewNode('input');
+      const node = getStore().nodes[0];
+      await getStore().executeNode(node.id);
+      const updated = getStore().nodes.find(n => n.id === node.id)!;
+      expect(updated.data.executionStatus).toBe('idle');
+    });
+
+    it('executeNode: trigger category passes through content', async () => {
+      getStore().createNewNode('trigger');
+      const node = getStore().nodes[0];
+      getStore().updateNodeData(node.id, { content: 'On schedule' });
+      await getStore().executeNode(node.id);
+      const updated = getStore().nodes.find(n => n.id === node.id)!;
+      expect(updated.data.executionResult).toBe('On schedule');
+      expect(updated.data.executionStatus).toBe('success');
+    });
+
+    it('executeNode: dependency category passes through', async () => {
+      getStore().createNewNode('dependency');
+      const node = getStore().nodes[0];
+      getStore().updateNodeData(node.id, { content: 'Requires auth service' });
+      await getStore().executeNode(node.id);
+      const updated = getStore().nodes.find(n => n.id === node.id)!;
+      expect(updated.data.executionResult).toBe('Requires auth service');
+      expect(updated.data.executionStatus).toBe('success');
+    });
+
+    it('executeNode: mutex prevents double execution', async () => {
+      getStore().createNewNode('input');
+      const node = getStore().nodes[0];
+      getStore()._lockNode(node.id);
+      await getStore().executeNode(node.id); // should skip
+      // Node should still be locked but no executionResult set
+      expect(getStore().nodes.find(n => n.id === node.id)!.data.executionResult).toBeUndefined();
+      getStore()._unlockNode(node.id);
+    });
+
+    it('executeNode: non-existent node is a no-op', async () => {
+      await getStore().executeNode('non-existent-id');
+      // Should not throw
+    });
+
+    // ── Circuit breaker: upstream failure ──
+    it('executeNode: skips when upstream failed', async () => {
+      getStore().createNewNode('input');
+      getStore().createNewNode('artifact');
+      const nodes = getStore().nodes;
+      getStore().connectByName(`connect ${nodes[0].data.label} to ${nodes[1].data.label}`);
+      // Mark upstream as failed
+      getStore().updateNodeData(nodes[0].id, { executionStatus: 'error' });
+      await getStore().executeNode(nodes[1].id);
+      const artifact = getStore().nodes.find(n => n.id === nodes[1].id)!;
+      expect(artifact.data.executionStatus).toBe('error');
+      expect(artifact.data.executionError).toContain('upstream');
+    });
+
+    // ── Rich content passthrough ──
+    it('executeNode: uses existing rich content when no upstream exec results', async () => {
+      getStore().createNewNode('artifact');
+      const node = getStore().nodes[0];
+      // Set content longer than 50 chars, no aiPrompt
+      getStore().updateNodeData(node.id, {
+        content: 'This is rich pre-generated content that is longer than fifty characters for sure',
+      });
+      await getStore().executeNode(node.id);
+      const updated = getStore().nodes.find(n => n.id === node.id)!;
+      expect(updated.data.executionResult).toBe(updated.data.content);
+      expect(updated.data.executionStatus).toBe('success');
+    });
+
+    // ── API success path (with fetch mock) ──
+    it('executeNode: API success sets executionResult', async () => {
+      getStore().createNewNode('input');
+      getStore().createNewNode('artifact');
+      const nodes = getStore().nodes;
+      getStore().connectByName(`connect ${nodes[0].data.label} to ${nodes[1].data.label}`);
+      // Execute input first to provide upstream result
+      getStore().updateNodeData(nodes[0].id, { inputValue: 'User requirements' });
+      await getStore().executeNode(nodes[0].id);
+      // Mock fetch for the artifact execution
+      mockFetch.mockImplementationOnce(async () => ({
+        ok: true,
+        json: async () => ({ result: 'AI-generated artifact content' }),
+      }));
+      await getStore().executeNode(nodes[1].id);
+      const artifact = getStore().nodes.find(n => n.id === nodes[1].id)!;
+      expect(artifact.data.executionResult).toBe('AI-generated artifact content');
+      expect(artifact.data.executionStatus).toBe('success');
+    });
+
+    // ── API error path ──
+    it('executeNode: API error sets error status', async () => {
+      getStore().createNewNode('input');
+      getStore().createNewNode('artifact');
+      const nodes = getStore().nodes;
+      getStore().connectByName(`connect ${nodes[0].data.label} to ${nodes[1].data.label}`);
+      getStore().updateNodeData(nodes[0].id, { inputValue: 'User input' });
+      await getStore().executeNode(nodes[0].id);
+      // Mock fetch returning error
+      mockFetch.mockImplementationOnce(async () => ({
+        ok: false,
+        status: 500,
+        json: async () => ({}),
+      }));
+      await getStore().executeNode(nodes[1].id);
+      const artifact = getStore().nodes.find(n => n.id === nodes[1].id)!;
+      expect(artifact.data.executionStatus).toBe('error');
+      expect(artifact.data.executionError).toContain('500');
+    });
+
+    // ── API returns error field ──
+    it('executeNode: API error field sets error', async () => {
+      getStore().createNewNode('input');
+      getStore().createNewNode('artifact');
+      const nodes = getStore().nodes;
+      getStore().connectByName(`connect ${nodes[0].data.label} to ${nodes[1].data.label}`);
+      getStore().updateNodeData(nodes[0].id, { inputValue: 'Data' });
+      await getStore().executeNode(nodes[0].id);
+      mockFetch.mockImplementationOnce(async () => ({
+        ok: true,
+        json: async () => ({ error: 'no_api_key', message: 'No API key configured' }),
+      }));
+      await getStore().executeNode(nodes[1].id);
+      const artifact = getStore().nodes.find(n => n.id === nodes[1].id)!;
+      expect(artifact.data.executionStatus).toBe('error');
+    });
+
+    // ── Network error (fetch throws) ──
+    it('executeNode: network error sets error and unlocks node', async () => {
+      getStore().createNewNode('input');
+      getStore().createNewNode('artifact');
+      const nodes = getStore().nodes;
+      getStore().connectByName(`connect ${nodes[0].data.label} to ${nodes[1].data.label}`);
+      getStore().updateNodeData(nodes[0].id, { inputValue: 'Input data' });
+      await getStore().executeNode(nodes[0].id);
+      mockFetch.mockImplementationOnce(async () => { throw new Error('Network error'); });
+      await getStore().executeNode(nodes[1].id);
+      const artifact = getStore().nodes.find(n => n.id === nodes[1].id)!;
+      expect(artifact.data.executionStatus).toBe('error');
+      expect(artifact.data.executionError).toContain('Network error');
+      // Node should be unlocked
+      expect(getStore()._executingNodeIds.has(nodes[1].id)).toBe(false);
+    });
+
+    // ── executeNode unlocks on completion ──
+    it('executeNode: always unlocks node after execution', async () => {
+      getStore().createNewNode('input');
+      const node = getStore().nodes[0];
+      getStore().updateNodeData(node.id, { inputValue: 'test' });
+      await getStore().executeNode(node.id);
+      expect(getStore()._executingNodeIds.has(node.id)).toBe(false);
+    });
+
+    // ── executeWorkflow concurrent guard ──
+    it('executeWorkflow: no-ops when already processing', async () => {
+      useLifecycleStore.setState({ isProcessing: true });
+      const eventsBefore = getStore().events.length;
+      await getStore().executeWorkflow();
+      // Should have returned early — no new events
+      expect(getStore().events.length).toBe(eventsBefore);
+    });
+  });
 });

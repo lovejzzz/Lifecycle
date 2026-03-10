@@ -1,5 +1,15 @@
 # Changelog
 
+### 2026-03-10 — Loop Cycle 11: Detail Panel Audit + Async executeNode Tests
+
+**Tier 3 audit**: NodeDetailPanel.tsx + ArtifactPanel.tsx
+- **Fix: `handleRegenerate` was a fake regeneration** — used a 2-second setTimeout to flip status to 'active' without actually calling executeNode. Now properly calls `await executeNode(node.id)`.
+- **Fix: ArtifactPanel double staleness cascade** — `handleSave` manually marked downstream nodes stale AND called `updateNodeData` which triggers its own cascade via classifyEdit. Removed the manual loop to prevent duplicate events.
+
+**Coverage push**: useStore.ts (async executeNode)
+- 14 new tests covering all executeNode code paths: passthrough categories (input/trigger/dependency), mutex guard, circuit breaker, rich content passthrough, API success/error/network-error with fetch mocks, node unlock guarantees
+- Coverage: useStore.ts 40.24% → 40.77%, overall 53.10% → 53.48%, 495 tests passing
+
 ### 2026-03-10 — Loop Cycle 10: Tier 2 Lib Audit Complete + Lifecycle Loop Tests
 
 **Tier 2 batch audit**: health.ts + optimizer.ts + edits.ts — all clean, no bugs found.
