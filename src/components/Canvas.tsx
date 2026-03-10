@@ -17,7 +17,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bot, Sparkles, ArrowRight, Search, X, HelpCircle, Keyboard, ChevronRight, Copy, Trash2, MessageSquare, Lock, Loader2 } from 'lucide-react';
+import { Bot, Sparkles, ArrowRight, Search, X, HelpCircle, Keyboard, ChevronRight, Copy, Trash2, MessageSquare, Lock, Loader2, Code2, FileText, ShieldAlert, Rocket, MessageCircle } from 'lucide-react';
 import { useLifecycleStore, resolveOverlap } from '@/store/useStore';
 import LifecycleNode from './LifecycleNode';
 import NodeDetailPanel from './NodeDetailPanel';
@@ -723,9 +723,10 @@ function CanvasInner() {
               <h2 className="text-xl font-semibold text-white/80 mb-2">
                 {agent.emptyCanvasTitle}
               </h2>
-              <p className="text-[13px] text-white/35 leading-relaxed mb-6">
+              <p className="text-[13px] text-white/40 leading-relaxed mb-4">
                 {agent.emptyCanvasDescription}
               </p>
+              <p className="text-[11px] text-white/20 mb-6">Workflows that stay alive after generation</p>
               {!showCIDPanel && (
                 <button
                   onClick={toggleCIDPanel}
@@ -746,33 +747,37 @@ function CanvasInner() {
                   <span>{agent.emptyCanvasHint}</span>
                 </div>
               )}
-              {/* Template chips */}
-              <div className="mt-5 flex flex-wrap justify-center gap-2 pointer-events-auto">
-                {[
-                  { label: 'Software Development', type: 'template' },
-                  { label: 'Content Pipeline', type: 'template' },
-                  { label: 'Incident Response', type: 'template' },
-                  { label: 'Product Launch', type: 'template' },
-                  { label: 'Chatbot', type: 'template' },
-                ].map(({ label }) => (
+              {/* Template cards */}
+              <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-2 pointer-events-auto max-w-lg mx-auto">
+                {([
+                  { label: 'Software Development', icon: Code2, desc: '7 nodes — requirements to deploy', iconClass: 'text-cyan-400/70 group-hover:text-cyan-400' },
+                  { label: 'Content Pipeline', icon: FileText, desc: '6 nodes — research to publish', iconClass: 'text-violet-400/70 group-hover:text-violet-400' },
+                  { label: 'Incident Response', icon: ShieldAlert, desc: '6 nodes — alert to postmortem', iconClass: 'text-rose-400/70 group-hover:text-rose-400' },
+                  { label: 'Product Launch', icon: Rocket, desc: '7 nodes — research to metrics', iconClass: 'text-orange-400/70 group-hover:text-orange-400' },
+                  { label: 'Chatbot', icon: MessageCircle, desc: '7 nodes — message to reply', iconClass: 'text-sky-400/70 group-hover:text-sky-400' },
+                ] as const).map(({ label, icon: Icon, desc, iconClass }) => (
                   <button
                     key={label}
                     onClick={() => {
                       useLifecycleStore.getState().loadTemplate(label);
                     }}
-                    className={`px-3 py-1.5 rounded-lg text-[10px] border transition-all hover:scale-[1.03] ${
+                    className={`group relative text-left px-3 py-2.5 rounded-xl border transition-all duration-200 hover:scale-[1.02] ${
                       agent.accent === 'amber'
-                        ? 'border-amber-500/15 text-amber-400/60 bg-amber-500/[0.04] hover:bg-amber-500/[0.1] hover:border-amber-500/25'
-                        : 'border-emerald-500/15 text-emerald-400/60 bg-emerald-500/[0.04] hover:bg-emerald-500/[0.1] hover:border-emerald-500/25'
+                        ? 'border-white/[0.06] bg-white/[0.02] hover:bg-amber-500/[0.06] hover:border-amber-500/20'
+                        : 'border-white/[0.06] bg-white/[0.02] hover:bg-emerald-500/[0.06] hover:border-emerald-500/20'
                     }`}
                   >
-                    {label}
+                    <div className="flex items-center gap-2 mb-1">
+                      <Icon size={13} className={`${iconClass} transition-colors`} />
+                      <span className="text-[11px] font-medium text-white/70 group-hover:text-white/90 transition-colors truncate">{label}</span>
+                    </div>
+                    <p className="text-[9px] text-white/30 group-hover:text-white/45 transition-colors leading-relaxed">{desc}</p>
                   </button>
                 ))}
               </div>
               {/* Prompt categories with contextual suggestions */}
-              <div className="mt-4 pointer-events-auto space-y-2">
-                <div className="text-[9px] text-white/20 uppercase tracking-widest mb-1">or describe what you need</div>
+              <div className="mt-5 pointer-events-auto space-y-2">
+                <div className="text-[9px] text-white/25 uppercase tracking-widest mb-1">or describe what you need</div>
                 {[
                   { icon: '📝', prompts: ['Build a blog content pipeline', 'Create a research paper workflow'] },
                   { icon: '🚀', prompts: ['Design a CI/CD pipeline for React', 'Make a product launch workflow'] },

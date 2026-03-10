@@ -1,5 +1,9 @@
 # Changelog
 
+### 2026-03-10 — Polish 1: Onboarding Empty State
+
+Upgraded canvas empty state template section from tiny text chips to proper cards with colored category icons, node count descriptions, and hover effects. Added value prop tagline. Improved text contrast.
+
 ### 2026-03-10 — Loop Cycle 17 (FINAL): Export, Health, Artifact Coverage
 
 **FINAL CYCLE** — test-and-refine loop complete after 17 cycles.

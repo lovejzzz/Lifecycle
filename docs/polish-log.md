@@ -1,0 +1,47 @@
+# Polish & Refine Log
+
+Tracks the systematic UI/UX polish pass across 20 items in 4 rounds.
+
+## Queue
+
+### Round 1 — UX Quick Wins
+- [x] 1. Onboarding empty state — template cards for instant workflow loading
+- [ ] 2. Node rename affordance — pencil icon hint on hover
+- [ ] 3. Context menu close animation — scale-out + fade exit
+- [ ] 4. NodeDetailPanel slide animation — slide-in-from-right
+- [ ] 5. Auto-save indicator — "Saved" flash in TopBar
+
+### Round 2 — Visual Polish
+- [ ] 6. Toast entrance/exit animations
+- [ ] 7. Edge label picker viewport clamping
+- [ ] 8. Low-contrast text fix (WCAG AA)
+- [ ] 9. Consistent icon sizing across components
+- [ ] 10. Keyboard shortcut tooltips on buttons
+
+### Round 3 — Interaction Polish
+- [ ] 11. Focus ring styling for keyboard navigation
+- [ ] 12. Dropdown keyboard navigation (arrow keys, Enter, Escape)
+- [ ] 13. Drag feedback on canvas nodes
+- [ ] 14. Panel resize handles
+- [ ] 15. Smooth scroll to node on search/breadcrumb select
+
+### Round 4 — Content & Copy
+- [ ] 16. Context-aware loading state copy
+- [ ] 17. Replace alert() calls with toast notifications
+- [ ] 18. CID personality affects UI chrome colors
+- [ ] 19. Standardize timestamp formatting with relativeTime()
+- [ ] 20. Help discoverability — quick-reference card
+
+---
+
+## Cycle Log
+
+<!-- Newest entries at top -->
+
+### Polish 1 — Onboarding empty state
+- **Changed**: Canvas.tsx empty state template section
+- Upgraded 5 template chips (tiny 10px text buttons) to proper cards with colored icons (Code2, FileText, ShieldAlert, Rocket, MessageCircle), descriptive subtitles ("7 nodes — requirements to deploy"), and hover effects
+- Added value prop tagline: "Workflows that stay alive after generation"
+- Bumped description text opacity from 35% to 40% for readability
+- Used explicit Tailwind color classes (not dynamic) to survive purge
+- Grid layout: 2 cols on mobile, 3 cols on sm+ screens
