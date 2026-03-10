@@ -12,7 +12,7 @@ export default function NodeContextMenu() {
   const {
     contextMenu, closeContextMenu, nodes,
     deleteNode, lockNode, approveNode, updateNodeStatus, duplicateNode, addEvent,
-    askCIDAboutNode, generateNodeContent,
+    askCIDAboutNode, generateNodeContent, executeNode,
   } = useLifecycleStore();
   const ref = useRef<HTMLDivElement>(null);
 
@@ -58,12 +58,7 @@ export default function NodeContextMenu() {
       label: 'Regenerate',
       icon: RefreshCw,
       action: () => {
-        updateNodeStatus(node.id, 'generating');
-        addEvent({ id: `ev-${Date.now()}`, type: 'regenerated', message: `Regenerating ${data.label}...`, timestamp: Date.now(), nodeId: node.id, agent: true });
-        setTimeout(() => {
-          updateNodeStatus(node.id, 'active');
-          addEvent({ id: `ev-${Date.now()}`, type: 'regenerated', message: `${data.label} regenerated`, timestamp: Date.now(), nodeId: node.id, agent: true });
-        }, 2000);
+        executeNode(node.id);
         closeContextMenu();
       },
       color: '#06b6d4',

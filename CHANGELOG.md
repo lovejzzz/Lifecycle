@@ -1,5 +1,17 @@
 # Changelog
 
+### 2026-03-10 — Loop Cycle 14: Final Component Audit + types.ts Coverage
+
+**Tier 3 audit COMPLETE**: DiffView.tsx + ImpactPreview.tsx + NodeContextMenu.tsx + ErrorBoundary.tsx (final batch)
+- **Fix: NodeContextMenu "Regenerate" was a fake** — used `setTimeout(() => updateNodeStatus('active'), 2000)` instead of calling `executeNode()`. Same pattern fixed in NodeDetailPanel (cycle 11) — this context menu copy was missed. Now calls `executeNode(node.id)`.
+- **Fix: ImpactPreview shift-regenerate silently no-ops** — `handleShiftRegenerate` called `selectAllImpactNodes()` then `handleRegenerate()`, but `handleRegenerate` checked stale `noneSelected` captured at render time (before selectAll updated state). Now directly calls `regenerateSelected()` bypassing the stale closure.
+- DiffView.tsx: clean — pure render, no effects/store.
+- ErrorBoundary.tsx: clean — standard class component.
+
+**Coverage push**: types.ts (61.72% → 97.53%)
+- 22 new tests in types.test.ts covering BUILT_IN_CATEGORIES, getNodeColors (built-in, auto-register, consistency), registerCustomCategory (built-in passthrough, hex color, HSL color, caching), getCategoryIcon (built-in, fallback, completeness), CategoryIcon component, relativeTime (just now, minutes, hours, days, weeks+), EDGE_LABEL_COLORS, CATEGORY_ICONS map
+- Coverage: overall 57.19% → 57.69%, lines 59.64% → 60.05% (crossed 60% milestone), 544 tests passing
+
 ### 2026-03-10 — Loop Cycle 13: PreviewPanel Audit + executeWorkflow & executeBranch Tests
 
 **Tier 3 audit**: ActivityPanel.tsx + PreviewPanel.tsx

@@ -8,7 +8,7 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 
 ### Rotation Queue (reset when all checked)
 
-**Priority Queue** (reordered by Meta-Refinement 3 — async coverage pivot, component scan):
+**Priority Queue** (updated by Meta-Refinement 4 — audit wind-down, coverage pivot to types.ts):
 
 *Tier 1 — Store: ✅ COMPLETE (cycles 3-8, 11 bugs fixed)*
 *Tier 2 — Core lib: ✅ COMPLETE (cycles 4-7, 9-10, 1 bug fixed)*
@@ -19,17 +19,34 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 - [x] NodeDetailPanel.tsx + ArtifactPanel.tsx (cycle 11 — 2 bugs fixed)
 - [x] TopBar.tsx + LifecycleNode.tsx (cycle 12 — 1 bug fixed)
 - [x] ActivityPanel.tsx + PreviewPanel.tsx (cycle 13 — 1 bug fixed)
-- [ ] DiffView.tsx + ImpactPreview.tsx + NodeContextMenu.tsx + ErrorBoundary.tsx (batch — quick scan)
+- [x] DiffView.tsx + ImpactPreview.tsx + NodeContextMenu.tsx + ErrorBoundary.tsx (cycle 14 — 2 bugs fixed, FINAL)
 
-*Coverage Push Strategy (Meta-Refinement 3):*
+*Coverage Push Strategy (Meta-Refinement 4):*
 - [x] useStore.ts pure functions (scenarios 18-20, ~35% → 40.24%)
-- [x] useStore.ts async handlers — executeNode (scenario 21, cycle 11), chatWithCID + propagateStale (scenario 22, cycle 12). 40.24% → 45.01%. Remaining: streaming callbacks, generateWorkflow, executeBranch.
-
-- [ ] types.ts (61.72%) — lowest-coverage lib file remaining
+- [x] useStore.ts async handlers (scenarios 21-23, 40.24% → 45.84%) — executeNode, chatWithCID, propagateStale, executeWorkflow, executeBranch all covered. Remaining: generateWorkflow (animation timeouts, hard to mock), streaming callbacks, UI handlers.
+- [x] types.ts (61.72% → 97.53%) — 22 new tests, cycle 14. Utility functions, color generation, icon mapping, relativeTime all covered.
+- [ ] useStore.ts UI handlers — SECONDARY target. Panel toggles, selection management, multi-select ops. Synchronous, no fetch mock needed.
 
 ---
 
 ## Meta-Refinements
+
+### Meta-Refinement 4 — 2026-03-10 12:00
+- **Cycles reviewed**: 11 through 13
+- **Patterns observed**:
+  - Bug severity declining sharply: cycle 11 found 2 MEDIUM (fake regen, double cascade), cycles 12-13 found only LOW issues (blob URL timing, missing timer cleanup). Component audits are producing diminishing returns — the remaining bugs are minor hygiene, not data-integrity issues.
+  - Coverage had one breakout cycle (12: +3.12pp from chatWithCID, ~470 lines) but has slowed again (13: +0.59pp). All 5 major async handlers now covered (executeNode, chatWithCID, propagateStale, executeWorkflow, executeBranch). The remaining uncovered useStore.ts code is: generateWorkflow (nested animation timeouts, hard to test), streaming callbacks, and synchronous UI handlers.
+  - useStore.ts went from 40.24% → 45.84% (+5.6pp) across 3 cycles. Good progress but the async handler well is running dry. Next gains need a different target.
+  - Overall coverage: 53.10% → 57.19% (+4.09pp) across 3 cycles. Approaching 60% milestone.
+  - Audit rotation nearly complete: 1 batch remains (DiffView + ImpactPreview + NodeContextMenu + ErrorBoundary). After that, all files audited. The loop needs a post-rotation strategy.
+  - Test count: 481 → 522 (+41 tests). Infrastructure is stable, no OOM issues since cycle 8 fix.
+- **Changes made**:
+  1. **Pivoted coverage primary target to types.ts** (61.72%) — lowest-coverage lib file, utility functions are easy to test. useStore.ts async handlers are tapped out; remaining uncovered code requires timer mocking or DOM simulation.
+  2. **Added useStore.ts UI handlers as secondary target** — panel toggles, selection management, multi-select operations. These are synchronous, no fetch mock needed, and represent easy coverage gains.
+  3. **Deprioritized generateWorkflow** — nested `setTimeout` chains with animation delays make it impractical to test without `vi.useFakeTimers()` infrastructure. Only attempt if timer setup is trivial.
+  4. **Added post-rotation audit rule**: After the final Tier 3 batch, skip audit phase entirely unless `git log` shows new files or major refactors outside the loop. No more rotation needed.
+  5. **Kept 1-hour interval** — still producing 0.5-1pp coverage gains and 10-14 tests per cycle. Will reassess at next meta-refinement if plateau confirmed (< 0.3pp for 3+ cycles).
+  6. **Simplified loop prompt** — removed stale references to fetch mock creation (already exists), updated targets, added early-exit for audit phase when rotation complete.
 
 ### Meta-Refinement 3 — 2026-03-10 07:55
 - **Cycles reviewed**: 8 through 10
@@ -86,6 +103,18 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 ## Cycle Log
 
 <!-- Newest entries at top -->
+
+### Cycle 14 — 2026-03-10 13:00
+- **Audited**: DiffView.tsx + ImpactPreview.tsx + NodeContextMenu.tsx + ErrorBoundary.tsx (Tier 3 FINAL batch)
+- **Tests**: 544 passing (+22), 0 failing; coverage: 57.69% stmts (+0.50pp), types.ts 97.53% (+35.81pp), lines 60.05% (crossed 60% milestone)
+- **Issues found**: 2 fixed
+  1. MEDIUM: NodeContextMenu "Regenerate" action was a fake — same `setTimeout(() => updateNodeStatus('active'), 2000)` pattern fixed in NodeDetailPanel (cycle 11) but this copy was missed. (fixed: replaced with `executeNode(node.id)`)
+  2. MEDIUM: ImpactPreview `handleShiftRegenerate` called `selectAllImpactNodes()` then `handleRegenerate()`, but `handleRegenerate` checked `noneSelected` captured at render time before selectAll updated state — causing silent no-op when no nodes were pre-selected. (fixed: inline the regeneration logic to bypass stale closure)
+  - DiffView.tsx: clean — pure render component, no effects or store subscriptions.
+  - ErrorBoundary.tsx: clean — standard React class component error boundary.
+- **Fixed**: fake context menu regeneration, shift-regenerate stale closure
+- **Coverage push**: types.ts — 22 new tests in types.test.ts covering BUILT_IN_CATEGORIES, getNodeColors (built-in, auto-register, consistency, custom categories), registerCustomCategory (built-in passthrough, hex color, HSL color, caching), getCategoryIcon (built-in, Puzzle fallback, all categories), CategoryIcon component, relativeTime (just now/minutes/hours/days/weeks+), EDGE_LABEL_COLORS, CATEGORY_ICONS. Coverage 61.72% → 97.53%.
+- **Milestone**: ALL audit rotations complete (Tier 1 + Tier 2 + Tier 3). 18 bugs fixed across 14 cycles.
 
 ### Cycle 13 — 2026-03-10 10:00
 - **Audited**: ActivityPanel.tsx + PreviewPanel.tsx (Tier 3 batch — quick scan)

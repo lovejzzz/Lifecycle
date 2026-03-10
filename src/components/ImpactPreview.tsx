@@ -39,7 +39,13 @@ export default function ImpactPreview() {
     if (e.shiftKey) {
       // Quick-refresh: skip preview, regenerate all immediately
       selectAllImpactNodes();
-      handleRegenerate();
+      // Must read fresh state — noneSelected was captured before selectAll
+      setProcessing(true);
+      try {
+        await regenerateSelected();
+      } finally {
+        setProcessing(false);
+      }
     }
   };
 
