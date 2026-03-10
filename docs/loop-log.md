@@ -15,13 +15,13 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 - [x] useStore.ts (node operations) (cycle 4)
 - [x] useStore.ts (execution & CID) (cycle 5)
 - [x] useStore.ts (undo/redo & history) (cycle 6)
-- [ ] useStore.ts (edge operations & graph)
+- [x] useStore.ts (edge operations & graph) (cycle 7)
 - [ ] useStore.ts (commands & dispatch)
 
 *Tier 2 — Core lib (logic-heavy, low coverage):*
 - [ ] intent.ts (30% coverage)
 - [x] reflection.ts (covered cycle 6 — 31.21%→80.92%)
-- [ ] prompts.ts (52% coverage)
+- [x] prompts.ts (covered cycle 7 — 51.63%→92.39%)
 - [x] agents.ts (covered cycle 4 — 3.65%→64.02%)
 - [x] intent.ts (covered cycle 5 — 29.95%→93.39%)
 - [ ] storage.ts
@@ -74,6 +74,16 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 ## Cycle Log
 
 <!-- Newest entries at top -->
+
+### Cycle 7 — 2026-03-10 03:55
+- **Audited**: useStore.ts (edge operations & graph) — deep agent-assisted review, 7 issues cataloged
+- **Tests**: 414 passing (+36), 0 failing; coverage: 48.96% stmts (+1.34pp), prompts.ts 92.39% (+40.76pp)
+- **Issues found**: 2 fixed
+  1. CRITICAL: `deleteEdge()` missing `pushHistory()` — edge deletion couldn't be undone, unlike `deleteNode()` which properly tracked history (fixed: added pushHistory call)
+  2. HIGH: `onConnect()` allowed self-loops (source === target) — created invalid graph state; `connectByName()` already rejected self-loops but the React Flow handler didn't (fixed: added self-loop guard with early return)
+  - Also noted (not fixed, by design): `addEdge()`/`setEdges()` are low-level primitives without history — callers are responsible for pushHistory. Graph validation detects but doesn't prevent duplicate source→target edges.
+- **Fixed**: deleteEdge history tracking, onConnect self-loop prevention
+- **Coverage push**: prompts.ts — 36 new tests covering getExecutionSystemPrompt (all 8 category prompts + fallback + sanitization), inferEffortFromCategory (all 3 effort tiers), buildNoteRefinementPrompt (with/without existing nodes), buildSystemPrompt (empty/populated graph, rules, legacy/5-layer personalities, execution status, stale count), compilePersonalityPrompt (all 5 layers including learned patterns, expression modes, growth awareness, reframed input), buildMessages (empty/short/long history with compression). Coverage 51.63% → 92.39%.
 
 ### Cycle 6 — 2026-03-10 02:56
 - **Audited**: useStore.ts (undo/redo & history) — deep agent-assisted review, 6 issues cataloged

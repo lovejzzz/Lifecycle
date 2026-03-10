@@ -1,5 +1,17 @@
 # Changelog
 
+### 2026-03-10 — Loop Cycle 7: Edge Operations & Graph Audit + Coverage Push
+
+**useStore.ts edge operations & graph audit** (deep agent-assisted review):
+- **Fix: `deleteEdge()` missing undo tracking** — edge deletion didn't call `pushHistory()`, making edge deletions non-undoable. `deleteNode()` already had this, `deleteEdge()` was missed.
+- **Fix: `onConnect()` allowed self-loops** — React Flow's connect handler didn't validate source !== target, allowing nodes to connect to themselves and creating invalid graph state. `connectByName()` already had this guard but the UI handler didn't.
+
+**Coverage push**: prompts.ts
+- 36 new tests covering all execution system prompts (8 categories + fallback), effort inference, note refinement prompts, system prompt building (empty/populated graphs, legacy/5-layer personalities), personality compilation (all 5 layers), message compression
+- Coverage: prompts.ts 51.63% → 92.39%, overall 47.62% → 48.96%
+
+**Test counts**: 414 total (44 prompts + 64 reflection + 42 intent + 49 simulation + 32 E2E + 13 chaos + 25 agents + 145 existing), all passing
+
 ### 2026-03-10 — Loop Cycle 6: Undo/Redo & History Audit + Coverage Push
 
 **useStore.ts undo/redo & history audit** (deep agent-assisted review):

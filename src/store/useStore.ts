@@ -2372,18 +2372,22 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     });
   },
 
-  deleteEdge: (id) =>
+  deleteEdge: (id) => {
+    get().pushHistory();
     set((s) => {
       const edges = s.edges.filter((e) => e.id !== id);
       saveToStorage({ nodes: s.nodes, edges, events: s.events, messages: s.messages });
       return { edges };
-    }),
+    });
+  },
 
   onConnect: (connection) => {
     const store = get();
+    if (!connection.source || !connection.target) return;
+    // Prevent self-loops
+    if (connection.source === connection.target) return;
     store.pushHistory();
     set((s) => {
-      if (!connection.source || !connection.target) return s;
       const exists = s.edges.some(
         (e) => e.source === connection.source && e.target === connection.target
       );
