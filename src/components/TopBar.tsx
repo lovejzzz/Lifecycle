@@ -254,7 +254,7 @@ export default function TopBar() {
                 a.href = url;
                 a.download = `lifecycle-workflow-${new Date().toISOString().slice(0, 10)}.json`;
                 a.click();
-                URL.revokeObjectURL(url);
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
               }}
               title="Export workflow as JSON"
               className="w-7 h-7 rounded-lg flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors"

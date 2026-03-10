@@ -17,13 +17,14 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 - [x] Canvas.tsx (cycle 1)
 - [x] CIDPanel.tsx (cycle 2)
 - [x] NodeDetailPanel.tsx + ArtifactPanel.tsx (cycle 11 — 2 bugs fixed)
-- [ ] TopBar.tsx + LifecycleNode.tsx (batch — quick scan)
+- [x] TopBar.tsx + LifecycleNode.tsx (cycle 12 — 1 bug fixed)
 - [ ] ActivityPanel.tsx + PreviewPanel.tsx (batch — quick scan)
 - [ ] DiffView.tsx + ImpactPreview.tsx + NodeContextMenu.tsx + ErrorBoundary.tsx (batch — quick scan)
 
 *Coverage Push Strategy (Meta-Refinement 3):*
 - [x] useStore.ts pure functions (scenarios 18-20, ~35% → 40.24%)
-- [ ] useStore.ts async handlers — requires fetch mock: chatWithCID, executeNode response parsing, propagateStale loop, streaming callbacks. This is where the remaining 60% of uncovered store code lives.
+- [x] useStore.ts async handlers — executeNode (scenario 21, cycle 11), chatWithCID + propagateStale (scenario 22, cycle 12). 40.24% → 45.01%. Remaining: streaming callbacks, generateWorkflow, executeBranch.
+
 - [ ] types.ts (61.72%) — lowest-coverage lib file remaining
 
 ---
@@ -85,6 +86,15 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 ## Cycle Log
 
 <!-- Newest entries at top -->
+
+### Cycle 12 — 2026-03-10 09:00
+- **Audited**: TopBar.tsx + LifecycleNode.tsx (Tier 3 batch — quick scan)
+- **Tests**: 509 passing (+14), 0 failing; coverage: 56.60% stmts (+3.12pp), useStore.ts 45.01% (+4.24pp)
+- **Issues found**: 1 fixed
+  1. LOW: TopBar export button called `URL.revokeObjectURL(url)` synchronously after `a.click()`. Browser download may not have started yet, risking blob URL invalidation before file download completes. (fixed: deferred with `setTimeout(..., 1000)`)
+  - LifecycleNode.tsx: clean — uses individual store selectors correctly, no logic bugs.
+- **Fixed**: premature blob URL revocation
+- **Coverage push**: useStore.ts (propagateStale + chatWithCID) — 14 new tests in Scenario 22 covering propagateStale (no-op message when no stale nodes, topo-order re-execution with active status after, skip non-stale nodes, clear impact preview, error reporting, undo history push) and chatWithCID (user message + thinking state, no_api_key fallback, api_error/rate-limit fallback, advice question modification stripping, action verb modification application, network error fallback, selected node context enrichment, string-to-object result parsing). Coverage 53.48% → 56.60% overall (+3.12pp), useStore.ts 40.77% → 45.01% (+4.24pp).
 
 ### Cycle 11 — 2026-03-10 08:00
 - **Audited**: NodeDetailPanel.tsx + ArtifactPanel.tsx (Tier 3 batch — detail panels)

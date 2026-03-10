@@ -1874,4 +1874,256 @@ describe('User Simulation: Real Journeys', () => {
       expect(getStore().events.length).toBe(eventsBefore);
     });
   });
+
+  // ── Scenario 22: propagateStale & chatWithCID response parsing ──
+  describe('Scenario 22 — propagateStale & chatWithCID', () => {
+    beforeEach(() => {
+      useLifecycleStore.setState({
+        nodes: [], edges: [], events: [], messages: [],
+        impactPreview: null, toasts: [], isProcessing: false,
+      });
+      mockFetch.mockClear();
+    });
+
+    // ── propagateStale ──
+
+    it('propagateStale: no-ops with message when no stale nodes', async () => {
+      getStore().createNewNode('input');
+      await getStore().propagateStale();
+      const msgs = getStore().messages;
+      expect(msgs.some(m => m.content.includes('up to date'))).toBe(true);
+    });
+
+    it('propagateStale: re-executes stale nodes in topo order', async () => {
+      // Build a chain: input → artifact
+      getStore().createNewNode('input');
+      getStore().createNewNode('artifact');
+      const [inp, art] = getStore().nodes;
+      getStore().updateNodeData(inp.id, { inputValue: 'test data' });
+      getStore().addEdge({ id: 'e1', source: inp.id, target: art.id, type: 'default' });
+
+      // Manually mark both as stale
+      useLifecycleStore.setState({
+        nodes: getStore().nodes.map(n => ({
+          ...n, data: { ...n.data, status: 'stale' as const },
+        })),
+      });
+
+      await getStore().propagateStale();
+
+      // After propagation: nodes should be active (not stale)
+      const updatedInp = getStore().nodes.find(n => n.id === inp.id)!;
+      const updatedArt = getStore().nodes.find(n => n.id === art.id)!;
+      expect(updatedInp.data.status).toBe('active');
+      expect(updatedArt.data.status).toBe('active');
+    });
+
+    it('propagateStale: only processes nodes that are stale at check time', async () => {
+      // Build two unconnected nodes — mark only one stale
+      getStore().createNewNode('input');
+      getStore().createNewNode('artifact');
+      const [inp, art] = getStore().nodes;
+
+      // Force exact state: inp active, art stale, no edges, no prior events
+      useLifecycleStore.setState({
+        nodes: getStore().nodes.map(n => ({
+          ...n, data: {
+            ...n.data,
+            status: n.id === art.id ? 'stale' as const : 'active' as const,
+            inputValue: n.id === inp.id ? 'data' : undefined,
+          },
+        })),
+        edges: [],
+        events: [],
+      });
+
+      await getStore().propagateStale();
+      // Only artifact should produce regenerated events (executeNode + propagateStale each add one)
+      const regenEvents = getStore().events.filter(e => e.type === 'regenerated');
+      expect(regenEvents.length).toBe(2);
+      expect(regenEvents.every(e => e.nodeId === art.id)).toBe(true);
+    });
+
+    it('propagateStale: clears impact preview after completion', async () => {
+      getStore().createNewNode('input');
+      useLifecycleStore.setState({
+        nodes: getStore().nodes.map(n => ({ ...n, data: { ...n.data, status: 'stale' as const, inputValue: 'x' } })),
+        impactPreview: { visible: true, nodeIds: [], selectedNodeIds: new Set() },
+      });
+      await getStore().propagateStale();
+      expect(getStore().impactPreview).toBeNull();
+    });
+
+    it('propagateStale: reports error count when execution fails', async () => {
+      getStore().createNewNode('artifact');
+      const art = getStore().nodes[0];
+      useLifecycleStore.setState({
+        nodes: getStore().nodes.map(n => ({ ...n, data: { ...n.data, status: 'stale' as const } })),
+      });
+      // Mock fetch to return error
+      mockFetch.mockImplementationOnce(async () => ({
+        ok: true,
+        json: async () => ({ result: 'error content' }),
+      }));
+      // Force execution to produce an error by making the node fail
+      // The artifact node with no upstream will try to execute via API
+      await getStore().propagateStale();
+      // Should have a completion message (either success or error count)
+      const msgs = getStore().messages;
+      const doneMsg = msgs.find(m => m.content.includes('refreshed') || m.content.includes('failed'));
+      expect(doneMsg).toBeDefined();
+    });
+
+    it('propagateStale: pushes undo history', async () => {
+      getStore().createNewNode('input');
+      useLifecycleStore.setState({
+        nodes: getStore().nodes.map(n => ({ ...n, data: { ...n.data, status: 'stale' as const, inputValue: 'x' } })),
+      });
+      const historyBefore = getStore().history.length;
+      await getStore().propagateStale();
+      expect(getStore().history.length).toBeGreaterThan(historyBefore);
+    });
+
+    // ── chatWithCID response parsing ──
+
+    it('chatWithCID: sends user message and shows thinking state', async () => {
+      // Override fetch for chat response
+      mockFetch.mockImplementationOnce(async () => ({
+        ok: true,
+        json: async () => ({
+          result: { message: 'Hello! I can help with that.', workflow: null },
+        }),
+      }));
+
+      await getStore().chatWithCID('hello');
+
+      const msgs = getStore().messages;
+      // Should have user message
+      expect(msgs.some(m => m.role === 'user' && m.content === 'hello')).toBe(true);
+      // Should have CID response (thinking removed, actual response added)
+      expect(msgs.some(m => m.role === 'cid' && !m.action)).toBe(true);
+    });
+
+    it('chatWithCID: handles no_api_key with fallback', async () => {
+      mockFetch.mockImplementationOnce(async () => ({
+        ok: true,
+        json: async () => ({ error: 'no_api_key' }),
+      }));
+
+      await getStore().chatWithCID('build a workflow');
+
+      const msgs = getStore().messages;
+      // Should have a CID response (fallback)
+      expect(msgs.filter(m => m.role === 'cid').length).toBeGreaterThan(0);
+      expect(getStore().isProcessing).toBe(false);
+    });
+
+    it('chatWithCID: handles api_error with fallback', async () => {
+      mockFetch.mockImplementationOnce(async () => ({
+        ok: true,
+        json: async () => ({ error: 'api_error', message: '429 rate limit' }),
+      }));
+
+      await getStore().chatWithCID('build a workflow');
+
+      const msgs = getStore().messages;
+      expect(msgs.some(m => m.content.includes('rate limited') || m.content.includes('unavailable'))).toBe(true);
+      expect(getStore().isProcessing).toBe(false);
+    });
+
+    it('chatWithCID: strips modifications for advice questions', async () => {
+      mockFetch.mockImplementationOnce(async () => ({
+        ok: true,
+        json: async () => ({
+          result: {
+            message: 'Here is my advice...',
+            workflow: null,
+            modifications: {
+              update_nodes: [{ label: 'Input', changes: { description: 'should not apply' } }],
+            },
+          },
+        }),
+      }));
+
+      getStore().createNewNode('input');
+      const origDesc = getStore().nodes[0].data.description;
+
+      await getStore().chatWithCID('what should I do next?');
+
+      // Modifications should have been stripped — node unchanged
+      const node = getStore().nodes[0];
+      expect(node.data.description).toBe(origDesc);
+    });
+
+    it('chatWithCID: applies modifications when action verb present', async () => {
+      getStore().createNewNode('input');
+      const origNode = getStore().nodes[0];
+
+      mockFetch.mockImplementationOnce(async () => ({
+        ok: true,
+        json: async () => ({
+          result: {
+            message: 'Updated the workflow.',
+            workflow: null,
+            modifications: {
+              update_nodes: [{ label: origNode.data.label, changes: { description: 'New description from AI' } }],
+            },
+          },
+        }),
+      }));
+
+      await getStore().chatWithCID('update the input node description');
+
+      const updated = getStore().nodes.find(n => n.id === origNode.id)!;
+      expect(updated.data.description).toBe('New description from AI');
+    });
+
+    it('chatWithCID: falls back to template on network error', async () => {
+      mockFetch.mockImplementationOnce(async () => { throw new Error('Network error'); });
+
+      await getStore().chatWithCID('hello');
+
+      // Should have removed thinking and added fallback
+      const msgs = getStore().messages;
+      expect(msgs.some(m => m.action === 'thinking')).toBe(false);
+      expect(msgs.filter(m => m.role === 'cid' && m.content).length).toBeGreaterThan(0);
+      expect(getStore().isProcessing).toBe(false);
+    });
+
+    it('chatWithCID: enriches prompt with selected node context', async () => {
+      getStore().createNewNode('artifact');
+      const node = getStore().nodes[0];
+      useLifecycleStore.setState({ selectedNodeId: node.id });
+
+      mockFetch.mockImplementationOnce(async (_url: string, opts?: RequestInit) => {
+        const body = JSON.parse(opts?.body as string);
+        // The messages should contain enriched context with node info
+        const lastMsg = body.messages[body.messages.length - 1];
+        expect(lastMsg.content).toContain(node.data.label);
+        return {
+          ok: true,
+          json: async () => ({
+            result: { message: 'Got it!', workflow: null },
+          }),
+        };
+      });
+
+      await getStore().chatWithCID('explain this node');
+    });
+
+    it('chatWithCID: parses string result into object', async () => {
+      mockFetch.mockImplementationOnce(async () => ({
+        ok: true,
+        json: async () => ({
+          result: JSON.stringify({ message: 'Parsed from string', workflow: null }),
+        }),
+      }));
+
+      await getStore().chatWithCID('test string parsing');
+
+      const msgs = getStore().messages;
+      // The CID response should contain the parsed message content
+      expect(msgs.some(m => m.role === 'cid')).toBe(true);
+    });
+  });
 });

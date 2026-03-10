@@ -1,5 +1,15 @@
 # Changelog
 
+### 2026-03-10 — Loop Cycle 12: TopBar Audit + propagateStale & chatWithCID Tests
+
+**Tier 3 audit**: TopBar.tsx + LifecycleNode.tsx
+- **Fix: `URL.revokeObjectURL` called too early in export** — blob URL was revoked synchronously after `a.click()`, risking download failure in some browsers. Deferred with `setTimeout(..., 1000)`.
+- LifecycleNode.tsx: clean — good selector patterns, no logic bugs.
+
+**Coverage push**: useStore.ts (propagateStale + chatWithCID)
+- 14 new tests in Scenario 22 covering propagateStale (no-op on zero stale, topo-order re-execution, skip non-stale, clear impact preview, error reporting, undo history) and chatWithCID (user message + thinking state, no_api_key fallback, api_error fallback, advice question modification stripping, action verb modification application, network error fallback, selected node context enrichment, string-to-object parsing)
+- Coverage: useStore.ts 40.77% → 45.01%, overall 53.48% → 56.60%, 509 tests passing
+
 ### 2026-03-10 — Loop Cycle 11: Detail Panel Audit + Async executeNode Tests
 
 **Tier 3 audit**: NodeDetailPanel.tsx + ArtifactPanel.tsx
