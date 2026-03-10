@@ -1,5 +1,14 @@
 # Changelog
 
+### 2026-03-10 — Loop Cycle 10: Tier 2 Lib Audit Complete + Lifecycle Loop Tests
+
+**Tier 2 batch audit**: health.ts + optimizer.ts + edits.ts — all clean, no bugs found.
+All Tier 2 lib audits now complete.
+
+**Coverage push**: useStore.ts (lifecycle loop core)
+- 14 new tests in Scenario 20 covering staleness cascade (stops at locked nodes), edit classification propagation (cosmetic/semantic/structural), execution mutex, version history, lock/approve events, edge label inference
+- Coverage: 53.10% overall, 481 tests passing
+
 ### 2026-03-10 — Loop Cycle 9: storage.ts + graph.ts Audit + Store Analytics Coverage
 
 **Tier 2 batch audit**: storage.ts + graph.ts (logic bugs only)

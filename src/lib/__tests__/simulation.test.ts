@@ -1524,4 +1524,173 @@ describe('User Simulation: Real Journeys', () => {
       expect(getStore().impactPreview).toBeNull();
     });
   });
+
+  // ── Scenario 20: Lifecycle loop — staleness, edit classification, lock/approve ──
+  describe('Scenario 20 — Lifecycle loop core', () => {
+    beforeEach(() => {
+      useLifecycleStore.setState({ nodes: [], edges: [], events: [], messages: [], impactPreview: null, toasts: [] });
+      getStore().createNewNode('input');
+      getStore().createNewNode('artifact');
+      getStore().createNewNode('review');
+      // Wire up a chain: input → artifact → review
+      const nodes = getStore().nodes;
+      getStore().connectByName(`connect ${nodes[0].data.label} to ${nodes[1].data.label}`);
+      getStore().connectByName(`connect ${nodes[1].data.label} to ${nodes[2].data.label}`);
+    });
+
+    // ── updateNodeStatus: staleness cascade ──
+    it('updateNodeStatus cascades stale to downstream nodes', () => {
+      const nodes = getStore().nodes;
+      const inputId = nodes[0].id;
+      getStore().updateNodeStatus(inputId, 'stale');
+      // All downstream nodes should become stale
+      const updated = getStore().nodes;
+      expect(updated.find(n => n.id === inputId)!.data.status).toBe('stale');
+      // Artifact is downstream of input
+      expect(updated.find(n => n.id === nodes[1].id)!.data.status).toBe('stale');
+      // Review is downstream of artifact
+      expect(updated.find(n => n.id === nodes[2].id)!.data.status).toBe('stale');
+    });
+
+    it('staleness cascade stops at locked nodes', () => {
+      const nodes = getStore().nodes;
+      // Lock the artifact node
+      getStore().lockNode(nodes[1].id);
+      expect(getStore().nodes.find(n => n.id === nodes[1].id)!.data.locked).toBe(true);
+      // Now mark input as stale
+      getStore().updateNodeStatus(nodes[0].id, 'stale');
+      const updated = getStore().nodes;
+      expect(updated.find(n => n.id === nodes[0].id)!.data.status).toBe('stale');
+      // Locked artifact should NOT become stale
+      expect(updated.find(n => n.id === nodes[1].id)!.data.status).toBe('locked');
+      // Review (downstream of locked) should also be protected
+      expect(updated.find(n => n.id === nodes[2].id)!.data.status).not.toBe('stale');
+    });
+
+    it('lockNode sets locked status and flag', () => {
+      const nodeId = getStore().nodes[0].id;
+      getStore().lockNode(nodeId);
+      const node = getStore().nodes.find(n => n.id === nodeId)!;
+      expect(node.data.status).toBe('locked');
+      expect(node.data.locked).toBe(true);
+    });
+
+    it('approveNode sets status to active', () => {
+      const nodeId = getStore().nodes[0].id;
+      getStore().updateNodeStatus(nodeId, 'reviewing');
+      getStore().approveNode(nodeId);
+      expect(getStore().nodes.find(n => n.id === nodeId)!.data.status).toBe('active');
+    });
+
+    // ── updateNodeData: edit classification ──
+    it('updateNodeData cosmetic edit does not propagate', () => {
+      const nodes = getStore().nodes;
+      const artifactId = nodes[1].id;
+      // Set initial content
+      getStore().updateNodeData(artifactId, { content: 'Hello world' });
+      // Ensure downstream is active
+      getStore().updateNodeStatus(nodes[2].id, 'active');
+      // Cosmetic edit: just whitespace change
+      getStore().updateNodeData(artifactId, { content: 'Hello   world' });
+      // Review (downstream) should still be active, not stale
+      expect(getStore().nodes.find(n => n.id === nodes[2].id)!.data.status).toBe('active');
+    });
+
+    it('updateNodeData semantic edit propagates staleness', () => {
+      const nodes = getStore().nodes;
+      const artifactId = nodes[1].id;
+      // Set initial content
+      getStore().updateNodeData(artifactId, { content: 'Original requirements for the project' });
+      // Reset downstream to active
+      getStore().nodes.forEach(n => {
+        if (n.id !== artifactId) getStore().updateNodeStatus(n.id, 'active');
+      });
+      // Semantic edit: completely different content
+      getStore().updateNodeData(artifactId, { content: 'Brand new architecture with different goals' });
+      // Review (downstream) should become stale
+      const review = getStore().nodes.find(n => n.id === nodes[2].id)!;
+      expect(review.data.status).toBe('stale');
+    });
+
+    it('updateNodeData structural edit (label change) propagates', () => {
+      const nodes = getStore().nodes;
+      const artifactId = nodes[1].id;
+      // Reset all to active
+      nodes.forEach(n => getStore().updateNodeStatus(n.id, 'active'));
+      // Structural edit: rename
+      getStore().updateNodeData(artifactId, { label: 'Renamed Artifact' });
+      // Should propagate to downstream
+      const review = getStore().nodes.find(n => n.id === nodes[2].id)!;
+      expect(review.data.status).toBe('stale');
+    });
+
+    it('updateNodeData blocks non-execution updates on executing nodes', () => {
+      const nodeId = getStore().nodes[0].id;
+      getStore()._lockNode(nodeId); // execution lock
+      const labelBefore = getStore().nodes.find(n => n.id === nodeId)!.data.label;
+      // Try to update label — should be blocked
+      getStore().updateNodeData(nodeId, { label: 'Hacked Label' });
+      expect(getStore().nodes.find(n => n.id === nodeId)!.data.label).toBe(labelBefore);
+      getStore()._unlockNode(nodeId);
+    });
+
+    it('updateNodeData allows execution updates on executing nodes', () => {
+      const nodeId = getStore().nodes[0].id;
+      getStore()._lockNode(nodeId);
+      getStore().updateNodeData(nodeId, { executionResult: 'Some AI output', executionStatus: 'success' });
+      const node = getStore().nodes.find(n => n.id === nodeId)!;
+      expect(node.data.executionResult).toBe('Some AI output');
+      expect(node.data.executionStatus).toBe('success');
+      getStore()._unlockNode(nodeId);
+    });
+
+    it('updateNodeData creates version history on semantic edit', () => {
+      const nodeId = getStore().nodes[1].id;
+      getStore().updateNodeData(nodeId, { content: 'Version one content with important details' });
+      getStore().updateNodeData(nodeId, { content: 'Completely rewritten content about something else entirely' });
+      const node = getStore().nodes.find(n => n.id === nodeId)!;
+      expect(node.data._versionHistory).toBeDefined();
+      expect(node.data._versionHistory!.length).toBeGreaterThanOrEqual(1);
+      expect(node.data._versionHistory![0].content).toBe('Version one content with important details');
+    });
+
+    // ── onConnect auto-labeling ──
+    it('onConnect infers edge label from category pair', () => {
+      const edges = getStore().edges;
+      // input→artifact edge should have 'feeds' label
+      const inputToArtifact = edges.find(e => {
+        const src = getStore().nodes.find(n => n.id === e.source);
+        const tgt = getStore().nodes.find(n => n.id === e.target);
+        return src?.data.category === 'input' && tgt?.data.category === 'artifact';
+      });
+      expect(inputToArtifact).toBeDefined();
+      expect(inputToArtifact!.label).toBe('feeds');
+    });
+
+    // ── setProcessing ──
+    it('setProcessing toggles isProcessing flag', () => {
+      expect(getStore().isProcessing).toBe(false);
+      getStore().setProcessing(true);
+      expect(getStore().isProcessing).toBe(true);
+      getStore().setProcessing(false);
+      expect(getStore().isProcessing).toBe(false);
+    });
+
+    // ── Event logging ──
+    it('lockNode creates a lock event', () => {
+      const nodeId = getStore().nodes[0].id;
+      const eventsBefore = getStore().events.length;
+      getStore().lockNode(nodeId);
+      expect(getStore().events.length).toBeGreaterThan(eventsBefore);
+      expect(getStore().events[0].type).toBe('locked');
+    });
+
+    it('approveNode creates an approved event', () => {
+      const nodeId = getStore().nodes[0].id;
+      const eventsBefore = getStore().events.length;
+      getStore().approveNode(nodeId);
+      expect(getStore().events.length).toBeGreaterThan(eventsBefore);
+      expect(getStore().events[0].type).toBe('approved');
+    });
+  });
 });
