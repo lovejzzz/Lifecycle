@@ -1,5 +1,17 @@
 # Changelog
 
+### 2026-03-10 — Loop Cycle 5: Execution & CID Audit + Coverage Push
+
+**useStore.ts execution & CID audit** (deep agent-assisted review):
+- **Fix: `executeNode` deadlock on passthrough** — passthrough path returned without calling `_unlockNode(nodeId)`, leaving the node permanently locked. Any subsequent execution of that node would silently fail due to the mutex.
+- **Fix: `stopProcessing` orphaned locks** — abort/stop didn't clear `_executingNodeIds`, leaving nodes in a locked state that persisted until page refresh.
+
+**Coverage push**: intent.ts
+- 32 new tests covering `analyzeIntent` branches (shared-link URL fallback, generic file upload, output service detection, source type inference from services, document upload creation, all transformation targets) and full `buildNodesFromPrompt` coverage (service inputs, file inputs, extraction nodes, research notes, education sections, artifact naming fallbacks, output format/service/transformation labels, edge connectivity)
+- Coverage: intent.ts 29.95% → 93.39%, overall 42.17% → 44.62%
+
+**Test counts**: 329 total (42 intent + 25 agents + 47 simulation + 32 E2E + 13 chaos + 170 existing), all passing
+
 ### 2026-03-10 — Loop Cycle 4: Node Operations Audit & Coverage Push
 
 **useStore.ts node operations audit** (deep agent-assisted review):

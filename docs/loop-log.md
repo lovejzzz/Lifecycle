@@ -13,7 +13,7 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 *Tier 1 — Store (highest bug yield):*
 - [x] useStore.ts (persistence & projects) (cycle 3)
 - [x] useStore.ts (node operations) (cycle 4)
-- [ ] useStore.ts (execution & CID) ← async+mutex, highest risk
+- [x] useStore.ts (execution & CID) (cycle 5)
 - [ ] useStore.ts (undo/redo & history)
 - [ ] useStore.ts (edge operations & graph)
 - [ ] useStore.ts (commands & dispatch)
@@ -23,6 +23,7 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 - [ ] reflection.ts (31% coverage)
 - [ ] prompts.ts (52% coverage)
 - [x] agents.ts (covered cycle 4 — 3.65%→64.02%)
+- [x] intent.ts (covered cycle 5 — 29.95%→93.39%)
 - [ ] storage.ts
 - [ ] graph.ts
 - [ ] health.ts
@@ -73,6 +74,16 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 ## Cycle Log
 
 <!-- Newest entries at top -->
+
+### Cycle 5 — 2026-03-10 01:55
+- **Audited**: useStore.ts (execution & CID) — deep agent-assisted review, 16 issues cataloged
+- **Tests**: 329 passing (+32), 0 failing; coverage: 44.62% stmts (+2.45pp), intent.ts 93.39% (+63.44pp)
+- **Issues found**: 2 critical/high fixed
+  1. CRITICAL: `executeNode` passthrough path (line 1607) returned without calling `_unlockNode(nodeId)` — node stays locked forever, deadlock on re-execution (fixed: added unlock before return)
+  2. HIGH: `stopProcessing` (line 4345) didn't clear `_executingNodeIds` — nodes stay locked after abort, requiring page refresh (fixed: added `_executingNodeIds: new Set()` to set() return)
+  - Also noted (not fixed): stale closures in streaming callbacks, retry logic race with mutex, CID panel references non-existent store methods in edge cases
+- **Fixed**: Both critical issues
+- **Coverage push**: intent.ts — 32 new tests covering `analyzeIntent` (shared-link fallback, generic upload, output service, source type inference, all transformation targets) and `buildNodesFromPrompt` (service/file/transform inputs, education sections, artifact naming, output formats, edge chains). Coverage 29.95% → 93.39%.
 
 ### Cycle 4 — 2026-03-10 00:47
 - **Audited**: useStore.ts (node operations) — deep agent-assisted review, 12+ issues cataloged

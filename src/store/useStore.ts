@@ -1604,6 +1604,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     if (!autoPrompt) {
       const passthrough = upstreamResults.join('\n\n---\n\n') || d.content || '';
       store.updateNodeData(nodeId, { executionResult: passthrough, executionStatus: passthrough ? 'success' : 'idle', _executionStartedAt: _execStart, _executionDurationMs: Date.now() - _execStart });
+      get()._unlockNode(nodeId);
       return;
     }
 
@@ -4342,7 +4343,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         return m;
       });
       saveToStorage({ nodes: s.nodes, edges: s.edges, events: s.events, messages });
-      return { isProcessing: false, messages };
+      return { isProcessing: false, messages, _executingNodeIds: new Set() };
     });
   },
 
