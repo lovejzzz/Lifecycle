@@ -22,7 +22,7 @@ Tracks the systematic UI/UX polish pass across 20 items in 4 rounds.
 - [x] 11. Focus ring styling for keyboard navigation
 - [x] 12. Dropdown keyboard navigation (arrow keys, Enter, Escape)
 - [x] 13. Drag feedback on canvas nodes
-- [ ] 14. Panel resize handles
+- [x] 14. Panel resize handles
 - [ ] 15. Smooth scroll to node on search/breadcrumb select
 
 ### Round 4 — Content & Copy
@@ -37,6 +37,15 @@ Tracks the systematic UI/UX polish pass across 20 items in 4 rounds.
 ## Cycle Log
 
 <!-- Newest entries at top -->
+
+### Polish 14 — Panel resize handles
+- **Changed**: CIDPanel.tsx
+- Added resize handle on left edge of CID panel (4px wide, `cursor-col-resize`)
+- Handle shows emerald tint on hover, with a subtle center grip indicator
+- Panel width driven by `useState(380)` — dragging resizes between 300px and 600px
+- Uses `mousedown`/`mousemove`/`mouseup` on document for smooth drag across the viewport
+- Sets `document.body.style.cursor = 'col-resize'` and `userSelect = 'none'` during drag to prevent text selection
+- `useCallback` on handler to keep stable reference; `useRef` for isResizing flag (no re-renders during drag)
 
 ### Polish 13 — Drag feedback on canvas nodes
 - **Changed**: LifecycleNode.tsx

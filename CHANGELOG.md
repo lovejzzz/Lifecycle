@@ -1,5 +1,9 @@
 # Changelog
 
+### 2026-03-10 — Polish 14: CID Panel Resize Handle
+
+Added a draggable resize handle on the left edge of the CID panel. Users can now drag to resize the panel between 300px and 600px. Handle shows an emerald tint on hover with a subtle grip indicator.
+
 ### 2026-03-10 — Polish 13: Drag Feedback on Canvas Nodes
 
 Nodes now show clear visual feedback when being dragged — slight scale-up (1.04x) with subtle rotation (-0.5deg), enhanced glow shadow, primary-color border, and grabbing cursor. Gives a tactile "picked up" feel.

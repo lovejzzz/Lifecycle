@@ -162,11 +162,36 @@ export default function CIDPanel() {
   const [showModelPicker, setShowModelPicker] = useState(false);
   const [inputHistory, setInputHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const [panelWidth, setPanelWidth] = useState(380);
+  const isResizingRef = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
   const pendingSuggestionRef = useRef<string | null>(null);
+
+  const handleResizeStart = React.useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isResizingRef.current = true;
+    const startX = e.clientX;
+    const startWidth = panelWidth;
+    const onMove = (ev: MouseEvent) => {
+      if (!isResizingRef.current) return;
+      const delta = startX - ev.clientX;
+      setPanelWidth(Math.max(300, Math.min(600, startWidth + delta)));
+    };
+    const onUp = () => {
+      isResizingRef.current = false;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, [panelWidth]);
 
   const matchingHintsGrouped = React.useMemo(() => {
     if (input.length < 2 || isProcessing) return [];
@@ -887,8 +912,17 @@ export default function CIDPanel() {
 
   return (
     <div
-      className="w-[380px] h-full flex flex-col border-l border-white/[0.06] bg-[#0c0c14]/95 backdrop-blur-xl"
+      className="h-full flex flex-col border-l border-white/[0.06] bg-[#0c0c14]/95 backdrop-blur-xl relative"
+      style={{ width: panelWidth }}
     >
+      {/* Resize handle */}
+      <div
+        onMouseDown={handleResizeStart}
+        className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize z-10 group hover:bg-emerald-500/20 active:bg-emerald-500/30 transition-colors"
+        title="Drag to resize"
+      >
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-full bg-white/0 group-hover:bg-white/20 transition-colors" />
+      </div>
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
         <div className="flex items-center gap-3">
