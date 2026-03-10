@@ -1196,7 +1196,7 @@ function CanvasInner() {
               className="fixed top-4 left-1/2 -translate-x-1/2 z-50 rounded-xl border border-cyan-500/20 bg-[#0e0e18]/95 backdrop-blur-xl px-5 py-3 shadow-2xl min-w-[300px]"
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] font-medium text-cyan-400/80">Executing Workflow</span>
+                <span className="text-[11px] font-medium text-cyan-400/80">Running {executionProgress.total}-node workflow</span>
                 <div className="flex items-center gap-2">
                   {executionProgress.totalStages && executionProgress.totalStages > 1 && (
                     <span className="text-[9px] text-white/25 font-mono">

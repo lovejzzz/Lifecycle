@@ -1,5 +1,9 @@
 # Changelog
 
+### 2026-03-10 — Polish 16: Context-Aware Loading State Copy
+
+Replaced generic loading text ("Running...", "Executing...", "Processing workflow...") with context-aware copy across 5 components. Node execution badges now show category-specific verbs (e.g., "Generating..." for artifacts, "Testing..." for test nodes). Workflow progress shows node counts. Node detail panel includes the node's label.
+
 ### 2026-03-10 — Polish 15: Smooth Scroll to Node on Search/Breadcrumb Select
 
 Improved node navigation from search, breadcrumb, and activity panel. Changed from `fitView` (which altered zoom level) to `setCenter` (preserves current zoom — less jarring). Added an expanding ring pulse animation on the target node when scrolled to, providing clear visual feedback for which node was navigated to.

@@ -852,7 +852,7 @@ function NodeDetailPanelContent({ nodeId }: { nodeId: string }) {
                   <span className="text-[10px] text-white/35 uppercase tracking-wider">AI Execution</span>
                   {data.executionStatus === 'running' && (
                     <span className="text-[9px] text-cyan-400 flex items-center gap-1">
-                      <RefreshCw size={8} className="animate-spin" /> Running...
+                      <RefreshCw size={8} className="animate-spin" /> Running &ldquo;{data.label}&rdquo;…
                     </span>
                   )}
                   {data.executionStatus === 'success' && (
@@ -890,7 +890,7 @@ function NodeDetailPanelContent({ nodeId }: { nodeId: string }) {
                     className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-medium hover:bg-cyan-500/20 transition-colors disabled:opacity-30"
                   >
                     {data.executionStatus === 'running' ? (
-                      <><RefreshCw size={10} className="animate-spin" /> Running...</>
+                      <><RefreshCw size={10} className="animate-spin" /> Running &ldquo;{data.label}&rdquo;…</>
                     ) : (
                       <>▶ Run Node</>
                     )}

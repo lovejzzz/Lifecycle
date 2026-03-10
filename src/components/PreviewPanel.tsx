@@ -336,7 +336,7 @@ export default function PreviewPanel() {
             <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl px-3 py-2">
               <div className="flex items-center gap-2">
                 <Loader2 size={11} className="text-white/30 animate-spin" />
-                <span className="text-[10px] text-white/30">Processing workflow...</span>
+                <span className="text-[10px] text-white/30">Running {nodes.length}-node workflow…</span>
               </div>
             </div>
           </div>

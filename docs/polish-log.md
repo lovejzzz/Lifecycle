@@ -26,7 +26,7 @@ Tracks the systematic UI/UX polish pass across 20 items in 4 rounds.
 - [x] 15. Smooth scroll to node on search/breadcrumb select
 
 ### Round 4 — Content & Copy
-- [ ] 16. Context-aware loading state copy
+- [x] 16. Context-aware loading state copy
 - [ ] 17. Replace alert() calls with toast notifications
 - [ ] 18. CID personality affects UI chrome colors
 - [ ] 19. Standardize timestamp formatting with relativeTime()
@@ -37,6 +37,14 @@ Tracks the systematic UI/UX polish pass across 20 items in 4 rounds.
 ## Cycle Log
 
 <!-- Newest entries at top -->
+
+### Polish 16 — Context-aware loading state copy
+- **Changed**: LifecycleNode.tsx, NodeDetailPanel.tsx, Canvas.tsx, ArtifactPanel.tsx, PreviewPanel.tsx
+- LifecycleNode execution badge: generic "Executing..." → category-aware verbs: "Generating..." (artifact), "Testing..." (test), "Reviewing..." (review), "Running action..." (action), "Evaluating..." (policy), etc.
+- NodeDetailPanel: "Running..." → `Running "Node Label"…` — shows which node is being executed
+- Canvas execution progress bar: "Executing Workflow" → "Running N-node workflow" with dynamic count
+- ArtifactPanel skeleton: "Executing..." → "Generating content…"
+- PreviewPanel: "Processing workflow..." → "Running N-node workflow…" with dynamic node count
 
 ### Polish 15 — Smooth scroll to node on search/breadcrumb select
 - **Changed**: Canvas.tsx, LifecycleNode.tsx

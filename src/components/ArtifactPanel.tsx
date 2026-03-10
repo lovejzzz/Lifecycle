@@ -468,7 +468,7 @@ function ReadingModeContent({
                   <div className="h-3 bg-white/[0.04] rounded w-5/6" />
                   <div className="flex items-center gap-2 mt-2">
                     <Loader2 size={10} className="animate-spin text-cyan-400/40" />
-                    <span className="text-[10px] text-cyan-400/40">Executing...</span>
+                    <span className="text-[10px] text-cyan-400/40">Generating content…</span>
                   </div>
                 </div>
               ) : (

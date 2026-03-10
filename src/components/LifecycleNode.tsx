@@ -331,8 +331,9 @@ function LifecycleNode({ data, id, dragging }: NodeProps) {
               }`}>
                 {nodeData.executionStatus === 'running' && <Loader2 size={9} className="animate-spin" />}
                 <span className="text-[8px] font-medium uppercase tracking-wider flex-1">
-                  {nodeData.executionStatus === 'running' ? 'Executing...' :
-                   nodeData.executionStatus === 'success' ? '✓ Executed' : '✗ Failed'}
+                  {nodeData.executionStatus === 'running'
+                    ? ({ artifact: 'Generating...', test: 'Testing...', review: 'Reviewing...', action: 'Running action...', policy: 'Evaluating...', input: 'Processing...', trigger: 'Triggering...', output: 'Producing output...', patch: 'Patching...', dependency: 'Resolving...' }[category] ?? 'Executing...')
+                    : nodeData.executionStatus === 'success' ? '✓ Executed' : '✗ Failed'}
                 </span>
                 {nodeData.executionResult && nodeData.executionStatus === 'success' && (
                   <span className="text-[7px] text-emerald-400/40 font-mono">
