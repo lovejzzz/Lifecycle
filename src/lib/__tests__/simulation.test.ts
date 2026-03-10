@@ -975,4 +975,61 @@ describe('User Simulation: Real Journeys', () => {
       }
     });
   });
+
+  // ─── Scenario 17: Undo/Redo nodeCounter sync ─────────────────────────
+  describe('Scenario 17 — Undo/redo nodeCounter integrity', () => {
+    it('undo after node creation does not cause ID collisions on next create', async () => {
+      const s = getStore();
+      const initialCount = s.nodes.length;
+
+      // Create a node via the high-level API (calls pushHistory internally)
+      s.createNewNode('input');
+      await new Promise(r => setTimeout(r, 50)); // let microtask complete
+      const firstId = getStore().nodes[getStore().nodes.length - 1].id;
+      expect(getStore().nodes.length).toBe(initialCount + 1);
+
+      // Create another node
+      getStore().createNewNode('artifact');
+      await new Promise(r => setTimeout(r, 50));
+      const secondId = getStore().nodes[getStore().nodes.length - 1].id;
+      expect(firstId).not.toBe(secondId);
+
+      // Undo the second creation
+      getStore().undo();
+      expect(getStore().nodes.length).toBe(initialCount + 1);
+
+      // Create a new node — should NOT collide with any existing ID
+      getStore().createNewNode('state');
+      await new Promise(r => setTimeout(r, 50));
+
+      const ids = getStore().nodes.map(n => n.id);
+      const uniqueIds = new Set(ids);
+      expect(uniqueIds.size).toBe(ids.length);
+    });
+
+    it('redo restores nodes without ID collisions', async () => {
+      const s = getStore();
+      const initialCount = s.nodes.length;
+
+      // Create, undo, redo
+      s.createNewNode('input');
+      await new Promise(r => setTimeout(r, 50));
+      const afterAdd = getStore().nodes.length;
+      expect(afterAdd).toBe(initialCount + 1);
+
+      getStore().undo();
+      expect(getStore().nodes.length).toBe(initialCount);
+
+      getStore().redo();
+      expect(getStore().nodes.length).toBe(afterAdd);
+
+      // Create new after redo — no collisions
+      getStore().createNewNode('artifact');
+      await new Promise(r => setTimeout(r, 50));
+
+      const ids = getStore().nodes.map(n => n.id);
+      const uniqueIds = new Set(ids);
+      expect(uniqueIds.size).toBe(ids.length);
+    });
+  });
 });

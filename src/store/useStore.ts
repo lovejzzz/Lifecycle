@@ -1144,7 +1144,7 @@ function applyUndo(op: UndoOperation, nodes: Node<NodeData>[], edges: Edge[]): {
   for (const [id, beforeNode] of op.beforeNodes) {
     if (op.deletedNodeIds.includes(id)) continue; // already handled
     const idx = newNodes.findIndex(n => n.id === id);
-    if (idx >= 0) newNodes[idx] = { ...newNodes[idx], ...beforeNode, data: { ...newNodes[idx].data, ...beforeNode.data } };
+    if (idx >= 0) newNodes[idx] = beforeNode;
   }
 
   // Remove created edges
@@ -1188,7 +1188,7 @@ function applyRedo(op: UndoOperation, nodes: Node<NodeData>[], edges: Edge[]): {
   for (const [id, afterNode] of op.afterNodes) {
     if (op.createdNodeIds.includes(id)) continue;
     const idx = newNodes.findIndex(n => n.id === id);
-    if (idx >= 0) newNodes[idx] = { ...newNodes[idx], ...afterNode, data: { ...newNodes[idx].data, ...afterNode.data } };
+    if (idx >= 0) newNodes[idx] = afterNode;
   }
 
   // Remove deleted edges
@@ -1992,6 +1992,12 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       future: [op, ...s.future],
     });
     saveToStorage({ nodes: result.nodes, edges: result.edges, events: s.events, messages: s.messages });
+    // Sync nodeCounter to restored nodes to prevent ID collisions
+    const maxUndoId = result.nodes.reduce((max, n) => {
+      const num = parseInt(n.id.replace('node-', ''), 10);
+      return isNaN(num) ? max : Math.max(max, num);
+    }, 0);
+    nodeCounter = Math.max(maxUndoId + 1, 100);
     // Build descriptive toast
     const parts: string[] = [];
     if (op.createdNodeIds.length > 0) parts.push(`-${op.createdNodeIds.length} node${op.createdNodeIds.length > 1 ? 's' : ''}`);
@@ -2015,6 +2021,12 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       history: [...s.history, op],
     });
     saveToStorage({ nodes: result.nodes, edges: result.edges, events: s.events, messages: s.messages });
+    // Sync nodeCounter to restored nodes to prevent ID collisions
+    const maxRedoId = result.nodes.reduce((max, n) => {
+      const num = parseInt(n.id.replace('node-', ''), 10);
+      return isNaN(num) ? max : Math.max(max, num);
+    }, 0);
+    nodeCounter = Math.max(maxRedoId + 1, 100);
     const parts: string[] = [];
     if (op.createdNodeIds.length > 0) parts.push(`+${op.createdNodeIds.length} node${op.createdNodeIds.length > 1 ? 's' : ''}`);
     if (op.deletedNodeIds.length > 0) parts.push(`-${op.deletedNodeIds.length} node${op.deletedNodeIds.length > 1 ? 's' : ''}`);

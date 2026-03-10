@@ -1,5 +1,17 @@
 # Changelog
 
+### 2026-03-10 — Loop Cycle 6: Undo/Redo & History Audit + Coverage Push
+
+**useStore.ts undo/redo & history audit** (deep agent-assisted review):
+- **Fix: nodeCounter not synced after undo/redo** — undoing node creation left nodeCounter at its previous value, causing ID collisions when creating new nodes afterward. Both `undo()` and `redo()` now recompute nodeCounter from restored nodes.
+- **Fix: applyUndo/applyRedo shallow merge leaking stale data** — modified nodes were merged (`{...current, ...before}`) instead of replaced, allowing stale properties from the current state to persist through undo. Changed to full node replacement matching how edges were already handled.
+
+**Coverage push**: reflection.ts
+- 47 new tests covering computeExpressionModifiers, computeCuriositySpikes, applyTemperamentReframing, generateSpontaneousDirectives, reflectOnInteraction, applyReflectionActions, updateGrowthEdges, migration V1→V2
+- Coverage: reflection.ts 31.21% → 80.92%, overall 44.70% → 47.62%
+
+**Test counts**: 378 total (64 reflection + 42 intent + 49 simulation + 32 E2E + 13 chaos + 25 agents + 153 existing), all passing
+
 ### 2026-03-10 — Loop Cycle 5: Execution & CID Audit + Coverage Push
 
 **useStore.ts execution & CID audit** (deep agent-assisted review):

@@ -14,13 +14,13 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 - [x] useStore.ts (persistence & projects) (cycle 3)
 - [x] useStore.ts (node operations) (cycle 4)
 - [x] useStore.ts (execution & CID) (cycle 5)
-- [ ] useStore.ts (undo/redo & history)
+- [x] useStore.ts (undo/redo & history) (cycle 6)
 - [ ] useStore.ts (edge operations & graph)
 - [ ] useStore.ts (commands & dispatch)
 
 *Tier 2 — Core lib (logic-heavy, low coverage):*
 - [ ] intent.ts (30% coverage)
-- [ ] reflection.ts (31% coverage)
+- [x] reflection.ts (covered cycle 6 — 31.21%→80.92%)
 - [ ] prompts.ts (52% coverage)
 - [x] agents.ts (covered cycle 4 — 3.65%→64.02%)
 - [x] intent.ts (covered cycle 5 — 29.95%→93.39%)
@@ -74,6 +74,17 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 ## Cycle Log
 
 <!-- Newest entries at top -->
+
+### Cycle 6 — 2026-03-10 02:56
+- **Audited**: useStore.ts (undo/redo & history) — deep agent-assisted review, 6 issues cataloged
+- **Tests**: 378 passing (+49), 0 failing; coverage: 47.62% stmts (+2.92pp), reflection.ts 80.92% (+49.71pp)
+- **Issues found**: 1 critical + 1 low fixed
+  1. CRITICAL: `undo()` and `redo()` didn't sync `nodeCounter` after restoring nodes — caused ID collisions when creating new nodes after undo (fixed: compute max ID from restored nodes and reset nodeCounter)
+  2. LOW: `applyUndo` shallow-merged node data (`{...current, ...before}`) leaking stale properties — `applyRedo` already used full replacement for edges but not nodes (fixed: both undo and redo now replace entirely)
+  - Also noted (not fixed): canvas drag operations not undoable (HIGH but requires component changes), artifactVersions/_versionHistory not in UndoOperation (MEDIUM), events/messages not reverted on undo (MEDIUM), pushHistory microtask race under rapid mutations (MEDIUM)
+- **Fixed**: nodeCounter sync in undo/redo, shallow merge data leakage in applyUndo/applyRedo
+- **Tests added**: Scenario 17 (undo/redo nodeCounter integrity) — 2 tests covering undo-then-create ID collisions and redo-then-create ID collisions
+- **Coverage push**: reflection.ts — 47 new tests covering computeExpressionModifiers (all emotion/canvas/session/momentum paths), computeCuriositySpikes, applyTemperamentReframing, generateSpontaneousDirectives, reflectOnInteraction (domain detection, preference detection, comm style feedback, drive reorganization, growth edges), applyReflectionActions (all action types), updateGrowthEdges, migration V1→V2. Coverage 31.21% → 80.92%.
 
 ### Cycle 5 — 2026-03-10 01:55
 - **Audited**: useStore.ts (execution & CID) — deep agent-assisted review, 16 issues cataloged
