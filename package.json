@@ -1,6 +1,6 @@
 {
   "name": "lifecycle",
-  "version": "1.0.43",
+  "version": "1.0.44",
   "main": "index.js",
   "scripts": {
     "dev": "next dev",

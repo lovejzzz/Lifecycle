@@ -19,7 +19,7 @@ const STATUS_INDICATOR: Record<string, { icon: React.ElementType | null; color: 
   reviewing: { icon: Eye, color: '#f43f5e', pulse: true },
 };
 
-function LifecycleNode({ data, id }: NodeProps) {
+function LifecycleNode({ data, id, dragging }: NodeProps) {
   const nodeData = data as NodeData;
   const { category, label, status, description, version, locked, sections, acceptedFileTypes, inputType, serviceName, serviceIcon, placeholder } = nodeData;
   const colors = getNodeColors(category);
@@ -68,7 +68,7 @@ function LifecycleNode({ data, id }: NodeProps) {
 
   return (
     <motion.div
-      className="group cursor-pointer"
+      className={`group ${dragging ? 'cursor-grabbing' : 'cursor-pointer'}`}
       initial={{ scale: 0.7, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={{ type: 'spring', stiffness: 400, damping: 25, duration: 0.3 }}
@@ -79,17 +79,20 @@ function LifecycleNode({ data, id }: NodeProps) {
         }`}
         style={{
           background: `linear-gradient(145deg, ${colors.bg}, rgba(10,10,18,0.92))`,
-          borderColor: isImpactHighlighted ? '#f59e0b' : isMultiSelected ? '#60a5fa' : isSelected ? colors.primary : status === 'generating' ? colors.primary : colors.border,
+          borderColor: dragging ? colors.primary : isImpactHighlighted ? '#f59e0b' : isMultiSelected ? '#60a5fa' : isSelected ? colors.primary : status === 'generating' ? colors.primary : colors.border,
           outline: isMultiSelected ? '2px dashed rgba(96, 165, 250, 0.4)' : 'none',
           outlineOffset: '3px',
-          boxShadow: isImpactHighlighted
-            ? `0 0 24px rgba(245,158,11,0.3), 0 0 48px rgba(245,158,11,0.15), 0 4px 30px rgba(0,0,0,0.4)`
-            : status === 'generating'
-              ? `0 0 30px ${colors.glow}, 0 0 60px ${colors.glow}, 0 4px 30px rgba(0,0,0,0.4)`
-              : isSelected
-                ? `0 0 24px ${colors.glow}, 0 4px 30px rgba(0,0,0,0.4)`
-                : `0 2px 20px rgba(0,0,0,0.3), 0 0 12px ${colors.glow}`,
+          boxShadow: dragging
+            ? `0 0 32px ${colors.glow}, 0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px ${colors.primary}40`
+            : isImpactHighlighted
+              ? `0 0 24px rgba(245,158,11,0.3), 0 0 48px rgba(245,158,11,0.15), 0 4px 30px rgba(0,0,0,0.4)`
+              : status === 'generating'
+                ? `0 0 30px ${colors.glow}, 0 0 60px ${colors.glow}, 0 4px 30px rgba(0,0,0,0.4)`
+                : isSelected
+                  ? `0 0 24px ${colors.glow}, 0 4px 30px rgba(0,0,0,0.4)`
+                  : `0 2px 20px rgba(0,0,0,0.3), 0 0 12px ${colors.glow}`,
           opacity: isImpactDimmed ? 0.35 : isImpactStaleUnselected ? 0.5 : 1,
+          transform: dragging ? 'scale(1.04) rotate(-0.5deg)' : undefined,
           minWidth: 210,
           maxWidth: 270,
         }}

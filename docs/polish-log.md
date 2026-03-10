@@ -21,7 +21,7 @@ Tracks the systematic UI/UX polish pass across 20 items in 4 rounds.
 ### Round 3 — Interaction Polish
 - [x] 11. Focus ring styling for keyboard navigation
 - [x] 12. Dropdown keyboard navigation (arrow keys, Enter, Escape)
-- [ ] 13. Drag feedback on canvas nodes
+- [x] 13. Drag feedback on canvas nodes
 - [ ] 14. Panel resize handles
 - [ ] 15. Smooth scroll to node on search/breadcrumb select
 
@@ -37,6 +37,15 @@ Tracks the systematic UI/UX polish pass across 20 items in 4 rounds.
 ## Cycle Log
 
 <!-- Newest entries at top -->
+
+### Polish 13 — Drag feedback on canvas nodes
+- **Changed**: LifecycleNode.tsx
+- Added `dragging` prop from React Flow's `NodeProps`
+- During drag: `scale(1.04) rotate(-0.5deg)` transform gives a "picked up" effect
+- Enhanced glow: stronger box-shadow with 32px spread + deeper drop shadow (8px 40px) + 1px ring at primary color
+- Border color switches to primary during drag for clear visual distinction
+- Cursor changes from `pointer` to `grabbing` while dragging
+- All existing hover, selected, generating, impact preview states preserved
 
 ### Polish 12 — Dropdown keyboard navigation
 - **Changed**: TopBar.tsx

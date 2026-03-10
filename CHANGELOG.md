@@ -1,5 +1,9 @@
 # Changelog
 
+### 2026-03-10 — Polish 13: Drag Feedback on Canvas Nodes
+
+Nodes now show clear visual feedback when being dragged — slight scale-up (1.04x) with subtle rotation (-0.5deg), enhanced glow shadow, primary-color border, and grabbing cursor. Gives a tactile "picked up" feel.
+
 ### 2026-03-10 — Polish 12: Dropdown Keyboard Navigation
 
 Added full keyboard navigation to Add Node and Project Switcher dropdown menus. ArrowUp/Down moves highlight, Enter activates, Escape closes. Mouse hover syncs with keyboard index. ArrowDown on closed button opens menu and selects first item.
