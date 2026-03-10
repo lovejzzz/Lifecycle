@@ -24,7 +24,7 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 
 **Store & Core Logic:**
 - [x] useStore.ts (persistence & projects) (cycle 3)
-- [ ] useStore.ts (node operations)
+- [x] useStore.ts (node operations) (cycle 4)
 - [ ] useStore.ts (edge operations & graph)
 - [ ] useStore.ts (execution & CID)
 - [ ] useStore.ts (undo/redo & history)
@@ -55,6 +55,15 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 ## Cycle Log
 
 <!-- Newest entries at top -->
+
+### Cycle 4 — 2026-03-10 00:47
+- **Audited**: useStore.ts (node operations) — deep agent-assisted review, 12+ issues cataloged
+- **Tests**: 297 passing (+25), 0 failing; coverage: 42.19% stmts (+1.66pp), agents.ts 64.02% (+60.37pp)
+- **Issues found**: 1 high-severity fixed
+  1. `batchUpdateStatus()` missing cascade when setting to 'stale' — downstream nodes weren't propagated unlike single-node `updateNodeStatus()` (fixed: routes through `updateNodeStatus` for stale)
+  - Also noted (not fixed, low-risk in single-threaded JS): stale closures in event messages, mutex check-then-lock race in `executeNode`, edit classification computed outside `set()`
+- **Fixed**: batchUpdateStatus cascade bug
+- **Coverage push**: agents.ts — 25 new tests covering `getAgent`, `getInterviewQuestions`, `buildEnrichedPrompt`, response templates, fallback logic. Coverage 3.65% → 64.02%.
 
 ### Cycle 3 — 2026-03-09 23:47
 - **Audited**: useStore.ts (persistence & projects) — deep audit via agent, 12 issues cataloged

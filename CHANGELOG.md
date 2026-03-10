@@ -1,5 +1,16 @@
 # Changelog
 
+### 2026-03-10 — Loop Cycle 4: Node Operations Audit & Coverage Push
+
+**useStore.ts node operations audit** (deep agent-assisted review):
+- **Fix: `batchUpdateStatus()` missing cascade on stale** — batch-setting nodes to 'stale' didn't propagate downstream, unlike single-node `updateNodeStatus()`. Now routes through `updateNodeStatus` for stale operations to trigger proper cascade.
+
+**Coverage push**: agents.ts
+- 25 new tests covering `getAgent`, `getInterviewQuestions`, `buildEnrichedPrompt`, response templates, fallback suggestions, interview branching logic
+- Coverage: agents.ts 3.65% → 64.02%, overall 40.53% → 42.19%
+
+**Test counts**: 297 total (47 simulation + 32 E2E + 13 chaos + 25 agents + 180 existing), all passing
+
 ### 2026-03-09 — Loop Cycle 3: Store Persistence & Project Management Audit
 
 **useStore.ts persistence & projects section audit** (deep agent-assisted review, 12 issues found):

@@ -3433,15 +3433,22 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     const matching = store.nodes.filter(n => n.data.status === fromStatus);
     if (matching.length === 0) return 0;
     store.pushHistory();
-    set(s => {
-      const nodes = s.nodes.map(n =>
-        n.data.status === fromStatus
-          ? { ...n, data: { ...n.data, status: toStatus, locked: toStatus === 'locked' ? true : toStatus === 'active' ? false : n.data.locked } }
-          : n
-      );
-      saveToStorage({ nodes, edges: s.edges, events: s.events, messages: s.messages });
-      return { nodes };
-    });
+    if (toStatus === 'stale') {
+      // Use updateNodeStatus for stale to trigger cascade propagation
+      for (const n of matching) {
+        store.updateNodeStatus(n.id, 'stale');
+      }
+    } else {
+      set(s => {
+        const nodes = s.nodes.map(n =>
+          n.data.status === fromStatus
+            ? { ...n, data: { ...n.data, status: toStatus, locked: toStatus === 'locked' ? true : toStatus === 'active' ? false : n.data.locked } }
+            : n
+        );
+        saveToStorage({ nodes, edges: s.edges, events: s.events, messages: s.messages });
+        return { nodes };
+      });
+    }
     store.addEvent({
       id: `ev-${Date.now()}`, type: 'edited',
       message: `Batch: ${matching.length} ${fromStatus} node${matching.length > 1 ? 's' : ''} → ${toStatus}`,
