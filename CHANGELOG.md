@@ -1,5 +1,13 @@
 # Changelog
 
+### 2026-03-10 — Loop Cycle 15: UI Handler Coverage Push
+
+**Audit**: Rotation complete — skipped (all Tier 1/2/3 audited).
+
+**Coverage push**: useStore.ts UI handlers
+- 21 new tests in Scenario 24 covering panel toggles (CID, Activity, Preview), node selection (select, deselect, null), multi-select (toggle on/off, clear, deleteMultiSelected with edge cleanup, empty no-op), context menu (open with node selection, close), duplicateNode (copy suffix, version reset, nonexistent no-op), artifact panel (open with version init, nonexistent no-op, close, tab switching), batchUpdateStatus (batch update, no-match, stale cascade), updateEdgeLabel
+- Coverage: useStore.ts 45.84% → 46.72%, overall 57.69% → 58.31%, 565 tests passing
+
 ### 2026-03-10 — Loop Cycle 14: Final Component Audit + types.ts Coverage
 
 **Tier 3 audit COMPLETE**: DiffView.tsx + ImpactPreview.tsx + NodeContextMenu.tsx + ErrorBoundary.tsx (final batch)

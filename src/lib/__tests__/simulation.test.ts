@@ -2330,4 +2330,217 @@ describe('User Simulation: Real Journeys', () => {
       expect(branchMsg).toBeDefined();
     });
   });
+
+  // ── Scenario 24: UI handlers — panels, selection, context menu, duplication ──
+  describe('Scenario 24 — UI handlers & selection management', () => {
+    beforeEach(() => {
+      useLifecycleStore.setState({
+        nodes: [], edges: [], events: [], messages: [],
+        impactPreview: null, toasts: [], isProcessing: false,
+        showCIDPanel: false, showActivityPanel: false, showPreviewPanel: false,
+        selectedNodeId: null, multiSelectedIds: new Set(),
+        contextMenu: null, activeArtifactNodeId: null,
+      });
+    });
+
+    // ── Panel toggles ──
+
+    it('toggleCIDPanel: toggles showCIDPanel', () => {
+      expect(getStore().showCIDPanel).toBe(false);
+      getStore().toggleCIDPanel();
+      expect(getStore().showCIDPanel).toBe(true);
+      getStore().toggleCIDPanel();
+      expect(getStore().showCIDPanel).toBe(false);
+    });
+
+    it('toggleActivityPanel: toggles showActivityPanel', () => {
+      expect(getStore().showActivityPanel).toBe(false);
+      getStore().toggleActivityPanel();
+      expect(getStore().showActivityPanel).toBe(true);
+    });
+
+    it('togglePreviewPanel: toggles showPreviewPanel', () => {
+      expect(getStore().showPreviewPanel).toBe(false);
+      getStore().togglePreviewPanel();
+      expect(getStore().showPreviewPanel).toBe(true);
+    });
+
+    // ── Node selection ──
+
+    it('selectNode: sets selectedNodeId and clears multi-select', () => {
+      getStore().createNewNode('input');
+      const node = getStore().nodes[0];
+      useLifecycleStore.setState({ multiSelectedIds: new Set(['fake-id']) });
+      getStore().selectNode(node.id);
+      expect(getStore().selectedNodeId).toBe(node.id);
+      expect(getStore().multiSelectedIds.size).toBe(0);
+    });
+
+    it('selectNode: null deselects', () => {
+      getStore().createNewNode('input');
+      getStore().selectNode(getStore().nodes[0].id);
+      getStore().selectNode(null);
+      expect(getStore().selectedNodeId).toBeNull();
+    });
+
+    // ── Multi-select ──
+
+    it('toggleMultiSelect: adds and removes nodes from multi-selection', () => {
+      getStore().createNewNode('input');
+      getStore().createNewNode('artifact');
+      const [a, b] = getStore().nodes;
+
+      getStore().toggleMultiSelect(a.id);
+      expect(getStore().multiSelectedIds.has(a.id)).toBe(true);
+
+      getStore().toggleMultiSelect(b.id);
+      expect(getStore().multiSelectedIds.size).toBe(2);
+
+      // Toggle off
+      getStore().toggleMultiSelect(a.id);
+      expect(getStore().multiSelectedIds.has(a.id)).toBe(false);
+      expect(getStore().multiSelectedIds.has(b.id)).toBe(true);
+    });
+
+    it('clearMultiSelect: empties the set', () => {
+      getStore().createNewNode('input');
+      getStore().toggleMultiSelect(getStore().nodes[0].id);
+      expect(getStore().multiSelectedIds.size).toBe(1);
+      getStore().clearMultiSelect();
+      expect(getStore().multiSelectedIds.size).toBe(0);
+    });
+
+    it('deleteMultiSelected: removes selected nodes and their edges', () => {
+      getStore().createNewNode('input');
+      getStore().createNewNode('artifact');
+      useLifecycleStore.setState({ edges: [] });
+      const [a, b] = getStore().nodes;
+      getStore().addEdge({ id: 'e1', source: a.id, target: b.id, type: 'default' });
+
+      // Select node a for multi-delete
+      getStore().toggleMultiSelect(a.id);
+      const count = getStore().deleteMultiSelected();
+
+      expect(count).toBe(1);
+      expect(getStore().nodes.find(n => n.id === a.id)).toBeUndefined();
+      // Edge from a → b should also be removed
+      expect(getStore().edges.find(e => e.source === a.id)).toBeUndefined();
+      expect(getStore().multiSelectedIds.size).toBe(0);
+    });
+
+    it('deleteMultiSelected: returns 0 when nothing selected', () => {
+      expect(getStore().deleteMultiSelected()).toBe(0);
+    });
+
+    // ── Context menu ──
+
+    it('openContextMenu: sets contextMenu and selects node', () => {
+      getStore().createNewNode('input');
+      const node = getStore().nodes[0];
+      getStore().openContextMenu(node.id, 100, 200);
+      expect(getStore().contextMenu).toEqual({ nodeId: node.id, x: 100, y: 200 });
+      expect(getStore().selectedNodeId).toBe(node.id);
+    });
+
+    it('closeContextMenu: clears contextMenu', () => {
+      getStore().openContextMenu('some-id', 0, 0);
+      getStore().closeContextMenu();
+      expect(getStore().contextMenu).toBeNull();
+    });
+
+    // ── Duplicate node ──
+
+    it('duplicateNode: creates copy with "(copy)" suffix', () => {
+      getStore().createNewNode('artifact');
+      const orig = getStore().nodes[0];
+      getStore().duplicateNode(orig.id);
+      expect(getStore().nodes).toHaveLength(2);
+      const copy = getStore().nodes.find(n => n.id !== orig.id)!;
+      expect(copy.data.label).toContain('(copy)');
+      expect(copy.data.category).toBe(orig.data.category);
+      expect(copy.data.version).toBe(1);
+      expect(getStore().selectedNodeId).toBe(copy.id);
+    });
+
+    it('duplicateNode: no-ops for nonexistent node', () => {
+      const before = getStore().nodes.length;
+      getStore().duplicateNode('nope');
+      expect(getStore().nodes.length).toBe(before);
+    });
+
+    // ── Artifact panel ──
+
+    it('openArtifactPanel: sets activeArtifactNodeId and initializes version history', () => {
+      getStore().createNewNode('artifact');
+      const node = getStore().nodes[0];
+      getStore().openArtifactPanel(node.id);
+      expect(getStore().activeArtifactNodeId).toBe(node.id);
+      expect(getStore().artifactVersions[node.id]).toBeDefined();
+      expect(getStore().artifactVersions[node.id].length).toBe(1);
+    });
+
+    it('openArtifactPanel: no-ops for nonexistent node', () => {
+      getStore().openArtifactPanel('nope');
+      expect(getStore().activeArtifactNodeId).not.toBe('nope');
+    });
+
+    it('closeArtifactPanel: clears activeArtifactNodeId', () => {
+      getStore().createNewNode('artifact');
+      getStore().openArtifactPanel(getStore().nodes[0].id);
+      getStore().closeArtifactPanel();
+      expect(getStore().activeArtifactNodeId).toBeNull();
+    });
+
+    it('setArtifactTab: changes tab', () => {
+      getStore().setArtifactTab('result');
+      expect(getStore().artifactPanelTab).toBe('result');
+      getStore().setArtifactTab('content');
+      expect(getStore().artifactPanelTab).toBe('content');
+    });
+
+    // ── Batch update status ──
+
+    it('batchUpdateStatus: updates all matching nodes', () => {
+      getStore().createNewNode('input');
+      getStore().createNewNode('artifact');
+      // Both start as 'active'
+      const count = getStore().batchUpdateStatus('active', 'reviewing');
+      expect(count).toBe(2);
+      expect(getStore().nodes.every(n => n.data.status === 'reviewing')).toBe(true);
+    });
+
+    it('batchUpdateStatus: returns 0 when no nodes match', () => {
+      getStore().createNewNode('input');
+      const count = getStore().batchUpdateStatus('stale', 'active');
+      expect(count).toBe(0);
+    });
+
+    it('batchUpdateStatus: uses cascade propagation for stale status', () => {
+      getStore().createNewNode('input');
+      getStore().createNewNode('artifact');
+      useLifecycleStore.setState({ edges: [] });
+      const [inp, art] = getStore().nodes;
+      getStore().addEdge({ id: 'e1', source: inp.id, target: art.id, type: 'default' });
+
+      // Batch input → stale should cascade to artifact
+      const count = getStore().batchUpdateStatus('active', 'stale');
+      // Both should be stale (input directly, artifact via cascade)
+      expect(getStore().nodes.every(n => n.data.status === 'stale')).toBe(true);
+      expect(count).toBeGreaterThanOrEqual(1);
+    });
+
+    // ── Edge label editing ──
+
+    it('updateEdgeLabel: changes edge label', () => {
+      getStore().createNewNode('input');
+      getStore().createNewNode('artifact');
+      useLifecycleStore.setState({ edges: [] });
+      const [a, b] = getStore().nodes;
+      getStore().addEdge({ id: 'e1', source: a.id, target: b.id, type: 'default' });
+
+      getStore().updateEdgeLabel('e1', 'validates');
+      const edge = getStore().edges.find(e => e.id === 'e1')!;
+      expect(edge.label).toBe('validates');
+    });
+  });
 });

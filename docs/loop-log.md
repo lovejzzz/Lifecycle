@@ -104,6 +104,13 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 
 <!-- Newest entries at top -->
 
+### Cycle 15 — 2026-03-10 14:00
+- **Audited**: rotation complete — skipped (all tiers fully audited, no new files in git log)
+- **Tests**: 565 passing (+21), 0 failing; coverage: 58.31% stmts (+0.62pp), useStore.ts 46.72% (+0.88pp)
+- **Issues found**: none (audit skipped)
+- **Fixed**: nothing
+- **Coverage push**: useStore.ts (UI handlers) — 21 new tests in Scenario 24 covering panel toggles (CID/Activity/Preview), selectNode (select/deselect/null), multi-select (toggleMultiSelect add/remove, clearMultiSelect, deleteMultiSelected with edge cleanup + empty no-op), context menu (openContextMenu with node selection, closeContextMenu), duplicateNode (copy suffix + version reset, nonexistent no-op), artifact panel (openArtifactPanel with version history init + nonexistent no-op, closeArtifactPanel, setArtifactTab), batchUpdateStatus (batch update, no-match zero, stale cascade propagation), updateEdgeLabel. Coverage 57.69% → 58.31% overall, useStore.ts 45.84% → 46.72%.
+
 ### Cycle 14 — 2026-03-10 13:00
 - **Audited**: DiffView.tsx + ImpactPreview.tsx + NodeContextMenu.tsx + ErrorBoundary.tsx (Tier 3 FINAL batch)
 - **Tests**: 544 passing (+22), 0 failing; coverage: 57.69% stmts (+0.50pp), types.ts 97.53% (+35.81pp), lines 60.05% (crossed 60% milestone)
