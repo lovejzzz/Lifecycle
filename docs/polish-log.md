@@ -16,7 +16,7 @@ Tracks the systematic UI/UX polish pass across 20 items in 4 rounds.
 - [x] 7. Edge label picker viewport clamping
 - [x] 8. Low-contrast text fix (WCAG AA)
 - [x] 9. Consistent icon sizing across components
-- [ ] 10. Keyboard shortcut tooltips on buttons
+- [x] 10. Keyboard shortcut tooltips on buttons
 
 ### Round 3 — Interaction Polish
 - [ ] 11. Focus ring styling for keyboard navigation
@@ -37,6 +37,17 @@ Tracks the systematic UI/UX polish pass across 20 items in 4 rounds.
 ## Cycle Log
 
 <!-- Newest entries at top -->
+
+### Polish 10 — Keyboard shortcut tooltips on buttons
+- **Changed**: TopBar.tsx
+- Added platform-aware modifier key: `⌘` on Mac/iOS, `Ctrl+` on others (via `navigator.userAgent`)
+- Updated Undo tooltip: `"Undo (Ctrl+Z)"` → `"Undo (⌘Z)"` (dynamic)
+- Updated Redo tooltip: `"Redo (Ctrl+Shift+Z)"` → `"Redo (⌘⇧Z)"` (dynamic)
+- Updated Export tooltip: `"Export workflow as JSON"` → `"Export workflow (⌘E)"`
+- Added CID panel tooltip: `"Rowan (⌘K)"` / `"Poirot (⌘K)"` (dynamic per agent)
+- Added Preview panel tooltip: `"Preview panel"`
+- Added Activity panel tooltip: `"Activity log"`
+- Added Add Node tooltip: `"Add a new node (or double-click canvas)"`
 
 ### Polish 9 — Consistent icon sizing across components
 - **Changed**: ActivityPanel.tsx

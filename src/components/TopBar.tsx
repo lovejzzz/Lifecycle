@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Bot, Activity, Layers, Circle, Plus, Undo2, Redo2, Search,
   Download, Upload, Heart, FilePlus2, Play,
@@ -42,6 +43,9 @@ export default function TopBar() {
 
   useEffect(() => { setMounted(true); }, []);
 
+  // Platform-aware modifier key for tooltips
+  const mod = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent) ? '⌘' : 'Ctrl+';
+
   // Track seen message count when panel is open
   useEffect(() => {
     if (showCIDPanel) lastSeenCount.current = messages.length;
@@ -50,6 +54,16 @@ export default function TopBar() {
   // Derive hasUnread from ref — acceptable ref read since it's only updated in effects above
   // eslint-disable-next-line react-hooks/refs -- lastSeenCount is effect-synchronized, safe to read
   const hasUnread = !showCIDPanel && messages.length > lastSeenCount.current;
+
+  // Auto-save indicator — show "Saved" briefly after each save
+  const lastSavedAt = useLifecycleStore((s) => s.lastSavedAt);
+  const [showSaved, setShowSaved] = useState(false);
+  useEffect(() => {
+    if (lastSavedAt === 0) return;
+    setShowSaved(true);
+    const t = setTimeout(() => setShowSaved(false), 1500);
+    return () => clearTimeout(t);
+  }, [lastSavedAt]);
 
   const activeCount = nodes.filter((n) => n.data.status === 'active').length;
   const staleCount = nodes.filter((n) => n.data.status === 'stale').length;
@@ -193,6 +207,7 @@ export default function TopBar() {
         <div className="relative" ref={menuRef}>
           <button
             onClick={() => setShowAddMenu(!showAddMenu)}
+            title="Add a new node (or double-click canvas)"
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-medium hover:bg-emerald-500/20 transition-colors"
           >
             <Plus size={12} />
@@ -227,7 +242,7 @@ export default function TopBar() {
           <button
             onClick={undo}
             disabled={history.length === 0}
-            title="Undo (Ctrl+Z)"
+            title={`Undo (${mod}Z)`}
             className="w-7 h-7 rounded-lg flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-white/30"
           >
             <Undo2 size={13} />
@@ -235,7 +250,7 @@ export default function TopBar() {
           <button
             onClick={redo}
             disabled={future.length === 0}
-            title="Redo (Ctrl+Shift+Z)"
+            title={`Redo (${mod}⇧Z)`}
             className="w-7 h-7 rounded-lg flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-white/30"
           >
             <Redo2 size={13} />
@@ -256,7 +271,7 @@ export default function TopBar() {
                 a.click();
                 setTimeout(() => URL.revokeObjectURL(url), 1000);
               }}
-              title="Export workflow as JSON"
+              title={`Export workflow (${mod}E)`}
               className="w-7 h-7 rounded-lg flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors"
             >
               <Download size={13} />
@@ -323,6 +338,20 @@ export default function TopBar() {
               <Heart size={8} className={healthScore >= 80 ? 'text-emerald-400' : healthScore >= 50 ? 'text-amber-400' : 'text-rose-400'} fill={healthScore >= 80 ? '#22c55e' : healthScore >= 50 ? '#f59e0b' : '#f43f5e'} />
               <span className={healthScore >= 80 ? 'text-emerald-400/60' : healthScore >= 50 ? 'text-amber-400/60' : 'text-rose-400/60'}>{healthScore}%</span>
             </div>
+            <AnimatePresence>
+              {showSaved && (
+                <motion.div
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex items-center gap-1 text-[10px] text-emerald-400/50"
+                >
+                  <Check size={8} />
+                  <span>Saved</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </>
         ) : (
           <span className="text-[11px] text-white/20">{agent.topBarHint}</span>
@@ -335,6 +364,7 @@ export default function TopBar() {
           <>
             <button
               onClick={togglePreviewPanel}
+              title="Preview panel"
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
                 showPreviewPanel
                   ? 'bg-violet-500/10 text-violet-400 border border-violet-500/20'
@@ -346,6 +376,7 @@ export default function TopBar() {
             </button>
             <button
               onClick={toggleActivityPanel}
+              title="Activity log"
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
                 showActivityPanel
                   ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
@@ -359,6 +390,7 @@ export default function TopBar() {
         )}
         <button
           onClick={toggleCIDPanel}
+          title={`${agent.name} (${mod}K)`}
           className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
             showCIDPanel
               ? agent.accent === 'amber'

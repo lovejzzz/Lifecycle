@@ -1,5 +1,9 @@
 # Changelog
 
+### 2026-03-10 — Polish 10: Keyboard Shortcut Tooltips
+
+Added platform-aware keyboard shortcut hints to all TopBar buttons. Tooltips show ⌘ on Mac and Ctrl+ on other platforms. Undo, Redo, Export, CID toggle, Preview, Activity, and Add Node buttons now show their shortcuts on hover.
+
 ### 2026-03-10 — Polish 9: Consistent Icon Sizing
 
 Audited icon sizes across all components and established a 4-tier sizing hierarchy (14/12/10-11/9). Fixed ActivityPanel close button and expand/collapse chevron to match other panels — `X` from size 11 to 14, container from `w-5 h-5` to `w-7 h-7` with matching hover styles.
