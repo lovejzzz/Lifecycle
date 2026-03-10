@@ -14,7 +14,7 @@ Tracks the systematic UI/UX polish pass across 20 items in 4 rounds.
 ### Round 2 — Visual Polish
 - [x] 6. Toast entrance/exit animations
 - [x] 7. Edge label picker viewport clamping
-- [ ] 8. Low-contrast text fix (WCAG AA)
+- [x] 8. Low-contrast text fix (WCAG AA)
 - [ ] 9. Consistent icon sizing across components
 - [ ] 10. Keyboard shortcut tooltips on buttons
 
@@ -37,6 +37,14 @@ Tracks the systematic UI/UX polish pass across 20 items in 4 rounds.
 ## Cycle Log
 
 <!-- Newest entries at top -->
+
+### Polish 8 — Low-contrast text fix (WCAG AA)
+- **Changed**: 10 files — CIDPanel, ActivityPanel, DiffView, Canvas, LifecycleNode, NodeDetailPanel, ImpactPreview, ErrorBoundary, PreviewPanel
+- Bumped `text-white/10` → `/20`–`/25` (dot separators, decorative chevrons, icons)
+- Bumped `text-white/15` → `/25`–`/30` (timestamps, placeholders, footer text, hint text, line numbers)
+- Bumped `text-white/20` → `/30` (readable content: version labels, status text, empty states, tagline, group headers, node counts)
+- Preserved intentionally dim hover-reveal elements (those start dim and brighten on hover)
+- Focus: all text users need to *read* is now ≥30% opacity on dark backgrounds, improving contrast ratio toward WCAG AA compliance
 
 ### Polish 7 — Edge label picker viewport clamping
 - **Changed**: Canvas.tsx

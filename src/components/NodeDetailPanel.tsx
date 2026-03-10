@@ -108,7 +108,7 @@ function ContentEditor({ content, nodeId, updateNodeData, addEvent, label }: {
           expanded ? 'max-h-[300px]' : 'max-h-[80px]'
         } transition-all duration-300`}
       >
-        {content || <span className="text-white/20 italic">Click to add content...</span>}
+        {content || <span className="text-white/30 italic">Click to add content...</span>}
       </div>
     </div>
   );
@@ -483,7 +483,7 @@ function VersionHistory({ nodeId, history, currentVersion, currentContent }: {
             >
               <span className="text-[10px] text-white/30 font-mono w-6">v{entry.version}</span>
               <span className="text-[9px] text-white/20 flex-1">{triggerLabels[entry.trigger] || entry.trigger}</span>
-              <span className="text-[8px] text-white/15">{new Date(entry.timestamp).toLocaleTimeString()}</span>
+              <span className="text-[8px] text-white/30">{new Date(entry.timestamp).toLocaleTimeString()}</span>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -523,17 +523,17 @@ function VersionHistory({ nodeId, history, currentVersion, currentContent }: {
 
 // ─── Main Panel ──────────────────────────────────────────────────────────────
 
-export default function NodeDetailPanel() {
+function NodeDetailPanelContent({ nodeId }: { nodeId: string }) {
   const { nodes, edges, selectedNodeId, selectNode, lockNode, approveNode, updateNodeStatus, updateNodeData, deleteNode, deleteEdge, addEvent, askCIDAboutNode, executeNode, openArtifactPanel, refineNote, isProcessing } = useLifecycleStore();
-  const node = nodes.find((n) => n.id === selectedNodeId);
+  const node = nodes.find((n) => n.id === nodeId);
 
   // Track which node the editing state belongs to — auto-resets when selectedNodeId changes (no useEffect needed)
   const [editingLabelFor, setEditingLabelFor] = useState<string | null>(null);
   const [editingDescFor, setEditingDescFor] = useState<string | null>(null);
-  const editingLabel = editingLabelFor === selectedNodeId;
-  const editingDesc = editingDescFor === selectedNodeId;
-  const setEditingLabel = (v: boolean) => setEditingLabelFor(v ? selectedNodeId ?? null : null);
-  const setEditingDesc = (v: boolean) => setEditingDescFor(v ? selectedNodeId ?? null : null);
+  const editingLabel = editingLabelFor === nodeId;
+  const editingDesc = editingDescFor === nodeId;
+  const setEditingLabel = (v: boolean) => setEditingLabelFor(v ? nodeId : null);
+  const setEditingDesc = (v: boolean) => setEditingDescFor(v ? nodeId : null);
   const [labelDraft, setLabelDraft] = useState('');
   const [descDraft, setDescDraft] = useState('');
 
@@ -542,9 +542,9 @@ export default function NodeDetailPanel() {
   const customCategories = Array.from(new Set(nodes.map(n => n.data.category).filter(c => !builtInSet.has(c))));
   const allCategories = [...BUILT_IN_CATEGORIES, ...customCategories];
 
-  // Compute depth from roots (longest path to this node) — must be before early return
+  // Compute depth from roots (longest path to this node)
   const nodeDepth = React.useMemo(() => {
-    if (!selectedNodeId || edges.length === 0) return 0;
+    if (!nodeId || edges.length === 0) return 0;
     const hasIncoming = new Set(edges.map(e => e.target));
     const roots = nodes.filter(n => !hasIncoming.has(n.id));
     if (roots.length === 0) return 0;
@@ -559,7 +559,7 @@ export default function NodeDetailPanel() {
       const visited = new Set<string>();
       while (stack.length > 0) {
         const { id, depth } = stack.pop()!;
-        if (id === selectedNodeId) { maxDepth = Math.max(maxDepth, depth); continue; }
+        if (id === nodeId) { maxDepth = Math.max(maxDepth, depth); continue; }
         if (visited.has(id)) continue;
         visited.add(id);
         for (const child of adj.get(id) || []) {
@@ -568,7 +568,7 @@ export default function NodeDetailPanel() {
       }
     }
     return maxDepth;
-  }, [selectedNodeId, nodes, edges]);
+  }, [nodeId, nodes, edges]);
 
   if (!node) return null;
 
@@ -633,15 +633,14 @@ export default function NodeDetailPanel() {
   };
 
   return (
-    <AnimatePresence>
-      <motion.div
-        key={node.id}
-        initial={{ x: -320, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        exit={{ x: -320, opacity: 0 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className="absolute top-4 left-4 w-[300px] rounded-xl border border-white/[0.06] bg-[#0c0c14]/95 backdrop-blur-xl overflow-hidden z-20 shadow-2xl max-h-[calc(100vh-120px)] flex flex-col"
-      >
+    <motion.div
+      key={node.id}
+      initial={{ x: -320, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      exit={{ x: -320, opacity: 0 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+      className="absolute top-4 left-4 w-[300px] rounded-xl border border-white/[0.06] bg-[#0c0c14]/95 backdrop-blur-xl overflow-hidden z-20 shadow-2xl max-h-[calc(100vh-120px)] flex flex-col"
+    >
         {/* Accent */}
         <div className="h-[2px] flex-shrink-0" style={{ background: `linear-gradient(90deg, ${colors.primary}, transparent)` }} />
 
@@ -755,7 +754,7 @@ export default function NodeDetailPanel() {
                         <button
                           onClick={() => deleteEdge(e.id)}
                           title="Remove connection"
-                          className="opacity-0 group-hover/edge:opacity-100 text-white/15 hover:text-rose-400 transition-all flex-shrink-0"
+                          className="opacity-0 group-hover/edge:opacity-100 text-white/30 hover:text-rose-400 transition-all flex-shrink-0"
                         >
                           <X size={9} />
                         </button>
@@ -783,7 +782,7 @@ export default function NodeDetailPanel() {
                         <button
                           onClick={() => deleteEdge(e.id)}
                           title="Remove connection"
-                          className="opacity-0 group-hover/edge:opacity-100 text-white/15 hover:text-rose-400 transition-all flex-shrink-0"
+                          className="opacity-0 group-hover/edge:opacity-100 text-white/30 hover:text-rose-400 transition-all flex-shrink-0"
                         >
                           <X size={9} />
                         </button>
@@ -841,7 +840,7 @@ export default function NodeDetailPanel() {
                   value={data.inputValue ?? ''}
                   onChange={(e) => updateNodeData(node.id, { inputValue: e.target.value })}
                   placeholder={data.placeholder || (data.inputType === 'url' ? 'Paste URL here...' : 'Enter input value...')}
-                  className="w-full text-[11px] text-white/60 bg-white/[0.04] rounded-lg px-3 py-2 border border-white/10 outline-none placeholder:text-white/15"
+                  className="w-full text-[11px] text-white/60 bg-white/[0.04] rounded-lg px-3 py-2 border border-white/10 outline-none placeholder:text-white/30"
                 />
               </div>
             )}
@@ -868,7 +867,7 @@ export default function NodeDetailPanel() {
                   onChange={(e) => updateNodeData(node.id, { aiPrompt: e.target.value })}
                   placeholder="Instruction for the AI (e.g., 'Convert the document into a structured lesson plan with objectives, modules, and exercises')"
                   rows={3}
-                  className="w-full text-[11px] text-white/60 bg-white/[0.04] rounded-lg px-3 py-2 border border-white/10 outline-none resize-none placeholder:text-white/15"
+                  className="w-full text-[11px] text-white/60 bg-white/[0.04] rounded-lg px-3 py-2 border border-white/10 outline-none resize-none placeholder:text-white/30"
                 />
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-[10px] text-white/35 uppercase tracking-wider">Effort</span>
@@ -1042,6 +1041,17 @@ export default function NodeDetailPanel() {
           </button>
         </div>
       </motion.div>
+  );
+}
+
+export default function NodeDetailPanel() {
+  const selectedNodeId = useLifecycleStore((s) => s.selectedNodeId);
+
+  return (
+    <AnimatePresence>
+      {selectedNodeId && (
+        <NodeDetailPanelContent key={selectedNodeId} nodeId={selectedNodeId} />
+      )}
     </AnimatePresence>
   );
 }

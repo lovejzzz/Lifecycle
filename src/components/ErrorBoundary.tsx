@@ -31,7 +31,7 @@ export default class ErrorBoundary extends Component<Props, State> {
             <p className="text-[12px] text-white/35 leading-relaxed mb-1">
               {this.state.error?.message || 'An unexpected error occurred.'}
             </p>
-            <p className="text-[11px] text-white/20 mb-6">Your workflow data is safe in local storage.</p>
+            <p className="text-[11px] text-white/35 mb-6">Your workflow data is safe in local storage.</p>
             <button
               onClick={() => {
                 this.setState({ hasError: false, error: null });

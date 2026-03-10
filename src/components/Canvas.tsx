@@ -783,7 +783,7 @@ function CanvasInner() {
               <p className="text-[13px] text-white/40 leading-relaxed mb-4">
                 {agent.emptyCanvasDescription}
               </p>
-              <p className="text-[11px] text-white/20 mb-6">Workflows that stay alive after generation</p>
+              <p className="text-[11px] text-white/30 mb-6">Workflows that stay alive after generation</p>
               {!showCIDPanel && (
                 <button
                   onClick={toggleCIDPanel}
@@ -870,7 +870,7 @@ function CanvasInner() {
                   </div>
                 ))}
               </div>
-              <div className="mt-4 text-[10px] text-white/15">
+              <div className="mt-4 text-[10px] text-white/30">
                 Press <kbd className="px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] font-mono text-[9px]">⌘K</kbd> to focus CID
               </div>
             </div>
@@ -976,7 +976,7 @@ function CanvasInner() {
                 const isActive = id === selectedNodeId;
                 return (
                   <React.Fragment key={id}>
-                    {idx > 0 && <ChevronRight size={10} className="text-white/15 flex-shrink-0" />}
+                    {idx > 0 && <ChevronRight size={10} className="text-white/30 flex-shrink-0" />}
                     <button
                       onClick={() => selectNode(id)}
                       className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors flex-shrink-0 ${

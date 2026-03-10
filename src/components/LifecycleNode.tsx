@@ -372,7 +372,7 @@ function LifecycleNode({ data, id }: NodeProps) {
           {/* Footer */}
           <div className="flex items-center justify-between pt-1 border-t border-white/[0.04]">
             {version !== undefined && (
-              <span className="text-[8px] text-white/20 font-mono tracking-wide">v{version}</span>
+              <span className="text-[8px] text-white/30 font-mono tracking-wide">v{version}</span>
             )}
             <div className="flex items-center gap-2">
               {nodeData.aiPrompt && (
@@ -382,13 +382,13 @@ function LifecycleNode({ data, id }: NodeProps) {
                 <span className={`text-[8px] flex items-center gap-0.5 ${
                   totalConns >= 4 ? 'text-cyan-400/50' : totalConns >= 2 ? 'text-white/30' : 'text-white/20'
                 }`} title={`${inCount} upstream, ${outCount} downstream${totalConns >= 4 ? ' — hub node' : ''}`}>
-                  {inCount > 0 && <span className="text-white/20">{inCount}↓</span>}
-                  <Link size={7} className={totalConns >= 4 ? 'text-cyan-400/40' : 'text-white/15'} />
-                  {outCount > 0 && <span className="text-white/20">{outCount}↑</span>}
+                  {inCount > 0 && <span className="text-white/30">{inCount}↓</span>}
+                  <Link size={7} className={totalConns >= 4 ? 'text-cyan-400/40' : 'text-white/30'} />
+                  {outCount > 0 && <span className="text-white/30">{outCount}↑</span>}
                   {totalConns >= 4 && <span className="text-[7px] text-cyan-400/40 ml-0.5">hub</span>}
                 </span>
               )}
-              <span className="text-[8px] text-white/20 capitalize tracking-wide">{status}</span>
+              <span className="text-[8px] text-white/30 capitalize tracking-wide">{status}</span>
               {/* Run Branch button — visible on hover when node has upstream deps */}
               {inCount > 0 && (
                 <button

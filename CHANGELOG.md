@@ -1,5 +1,9 @@
 # Changelog
 
+### 2026-03-10 — Polish 8: Low-Contrast Text Fix (WCAG AA)
+
+Raised opacity on 40+ instances of barely-visible text across 10 components. All `text-white/10` bumped to `/20`–`/25`, all `text-white/15` to `/25`–`/30`, and all readable `text-white/20` content to `/30`. Timestamps, status labels, version numbers, empty states, and placeholder text are now legible against the dark background.
+
 ### 2026-03-10 — Polish 7: Edge Label Picker Viewport Clamping
 
 Extracted edge label picker into a standalone component with viewport clamping. The picker now measures its own dimensions after mount and adjusts position to stay within the visible area with 12px padding on all sides.

@@ -997,15 +997,15 @@ export default function CIDPanel() {
       {statsData && (
         <div className="flex items-center gap-3 px-5 py-1.5 border-b border-white/[0.04] text-[9px] text-white/30">
           <span>{nodes.length} nodes</span>
-          <span className="text-white/10">·</span>
+          <span className="text-white/25">·</span>
           <span>{edges.length} edges</span>
-          <span className="text-white/10">·</span>
+          <span className="text-white/25">·</span>
           <span className={statsData.health >= 80 ? 'text-emerald-400/60' : statsData.health >= 50 ? 'text-amber-400/60' : 'text-rose-400/60'}>{statsData.health}% health</span>
-          <span className="text-white/10">·</span>
+          <span className="text-white/25">·</span>
           <span className="text-white/25">{statsData.complexity.label}</span>
-          {statsData.progress.total > 0 && <><span className="text-white/10">·</span><span className="text-cyan-400/50">{statsData.progress.percent}%</span></>}
-          {statsData.stale > 0 && <><span className="text-white/10">·</span><span className="text-amber-400/50">{statsData.stale} stale</span></>}
-          {statsData.orphans > 0 && <><span className="text-white/10">·</span><span className="text-rose-400/50">{statsData.orphans} orphan{statsData.orphans > 1 ? 's' : ''}</span></>}
+          {statsData.progress.total > 0 && <><span className="text-white/25">·</span><span className="text-cyan-400/50">{statsData.progress.percent}%</span></>}
+          {statsData.stale > 0 && <><span className="text-white/25">·</span><span className="text-amber-400/50">{statsData.stale} stale</span></>}
+          {statsData.orphans > 0 && <><span className="text-white/25">·</span><span className="text-rose-400/50">{statsData.orphans} orphan{statsData.orphans > 1 ? 's' : ''}</span></>}
         </div>
       )}
 
@@ -1361,7 +1361,7 @@ export default function CIDPanel() {
             </button>
           )}
         </div>
-        <p className="text-[9px] text-white/15 mt-2 text-center">
+        <p className="text-[9px] text-white/30 mt-2 text-center">
           {agent.footerText} · Tab to autocomplete
         </p>
       </div>

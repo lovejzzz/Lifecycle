@@ -271,18 +271,18 @@ export default function PreviewPanel() {
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 scrollbar-thin">
         {!hasWorkflow ? (
           <div className="flex flex-col items-center justify-center h-full text-center gap-3">
-            <Sparkles size={24} className="text-white/10" />
-            <div className="text-[11px] text-white/25 leading-relaxed max-w-[240px]">
+            <Sparkles size={24} className="text-white/20" />
+            <div className="text-[11px] text-white/30 leading-relaxed max-w-[240px]">
               Build a workflow with at least an <span className="text-emerald-400/50">input</span> and <span className="text-emerald-400/50">output</span> node, then preview it here.
             </div>
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center gap-3">
-            <Play size={24} className="text-white/10" />
-            <div className="text-[11px] text-white/25 leading-relaxed max-w-[240px]">
+            <Play size={24} className="text-white/20" />
+            <div className="text-[11px] text-white/30 leading-relaxed max-w-[240px]">
               Send a message to test your workflow end-to-end.
               {inputNode && (
-                <span className="block mt-1 text-white/15">
+                <span className="block mt-1 text-white/25">
                   Input: <span className="text-cyan-400/40">{inputNode.data.label}</span>
                   {outputNode && <> &rarr; Output: <span className="text-cyan-400/40">{outputNode.data.label}</span></>}
                 </span>
@@ -308,11 +308,11 @@ export default function PreviewPanel() {
                   <div className="mt-2 pt-1.5 border-t border-white/[0.04]">
                     <div className="flex flex-wrap gap-1">
                       {msg.nodeTrace.map((t, i) => (
-                        <span key={i} className="flex items-center gap-0.5 text-[8px] text-white/20">
-                          {i > 0 && <ChevronRight size={7} className="text-white/10" />}
+                        <span key={i} className="flex items-center gap-0.5 text-[8px] text-white/30">
+                          {i > 0 && <ChevronRight size={7} className="text-white/20" />}
                           {t.name}
                           {t.durationMs != null && t.durationMs > 0 && (
-                            <span className="text-white/10 font-mono ml-0.5">
+                            <span className="text-white/20 font-mono ml-0.5">
                               {t.durationMs < 1000 ? `${t.durationMs}ms` : `${(t.durationMs / 1000).toFixed(1)}s`}
                             </span>
                           )}
@@ -320,7 +320,7 @@ export default function PreviewPanel() {
                       ))}
                     </div>
                     {msg.totalDurationMs != null && (
-                      <div className="text-[7px] text-white/15 mt-1 font-mono">
+                      <div className="text-[7px] text-white/25 mt-1 font-mono">
                         Total: {msg.totalDurationMs < 1000 ? `${msg.totalDurationMs}ms` : `${(msg.totalDurationMs / 1000).toFixed(1)}s`}
                       </div>
                     )}
@@ -374,11 +374,11 @@ export default function PreviewPanel() {
           </button>
         </div>
         <div className="flex items-center justify-between mt-1.5 px-1">
-          <span className="text-[8px] text-white/15">
+          <span className="text-[8px] text-white/25">
             {nodes.length} nodes &middot; {edges.length} edges &middot; {cidAIModel}
           </span>
           {messages.length > 0 && (
-            <button onClick={handleReset} className="text-[8px] text-white/15 hover:text-white/30 transition-colors">
+            <button onClick={handleReset} className="text-[8px] text-white/25 hover:text-white/40 transition-colors">
               Clear chat
             </button>
           )}

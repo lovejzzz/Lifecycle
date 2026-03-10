@@ -29,7 +29,7 @@ function DiffLineRow({ line }: { line: DiffLine }) {
 
   return (
     <div className={`flex font-mono text-[10px] leading-[18px] ${colors[line.type]}`}>
-      <span className="w-7 text-right pr-1.5 text-white/15 select-none shrink-0">
+      <span className="w-7 text-right pr-1.5 text-white/30 select-none shrink-0">
         {lineNum ?? ''}
       </span>
       <span className="w-3 text-center select-none shrink-0 text-white/20">

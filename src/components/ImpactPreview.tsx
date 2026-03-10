@@ -120,7 +120,7 @@ export default function ImpactPreview() {
                   <span className="text-[11px] text-white/70 truncate flex-1">{node.label}</span>
                   <span className="text-[9px] text-white/20 shrink-0">{node.category}</span>
                   {idx < orderedNodes.length - 1 && (
-                    <ChevronRight size={10} className="text-white/10 shrink-0" />
+                    <ChevronRight size={10} className="text-white/25 shrink-0" />
                   )}
                 </div>
               );

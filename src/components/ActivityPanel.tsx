@@ -119,7 +119,7 @@ export default function ActivityPanel() {
       <div className={`overflow-y-auto scrollbar-thin ${expanded ? 'max-h-[280px]' : 'max-h-[200px]'}`}>
         <AnimatePresence>
           {visibleEvents.length === 0 && (
-            <div className="px-3.5 py-4 text-center text-[10px] text-white/20">No matching events</div>
+            <div className="px-3.5 py-4 text-center text-[10px] text-white/30">No matching events</div>
           )}
           {(() => {
             const now = Date.now();
@@ -158,7 +158,7 @@ export default function ActivityPanel() {
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
                       {event.agent && <span className="text-[7px] px-1 py-px rounded bg-emerald-500/10 text-emerald-400/70 font-medium">CID</span>}
-                      <span className="text-[9px] text-white/15">{relativeTime(event.timestamp)}</span>
+                      <span className="text-[9px] text-white/30">{relativeTime(event.timestamp)}</span>
                     </div>
                   </motion.div>
                 );
@@ -167,7 +167,7 @@ export default function ActivityPanel() {
             let globalIdx = 0;
             return groups.map(g => (
               <div key={g.label}>
-                <div className="px-3.5 py-1 text-[8px] text-white/20 uppercase tracking-wider font-medium bg-white/[0.01] border-b border-white/[0.03]">
+                <div className="px-3.5 py-1 text-[8px] text-white/30 uppercase tracking-wider font-medium bg-white/[0.01] border-b border-white/[0.03]">
                   {g.label}
                 </div>
                 {g.events.map(event => {
@@ -191,7 +191,7 @@ export default function ActivityPanel() {
                       </div>
                       <div className="flex items-center gap-1 flex-shrink-0">
                         {event.agent && <span className="text-[7px] px-1 py-px rounded bg-emerald-500/10 text-emerald-400/70 font-medium">CID</span>}
-                        <span className="text-[9px] text-white/15">{relativeTime(event.timestamp)}</span>
+                        <span className="text-[9px] text-white/30">{relativeTime(event.timestamp)}</span>
                       </div>
                     </motion.div>
                   );
