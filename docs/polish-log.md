@@ -7,7 +7,7 @@ Tracks the systematic UI/UX polish pass across 20 items in 4 rounds.
 ### Round 1 — UX Quick Wins
 - [x] 1. Onboarding empty state — template cards for instant workflow loading
 - [x] 2. Node rename affordance — pencil icon hint on hover
-- [ ] 3. Context menu close animation — scale-out + fade exit
+- [x] 3. Context menu close animation — scale-out + fade exit
 - [ ] 4. NodeDetailPanel slide animation — slide-in-from-right
 - [ ] 5. Auto-save indicator — "Saved" flash in TopBar
 
@@ -37,6 +37,14 @@ Tracks the systematic UI/UX polish pass across 20 items in 4 rounds.
 ## Cycle Log
 
 <!-- Newest entries at top -->
+
+### Polish 3 — Context menu close animation
+- **Changed**: NodeContextMenu.tsx
+- Split into `ContextMenuContent` (inner) + `NodeContextMenu` (outer with AnimatePresence)
+- Added `exit={{ opacity: 0, scale: 0.92 }}` with 100ms duration for smooth scale-down + fade-out
+- Used AnimatePresence to detect component removal and play exit animation
+- Keyed on `nodeId + x` to re-animate when menu reopens at a different position
+- Outer component uses individual selectors instead of destructuring entire store
 
 ### Polish 2 — Node rename affordance
 - **Changed**: LifecycleNode.tsx

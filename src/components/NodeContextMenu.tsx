@@ -1,17 +1,19 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Copy, Trash2, Lock, Unlock, RefreshCw, CheckCircle2,
   AlertTriangle, Eye, Bot, FileText,
 } from 'lucide-react';
 import { useLifecycleStore } from '@/store/useStore';
 
-export default function NodeContextMenu() {
+function ContextMenuContent({ contextMenu, closeContextMenu }: {
+  contextMenu: { nodeId: string; x: number; y: number };
+  closeContextMenu: () => void;
+}) {
   const {
-    contextMenu, closeContextMenu, nodes,
-    deleteNode, lockNode, approveNode, updateNodeStatus, duplicateNode, addEvent,
+    nodes, deleteNode, lockNode, approveNode, updateNodeStatus, duplicateNode, addEvent,
     askCIDAboutNode, generateNodeContent, executeNode,
   } = useLifecycleStore();
   const ref = useRef<HTMLDivElement>(null);
@@ -25,8 +27,6 @@ export default function NodeContextMenu() {
     window.addEventListener('mousedown', handler);
     return () => window.removeEventListener('mousedown', handler);
   }, [closeContextMenu]);
-
-  if (!contextMenu) return null;
 
   const node = nodes.find((n) => n.id === contextMenu.nodeId);
   if (!node) return null;
@@ -120,6 +120,7 @@ export default function NodeContextMenu() {
       ref={ref}
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.92, transition: { duration: 0.1 } }}
       transition={{ duration: 0.12 }}
       className="fixed z-50 min-w-[160px] rounded-xl border border-white/[0.08] bg-[#0e0e18]/95 backdrop-blur-xl overflow-hidden shadow-2xl"
       style={{ left: contextMenu.x, top: contextMenu.y }}
@@ -140,5 +141,22 @@ export default function NodeContextMenu() {
         ))}
       </div>
     </motion.div>
+  );
+}
+
+export default function NodeContextMenu() {
+  const contextMenu = useLifecycleStore((s) => s.contextMenu);
+  const closeContextMenu = useLifecycleStore((s) => s.closeContextMenu);
+
+  return (
+    <AnimatePresence>
+      {contextMenu && (
+        <ContextMenuContent
+          key={contextMenu.nodeId + contextMenu.x}
+          contextMenu={contextMenu}
+          closeContextMenu={closeContextMenu}
+        />
+      )}
+    </AnimatePresence>
   );
 }

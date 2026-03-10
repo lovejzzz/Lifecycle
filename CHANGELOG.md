@@ -1,5 +1,9 @@
 # Changelog
 
+### 2026-03-10 — Polish 3: Context Menu Close Animation
+
+Added scale-out + fade exit animation to node context menu via AnimatePresence. Menu now smoothly scales down (0.92) and fades out over 100ms instead of disappearing instantly.
+
 ### 2026-03-10 — Polish 2: Node Rename Affordance
 
 Added pencil icon that appears on label hover to signal double-click-to-rename. Changed cursor to text cursor. Added smooth fade-in animation when entering edit mode.
