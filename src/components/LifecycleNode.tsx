@@ -4,7 +4,7 @@ import React, { memo, useState, useRef, useEffect } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { motion } from 'framer-motion';
 import {
-  Lock, AlertTriangle, Loader2, Eye, Link, Upload, Play,
+  Lock, AlertTriangle, Loader2, Eye, Link, Upload, Play, Pencil,
 } from 'lucide-react';
 import type { NodeData } from '@/lib/types';
 import { getNodeColors, CategoryIcon } from '@/lib/types';
@@ -114,8 +114,11 @@ function LifecycleNode({ data, id }: NodeProps) {
             </div>
             <div className="flex-1 min-w-0">
               {editingLabel ? (
-                <input
+                <motion.input
                   ref={inputRef}
+                  initial={{ opacity: 0.6, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.15 }}
                   value={labelDraft}
                   onChange={e => setLabelDraft(e.target.value)}
                   onBlur={commitLabel}
@@ -124,11 +127,14 @@ function LifecycleNode({ data, id }: NodeProps) {
                 />
               ) : (
                 <div
-                  className="text-[12.5px] font-semibold text-white/90 truncate leading-tight"
+                  className="group/label flex items-center gap-1 cursor-text"
                   onDoubleClick={(e) => { e.stopPropagation(); setLabelDraft(label); setEditingLabel(true); }}
                   title="Double-click to rename"
                 >
-                  {label}
+                  <span className="text-[12.5px] font-semibold text-white/90 truncate leading-tight">
+                    {label}
+                  </span>
+                  <Pencil size={9} className="flex-shrink-0 text-white/0 group-hover/label:text-white/30 transition-colors duration-200" />
                 </div>
               )}
               <div className="text-[9px] text-white/30 uppercase tracking-[0.1em] font-medium mt-0.5">

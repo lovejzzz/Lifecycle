@@ -1,5 +1,9 @@
 # Changelog
 
+### 2026-03-10 — Polish 2: Node Rename Affordance
+
+Added pencil icon that appears on label hover to signal double-click-to-rename. Changed cursor to text cursor. Added smooth fade-in animation when entering edit mode.
+
 ### 2026-03-10 — Polish 1: Onboarding Empty State
 
 Upgraded canvas empty state template section from tiny text chips to proper cards with colored category icons, node count descriptions, and hover effects. Added value prop tagline. Improved text contrast.

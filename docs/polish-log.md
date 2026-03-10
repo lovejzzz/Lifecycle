@@ -6,7 +6,7 @@ Tracks the systematic UI/UX polish pass across 20 items in 4 rounds.
 
 ### Round 1 — UX Quick Wins
 - [x] 1. Onboarding empty state — template cards for instant workflow loading
-- [ ] 2. Node rename affordance — pencil icon hint on hover
+- [x] 2. Node rename affordance — pencil icon hint on hover
 - [ ] 3. Context menu close animation — scale-out + fade exit
 - [ ] 4. NodeDetailPanel slide animation — slide-in-from-right
 - [ ] 5. Auto-save indicator — "Saved" flash in TopBar
@@ -37,6 +37,14 @@ Tracks the systematic UI/UX polish pass across 20 items in 4 rounds.
 ## Cycle Log
 
 <!-- Newest entries at top -->
+
+### Polish 2 — Node rename affordance
+- **Changed**: LifecycleNode.tsx
+- Added Pencil icon (9px) that fades in on label hover via `group-hover/label` — invisible by default (text-white/0), visible on hover (text-white/30)
+- Changed label cursor to `cursor-text` to signal editability
+- Wrapped label text + pencil in a flex container with nested group for independent hover
+- Added `motion.input` with fade-in + slight scale animation (0.15s) when entering edit mode
+- Existing `title="Double-click to rename"` tooltip preserved as fallback
 
 ### Polish 1 — Onboarding empty state
 - **Changed**: Canvas.tsx empty state template section
