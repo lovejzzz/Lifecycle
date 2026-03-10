@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { assessWorkflowHealth, issueFingerprint } from '../health';
+import { assessWorkflowHealth, issueFingerprint, formatHealthReport } from '../health';
+import type { HealthReport } from '../health';
 import type { Node, Edge } from '@xyflow/react';
 import type { NodeData } from '../types';
 
@@ -145,5 +146,115 @@ describe('issueFingerprint', () => {
     const fp1 = issueFingerprint([{ id: 'orphan-nodes', priority: 'medium' as const, message: '' }]);
     const fp2 = issueFingerprint([{ id: 'stale-nodes', priority: 'high' as const, message: '' }]);
     expect(fp1).not.toBe(fp2);
+  });
+});
+
+describe('formatHealthReport', () => {
+  it('renders score bar with healthy level', () => {
+    const report: HealthReport = { score: 90, issues: [], suggestions: [] };
+    const result = formatHealthReport(report);
+    expect(result).toContain('90/100');
+    expect(result).toContain('healthy');
+    expect(result).toContain('█');
+    expect(result).toContain('░');
+  });
+
+  it('renders needs-attention level for mid scores', () => {
+    const report: HealthReport = { score: 60, issues: [], suggestions: [] };
+    const result = formatHealthReport(report);
+    expect(result).toContain('needs attention');
+  });
+
+  it('renders critical level for low scores', () => {
+    const report: HealthReport = { score: 30, issues: [], suggestions: [] };
+    const result = formatHealthReport(report);
+    expect(result).toContain('critical');
+  });
+
+  it('sorts issues by priority (high first)', () => {
+    const report: HealthReport = {
+      score: 50,
+      issues: [
+        { id: 'low-1', priority: 'low', message: 'Low issue' },
+        { id: 'high-1', priority: 'high', message: 'High issue' },
+        { id: 'med-1', priority: 'medium', message: 'Medium issue' },
+      ],
+      suggestions: [],
+    };
+    const result = formatHealthReport(report);
+    expect(result).toContain('**Issues:**');
+    const highIdx = result.indexOf('High issue');
+    const medIdx = result.indexOf('Medium issue');
+    const lowIdx = result.indexOf('Low issue');
+    expect(highIdx).toBeLessThan(medIdx);
+    expect(medIdx).toBeLessThan(lowIdx);
+  });
+
+  it('uses correct emoji icons per priority', () => {
+    const report: HealthReport = {
+      score: 40,
+      issues: [
+        { id: 'h', priority: 'high', message: 'High' },
+        { id: 'm', priority: 'medium', message: 'Med' },
+        { id: 'l', priority: 'low', message: 'Low' },
+      ],
+      suggestions: [],
+    };
+    const result = formatHealthReport(report);
+    expect(result).toContain('🔴 High');
+    expect(result).toContain('🟡 Med');
+    expect(result).toContain('🔵 Low');
+  });
+
+  it('renders suggestions with action commands', () => {
+    const report: HealthReport = {
+      score: 70,
+      issues: [{ id: 'x', priority: 'medium', message: 'Something' }],
+      suggestions: [
+        { id: 's1', message: 'Fix this', action: 'refresh stale' },
+        { id: 's2', message: 'Also fix', action: undefined },
+      ],
+    };
+    const result = formatHealthReport(report);
+    expect(result).toContain('**Suggestions:**');
+    expect(result).toContain('Fix this');
+    expect(result).toContain('`refresh stale`');
+    expect(result).toContain('Also fix');
+  });
+
+  it('caps suggestions at 4', () => {
+    const report: HealthReport = {
+      score: 50,
+      issues: [{ id: 'x', priority: 'low', message: 'X' }],
+      suggestions: Array.from({ length: 6 }, (_, i) => ({
+        id: `s${i}`, message: `Suggestion ${i}`,
+      })),
+    };
+    const result = formatHealthReport(report);
+    expect(result).toContain('Suggestion 3');
+    expect(result).not.toContain('Suggestion 4');
+  });
+
+  it('shows rowan all-clear message when no issues and no suggestions', () => {
+    const report: HealthReport = { score: 100, issues: [], suggestions: [] };
+    const result = formatHealthReport(report, 'rowan');
+    expect(result).toContain('All clear');
+  });
+
+  it('shows poirot all-clear message when no issues and no suggestions', () => {
+    const report: HealthReport = { score: 100, issues: [], suggestions: [] };
+    const result = formatHealthReport(report, 'poirot');
+    expect(result).toContain('mon ami');
+  });
+
+  it('does not show all-clear when issues exist', () => {
+    const report: HealthReport = {
+      score: 60,
+      issues: [{ id: 'x', priority: 'low', message: 'Something' }],
+      suggestions: [],
+    };
+    const result = formatHealthReport(report);
+    expect(result).not.toContain('All clear');
+    expect(result).not.toContain('mon ami');
   });
 });

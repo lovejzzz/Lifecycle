@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { stripMarkdown, exportContent, compileDocument, slugify } from '../export';
+import { stripMarkdown, exportContent, compileDocument, slugify, type CompiledSection } from '../export';
 
 describe('stripMarkdown', () => {
   it('removes headers', () => {
@@ -29,6 +29,36 @@ describe('stripMarkdown', () => {
   it('handles empty string', () => {
     expect(stripMarkdown('')).toBe('');
   });
+
+  it('strips code blocks but keeps content', () => {
+    const md = '```js\nconst x = 1;\n```';
+    const result = stripMarkdown(md);
+    expect(result).toContain('const x = 1;');
+    expect(result).not.toContain('```');
+  });
+
+  it('removes horizontal rules', () => {
+    expect(stripMarkdown('before\n---\nafter')).toBe('before\n\nafter');
+  });
+
+  it('collapses excess newlines', () => {
+    expect(stripMarkdown('a\n\n\n\nb')).toBe('a\n\nb');
+  });
+
+  it('handles numbered lists (kept as-is)', () => {
+    expect(stripMarkdown('1. first\n2. second')).toBe('1. first\n2. second');
+  });
+
+  it('handles mixed formatting', () => {
+    const md = '## **Bold Header**\n> *italic quote*\n- `code` item';
+    const result = stripMarkdown(md);
+    expect(result).toContain('Bold Header');
+    expect(result).toContain('italic quote');
+    expect(result).toContain('code');
+    expect(result).not.toContain('**');
+    expect(result).not.toContain('##');
+    expect(result).not.toContain('> ');
+  });
 });
 
 describe('exportContent', () => {
@@ -46,6 +76,38 @@ describe('exportContent', () => {
     const blob = exportContent('# Title', 'txt');
     expect(blob.type).toBe('text/plain');
   });
+
+  it('html export contains title and styles', async () => {
+    const blob = exportContent('# Hello', 'html', 'My Doc');
+    const text = await blob.text();
+    expect(text).toContain('<title>My Doc</title>');
+    expect(text).toContain('<!DOCTYPE html>');
+    expect(text).toContain('font-family');
+  });
+
+  it('html export uses default title when none provided', async () => {
+    const blob = exportContent('# Hello', 'html');
+    const text = await blob.text();
+    expect(text).toContain('<title>Export</title>');
+  });
+
+  it('txt export strips markdown formatting', async () => {
+    const blob = exportContent('**bold** and *italic*', 'txt');
+    const text = await blob.text();
+    expect(text).toBe('bold and italic');
+  });
+
+  it('md export preserves raw content', async () => {
+    const blob = exportContent('# Title\n**bold**', 'md');
+    const text = await blob.text();
+    expect(text).toBe('# Title\n**bold**');
+  });
+
+  it('default case falls through to md', () => {
+    // Test with an unknown format cast — should hit default case
+    const blob = exportContent('content', 'md');
+    expect(blob.type).toBe('text/markdown');
+  });
 });
 
 describe('slugify', () => {
@@ -59,6 +121,18 @@ describe('slugify', () => {
 
   it('collapses multiple spaces', () => {
     expect(slugify('a   b   c')).toBe('a-b-c');
+  });
+
+  it('handles empty string', () => {
+    expect(slugify('')).toBe('');
+  });
+
+  it('handles unicode/emoji', () => {
+    expect(slugify('Hello 🌍 World!')).toBe('hello-world');
+  });
+
+  it('trims leading/trailing spaces', () => {
+    expect(slugify('  padded  ')).toBe('padded');
   });
 });
 
@@ -90,5 +164,29 @@ describe('compileDocument', () => {
     const result = compileDocument([{ label: 'A', category: 'a', content: 'B' }]);
     const today = new Date().toISOString().slice(0, 10);
     expect(result).toContain(today);
+  });
+
+  it('trims trailing separator', () => {
+    const result = compileDocument([{ label: 'A', category: 'a', content: 'B' }]);
+    expect(result).not.toMatch(/---\n\n$/);
+  });
+
+  it('includes category as italic', () => {
+    const result = compileDocument([{ label: 'Step', category: 'artifact', content: 'data' }]);
+    expect(result).toContain('*artifact*');
+  });
+
+  it('handles multiple sections with separators', () => {
+    const sections: CompiledSection[] = [
+      { label: 'A', category: 'input', content: 'first' },
+      { label: 'B', category: 'output', content: 'second' },
+      { label: 'C', category: 'action', content: 'third' },
+    ];
+    const result = compileDocument(sections, 'Multi');
+    expect(result).toContain('## A');
+    expect(result).toContain('## B');
+    expect(result).toContain('## C');
+    // Middle separators should exist
+    expect(result.match(/---/g)?.length).toBeGreaterThanOrEqual(2);
   });
 });

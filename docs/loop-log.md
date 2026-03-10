@@ -31,6 +31,23 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 
 ## Meta-Refinements
 
+### Meta-Refinement 5 (FINAL) — 2026-03-10 16:00
+- **Cycles reviewed**: 14 through 16
+- **Patterns observed**:
+  - Bug yield is zero: cycles 15-16 found no bugs (audit rotation complete since cycle 14, no new files added). The audit phase is fully retired.
+  - Coverage gains are healthy but hitting a wall: +0.50pp, +0.62pp, +1.80pp across cycles 14-16. The +1.80pp in cycle 16 came from testing 11 utility handlers — the last batch of synchronous, easily-testable store code.
+  - useStore.ts went from 45.84% → 49.22% (+3.38pp) across 3 cycles. The remaining ~51% is dominated by untestable code: `generateWorkflow` (cascading `setTimeout` animations), `chatWithCID` streaming (`setInterval` 35ms ticks), `postBuildFinalize` (100% timer-dependent), `executeNode` file download (DOM APIs). These require `vi.useFakeTimers()` infrastructure that doesn't exist yet.
+  - Overall coverage: 57.19% → 60.11% (+2.92pp) across 3 cycles. Crossed 60% milestone.
+  - Test count: 522 → 600 (+78 tests). Infrastructure stable, all running in <1s.
+  - All coverage push targets from Meta-Refinement 4 are now complete (types.ts ✅, useStore.ts UI handlers ✅).
+  - Two lib files still have easy wins: export.ts (64.51%, pure functions) and health.ts formatHealthReport (81.2%, pure function). These can yield ~10-15 more tests cheaply.
+  - After those, the only remaining gains require either: (a) `vi.useFakeTimers()` setup for timer-heavy code, or (b) JSDOM for DOM API code. Both are infrastructure investments beyond the loop's scope.
+- **Decision: WIND DOWN THE LOOP**
+  1. **Scheduled ONE final cycle (Cycle 17)** targeting export.ts pure functions + health.ts formatHealthReport + useStore.ts artifact helpers. This mops up the last easy wins.
+  2. **Removed the meta-refinement cron** — no further meta-refinements needed.
+  3. **Final cycle self-terminates** — Cycle 17 prompt includes instructions to cancel its own cron job and print "LOOP COMPLETE".
+  4. **Summary of loop lifetime**: 17 cycles, 5 meta-refinements, 18 bugs fixed (2 CRITICAL, 5 HIGH, 7 MEDIUM, 4 LOW), coverage 40.3% → ~62%+ (projected), 267 → ~620+ tests. All source files audited. The loop has served its purpose.
+
 ### Meta-Refinement 4 — 2026-03-10 12:00
 - **Cycles reviewed**: 11 through 13
 - **Patterns observed**:
@@ -103,6 +120,15 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 ## Cycle Log
 
 <!-- Newest entries at top -->
+
+### Cycle 17 (FINAL) — 2026-03-10 16:00
+- **Audited**: rotation complete — skipped (no new files)
+- **Tests**: 639 passing (+39), 0 failing; coverage: 61.39% stmts (+1.28pp), useStore.ts 50.39% (+1.17pp), health.ts 100% (+18.8pp)
+- **Issues found**: none (audit skipped)
+- **Fixed**: nothing
+- **Coverage push**: export.ts (stripMarkdown code blocks/horizontal rules/numbered lists/mixed formatting, exportContent HTML title/content verification/txt stripping/md passthrough, slugify edge cases, compileDocument trailing separator/category italic/multi-section) + health.ts formatHealthReport (score bar rendering, healthy/needs-attention/critical levels, issue sorting by priority, emoji icons, suggestion formatting with actions, cap at 4 suggestions, rowan/poirot all-clear paths) + useStore.ts artifact helpers (saveArtifactVersion with content snapshot/accumulation/cap at 20/nonexistent no-op, restoreArtifactVersion with content restore/invalid index/nonexistent/event logging, getDownstreamNodes for leaf/direct children/full BFS chain/diamond dedup, getExecutedNodesInOrder content filtering). Coverage: health.ts 81.2% → 100%, export.ts 64.51% → 67.74%, useStore.ts 49.22% → 50.39%, overall 60.11% → 61.39%.
+- **FINAL CYCLE — loop declared complete. Coverage plateau reached for useStore.ts (timer/DOM wall). Remaining gains require vi.useFakeTimers() infrastructure.**
+- **Loop lifetime totals**: 17 cycles, 5 meta-refinements, 18 bugs fixed (2 CRITICAL, 5 HIGH, 7 MEDIUM, 4 LOW), coverage 40.3% → 61.39% (+21.09pp), tests 267 → 639 (+372). All source files audited.
 
 ### Cycle 16 — 2026-03-10 15:00
 - **Audited**: rotation complete — skipped (no new files)

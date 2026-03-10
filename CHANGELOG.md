@@ -1,5 +1,15 @@
 # Changelog
 
+### 2026-03-10 — Loop Cycle 17 (FINAL): Export, Health, Artifact Coverage
+
+**FINAL CYCLE** — test-and-refine loop complete after 17 cycles.
+
+**Coverage push**: export.ts, health.ts formatHealthReport, useStore.ts artifact helpers
+- 39 new tests: export.ts (stripMarkdown code blocks/hr/mixed, exportContent HTML verification, slugify edge cases, compileDocument structure), health.ts formatHealthReport (score bar, priority sorting, emoji icons, suggestions, rowan/poirot modes), useStore.ts (saveArtifactVersion, restoreArtifactVersion, getDownstreamNodes BFS, getExecutedNodesInOrder)
+- Coverage: health.ts 81.2% → 100%, export.ts 64.51% → 67.74%, useStore.ts 49.22% → 50.39%, overall 60.11% → 61.39%, 639 tests passing
+
+**Loop lifetime**: 17 cycles, 18 bugs fixed, coverage 40.3% → 61.39% (+21pp), 267 → 639 tests
+
 ### 2026-03-10 — Loop Cycle 16: Store Utility Handler Coverage Push
 
 **Coverage push**: useStore.ts utility handlers (49.22%, +2.50pp)

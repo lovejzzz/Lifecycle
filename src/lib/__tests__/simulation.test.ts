@@ -2897,4 +2897,177 @@ describe('User Simulation: Real Journeys', () => {
       expect(getStore().impactPreview).toBeNull();
     });
   });
+
+  // ═══════════════════════════════════════════════════════════════════
+  // SCENARIO 26 — Artifact version management & downstream traversal
+  // ═══════════════════════════════════════════════════════════════════
+
+  describe('Scenario 26 — artifact helpers & downstream', () => {
+    beforeEach(() => {
+      useLifecycleStore.setState({
+        nodes: [], edges: [], events: [], messages: [],
+        impactPreview: null, toasts: [], isProcessing: false,
+        artifactVersions: {},
+      });
+      mockFetch.mockClear();
+    });
+
+    // ── saveArtifactVersion ──
+
+    it('saveArtifactVersion: saves version with content snapshot', () => {
+      getStore().createNewNode('artifact');
+      const nodeId = getStore().nodes[0].id;
+      // Set some content
+      useLifecycleStore.setState({
+        nodes: getStore().nodes.map(n =>
+          n.id === nodeId ? { ...n, data: { ...n.data, content: 'Draft 1', executionResult: 'Result 1' } } : n
+        ),
+      });
+      getStore().saveArtifactVersion(nodeId);
+      const versions = getStore().artifactVersions[nodeId];
+      expect(versions).toHaveLength(1);
+      expect(versions[0].content).toBe('Draft 1');
+      expect(versions[0].result).toBe('Result 1');
+      expect(versions[0].label).toBe('v0');
+    });
+
+    it('saveArtifactVersion: accumulates versions', () => {
+      getStore().createNewNode('artifact');
+      const nodeId = getStore().nodes[0].id;
+      getStore().saveArtifactVersion(nodeId);
+      getStore().saveArtifactVersion(nodeId);
+      getStore().saveArtifactVersion(nodeId);
+      expect(getStore().artifactVersions[nodeId]).toHaveLength(3);
+      expect(getStore().artifactVersions[nodeId][2].label).toBe('v2');
+    });
+
+    it('saveArtifactVersion: caps at 20 versions', () => {
+      getStore().createNewNode('artifact');
+      const nodeId = getStore().nodes[0].id;
+      for (let i = 0; i < 25; i++) {
+        getStore().saveArtifactVersion(nodeId);
+      }
+      expect(getStore().artifactVersions[nodeId]).toHaveLength(20);
+    });
+
+    it('saveArtifactVersion: no-op for nonexistent node', () => {
+      getStore().saveArtifactVersion('fake-id');
+      expect(getStore().artifactVersions['fake-id']).toBeUndefined();
+    });
+
+    // ── restoreArtifactVersion ──
+
+    it('restoreArtifactVersion: restores content from saved version', () => {
+      getStore().createNewNode('artifact');
+      const nodeId = getStore().nodes[0].id;
+      // Save v0 with "Original"
+      useLifecycleStore.setState({
+        nodes: getStore().nodes.map(n =>
+          n.id === nodeId ? { ...n, data: { ...n.data, content: 'Original' } } : n
+        ),
+      });
+      getStore().saveArtifactVersion(nodeId);
+      // Change content
+      getStore().updateNodeData(nodeId, { content: 'Modified' });
+      expect(getStore().nodes[0].data.content).toBe('Modified');
+      // Restore v0
+      getStore().restoreArtifactVersion(nodeId, 0);
+      expect(getStore().nodes[0].data.content).toBe('Original');
+    });
+
+    it('restoreArtifactVersion: no-op for invalid version index', () => {
+      getStore().createNewNode('artifact');
+      const nodeId = getStore().nodes[0].id;
+      getStore().restoreArtifactVersion(nodeId, 99);
+      // Should not throw
+      expect(getStore().nodes).toHaveLength(1);
+    });
+
+    it('restoreArtifactVersion: no-op for nonexistent node', () => {
+      getStore().restoreArtifactVersion('fake', 0);
+      expect(getStore().events).toHaveLength(0);
+    });
+
+    it('restoreArtifactVersion: adds event', () => {
+      getStore().createNewNode('artifact');
+      const nodeId = getStore().nodes[0].id;
+      getStore().saveArtifactVersion(nodeId);
+      getStore().restoreArtifactVersion(nodeId, 0);
+      const restoreEvents = getStore().events.filter(e => e.message.includes('Restored'));
+      expect(restoreEvents.length).toBeGreaterThanOrEqual(1);
+    });
+
+    // ── getDownstreamNodes ──
+
+    it('getDownstreamNodes: returns empty for leaf node', () => {
+      getStore().createNewNode('output');
+      const nodeId = getStore().nodes[0].id;
+      const downstream = getStore().getDownstreamNodes(nodeId);
+      expect(downstream).toHaveLength(0);
+    });
+
+    it('getDownstreamNodes: returns direct children', () => {
+      getStore().createNewNode('input');
+      getStore().createNewNode('artifact');
+      getStore().createNewNode('output');
+      useLifecycleStore.setState({ edges: [] });
+      const [inp, art, out] = getStore().nodes;
+      getStore().addEdge({ id: 'e1', source: inp.id, target: art.id, type: 'default' });
+      getStore().addEdge({ id: 'e2', source: inp.id, target: out.id, type: 'default' });
+      const downstream = getStore().getDownstreamNodes(inp.id);
+      expect(downstream).toHaveLength(2);
+      expect(downstream.map(d => d.id)).toContain(art.id);
+      expect(downstream.map(d => d.id)).toContain(out.id);
+    });
+
+    it('getDownstreamNodes: traverses full chain (BFS)', () => {
+      getStore().createNewNode('input');
+      getStore().createNewNode('artifact');
+      getStore().createNewNode('output');
+      useLifecycleStore.setState({ edges: [] });
+      const [inp, art, out] = getStore().nodes;
+      getStore().addEdge({ id: 'e1', source: inp.id, target: art.id, type: 'default' });
+      getStore().addEdge({ id: 'e2', source: art.id, target: out.id, type: 'default' });
+      const downstream = getStore().getDownstreamNodes(inp.id);
+      expect(downstream).toHaveLength(2);
+      // BFS: artifact first, then output
+      expect(downstream[0].id).toBe(art.id);
+      expect(downstream[1].id).toBe(out.id);
+    });
+
+    it('getDownstreamNodes: no duplicates in diamond graph', () => {
+      getStore().createNewNode('input');
+      getStore().createNewNode('artifact');
+      getStore().createNewNode('artifact');
+      getStore().createNewNode('output');
+      useLifecycleStore.setState({ edges: [] });
+      const [inp, a, b, out] = getStore().nodes;
+      getStore().addEdge({ id: 'e1', source: inp.id, target: a.id, type: 'default' });
+      getStore().addEdge({ id: 'e2', source: inp.id, target: b.id, type: 'default' });
+      getStore().addEdge({ id: 'e3', source: a.id, target: out.id, type: 'default' });
+      getStore().addEdge({ id: 'e4', source: b.id, target: out.id, type: 'default' });
+      const downstream = getStore().getDownstreamNodes(inp.id);
+      // Should be 3 (a, b, out) with no duplicates
+      expect(downstream).toHaveLength(3);
+      const ids = downstream.map(d => d.id);
+      expect(new Set(ids).size).toBe(3);
+    });
+
+    // ── getExecutedNodesInOrder ──
+
+    it('getExecutedNodesInOrder: returns only nodes with content', () => {
+      getStore().createNewNode('input');
+      getStore().createNewNode('artifact');
+      const [inp, art] = getStore().nodes;
+      // Only give content to the artifact
+      useLifecycleStore.setState({
+        nodes: getStore().nodes.map(n =>
+          n.id === art.id ? { ...n, data: { ...n.data, executionResult: 'Some result' } } : n
+        ),
+      });
+      const executed = getStore().getExecutedNodesInOrder();
+      expect(executed).toHaveLength(1);
+      expect(executed[0].id).toBe(art.id);
+    });
+  });
 });
