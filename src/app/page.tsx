@@ -29,10 +29,11 @@ function Toasts() {
           return (
             <motion.div
               key={toast.id}
-              initial={{ opacity: 0, y: 20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.95 }}
-              transition={{ duration: 0.2 }}
+              layout
+              initial={{ opacity: 0, y: 24, scale: 0.9, filter: 'blur(4px)' }}
+              animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, x: 40, scale: 0.95, filter: 'blur(2px)', transition: { duration: 0.15 } }}
+              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
               className={`pointer-events-auto flex items-center gap-2.5 px-4 py-2.5 rounded-xl border ${style.border} ${style.bg} backdrop-blur-xl shadow-2xl`}
             >
               <Icon size={14} className={style.color} />

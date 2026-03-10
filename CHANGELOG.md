@@ -1,5 +1,15 @@
 # Changelog
 
+### 2026-03-10 — Polish 6: Toast Entrance/Exit Animations
+
+Upgraded toast notifications with spring-physics entrance (stiffness 400, damping 25), blur transition, and rightward slide-out exit. Added Framer Motion `layout` prop for smooth reflow when toasts stack/unstack.
+
+### 2026-03-10 — Polish 4-5: Panel Animation & Auto-Save Indicator
+
+**Polish 4**: Fixed NodeDetailPanel exit animation — same AnimatePresence pattern as context menu fix. Split into outer wrapper (owns AnimatePresence + conditional) and inner content component. Panel now slides left on close instead of vanishing.
+
+**Polish 5**: Added auto-save indicator to TopBar. A brief "Saved" flash with checkmark appears after each successful save, fading in/out via AnimatePresence. Shows for 1.5s in the center stats area.
+
 ### 2026-03-10 — Polish 3: Context Menu Close Animation
 
 Added scale-out + fade exit animation to node context menu via AnimatePresence. Menu now smoothly scales down (0.92) and fades out over 100ms instead of disappearing instantly.

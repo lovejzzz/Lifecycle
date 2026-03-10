@@ -8,11 +8,11 @@ Tracks the systematic UI/UX polish pass across 20 items in 4 rounds.
 - [x] 1. Onboarding empty state — template cards for instant workflow loading
 - [x] 2. Node rename affordance — pencil icon hint on hover
 - [x] 3. Context menu close animation — scale-out + fade exit
-- [ ] 4. NodeDetailPanel slide animation — slide-in-from-right
-- [ ] 5. Auto-save indicator — "Saved" flash in TopBar
+- [x] 4. NodeDetailPanel slide animation — slide-in-from-right
+- [x] 5. Auto-save indicator — "Saved" flash in TopBar
 
 ### Round 2 — Visual Polish
-- [ ] 6. Toast entrance/exit animations
+- [x] 6. Toast entrance/exit animations
 - [ ] 7. Edge label picker viewport clamping
 - [ ] 8. Low-contrast text fix (WCAG AA)
 - [ ] 9. Consistent icon sizing across components
@@ -37,6 +37,31 @@ Tracks the systematic UI/UX polish pass across 20 items in 4 rounds.
 ## Cycle Log
 
 <!-- Newest entries at top -->
+
+### Polish 6 — Toast entrance/exit animations
+- **Changed**: page.tsx (Toasts component)
+- Upgraded entrance: spring physics (stiffness 400, damping 25) + blur(4px→0) for a snappy, deceleration-feel arrival
+- Upgraded exit: slides right (x: 40) + blur(2px) + 150ms duration for a quick, directional dismiss
+- Added `layout` prop for smooth reflow when toasts stack/unstack (Framer Motion layout animation)
+- Entrance scale from 0.9 (was 0.95) for more pronounced pop-in
+- Exit direction changed from downward (y: 10) to rightward (x: 40) to differentiate from entrance direction
+
+### Polish 5 — Auto-save indicator
+- **Changed**: useStore.ts, TopBar.tsx
+- Added `lastSavedAt: number` field to store interface and initial state
+- `flushSave()` now calls `useLifecycleStore.setState({ lastSavedAt: Date.now() })` after successful save
+- TopBar subscribes to `lastSavedAt` via individual selector, shows "Saved" with check icon
+- AnimatePresence + motion.div provides fade-in (y: 4→0) + fade-out animation
+- Auto-hides after 1.5s via setTimeout cleanup in useEffect
+- Positioned in center stats area after health score — only visible when nodes exist
+
+### Polish 4 — NodeDetailPanel slide animation
+- **Changed**: NodeDetailPanel.tsx
+- Split into `NodeDetailPanelContent` (inner) + `NodeDetailPanel` (outer with AnimatePresence)
+- Same bug pattern as Polish 3: early `return null` at line 573 prevented AnimatePresence from detecting child removal
+- Outer component uses individual selector `(s) => s.selectedNodeId` for optimal re-render
+- Inner component receives `nodeId` prop, renders the motion.div directly (no wrapping AnimatePresence)
+- Exit animation now plays: `x: -320, opacity: 0` with spring transition slides panel left on close
 
 ### Polish 3 — Context menu close animation
 - **Changed**: NodeContextMenu.tsx
