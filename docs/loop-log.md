@@ -8,38 +8,44 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 
 ### Rotation Queue (reset when all checked)
 
-**Priority Queue** (reordered by Meta-Refinement 2 — store coverage pivot, lib batch):
+**Priority Queue** (reordered by Meta-Refinement 3 — async coverage pivot, component scan):
 
-*Tier 1 — Store (last section + coverage pivot):*
-- [x] useStore.ts (persistence & projects) (cycle 3)
-- [x] useStore.ts (node operations) (cycle 4)
-- [x] useStore.ts (execution & CID) (cycle 5)
-- [x] useStore.ts (undo/redo & history) (cycle 6)
-- [x] useStore.ts (edge operations & graph) (cycle 7)
-- [x] useStore.ts (commands & dispatch) (cycle 8)
+*Tier 1 — Store: ✅ COMPLETE (cycles 3-8, 11 bugs fixed)*
+*Tier 2 — Core lib: ✅ COMPLETE (cycles 4-7, 9-10, 1 bug fixed)*
 
-*Tier 2 — Core lib (audit for bugs, coverage already high):*
-- [x] agents.ts (covered cycle 4 — 3.65%→64.02%)
-- [x] intent.ts (covered cycle 5 — 29.95%→93.39%)
-- [x] reflection.ts (covered cycle 6 — 31.21%→80.92%)
-- [x] prompts.ts (covered cycle 7 — 51.63%→92.39%)
-- [x] storage.ts + graph.ts (cycle 9 — 1 fix in storage.ts, graph.ts clean)
-- [x] health.ts + optimizer.ts + edits.ts (cycle 10 — all clean, no bugs found)
-
-*Tier 3 — Components (batch small ones together):*
+*Tier 3 — Components (batch small ones, scan for data-flow bugs):*
 - [x] Canvas.tsx (cycle 1)
 - [x] CIDPanel.tsx (cycle 2)
-- [ ] NodeDetailPanel.tsx + ArtifactPanel.tsx (batch — both are detail panels)
-- [ ] TopBar.tsx + LifecycleNode.tsx (batch)
-- [ ] ActivityPanel.tsx + PreviewPanel.tsx (batch)
-- [ ] DiffView.tsx + ImpactPreview.tsx + NodeContextMenu.tsx + ErrorBoundary.tsx (batch)
+- [ ] NodeDetailPanel.tsx + ArtifactPanel.tsx (batch — detail panels, moderate complexity)
+- [ ] TopBar.tsx + LifecycleNode.tsx (batch — quick scan)
+- [ ] ActivityPanel.tsx + PreviewPanel.tsx (batch — quick scan)
+- [ ] DiffView.tsx + ImpactPreview.tsx + NodeContextMenu.tsx + ErrorBoundary.tsx (batch — quick scan)
 
-*Coverage Push Target:*
-- [ ] useStore.ts (~35% → target 50%+) — biggest uncovered surface, highest overall impact
+*Coverage Push Strategy (Meta-Refinement 3):*
+- [x] useStore.ts pure functions (scenarios 18-20, ~35% → 40.24%)
+- [ ] useStore.ts async handlers — requires fetch mock: chatWithCID, executeNode response parsing, propagateStale loop, streaming callbacks. This is where the remaining 60% of uncovered store code lives.
+- [ ] types.ts (61.72%) — lowest-coverage lib file remaining
 
 ---
 
 ## Meta-Refinements
+
+### Meta-Refinement 3 — 2026-03-10 07:55
+- **Cycles reviewed**: 8 through 10
+- **Patterns observed**:
+  - Bug yield declining sharply: cycle 8 found 2 HIGH bugs (last store section), cycle 9 found 1 HIGH (storage.ts), cycle 10 found 0. All Tier 1 store (6 sections, 11 bugs) and Tier 2 lib (6 batches, 1 bug) audits are now complete. The high-value audit targets are exhausted.
+  - Coverage gains hitting a wall: +3.42pp → +0.69pp → +0.03pp over cycles 8-10. Cycle 10 added 14 tests but gained only 0.03pp because pure-function store code is now well-covered transitively. useStore.ts at 40.24% (up from ~35%).
+  - The remaining ~60% of uncovered useStore.ts is dominated by async functions: `chatWithCID`, `executeNode` (response parsing, streaming), `propagateStale` (sequential re-execution loop), AI handler dispatchers. These all call `fetch('/api/cid')` and can't be tested without a mock fetch setup.
+  - Overall coverage at 53.10% (up from 40.3% at cycle 1) — crossed the 50% milestone. The next meaningful jump requires either: (a) investing in fetch mock infrastructure to unlock async store testing, or (b) testing types.ts (61.72%, lowest remaining lib file).
+  - Tier 3 component audits: 4 batches remain. Historical yield was moderate (6 issues in Canvas+CIDPanel, both 1300+ lines). Remaining components are smaller — expect lower yield but worth scanning for data-flow bugs (incorrect store subscriptions, missing cleanup).
+  - OOM issue from cycle 8 (while-loop tests) fully resolved. Test infrastructure is stable at 481 tests running in <1s.
+- **Changes made**:
+  1. **Pivoted coverage strategy to async store handlers**: Next cycle should create a reusable fetch mock helper and write tests for `chatWithCID` response parsing, `executeNode` success/error paths, `propagateStale` loop. This is the only way to meaningfully move useStore.ts past 40%.
+  2. **Marked Tier 1 and Tier 2 as complete** in the rotation queue. No more lib/store audits needed — all done.
+  3. **Reordered Tier 3**: NodeDetailPanel+ArtifactPanel first (moderate complexity, most likely to have data-flow bugs), then quick-scan the remaining 3 batches.
+  4. **Added types.ts** (61.72%) as a secondary coverage target after async store handlers.
+  5. **Kept 1-hour interval** — even with declining bug yield, each cycle still adds 14-27 tests and the coverage push strategy change should restore gains.
+  6. **Updated cycle prompt**: Added "async store coverage" as a Phase 3 option with fetch mock guidance. Removed undo integration check (all store sections audited, no more store mutations being added).
 
 ### Meta-Refinement 2 — 2026-03-10 04:17
 - **Cycles reviewed**: 5 through 7
