@@ -8,36 +8,35 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 
 ### Rotation Queue (reset when all checked)
 
-**Components (UI):**
-- [x] Canvas.tsx
+**Priority Queue** (reordered by Meta-Refinement 1 — store-first, risk-weighted):
+
+*Tier 1 — Store (highest bug yield):*
+- [x] useStore.ts (persistence & projects) (cycle 3)
+- [x] useStore.ts (node operations) (cycle 4)
+- [ ] useStore.ts (execution & CID) ← async+mutex, highest risk
+- [ ] useStore.ts (undo/redo & history)
+- [ ] useStore.ts (edge operations & graph)
+- [ ] useStore.ts (commands & dispatch)
+
+*Tier 2 — Core lib (logic-heavy, low coverage):*
+- [ ] intent.ts (30% coverage)
+- [ ] reflection.ts (31% coverage)
+- [ ] prompts.ts (52% coverage)
+- [x] agents.ts (covered cycle 4 — 3.65%→64.02%)
+- [ ] storage.ts
+- [ ] graph.ts
+- [ ] health.ts
+- [ ] optimizer.ts
+- [ ] edits.ts
+
+*Tier 3 — Components (batch small ones together):*
+- [x] Canvas.tsx (cycle 1)
 - [x] CIDPanel.tsx (cycle 2)
 - [ ] NodeDetailPanel.tsx
 - [ ] ArtifactPanel.tsx
-- [ ] TopBar.tsx
-- [ ] LifecycleNode.tsx
-- [ ] ActivityPanel.tsx
-- [ ] PreviewPanel.tsx
-- [ ] DiffView.tsx
-- [ ] ImpactPreview.tsx
-- [ ] NodeContextMenu.tsx
-- [ ] ErrorBoundary.tsx
-
-**Store & Core Logic:**
-- [x] useStore.ts (persistence & projects) (cycle 3)
-- [x] useStore.ts (node operations) (cycle 4)
-- [ ] useStore.ts (edge operations & graph)
-- [ ] useStore.ts (execution & CID)
-- [ ] useStore.ts (undo/redo & history)
-- [ ] useStore.ts (commands & dispatch)
-- [ ] graph.ts
-- [ ] intent.ts
-- [ ] agents.ts
-- [ ] prompts.ts
-- [ ] edits.ts
-- [ ] health.ts
-- [ ] optimizer.ts
-- [ ] reflection.ts
-- [ ] storage.ts
+- [ ] TopBar.tsx + LifecycleNode.tsx (batch)
+- [ ] ActivityPanel.tsx + PreviewPanel.tsx (batch)
+- [ ] DiffView.tsx + ImpactPreview.tsx + NodeContextMenu.tsx + ErrorBoundary.tsx (batch)
 
 **Test Files (refine cycle):**
 - [x] simulation.test.ts (cycle 3)
@@ -49,6 +48,25 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 - [ ] health.test.ts
 - [ ] storage.test.ts
 - [ ] undo.test.ts
+
+---
+
+## Meta-Refinements
+
+### Meta-Refinement 1 — 2026-03-10 01:17
+- **Cycles reviewed**: 1 through 4
+- **Patterns observed**:
+  - Store audits (cycles 3-4) found 5 real data-integrity bugs; component audits (cycles 1-2) found only UX/perf issues. Store is 3x more productive to audit.
+  - Coverage push only happened once (cycle 4) but was the only cycle that moved the needle (+1.66pp). Should happen every cycle.
+  - Test refinement (cycle 3) was high-value when paired with store audit — directly covered the bugs found.
+  - 10 remaining components include many small rendering-only files — should batch small ones to avoid wasting cycles.
+  - Recurring pattern: blob URL revoke timing (found in both Canvas and CIDPanel). No need to keep checking for this.
+- **Changes made**:
+  1. Reordered rotation queue: store sections first (execution & CID next — highest risk), then low-coverage lib files, components last
+  2. Batched small components together (TopBar+LifecycleNode, ActivityPanel+PreviewPanel, 4 small files)
+  3. Coverage push every cycle instead of every 2nd — pick lowest-coverage unchecked file
+  4. Added "stale closure scan" as a spot-check during store audits (recurring pattern from cycles 3-4)
+  5. Kept 1-hour interval — each cycle produces meaningful work
 
 ---
 
