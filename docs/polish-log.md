@@ -13,7 +13,7 @@ Tracks the systematic UI/UX polish pass across 20 items in 4 rounds.
 
 ### Round 2 — Visual Polish
 - [x] 6. Toast entrance/exit animations
-- [ ] 7. Edge label picker viewport clamping
+- [x] 7. Edge label picker viewport clamping
 - [ ] 8. Low-contrast text fix (WCAG AA)
 - [ ] 9. Consistent icon sizing across components
 - [ ] 10. Keyboard shortcut tooltips on buttons
@@ -37,6 +37,14 @@ Tracks the systematic UI/UX polish pass across 20 items in 4 rounds.
 ## Cycle Log
 
 <!-- Newest entries at top -->
+
+### Polish 7 — Edge label picker viewport clamping
+- **Changed**: Canvas.tsx
+- Extracted inline edge label picker into standalone `EdgeLabelPicker` component
+- Uses `useRef` + `useEffect` to measure element dimensions after mount, then clamps `left`/`top` within viewport bounds (12px padding)
+- Handles all 4 edges: right overflow, left underflow, bottom overflow, top underflow
+- Position state (`pos`) initialized from `pendingEdge` coords, then corrected in the effect
+- Existing entrance/exit animations preserved (opacity + y shift)
 
 ### Polish 6 — Toast entrance/exit animations
 - **Changed**: page.tsx (Toasts component)

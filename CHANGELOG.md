@@ -1,5 +1,9 @@
 # Changelog
 
+### 2026-03-10 — Polish 7: Edge Label Picker Viewport Clamping
+
+Extracted edge label picker into a standalone component with viewport clamping. The picker now measures its own dimensions after mount and adjusts position to stay within the visible area with 12px padding on all sides.
+
 ### 2026-03-10 — Polish 6: Toast Entrance/Exit Animations
 
 Upgraded toast notifications with spring-physics entrance (stiffness 400, damping 25), blur transition, and rightward slide-out exit. Added Framer Motion `layout` prop for smooth reflow when toasts stack/unstack.

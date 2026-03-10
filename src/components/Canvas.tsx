@@ -175,6 +175,63 @@ function CommandPalette({ onClose, showCIDPanel, toggleCIDPanel, setShowSearch, 
   );
 }
 
+// ─── Edge Label Picker (viewport-clamped) ────────────────────────────────────
+
+function EdgeLabelPicker({ pendingEdge, updateEdgeLabel, setPendingEdge }: {
+  pendingEdge: { edgeId: string; x: number; y: number };
+  updateEdgeLabel: (edgeId: string, label: string) => void;
+  setPendingEdge: (p: null) => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ x: pendingEdge.x, y: pendingEdge.y });
+
+  // Clamp to viewport after mount (once dimensions are known)
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const pad = 12;
+    let { x, y } = pendingEdge;
+    if (x + rect.width > window.innerWidth - pad) x = window.innerWidth - rect.width - pad;
+    if (x < pad) x = pad;
+    if (y + rect.height > window.innerHeight - pad) y = window.innerHeight - rect.height - pad;
+    if (y < pad) y = pad;
+    setPos({ x, y });
+  }, [pendingEdge]);
+
+  return (
+    <motion.div
+      ref={ref}
+      key="pending-edge"
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.15 }}
+      className="fixed z-50 rounded-xl border border-emerald-500/20 bg-[#0e0e18]/95 backdrop-blur-xl overflow-hidden shadow-2xl"
+      style={{ left: pos.x, top: pos.y }}
+    >
+      <div className="px-3 py-1.5 border-b border-white/[0.05]">
+        <span className="text-[10px] text-emerald-400/60 uppercase tracking-wider">Name this connection</span>
+      </div>
+      <div className="py-1 grid grid-cols-2 gap-0.5 max-h-[200px] overflow-y-auto">
+        {EDGE_LABELS.map(label => (
+          <button
+            key={label}
+            onClick={() => { updateEdgeLabel(pendingEdge.edgeId, label); setPendingEdge(null); }}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] text-white/60 hover:text-white/90 hover:bg-white/[0.05] transition-colors"
+          >
+            <span className="w-1.5 h-1.5 rounded-full" style={{ background: EDGE_LABEL_COLORS[label] || '#6366f1' }} />
+            {label}
+          </button>
+        ))}
+      </div>
+      <div className="px-3 py-1 border-t border-white/[0.05]">
+        <button onClick={() => setPendingEdge(null)} className="text-[9px] text-white/20 hover:text-white/40">Skip</button>
+      </div>
+    </motion.div>
+  );
+}
+
 export default function Canvas() {
   return (
     <ReactFlowProvider>
@@ -1117,34 +1174,7 @@ function CanvasInner() {
         {/* Pending Edge Label Picker (after drag-connect) */}
         <AnimatePresence>
           {pendingEdge && (
-            <motion.div
-              key="pending-edge"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.15 }}
-              className="fixed z-50 rounded-xl border border-emerald-500/20 bg-[#0e0e18]/95 backdrop-blur-xl overflow-hidden shadow-2xl"
-              style={{ left: pendingEdge.x, top: pendingEdge.y }}
-            >
-              <div className="px-3 py-1.5 border-b border-white/[0.05]">
-                <span className="text-[10px] text-emerald-400/60 uppercase tracking-wider">Name this connection</span>
-              </div>
-              <div className="py-1 grid grid-cols-2 gap-0.5 max-h-[200px] overflow-y-auto">
-                {EDGE_LABELS.map(label => (
-                  <button
-                    key={label}
-                    onClick={() => { updateEdgeLabel(pendingEdge.edgeId, label); setPendingEdge(null); }}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] text-white/60 hover:text-white/90 hover:bg-white/[0.05] transition-colors"
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: EDGE_LABEL_COLORS[label] || '#6366f1' }} />
-                    {label}
-                  </button>
-                ))}
-              </div>
-              <div className="px-3 py-1 border-t border-white/[0.05]">
-                <button onClick={() => setPendingEdge(null)} className="text-[9px] text-white/20 hover:text-white/40">Skip</button>
-              </div>
-            </motion.div>
+            <EdgeLabelPicker pendingEdge={pendingEdge} updateEdgeLabel={updateEdgeLabel} setPendingEdge={setPendingEdge} />
           )}
         </AnimatePresence>
 
