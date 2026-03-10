@@ -33,7 +33,9 @@ export default function TopBar() {
   const agent = getAgent(cidMode);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showAddMenu, setShowAddMenu] = useState(false);
+  const [addMenuIndex, setAddMenuIndex] = useState(-1);
   const [showProjectMenu, setShowProjectMenu] = useState(false);
+  const [projectMenuIndex, setProjectMenuIndex] = useState(-1);
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
   const [mounted, setMounted] = useState(false);
@@ -135,7 +137,10 @@ export default function TopBar() {
             </form>
           ) : (
             <button
-              onClick={() => setShowProjectMenu(!showProjectMenu)}
+              onClick={() => { setShowProjectMenu(!showProjectMenu); setProjectMenuIndex(-1); }}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowDown' && !showProjectMenu) { e.preventDefault(); setShowProjectMenu(true); setProjectMenuIndex(0); }
+              }}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] text-white/50 text-[11px] font-medium hover:text-white/80 hover:bg-white/[0.07] transition-colors max-w-[180px]"
             >
               <FolderOpen size={11} className="shrink-0" />
@@ -143,20 +148,49 @@ export default function TopBar() {
               <ChevronDown size={10} className="shrink-0 text-white/25" />
             </button>
           )}
-          {showProjectMenu && (
-            <div className="absolute top-full left-0 mt-1 min-w-[220px] rounded-xl border border-white/[0.08] bg-[#0e0e18]/95 backdrop-blur-xl overflow-hidden shadow-2xl z-50">
+          {showProjectMenu && (() => {
+            const projects = listProjects().sort((a, b) => b.lastModified - a.lastModified);
+            const canDelete = projects.length > 1;
+            const totalItems = projects.length + 2 + (canDelete ? 1 : 0); // projects + new + rename + (delete?)
+            const projectActions = [
+              { key: '_new', action: () => { newProject(); setShowProjectMenu(false); } },
+              { key: '_rename', action: () => { setNameDraft(currentProjectName); setEditingName(true); setShowProjectMenu(false); } },
+              ...(canDelete ? [{ key: '_delete', action: () => { if (window.confirm(`Delete "${currentProjectName}"? This cannot be undone.`)) { deleteCurrentProject(); setShowProjectMenu(false); } } }] : []),
+            ];
+            const handleProjectKey = (e: React.KeyboardEvent) => {
+              if (e.key === 'ArrowDown') { e.preventDefault(); setProjectMenuIndex(i => Math.min(i + 1, totalItems - 1)); }
+              else if (e.key === 'ArrowUp') { e.preventDefault(); setProjectMenuIndex(i => Math.max(i - 1, 0)); }
+              else if (e.key === 'Enter' && projectMenuIndex >= 0) {
+                e.preventDefault();
+                if (projectMenuIndex < projects.length) {
+                  const p = projects[projectMenuIndex];
+                  if (p.id !== currentProjectId) switchProject(p.id);
+                  setShowProjectMenu(false);
+                } else {
+                  projectActions[projectMenuIndex - projects.length]?.action();
+                }
+              }
+              else if (e.key === 'Escape') { e.preventDefault(); setShowProjectMenu(false); }
+            };
+            return (
+            <div
+              className="absolute top-full left-0 mt-1 min-w-[220px] rounded-xl border border-white/[0.08] bg-[#0e0e18]/95 backdrop-blur-xl overflow-hidden shadow-2xl z-50"
+              tabIndex={-1}
+              ref={(el) => { if (el && projectMenuIndex >= 0) el.focus(); }}
+              onKeyDown={handleProjectKey}
+            >
               <div className="py-1">
-                {/* Current projects */}
-                {listProjects()
-                  .sort((a, b) => b.lastModified - a.lastModified)
-                  .map(p => (
+                {projects.map((p, idx) => (
                   <button
                     key={p.id}
                     onClick={() => { if (p.id !== currentProjectId) switchProject(p.id); setShowProjectMenu(false); }}
+                    onMouseEnter={() => setProjectMenuIndex(idx)}
                     className={`w-full flex items-center justify-between px-3 py-1.5 text-[11px] transition-colors ${
-                      p.id === currentProjectId
-                        ? 'bg-white/[0.06] text-white/80'
-                        : 'text-white/40 hover:bg-white/[0.04] hover:text-white/70'
+                      idx === projectMenuIndex
+                        ? 'bg-white/[0.07] text-white/90'
+                        : p.id === currentProjectId
+                          ? 'bg-white/[0.06] text-white/80'
+                          : 'text-white/40 hover:bg-white/[0.04] hover:text-white/70'
                     }`}
                   >
                     <div className="flex items-center gap-2 min-w-0">
@@ -166,24 +200,27 @@ export default function TopBar() {
                   </button>
                 ))}
                 <div className="border-t border-white/[0.06] mt-1 pt-1">
-                  {/* New project */}
                   <button
                     onClick={() => { newProject(); setShowProjectMenu(false); }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-emerald-400/60 hover:bg-white/[0.04] hover:text-emerald-400 transition-colors"
+                    onMouseEnter={() => setProjectMenuIndex(projects.length)}
+                    className={`w-full flex items-center gap-2 px-3 py-1.5 text-[11px] transition-colors ${
+                      projectMenuIndex === projects.length ? 'bg-white/[0.07] text-emerald-400' : 'text-emerald-400/60 hover:bg-white/[0.04] hover:text-emerald-400'
+                    }`}
                   >
                     <FilePlus2 size={11} />
                     New Project
                   </button>
-                  {/* Rename */}
                   <button
                     onClick={() => { setNameDraft(currentProjectName); setEditingName(true); setShowProjectMenu(false); }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-white/30 hover:bg-white/[0.04] hover:text-white/60 transition-colors"
+                    onMouseEnter={() => setProjectMenuIndex(projects.length + 1)}
+                    className={`w-full flex items-center gap-2 px-3 py-1.5 text-[11px] transition-colors ${
+                      projectMenuIndex === projects.length + 1 ? 'bg-white/[0.07] text-white/60' : 'text-white/30 hover:bg-white/[0.04] hover:text-white/60'
+                    }`}
                   >
                     <Pencil size={11} />
                     Rename
                   </button>
-                  {/* Delete */}
-                  {listProjects().length > 1 && (
+                  {canDelete && (
                     <button
                       onClick={() => {
                         if (window.confirm(`Delete "${currentProjectName}"? This cannot be undone.`)) {
@@ -191,7 +228,10 @@ export default function TopBar() {
                           setShowProjectMenu(false);
                         }
                       }}
-                      className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-rose-400/40 hover:bg-rose-500/[0.06] hover:text-rose-400/80 transition-colors"
+                      onMouseEnter={() => setProjectMenuIndex(projects.length + 2)}
+                      className={`w-full flex items-center gap-2 px-3 py-1.5 text-[11px] transition-colors ${
+                        projectMenuIndex === projects.length + 2 ? 'bg-rose-500/[0.08] text-rose-400/80' : 'text-rose-400/40 hover:bg-rose-500/[0.06] hover:text-rose-400/80'
+                      }`}
                     >
                       <Trash2 size={11} />
                       Delete Project
@@ -200,13 +240,17 @@ export default function TopBar() {
                 </div>
               </div>
             </div>
-          )}
+            );
+          })()}
         </div>
 
         {/* Add Node */}
         <div className="relative" ref={menuRef}>
           <button
-            onClick={() => setShowAddMenu(!showAddMenu)}
+            onClick={() => { setShowAddMenu(!showAddMenu); setAddMenuIndex(-1); }}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowDown' && !showAddMenu) { e.preventDefault(); setShowAddMenu(true); setAddMenuIndex(0); }
+            }}
             title="Add a new node (or double-click canvas)"
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-medium hover:bg-emerald-500/20 transition-colors"
           >
@@ -214,9 +258,19 @@ export default function TopBar() {
             Add Node
           </button>
           {showAddMenu && (
-            <div className="absolute top-full left-0 mt-1 min-w-[170px] rounded-xl border border-white/[0.08] bg-[#0e0e18]/95 backdrop-blur-xl overflow-hidden shadow-2xl z-50">
+            <div
+              className="absolute top-full left-0 mt-1 min-w-[170px] rounded-xl border border-white/[0.08] bg-[#0e0e18]/95 backdrop-blur-xl overflow-hidden shadow-2xl z-50"
+              tabIndex={-1}
+              ref={(el) => { if (el && addMenuIndex >= 0) el.focus(); }}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowDown') { e.preventDefault(); setAddMenuIndex(i => Math.min(i + 1, allNodeTypes.length - 1)); }
+                else if (e.key === 'ArrowUp') { e.preventDefault(); setAddMenuIndex(i => Math.max(i - 1, 0)); }
+                else if (e.key === 'Enter' && addMenuIndex >= 0) { e.preventDefault(); createNewNode(allNodeTypes[addMenuIndex].category); setShowAddMenu(false); }
+                else if (e.key === 'Escape') { e.preventDefault(); setShowAddMenu(false); }
+              }}
+            >
               <div className="py-1">
-                {allNodeTypes.map(({ category, label }) => {
+                {allNodeTypes.map(({ category, label }, idx) => {
                   const Icon = getCategoryIcon(category);
                   const colors = getNodeColors(category);
                   const count = nodes.filter(n => n.data.category === category).length;
@@ -224,7 +278,10 @@ export default function TopBar() {
                     <button
                       key={category}
                       onClick={() => { createNewNode(category); setShowAddMenu(false); }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-[11px] text-white/60 hover:text-white/90 hover:bg-white/[0.05] transition-colors"
+                      onMouseEnter={() => setAddMenuIndex(idx)}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 text-[11px] transition-colors ${
+                        idx === addMenuIndex ? 'text-white/90 bg-white/[0.07]' : 'text-white/60 hover:text-white/90 hover:bg-white/[0.05]'
+                      }`}
                     >
                       <Icon size={12} style={{ color: colors.primary }} />
                       <span>{label}</span>

@@ -20,7 +20,7 @@ Tracks the systematic UI/UX polish pass across 20 items in 4 rounds.
 
 ### Round 3 — Interaction Polish
 - [x] 11. Focus ring styling for keyboard navigation
-- [ ] 12. Dropdown keyboard navigation (arrow keys, Enter, Escape)
+- [x] 12. Dropdown keyboard navigation (arrow keys, Enter, Escape)
 - [ ] 13. Drag feedback on canvas nodes
 - [ ] 14. Panel resize handles
 - [ ] 15. Smooth scroll to node on search/breadcrumb select
@@ -37,6 +37,15 @@ Tracks the systematic UI/UX polish pass across 20 items in 4 rounds.
 ## Cycle Log
 
 <!-- Newest entries at top -->
+
+### Polish 12 — Dropdown keyboard navigation
+- **Changed**: TopBar.tsx
+- **Add Node menu**: Arrow keys move highlight, Enter creates node, Escape closes
+- **Project Switcher menu**: Arrow keys navigate through projects + actions (New, Rename, Delete), Enter activates, Escape closes
+- Both menus: `tabIndex={-1}` on dropdown container, auto-focus via callback ref
+- Mouse hover syncs with keyboard index (`onMouseEnter` sets index)
+- Active item gets `bg-white/[0.07]` highlight (visually distinct from hover-only state)
+- ArrowDown on closed trigger button opens menu and selects first item
 
 ### Polish 11 — Focus ring styling for keyboard navigation
 - **Changed**: globals.css

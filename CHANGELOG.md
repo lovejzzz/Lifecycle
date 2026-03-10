@@ -1,5 +1,9 @@
 # Changelog
 
+### 2026-03-10 — Polish 12: Dropdown Keyboard Navigation
+
+Added full keyboard navigation to Add Node and Project Switcher dropdown menus. ArrowUp/Down moves highlight, Enter activates, Escape closes. Mouse hover syncs with keyboard index. ArrowDown on closed button opens menu and selects first item.
+
 ### 2026-03-10 — Polish 11: Focus Ring Styling
 
 Added global `focus-visible` styles for keyboard navigation accessibility. Buttons get an emerald outline ring (only on Tab focus, not mouse clicks). Inputs get a border-color glow and box-shadow instead. React Flow canvas elements are excluded since they have their own selection state.
