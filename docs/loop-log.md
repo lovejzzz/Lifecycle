@@ -18,7 +18,7 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 - [x] CIDPanel.tsx (cycle 2)
 - [x] NodeDetailPanel.tsx + ArtifactPanel.tsx (cycle 11 — 2 bugs fixed)
 - [x] TopBar.tsx + LifecycleNode.tsx (cycle 12 — 1 bug fixed)
-- [ ] ActivityPanel.tsx + PreviewPanel.tsx (batch — quick scan)
+- [x] ActivityPanel.tsx + PreviewPanel.tsx (cycle 13 — 1 bug fixed)
 - [ ] DiffView.tsx + ImpactPreview.tsx + NodeContextMenu.tsx + ErrorBoundary.tsx (batch — quick scan)
 
 *Coverage Push Strategy (Meta-Refinement 3):*
@@ -86,6 +86,15 @@ Components and modules are audited in rotation. Each cycle picks the next un-aud
 ## Cycle Log
 
 <!-- Newest entries at top -->
+
+### Cycle 13 — 2026-03-10 10:00
+- **Audited**: ActivityPanel.tsx + PreviewPanel.tsx (Tier 3 batch — quick scan)
+- **Tests**: 522 passing (+13), 0 failing; coverage: 57.19% stmts (+0.59pp), useStore.ts 45.84% (+0.83pp)
+- **Issues found**: 1 fixed
+  1. LOW: PreviewPanel `useEffect` for auto-focus used `setTimeout` without cleanup return. If panel unmounts before 200ms timer fires, callback runs on stale ref. (fixed: added `clearTimeout` in cleanup)
+  - ActivityPanel.tsx: clean — simple render-only component, filter state uses functional setState correctly.
+- **Fixed**: missing setTimeout cleanup in PreviewPanel focus effect
+- **Coverage push**: useStore.ts (executeWorkflow + executeBranch) — 13 new tests in Scenario 23 covering executeWorkflow (empty graph no-op, isProcessing guard, topo-order chain execution, execution snapshot for diff, upstream failure cascade skip, timing in completion message, executionProgress cleared, cycle detection/blocking) and executeBranch (nonexistent node no-op, all-executed report, upstream-only subset execution, completion with timing, skip already-succeeded upstream). Coverage 56.60% → 57.19% overall, useStore.ts 45.01% → 45.84%.
 
 ### Cycle 12 — 2026-03-10 09:00
 - **Audited**: TopBar.tsx + LifecycleNode.tsx (Tier 3 batch — quick scan)

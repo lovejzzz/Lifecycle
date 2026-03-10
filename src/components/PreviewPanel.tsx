@@ -40,9 +40,9 @@ export default function PreviewPanel() {
 
   // Focus input when panel opens
   useEffect(() => {
-    if (showPreviewPanel) {
-      setTimeout(() => inputRef.current?.focus(), 200);
-    }
+    if (!showPreviewPanel) return;
+    const timer = setTimeout(() => inputRef.current?.focus(), 200);
+    return () => clearTimeout(timer);
   }, [showPreviewPanel]);
 
   // Find input and output nodes for the workflow

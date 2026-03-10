@@ -1,5 +1,15 @@
 # Changelog
 
+### 2026-03-10 — Loop Cycle 13: PreviewPanel Audit + executeWorkflow & executeBranch Tests
+
+**Tier 3 audit**: ActivityPanel.tsx + PreviewPanel.tsx
+- **Fix: PreviewPanel focus timer lacks cleanup** — `setTimeout` in useEffect for auto-focus had no cleanup, causing potential callback on unmounted component. Added `clearTimeout` in cleanup return.
+- ActivityPanel.tsx: clean — simple render-only, no effects needing cleanup.
+
+**Coverage push**: useStore.ts (executeWorkflow + executeBranch)
+- 13 new tests in Scenario 23 covering executeWorkflow (empty graph no-op, isProcessing guard, topo-order chain execution, execution snapshot for diff, upstream failure cascade skip, timing in completion message, executionProgress cleared, cycle detection/blocking) and executeBranch (nonexistent node no-op, all-executed report, upstream-only subset execution, completion message with count/timing, skip already-succeeded upstream)
+- Coverage: useStore.ts 45.01% → 45.84%, overall 56.60% → 57.19%, 522 tests passing
+
 ### 2026-03-10 — Loop Cycle 12: TopBar Audit + propagateStale & chatWithCID Tests
 
 **Tier 3 audit**: TopBar.tsx + LifecycleNode.tsx

@@ -2126,4 +2126,208 @@ describe('User Simulation: Real Journeys', () => {
       expect(msgs.some(m => m.role === 'cid')).toBe(true);
     });
   });
+
+  // ── Scenario 23: executeWorkflow & executeBranch ──
+  describe('Scenario 23 — executeWorkflow & executeBranch', () => {
+    beforeEach(() => {
+      useLifecycleStore.setState({
+        nodes: [], edges: [], events: [], messages: [],
+        impactPreview: null, toasts: [], isProcessing: false,
+        executionProgress: null, lastExecutionSnapshot: new Map(),
+      });
+      mockFetch.mockClear();
+    });
+
+    // ── executeWorkflow ──
+
+    it('executeWorkflow: no-ops on empty graph', async () => {
+      const msgsBefore = getStore().messages.length;
+      await getStore().executeWorkflow();
+      expect(getStore().messages.length).toBe(msgsBefore);
+    });
+
+    it('executeWorkflow: no-ops when isProcessing is true', async () => {
+      getStore().createNewNode('input');
+      useLifecycleStore.setState({ isProcessing: true });
+      const eventsBefore = getStore().events.length;
+      await getStore().executeWorkflow();
+      expect(getStore().events.length).toBe(eventsBefore);
+    });
+
+    it('executeWorkflow: executes chain in topological order', async () => {
+      // Build input → artifact chain
+      getStore().createNewNode('input');
+      getStore().createNewNode('artifact');
+      useLifecycleStore.setState({ edges: [] });
+      const [inp, art] = getStore().nodes;
+      getStore().updateNodeData(inp.id, { inputValue: 'test data' });
+      getStore().addEdge({ id: 'e1', source: inp.id, target: art.id, type: 'default' });
+
+      await getStore().executeWorkflow();
+
+      // Both should be executed
+      const updatedInp = getStore().nodes.find(n => n.id === inp.id)!;
+      const updatedArt = getStore().nodes.find(n => n.id === art.id)!;
+      expect(updatedInp.data.executionStatus).toBe('success');
+      expect(updatedArt.data.executionStatus).toBe('success');
+      // Should have a completion message
+      expect(getStore().messages.some(m => m.content.includes('nodes processed') || m.content.includes('Magnifique'))).toBe(true);
+    });
+
+    it('executeWorkflow: saves execution snapshot for diff', async () => {
+      getStore().createNewNode('input');
+      const inp = getStore().nodes[0];
+      getStore().updateNodeData(inp.id, { inputValue: 'data', executionResult: 'old result' });
+
+      await getStore().executeWorkflow();
+
+      // lastExecutionSnapshot should contain the old result
+      const snapshot = getStore().lastExecutionSnapshot;
+      expect(snapshot.get(inp.id)).toBe('old result');
+    });
+
+    it('executeWorkflow: skips downstream when upstream fails', async () => {
+      // Build artifact1 → artifact2 chain (no input, so artifact1 needs API)
+      getStore().createNewNode('artifact');
+      getStore().createNewNode('artifact');
+      useLifecycleStore.setState({ edges: [] });
+      const [a1, a2] = getStore().nodes;
+      getStore().addEdge({ id: 'e1', source: a1.id, target: a2.id, type: 'default' });
+
+      // Mock first artifact to fail
+      mockFetch.mockImplementationOnce(async () => ({
+        ok: false,
+        json: async () => ({ error: 'server error' }),
+      }));
+
+      await getStore().executeWorkflow();
+
+      // a2 should be skipped due to upstream failure
+      const updatedA2 = getStore().nodes.find(n => n.id === a2.id)!;
+      expect(updatedA2.data.executionStatus).toBe('error');
+      expect(updatedA2.data.executionError).toContain('upstream');
+    });
+
+    it('executeWorkflow: reports timing in completion message', async () => {
+      getStore().createNewNode('input');
+      getStore().updateNodeData(getStore().nodes[0].id, { inputValue: 'x' });
+
+      await getStore().executeWorkflow();
+
+      const msgs = getStore().messages;
+      const completionMsg = msgs.find(m => m.content.includes('Timing:'));
+      expect(completionMsg).toBeDefined();
+    });
+
+    it('executeWorkflow: clears executionProgress after completion', async () => {
+      getStore().createNewNode('input');
+      getStore().updateNodeData(getStore().nodes[0].id, { inputValue: 'x' });
+
+      await getStore().executeWorkflow();
+
+      expect(getStore().executionProgress).toBeNull();
+    });
+
+    it('executeWorkflow: detects and blocks on cycles', async () => {
+      // Create two nodes with a cycle
+      getStore().createNewNode('artifact');
+      getStore().createNewNode('artifact');
+      useLifecycleStore.setState({ edges: [] });
+      const [a, b] = getStore().nodes;
+      getStore().addEdge({ id: 'e1', source: a.id, target: b.id, type: 'default' });
+      getStore().addEdge({ id: 'e2', source: b.id, target: a.id, type: 'default' });
+
+      await getStore().executeWorkflow();
+
+      // Should report cycle and not execute
+      expect(getStore().messages.some(m => m.content.toLowerCase().includes('cycle'))).toBe(true);
+    });
+
+    // ── executeBranch ──
+
+    it('executeBranch: no-ops on nonexistent node', async () => {
+      const msgsBefore = getStore().messages.length;
+      await getStore().executeBranch('nonexistent');
+      expect(getStore().messages.length).toBe(msgsBefore);
+    });
+
+    it('executeBranch: reports all-executed when upstream done', async () => {
+      getStore().createNewNode('input');
+      getStore().createNewNode('artifact');
+      useLifecycleStore.setState({ edges: [] });
+      const [inp, art] = getStore().nodes;
+      getStore().updateNodeData(inp.id, { inputValue: 'test' });
+      getStore().addEdge({ id: 'e1', source: inp.id, target: art.id, type: 'default' });
+
+      // Pre-execute both to mark as success
+      useLifecycleStore.setState({
+        nodes: getStore().nodes.map(n => ({
+          ...n, data: { ...n.data, executionStatus: 'success' as const },
+        })),
+      });
+
+      await getStore().executeBranch(art.id);
+
+      // Should report all-executed message
+      expect(getStore().messages.some(m => m.content.includes('already executed'))).toBe(true);
+    });
+
+    it('executeBranch: executes only upstream subset', async () => {
+      // Build chain: inp → art → out, executeBranch(art) should only run inp + art
+      getStore().createNewNode('input');
+      getStore().createNewNode('artifact');
+      getStore().createNewNode('output');
+      useLifecycleStore.setState({ edges: [] });
+      const [inp, art, out] = getStore().nodes;
+      getStore().updateNodeData(inp.id, { inputValue: 'data' });
+      getStore().addEdge({ id: 'e1', source: inp.id, target: art.id, type: 'default' });
+      getStore().addEdge({ id: 'e2', source: art.id, target: out.id, type: 'default' });
+
+      await getStore().executeBranch(art.id);
+
+      // art should be executed (inp passes through, art gets API call)
+      const updatedArt = getStore().nodes.find(n => n.id === art.id)!;
+      expect(updatedArt.data.executionStatus).toBe('success');
+      // out should NOT be executed
+      const updatedOut = getStore().nodes.find(n => n.id === out.id)!;
+      expect(updatedOut.data.executionStatus).not.toBe('success');
+    });
+
+    it('executeBranch: reports completion with node count and timing', async () => {
+      getStore().createNewNode('input');
+      getStore().createNewNode('artifact');
+      useLifecycleStore.setState({ edges: [] });
+      const [inp, art] = getStore().nodes;
+      getStore().updateNodeData(inp.id, { inputValue: 'data' });
+      getStore().addEdge({ id: 'e1', source: inp.id, target: art.id, type: 'default' });
+
+      await getStore().executeBranch(art.id);
+
+      expect(getStore().messages.some(m =>
+        m.content.includes('Branch execution complete') && m.content.includes('node(s)')
+      )).toBe(true);
+    });
+
+    it('executeBranch: skips already-succeeded upstream nodes', async () => {
+      getStore().createNewNode('input');
+      getStore().createNewNode('artifact');
+      useLifecycleStore.setState({ edges: [] });
+      const [inp, art] = getStore().nodes;
+      getStore().updateNodeData(inp.id, { inputValue: 'data' });
+      getStore().addEdge({ id: 'e1', source: inp.id, target: art.id, type: 'default' });
+
+      // Pre-mark input as already succeeded
+      useLifecycleStore.setState({
+        nodes: getStore().nodes.map(n => ({
+          ...n, data: { ...n.data, executionStatus: n.id === inp.id ? 'success' as const : n.data.executionStatus },
+        })),
+      });
+
+      await getStore().executeBranch(art.id);
+
+      // Should only execute 1 node (art), not 2
+      const branchMsg = getStore().messages.find(m => m.content.includes('1 node(s) to execute'));
+      expect(branchMsg).toBeDefined();
+    });
+  });
 });
