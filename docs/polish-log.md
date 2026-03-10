@@ -15,7 +15,7 @@ Tracks the systematic UI/UX polish pass across 20 items in 4 rounds.
 - [x] 6. Toast entrance/exit animations
 - [x] 7. Edge label picker viewport clamping
 - [x] 8. Low-contrast text fix (WCAG AA)
-- [ ] 9. Consistent icon sizing across components
+- [x] 9. Consistent icon sizing across components
 - [ ] 10. Keyboard shortcut tooltips on buttons
 
 ### Round 3 — Interaction Polish
@@ -37,6 +37,17 @@ Tracks the systematic UI/UX polish pass across 20 items in 4 rounds.
 ## Cycle Log
 
 <!-- Newest entries at top -->
+
+### Polish 9 — Consistent icon sizing across components
+- **Changed**: ActivityPanel.tsx
+- Audited all icon sizes across 10 components — found a 4-tier sizing hierarchy already in place:
+  - `size={14}` — panel close buttons (X)
+  - `size={12}` — menu items, panel header icons, standard buttons
+  - `size={10}`–`size={11}` — compact action bar buttons, inline status
+  - `size={9}` — micro-buttons (copy, edit, delete within content)
+- Fixed ActivityPanel close button: `X size={11}` in `w-5 h-5` → `X size={14}` in `w-7 h-7 rounded-lg` to match all other panels
+- Fixed ActivityPanel expand/collapse chevron: `size={11}` in `w-5 h-5` → `size={12}` in `w-7 h-7 rounded-lg`
+- Both buttons now have matching hover styles (`hover:bg-white/5`)
 
 ### Polish 8 — Low-contrast text fix (WCAG AA)
 - **Changed**: 10 files — CIDPanel, ActivityPanel, DiffView, Canvas, LifecycleNode, NodeDetailPanel, ImpactPreview, ErrorBoundary, PreviewPanel

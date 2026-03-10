@@ -1,5 +1,9 @@
 # Changelog
 
+### 2026-03-10 — Polish 9: Consistent Icon Sizing
+
+Audited icon sizes across all components and established a 4-tier sizing hierarchy (14/12/10-11/9). Fixed ActivityPanel close button and expand/collapse chevron to match other panels — `X` from size 11 to 14, container from `w-5 h-5` to `w-7 h-7` with matching hover styles.
+
 ### 2026-03-10 — Polish 8: Low-Contrast Text Fix (WCAG AA)
 
 Raised opacity on 40+ instances of barely-visible text across 10 components. All `text-white/10` bumped to `/20`–`/25`, all `text-white/15` to `/25`–`/30`, and all readable `text-white/20` content to `/30`. Timestamps, status labels, version numbers, empty states, and placeholder text are now legible against the dark background.

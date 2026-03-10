@@ -70,15 +70,15 @@ export default function ActivityPanel() {
         <div className="flex items-center gap-1">
           <button
             onClick={() => setExpanded(!expanded)}
-            className="w-5 h-5 rounded flex items-center justify-center text-white/25 hover:text-white/50 transition-colors"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors"
           >
-            {expanded ? <ChevronDown size={11} /> : <ChevronUp size={11} />}
+            {expanded ? <ChevronDown size={12} /> : <ChevronUp size={12} />}
           </button>
           <button
             onClick={toggleActivityPanel}
-            className="w-5 h-5 rounded flex items-center justify-center text-white/25 hover:text-white/50 transition-colors"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors"
           >
-            <X size={11} />
+            <X size={14} />
           </button>
         </div>
       </div>
