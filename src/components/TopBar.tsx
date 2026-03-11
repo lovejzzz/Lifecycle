@@ -45,8 +45,8 @@ export default function TopBar() {
 
   useEffect(() => { setMounted(true); }, []);
 
-  // Platform-aware modifier key for tooltips
-  const mod = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent) ? '⌘' : 'Ctrl+';
+  // Platform-aware modifier key for tooltips (use stable default until mounted to avoid hydration mismatch)
+  const mod = mounted && typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent) ? '⌘' : 'Ctrl+';
 
   // Track seen message count when panel is open
   useEffect(() => {

@@ -880,7 +880,7 @@ function CanvasInner() {
                   }`}
                 >
                   <span className="text-[10px] font-medium">Browse All Templates</span>
-                  <span className="text-[9px] ml-1.5 opacity-50">{typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent) ? '\u2318' : 'Ctrl+'}T</span>
+                  <span className="text-[9px] ml-1.5 opacity-50">{mounted && typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent) ? '\u2318' : 'Ctrl+'}T</span>
                 </button>
               </div>
               {/* Prompt categories with contextual suggestions */}

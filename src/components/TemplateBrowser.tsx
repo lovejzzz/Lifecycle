@@ -249,7 +249,7 @@ export default function TemplateBrowser({ isOpen, onClose }: TemplateBrowserProp
             {/* Footer hint */}
             <div className="px-5 py-2.5 border-t border-white/[0.06] text-[10px] text-white/20 flex items-center justify-between">
               <span>Press <kbd className="px-1 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] font-mono text-[9px]">Esc</kbd> to close</span>
-              <span><kbd className="px-1 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] font-mono text-[9px]">{typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent) ? '\u2318' : 'Ctrl+'}T</kbd> to toggle</span>
+              <span><kbd className="px-1 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] font-mono text-[9px]">{typeof window !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent) ? '\u2318' : 'Ctrl+'}T</kbd> to toggle</span>
             </div>
           </motion.div>
         </motion.div>

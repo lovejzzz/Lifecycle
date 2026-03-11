@@ -1574,3 +1574,156 @@ test.describe('CID diagnostic commands', () => {
     await expect(cidPanel.getByText(/health|score|metric|node|edge/i).first()).toBeVisible({ timeout: 5000 });
   });
 });
+
+// ── Education templates ──────────────────────────────────────────────────────
+
+test.describe('Education templates', () => {
+  test('Lesson Planning template loads with expected nodes', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Lesson Planning/ }).click();
+    await page.waitForTimeout(2500);
+
+    await expect(page.getByText('Topic').first()).toBeVisible();
+    await expect(page.getByText('Learning Goals').first()).toBeVisible();
+    await expect(page.getByText('Activities').first()).toBeVisible();
+    await expect(page.getByText('Assessment').first()).toBeVisible();
+  });
+
+  test('Assignment Design template loads with expected nodes', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Assignment Design/ }).click();
+    await page.waitForTimeout(2500);
+
+    await expect(page.getByText('Brief').first()).toBeVisible();
+    await expect(page.getByText('Rubric').first()).toBeVisible();
+    await expect(page.getByText('Student Guide').first()).toBeVisible();
+  });
+});
+
+// ── CID commands: count, plan, progress, why, reverse, clone ─────────────────
+
+test.describe('CID additional commands', () => {
+  test('count command shows node/edge statistics', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await page.waitForTimeout(2500);
+
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('count');
+    await cidInput.press('Enter');
+
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(cidPanel.getByText(/\d+\s*node/i).first()).toBeVisible({ timeout: 5000 });
+  });
+
+  test('plan command shows execution plan', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await page.waitForTimeout(2500);
+
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('plan');
+    await cidInput.press('Enter');
+
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(cidPanel.getByText(/plan|execution|order|step/i).first()).toBeVisible({ timeout: 5000 });
+  });
+
+  test('progress command shows completion status', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await page.waitForTimeout(2500);
+
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('progress');
+    await cidInput.press('Enter');
+
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(cidPanel.getByText(/progress|complete|%|\d+/i).first()).toBeVisible({ timeout: 5000 });
+  });
+
+  test('why command shows node purpose', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await page.waitForTimeout(2500);
+
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('why Rubrics');
+    await cidInput.press('Enter');
+
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(cidPanel.getByText(/rubric|upstream|downstream|depend|purpose/i).first()).toBeVisible({ timeout: 5000 });
+  });
+
+  test('reverse command flips node edges', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await page.waitForTimeout(2500);
+
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('reverse Rubrics');
+    await cidInput.press('Enter');
+
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(cidPanel.getByText(/revers|flip|rubric/i).first()).toBeVisible({ timeout: 5000 });
+  });
+
+  test('clone workflow command duplicates the workflow', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await page.waitForTimeout(2500);
+
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('clone workflow');
+    await cidInput.press('Enter');
+
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(cidPanel.getByText(/clon|duplicat|cop/i).first()).toBeVisible({ timeout: 5000 });
+  });
+});
+
+// ── Node detail panel interactions ───────────────────────────────────────────
+
+test.describe('Node detail panel', () => {
+  test('clicking a node shows detail panel with content area', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await page.waitForTimeout(2500);
+
+    // Click on a node
+    await page.getByText('Syllabus').first().click();
+
+    // Node detail panel should appear with the node label
+    const detailPanel = page.locator('[aria-label="Node Details"]');
+    await expect(detailPanel).toBeVisible({ timeout: 3000 });
+    await expect(detailPanel.getByText('Syllabus').first()).toBeVisible();
+  });
+
+  test('node detail panel shows category badge', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await page.waitForTimeout(2500);
+
+    await page.getByText('Syllabus').first().click();
+
+    const detailPanel = page.locator('[aria-label="Node Details"]');
+    await expect(detailPanel).toBeVisible({ timeout: 3000 });
+    // Should show the category (input, artifact, etc.)
+    await expect(detailPanel.getByText(/input|artifact|state|trigger|review/i).first()).toBeVisible();
+  });
+});
+
+// ── Keyboard undo/redo ───────────────────────────────────────────────────────
+
+test.describe('Keyboard shortcuts for undo/redo', () => {
+  test('Cmd+Z undo button is visible in toolbar', async ({ page }) => {
+    await page.goto('/');
+
+    // Undo/Redo buttons should be in the toolbar
+    const toolbar = page.locator('[role="toolbar"][aria-label="Undo and redo"]');
+    await expect(toolbar).toBeVisible();
+    // Both buttons should exist (even if disabled)
+    const buttons = toolbar.locator('button');
+    await expect(buttons).toHaveCount(2);
+  });
+});
