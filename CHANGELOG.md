@@ -1,5 +1,16 @@
 # Changelog
 
+### 2026-03-11 — E2E Coverage Expansion: 95 Browser Tests
+
+- **13 new Playwright E2E tests** (82 → 95 total):
+  - CID commands: solve, optimize, layout
+  - Activity panel: toggle, event creation on template load
+  - Agent mode switching: Rowan ↔ Poirot
+  - Edge interactions: edges visible, labels rendered
+  - Chat management: clear chat, multi-command stacking
+  - Canvas controls: minimap, zoom in/out/fit
+- 890 vitest + 111 routing benchmark + 95 E2E tests all passing, build clean.
+
 ### 2026-03-11 — E2E Coverage Expansion: 82 Browser Tests
 
 - **13 new Playwright E2E tests** (69 → 82 total):
