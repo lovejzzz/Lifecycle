@@ -642,7 +642,7 @@ export default function CIDPanel() {
       dispatchCommand(prompt, () => isolateByName(prompt));
     } else if (/^(?:summarize|summary|executive|brief|overview)\s*$/i.test(prompt)) {
       dispatchCommand(prompt, () => summarize());
-    } else if (/^(?:validate|integrity|check|audit)\s*$/i.test(prompt)) {
+    } else if (/^(?:validate|integrity|check|audit)(?:\s+(?:the\s+)?(?:workflow|graph|project|all))?\s*$/i.test(prompt)) {
       dispatchCommand(prompt, () => validate());
     } else if (/^(?:what\s*if|impact|without)\b/i.test(prompt)) {
       dispatchCommand(prompt, () => whatIf(prompt));
@@ -843,7 +843,7 @@ export default function CIDPanel() {
     } else if (/^(?:search|find|grep)\s+(.+)$/i.test(prompt)) {
       const searchMatch = prompt.match(/(?:search|find|grep)\s+(.+)$/i);
       if (searchMatch) dispatchCommand(prompt, () => searchMessages(searchMatch[1].trim()), 200);
-    } else if (/^(?:compress|compact|simplify|dedupe|dedup)\s*$/i.test(prompt)) {
+    } else if (/^(?:compress|compact|simplify|dedupe|dedup)(?:\s+(?:the\s+)?(?:workflow|graph|project|all|nodes))?\s*$/i.test(prompt)) {
       dispatchCommand(prompt, () => compressWorkflow(), 500);
     } else if (/^(?:bottleneck|bottlenecks|choke|chokepoint|hub|hubs|spof)\s*$/i.test(prompt)) {
       dispatchCommand(prompt, () => findBottlenecks(), 400);

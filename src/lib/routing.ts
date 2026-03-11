@@ -211,7 +211,7 @@ export function classifyRoute(prompt: string, hasWorkflow: boolean = false): Com
   if (/^(?:summarize|summary|executive|brief|overview)\s*$/i.test(prompt)) return 'summarize';
 
   // Validate
-  if (/^(?:validate|integrity|check|audit)\s*$/i.test(prompt)) return 'validate';
+  if (/^(?:validate|integrity|check|audit)(?:\s+(?:the\s+)?(?:workflow|graph|project|all))?\s*$/i.test(prompt)) return 'validate';
 
 
   // What if
@@ -268,7 +268,7 @@ export function classifyRoute(prompt: string, hasWorkflow: boolean = false): Com
   if (/^(?:search|find|grep)\s+(.+)$/i.test(prompt)) return 'search';
 
   // Compress
-  if (/^(?:compress|compact|simplify|dedupe|dedup)\s*$/i.test(prompt)) return 'compress';
+  if (/^(?:compress|compact|simplify|dedupe|dedup)(?:\s+(?:the\s+)?(?:workflow|graph|project|all|nodes))?\s*$/i.test(prompt)) return 'compress';
 
   // Bottlenecks
   if (/^(?:bottleneck|bottlenecks|choke|chokepoint|hub|hubs|spof)\s*$/i.test(prompt)) return 'bottlenecks';
