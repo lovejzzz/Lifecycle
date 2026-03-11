@@ -1,5 +1,16 @@
 # Changelog
 
+### 2026-03-11 — E2E Coverage Expansion: 69 Browser Tests
+
+- **17 new Playwright E2E tests** (52 → 69 total):
+  - Canvas interactions: double-click to create node, right-click context menu, Duplicate action
+  - Keyboard shortcuts: Cmd+F search with results/dismiss, Cmd+K command palette with actions/dismiss
+  - CID commands: bottlenecks, deps, explain, progress, swap
+  - Responsive viewports: mobile (375×667) and tablet (768×1024) render without crash
+  - Node detail panel: category and status display on click
+  - CID set-status: lock and unlock commands
+- 885 vitest + 107 routing benchmark + 69 E2E tests all passing, build clean.
+
 ### 2026-03-11 — E2E Browser Tests + Routing Benchmark + UI/UX Fixes
 
 - **52 Playwright E2E tests** covering app renders, template loading, CID chat commands, lifecycle loop, keyboard shortcuts, node interactions, and education workflows
