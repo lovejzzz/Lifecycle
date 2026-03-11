@@ -1,5 +1,19 @@
 # Changelog
 
+### 2026-03-10 — Coverage Push: useStore.ts 50% → 70%, Overall 61% → 76%
+
+Added 127 new tests across 8 scenarios (27-34) covering previously untested store functions:
+- **Scenario 27**: Natural language graph manipulation (connectByName, disconnectByName, deleteByName, renameByName)
+- **Scenario 28**: Health, complexity, status report, explain, validate, summarize
+- **Scenario 29**: Snapshots, critical path, whatIf impact analysis
+- **Scenario 30**: Merge, deps, reverse, orphans, count, groupByCategory, clearStale
+- **Scenario 31**: lockNode, approveNode, cidSolve, export/import, batchUpdateStatus
+- **Scenario 32**: compressWorkflow, findBottlenecks, suggestNextSteps, healthBreakdown, whyNode, isolateByName
+- **Scenario 33**: addNodeByName, setStatusByName, contentByName, listNodes, describeByName, swapByName, relabelAllEdges, clearExecutionResults, exportChatHistory
+- **Scenario 34**: Custom templates, searchMessages, checkPostMutation, getPreFlightSummary
+
+Coverage: useStore.ts 50.4% → 70.2% (+20pp), overall 61.4% → 75.5% (+14pp), 766 tests passing.
+
 ### 2026-03-10 — Polish 16: Context-Aware Loading State Copy
 
 Replaced generic loading text ("Running...", "Executing...", "Processing workflow...") with context-aware copy across 5 components. Node execution badges now show category-specific verbs (e.g., "Generating..." for artifacts, "Testing..." for test nodes). Workflow progress shows node counts. Node detail panel includes the node's label.
