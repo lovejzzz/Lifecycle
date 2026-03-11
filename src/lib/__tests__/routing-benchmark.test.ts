@@ -152,6 +152,8 @@ const BENCHMARK: BenchmarkCase[] = [
   { prompt: 'simplify the workflow', expected: 'compress', context: 'PM' },
   { prompt: 'check the workflow', expected: 'validate', context: 'PM' },
   { prompt: 'detach Rubrics from Quiz Bank', expected: 'disconnect', context: 'professor' },
+  { prompt: 'wire Syllabus to Learning Objectives', expected: 'connect', context: 'professor' },
+  { prompt: 'execute Rubrics', expected: 'run-node', context: 'professor' },
 
   // ── Natural language that should fall to LLM ──
   { prompt: 'why is my rubric out of date', expected: 'llm-fallback', context: 'professor' },
@@ -161,6 +163,7 @@ const BENCHMARK: BenchmarkCase[] = [
   { prompt: 'can you make this workflow faster', expected: 'llm-fallback' },
   { prompt: 'should I run the quiz bank next', expected: 'llm-fallback', context: 'professor' },
   { prompt: 'tell me about the quiz bank node', expected: 'llm-fallback' },
+  { prompt: 'what changed since last run', expected: 'llm-fallback', context: 'PM' },
 ];
 
 // ─── Benchmark Runner ───────────────────────────────────────────────────────
