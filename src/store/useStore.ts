@@ -4717,9 +4717,9 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
           { label: 'Learning Objectives', category: 'state', description: 'Extract and organize the course-level learning objectives from the syllabus. Use Bloom\'s taxonomy verbs. Map each objective to the weeks/modules it spans.' },
           { label: 'Lesson Plans', category: 'artifact', description: 'Generate a lesson plan for each module/week. Include topics, activities, timing, and which learning objectives each lesson addresses.' },
           { label: 'Assignments', category: 'artifact', description: 'Design assignments aligned to the lesson plans. Each assignment should reference specific learning objectives and lesson topics. Include format, length, and submission guidelines.' },
-          { label: 'Rubrics', category: 'artifact', description: 'Create grading rubrics for each assignment. Define criteria, performance levels, and point allocations that map directly to the assignment requirements.' },
-          { label: 'Quiz Bank', category: 'artifact', description: 'Generate a bank of quiz and exam questions organized by lesson/module. Include multiple question types (MCQ, short answer, essay prompts) covering key concepts from the lesson plans.' },
-          { label: 'Study Guide', category: 'artifact', description: 'Compile a student-facing study guide summarizing key concepts, vocabulary, and review questions for each module. Cross-reference lesson plans and quiz bank topics.' },
+          { label: 'Rubrics', category: 'output', description: 'Create grading rubrics for each assignment. Define criteria, performance levels, and point allocations that map directly to the assignment requirements.' },
+          { label: 'Quiz Bank', category: 'output', description: 'Generate a bank of quiz and exam questions organized by lesson/module. Include multiple question types (MCQ, short answer, essay prompts) covering key concepts from the lesson plans.' },
+          { label: 'Study Guide', category: 'output', description: 'Compile a student-facing study guide summarizing key concepts, vocabulary, and review questions for each module. Cross-reference lesson plans and quiz bank topics.' },
           { label: 'Course FAQ', category: 'output', description: 'Generate a comprehensive course FAQ answering common student questions about assignments, grading policies, schedule, and study strategies based on all upstream artifacts.' },
         ],
         edges: [
