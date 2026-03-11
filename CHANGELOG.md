@@ -1,5 +1,14 @@
 # Changelog
 
+### 2026-03-11 — Supabase Client Setup (v1.0.54)
+
+- **Feature 1 step 1**: Installed `@supabase/supabase-js`, created `src/lib/supabase.ts`
+- Typed Database interface with profiles, projects, project_data tables
+- Browser client (singleton, anon key, RLS-respecting) and server client (service role, bypasses RLS)
+- `isSupabaseConfigured()` guard — app falls back to localStorage when env vars are absent
+- Auth helpers: `getCurrentUser()`, `getSession()`
+- 965 vitest tests passing, build clean.
+
 ### 2026-03-11 — AI Cost Guardrails + Output Validation Complete (v1.0.53)
 
 - **Feature 3 complete (AI Cost Guardrails)**: _usageStats in store (totalCalls, tokens, cachedSkips), cost estimation in ImpactPreview, usage badge in TopBar, 30 cache tests
