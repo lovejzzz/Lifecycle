@@ -1,5 +1,36 @@
 # Changelog
 
+### 2026-03-11 — Document Parsing Utilities (v1.0.64)
+
+- **Feature 2 step 1**: Installed `pdf-parse` + `mammoth`, created `src/lib/docparse.ts`
+- `parseDocument()` — main entry: buffer + filename to ParsedDocument with text, sections, token estimate
+- `extractPdfText()` — PDF via pdf-parse v2, `extractDocxText()` — DOCX via mammoth
+- `detectSections()` — heading detection for syllabi, academic docs (numbered, caps, markdown, week/unit patterns)
+- `chunkDocument()` — token-aware splitting at paragraph/sentence boundaries (default 8000 tokens)
+- 1013 vitest tests passing, build clean.
+
+### 2026-03-11 — E2E Test Coverage Expansion + Flaky Fix (v1.0.63)
+
+- **40 new Playwright E2E tests** covering previously untested user flows:
+  - CID extend/generate commands (add node, build workflow)
+  - CID batch commands (approve all, unlock all, activate all)
+  - CID graph analysis (critical path, bottleneck, deps, summary)
+  - CID node mutations (focus, duplicate, connect, disconnect, group by category)
+  - CID content/export commands (content write, snapshots, templates list)
+  - CID undo/redo via chat
+  - CID slash commands (/new, /mode, /template with/without name)
+  - Keyboard shortcuts (Cmd+K opens CID, Cmd+F opens search)
+  - Responsive viewport tests (768px tablet, 375px mobile overflow check)
+  - Error states (non-existent node focus/rename, empty command, undo/redo on fresh state)
+  - Node detail panel open/close interactions
+  - Staleness cascade (propagate clean, mark stale + show stale)
+  - Template browser modal (open/close with Escape)
+  - Incident Response template loading
+  - CID execution commands (preflight, clear results)
+- **Flaky test fix**: edge labels test now waits longer for React Flow layout to settle
+- **UI improvement**: added `aria-label="Close node details"` to NodeDetailPanel close button for accessibility
+- 160 Playwright tests passing, build clean.
+
 ### 2026-03-11 — Storage Backend Tests (v1.0.62)
 
 - **Feature 1 step 9 (COMPLETE)**: 22 new tests for storage backends
