@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useEffect, createContext, useContext } from 'react';
 import AuthGate from './AuthGate';
 import { isSupabaseConfigured } from '@/lib/supabase';
-import { activateSupabaseBackend, activateLocalBackend } from '@/lib/storage';
+import { activateSupabaseBackend, activateLocalBackend, migrateLocalToSupabase } from '@/lib/storage';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 // ── Auth context ────────────────────────────────────────────────────────────
@@ -49,6 +49,8 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     // Activate appropriate storage backend
     if (u) {
       activateSupabaseBackend(u.id);
+      // Migrate local projects to Supabase on first sign-in (background, non-blocking)
+      void migrateLocalToSupabase();
     } else {
       activateLocalBackend();
     }

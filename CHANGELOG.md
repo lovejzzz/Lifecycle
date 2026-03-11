@@ -1,5 +1,12 @@
 # Changelog
 
+### 2026-03-11 — localStorage to Supabase Migration (v1.0.61)
+
+- **Feature 1 step 8**: `migrateLocalToSupabase()` — one-time migration of all localStorage projects to Supabase on first sign-in
+- Idempotent: checks `lifecycle-supabase-migrated` flag, skips projects that already exist in cloud
+- Non-blocking: runs in background from Providers.tsx after activating SupabaseBackend
+- 991 vitest tests passing, build clean.
+
 ### 2026-03-11 — Debounced Background Sync (v1.0.60)
 
 - **Feature 1 step 7**: Debounced background sync to Supabase (2s debounce)

@@ -315,6 +315,54 @@ export function activateLocalBackend(): LocalStorageBackend {
   return backend;
 }
 
+// ── localStorage → Supabase Migration ───────────────────────────────────────
+
+const MIGRATION_DONE_KEY = 'lifecycle-supabase-migrated';
+
+/**
+ * Migrate all localStorage projects to Supabase on first sign-in.
+ * Idempotent — checks a flag so it only runs once per device.
+ * Returns the number of projects migrated.
+ */
+export async function migrateLocalToSupabase(): Promise<number> {
+  if (typeof window === 'undefined') return 0;
+  if (_activeBackend.kind !== 'supabase') return 0;
+
+  // Check if migration already completed on this device
+  const done = localStorage.getItem(MIGRATION_DONE_KEY);
+  if (done) return 0;
+
+  const localProjects = readIndex();
+  if (localProjects.length === 0) {
+    localStorage.setItem(MIGRATION_DONE_KEY, new Date().toISOString());
+    return 0;
+  }
+
+  let migrated = 0;
+  const localBackend = new LocalStorageBackend();
+
+  for (const meta of localProjects) {
+    try {
+      const data = await localBackend.loadProject(meta.id);
+      if (!data) continue;
+
+      // Check if project already exists in Supabase (idempotent)
+      const existing = await _activeBackend.loadProject(meta.id);
+      if (existing) continue;
+
+      await _activeBackend.saveProject(meta.id, meta.name, data, meta.nodeCount, meta.edgeCount);
+      migrated++;
+      console.log(`[storage:migrate] Migrated project "${meta.name}" (${meta.id})`);
+    } catch (err) {
+      console.warn(`[storage:migrate] Failed to migrate project "${meta.name}":`, err instanceof Error ? err.message : 'unknown');
+    }
+  }
+
+  localStorage.setItem(MIGRATION_DONE_KEY, new Date().toISOString());
+  console.log(`[storage:migrate] Migration complete: ${migrated}/${localProjects.length} projects`);
+  return migrated;
+}
+
 // ── Debounced Background Sync ───────────────────────────────────────────────
 // When SupabaseBackend is active, every localStorage save also triggers a
 // debounced background sync to Supabase. This gives us:
