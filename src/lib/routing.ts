@@ -208,7 +208,7 @@ export function classifyRoute(prompt: string, hasWorkflow: boolean = false): Com
   if (/^(?:isolate|subgraph|neighborhood|neighbours?)\s+/i.test(prompt)) return 'isolate';
 
   // Summarize
-  if (/^(?:summarize|summary|executive|brief|overview)\s*$/i.test(prompt)) return 'summarize';
+  if (/^(?:summarize|summary|executive|brief|overview)(?:\s+(?:the\s+)?(?:workflow|graph|project|all))?\s*$/i.test(prompt)) return 'summarize';
 
   // Validate
   if (/^(?:validate|integrity|check|audit)(?:\s+(?:the\s+)?(?:workflow|graph|project|all))?\s*$/i.test(prompt)) return 'validate';

@@ -640,7 +640,7 @@ export default function CIDPanel() {
       dispatchCommand(prompt, () => criticalPath());
     } else if (/^(?:isolate|subgraph|neighborhood|neighbours?)\s+/i.test(prompt)) {
       dispatchCommand(prompt, () => isolateByName(prompt));
-    } else if (/^(?:summarize|summary|executive|brief|overview)\s*$/i.test(prompt)) {
+    } else if (/^(?:summarize|summary|executive|brief|overview)(?:\s+(?:the\s+)?(?:workflow|graph|project|all))?\s*$/i.test(prompt)) {
       dispatchCommand(prompt, () => summarize());
     } else if (/^(?:validate|integrity|check|audit)(?:\s+(?:the\s+)?(?:workflow|graph|project|all))?\s*$/i.test(prompt)) {
       dispatchCommand(prompt, () => validate());
