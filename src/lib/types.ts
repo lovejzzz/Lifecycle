@@ -297,6 +297,9 @@ export interface NodeData extends Record<string, unknown> {
     trigger: 'user-edit' | 'execution' | 'refinement' | 'rollback';
   }>;
 
+  // Validation warnings — advisory quality checks on LLM output
+  _validationWarnings?: Array<{ code: string; message: string; severity: 'info' | 'warning' }>;
+
   // Output format for download-capable output nodes
   outputFormat?: string;     // e.g. 'pdf', 'docx', 'csv', 'md', 'html'
   outputMimeType?: string;   // e.g. 'application/pdf'

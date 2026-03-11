@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, Lock, Unlock, CheckCircle2, RefreshCw, Clock, Trash2,
-  Pencil, Check, Eye,
+  Pencil, Check, Eye, AlertTriangle,
   Plus, Trash, ChevronDown, Copy, Bot, Download,
 } from 'lucide-react';
 import { useLifecycleStore } from '@/store/useStore';
@@ -946,6 +946,28 @@ function NodeDetailPanelContent({ nodeId }: { nodeId: string }) {
                   {data.executionResult.slice(0, 1000)}{data.executionResult.length > 1000 ? '...' : ''}
                 </div>
               </div>
+            )}
+
+            {/* Validation Warnings — advisory quality checks */}
+            {data._validationWarnings && data._validationWarnings.length > 0 && (
+              <details className="group">
+                <summary className="flex items-center gap-1.5 text-[10px] text-amber-400/50 cursor-pointer hover:text-amber-400/70 transition-colors">
+                  <AlertTriangle size={10} />
+                  <span>{data._validationWarnings.length} quality warning{data._validationWarnings.length > 1 ? 's' : ''}</span>
+                </summary>
+                <div className="mt-1.5 space-y-1 pl-4">
+                  {data._validationWarnings.map((w, i) => (
+                    <div key={i} className={`text-[9px] px-2 py-1 rounded-md border ${
+                      w.severity === 'warning'
+                        ? 'text-amber-400/60 bg-amber-500/[0.04] border-amber-500/10'
+                        : 'text-white/30 bg-white/[0.02] border-white/[0.04]'
+                    }`}>
+                      <span className="font-mono text-[8px] text-white/20 mr-1">{w.code}</span>
+                      {w.message}
+                    </div>
+                  ))}
+                </div>
+              </details>
             )}
 
             {/* Semantic Diff — show changes vs previous version after execution/regeneration */}

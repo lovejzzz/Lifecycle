@@ -438,6 +438,15 @@ function LifecycleNode({ data, id, dragging }: NodeProps) {
                   {nodeData.executionError}
                 </p>
               )}
+              {/* Validation warnings badge */}
+              {nodeData._validationWarnings && nodeData._validationWarnings.length > 0 && (
+                <div className="flex items-center gap-1 mt-1" title={nodeData._validationWarnings.map(w => w.message).join('\n')}>
+                  <AlertTriangle size={8} className="text-amber-400/60" />
+                  <span className="text-[7.5px] text-amber-400/50">
+                    {nodeData._validationWarnings.length} warning{nodeData._validationWarnings.length > 1 ? 's' : ''}
+                  </span>
+                </div>
+              )}
             </div>
           )}
 

@@ -9,6 +9,7 @@ import { buildSystemPrompt, buildMessages, getExecutionSystemPrompt, inferEffort
 import type { NoteRefinementResult } from '@/lib/prompts';
 import { classifyEdit } from '@/lib/edits';
 import { buildCacheKey, sha256, getCacheEntry, setCacheEntry, createEmptyUsageStats } from '@/lib/cache';
+import { validateOutput, extractKeywords } from '@/lib/validate';
 import type { UsageStats } from '@/lib/cache';
 import {
   createDefaultHabits, createDefaultGeneration, createDefaultReflection,
@@ -1763,10 +1764,13 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         if (history.length > 10) history.splice(0, history.length - 10);
         store.updateNodeData(nodeId, { _versionHistory: history, version: currentVersion + 1 });
       }
-      store.updateNodeData(nodeId, { executionResult: output, executionStatus: 'success', executionError: undefined, apiKey: undefined, _executionDurationMs: _execDuration });
+      // Run advisory validation on output
+      const validationWarnings = validateOutput(output, d.category, d.label, extractKeywords(autoPrompt));
+
+      store.updateNodeData(nodeId, { executionResult: output, executionStatus: 'success', executionError: undefined, apiKey: undefined, _executionDurationMs: _execDuration, _validationWarnings: validationWarnings.length > 0 ? validationWarnings : undefined });
       store.updateNodeStatus(nodeId, 'active');
-      store.addEvent({ id: uid(), type: 'regenerated', message: `Executed "${d.label}" successfully (${(_execDuration / 1000).toFixed(1)}s)`, timestamp: Date.now(), nodeId, agent: true });
-      cidLog('executeNode:success', { nodeId, outputLength: output.length, durationMs: _execDuration });
+      store.addEvent({ id: uid(), type: 'regenerated', message: `Executed "${d.label}" successfully (${(_execDuration / 1000).toFixed(1)}s)${validationWarnings.length > 0 ? ` [${validationWarnings.length} warning${validationWarnings.length > 1 ? 's' : ''}]` : ''}`, timestamp: Date.now(), nodeId, agent: true });
+      cidLog('executeNode:success', { nodeId, outputLength: output.length, durationMs: _execDuration, validationWarnings: validationWarnings.length });
 
       // Cache the result for future deduplication
       setCacheEntry(nodeId, {
@@ -2334,7 +2338,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
   updateNodeData: (id, partial) => {
     // Mutex guard: block non-execution mutations on locked nodes
     if (get()._executingNodeIds.has(id)) {
-      const executionKeys = new Set(['executionResult', 'executionStatus', 'executionError', '_executionDurationMs', '_executionStartedAt', 'apiKey', '_versionHistory', 'version']);
+      const executionKeys = new Set(['executionResult', 'executionStatus', 'executionError', '_executionDurationMs', '_executionStartedAt', 'apiKey', '_versionHistory', 'version', '_validationWarnings']);
       const isExecutionUpdate = Object.keys(partial).every(k => executionKeys.has(k));
       if (!isExecutionUpdate) {
         cidLog('updateNodeData:blocked', { id, reason: 'node is executing', keys: Object.keys(partial) });
