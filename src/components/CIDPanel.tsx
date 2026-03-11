@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import {
   Bot, Send, Sparkles, X, Loader2, Zap, RefreshCw, Lightbulb, Wrench,
   Search, ChevronRight, Wifi, WifiOff, Trash2, Download,
-  ArrowLeftRight, Square, Pencil, Pin, Check,
+  ArrowLeftRight, Square, Pencil, Pin, Check, Paperclip, FileText, XCircle,
 } from 'lucide-react';
 import { useLifecycleStore, findNodeByName, getNextHint, getSmartSuggestions } from '@/store/useStore';
 import type { ProactiveSuggestion } from '@/lib/suggestions';
@@ -171,6 +171,48 @@ export default function CIDPanel() {
   const inputRef = useRef<HTMLInputElement>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
   const pendingSuggestionRef = useRef<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadedFile, setUploadedFile] = useState<{ name: string; type: string; sections: number; tokens: number } | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleFileUpload = async (file: File) => {
+    if (isUploading || isProcessing) return;
+    setIsUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+
+      if (!res.ok) {
+        addToast(data.message || 'Upload failed', 'error');
+        setIsUploading(false);
+        return;
+      }
+
+      setUploadedFile({
+        name: data.filename,
+        type: data.type,
+        sections: data.sections?.length ?? 0,
+        tokens: data.tokenEstimate ?? 0,
+      });
+
+      // Compose a prompt for CID to analyze the document
+      const sectionList = (data.sections || [])
+        .slice(0, 10)
+        .map((s: { title: string }) => s.title)
+        .join(', ');
+      const preview = data.text?.slice(0, 500) || '';
+      const prompt = `I uploaded a ${data.type} file: "${data.filename}" (~${data.tokenEstimate} tokens, ${data.sections?.length ?? 0} sections: ${sectionList}). Here's a preview:\n\n${preview}${data.text?.length > 500 ? '\n...(truncated)' : ''}\n\nAnalyze this document and build a workflow that turns it into a living lifecycle.`;
+      setInput(prompt);
+      addToast(`${file.name} parsed: ${data.sections?.length ?? 0} sections, ~${data.tokenEstimate} tokens`, 'success');
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Upload failed', 'error');
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleResizeStart = React.useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -616,7 +658,7 @@ export default function CIDPanel() {
         return;
       }
       dispatchCommand(prompt, () => clearStale().message, 400, undefined, false, true);
-    } else if (/^(?:orphan|isolat|unconnected)\w*\s*$/i.test(prompt)) {
+    } else if (/^(?:orphan|isolat|unconnected)\w*\s*$/i.test(prompt) || /^(?:show|find|list)\s+(?:me\s+)?(?:the\s+)?(?:orphan|unconnected|isolat)\w*/i.test(prompt)) {
       dispatchCommand(prompt, () => findOrphans());
     } else if (/^(?:count|stats|statistics|tally)\s*$/i.test(prompt)) {
       dispatchCommand(prompt, () => countNodes());
@@ -855,7 +897,7 @@ export default function CIDPanel() {
       dispatchCommand(prompt, () => findBottlenecks(), 400);
     } else if (/^(?:suggest|next|what\s*(?:should|can)\s*I\s*do(?:\s+next|\s+now)?|recommendations?)\s*$/i.test(prompt)) {
       dispatchCommand(prompt, () => suggestNextSteps(), 400);
-    } else if (/^(?:auto[- ]?describe|describe\s+all|fill\s+descriptions?)\s*$/i.test(prompt)) {
+    } else if (/^(?:auto[- ]?describe|describe\s+all|fill\s+descriptions?)(?:\s+(?:all\s+)?(?:nodes?|empty)?)?\s*$/i.test(prompt)) {
       addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
       setProcessing(true);
       autoDescribe().finally(() => setProcessing(false));

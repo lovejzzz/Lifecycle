@@ -137,9 +137,10 @@ export function classifyRoute(prompt: string, hasWorkflow: boolean = false): Com
   if (/^(?:show|find|list)\s+(?:me\s+)?(?:what(?:'s| is)\s+)?stale/i.test(prompt)) return 'show-stale';
   if (/^(?:show|find|list)\s+stale/i.test(prompt)) return 'show-stale';
 
-  // "show me the critical path" / "show me bottlenecks" (MUST come before generic focus/show)
+  // "show me the critical path" / "show me bottlenecks" / "show me orphan nodes" (MUST come before generic focus/show)
   if (/^(?:show|find|what(?:'s| is| are))\s+(?:me\s+)?(?:the\s+)?(?:critical\s*path|longest\s*chain)/i.test(prompt)) return 'critical-path';
   if (/^(?:show|find|what(?:'s| is| are))\s+(?:me\s+)?(?:the\s+)?(?:bottleneck|chokepoint|hub|spof)/i.test(prompt)) return 'bottlenecks';
+  if (/^(?:show|find|list)\s+(?:me\s+)?(?:the\s+)?(?:orphan|unconnected|isolat)\w*/i.test(prompt)) return 'orphans';
 
   // Focus / select / show <node>
   if (/^(?:focus|select|show|go to|find|zoom)\s+(?:on\s+)?["']?.+["']?\s*$/i.test(prompt)) return 'focus';
@@ -282,7 +283,7 @@ export function classifyRoute(prompt: string, hasWorkflow: boolean = false): Com
   if (/^(?:suggest|next|what\s*(?:should|can)\s*I\s*do(?:\s+next|\s+now)?|recommendations?)\s*$/i.test(prompt)) return 'suggest';
 
   // Auto-describe
-  if (/^(?:auto[- ]?describe|describe\s+all|fill\s+descriptions?)\s*$/i.test(prompt)) return 'auto-describe';
+  if (/^(?:auto[- ]?describe|describe\s+all|fill\s+descriptions?)(?:\s+(?:all\s+)?(?:nodes?|empty)?)?\s*$/i.test(prompt)) return 'auto-describe';
 
   // Refine
   if (/^(?:refine|extract|structure)(?:\s+(?:this\s+)?note)?\s*$/i.test(prompt)) return 'refine';
