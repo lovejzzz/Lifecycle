@@ -458,7 +458,7 @@ export default function CIDPanel() {
       } else {
         dispatchCommand(prompt, () => getStatusReport());
       }
-    } else if (/^(?:propagat|sync|refresh\s*stale|regenerate\s*stale)\b/i.test(prompt)) {
+    } else if (/^(?:propagat|sync|refresh\s*stale|regenerate\s*stale|update\s+(?:all\s+)?stale|run\s+(?:the\s+)?stale)\b/i.test(prompt)) {
       addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
       const currentNodes = useLifecycleStore.getState().nodes;
       const sc = currentNodes.filter((n) => n.data.status === 'stale').length;
@@ -515,6 +515,13 @@ export default function CIDPanel() {
       dispatchCommand(prompt, () => deleteByName(prompt).message, 400, undefined, true, true);
     } else if (/^(?:rename|change name|relabel)\s+.+\s+(?:to|as|→|->)\s+/i.test(prompt)) {
       dispatchCommand(prompt, () => renameByName(prompt).message);
+    } else if (/^(?:show|find|list)\s+(?:me\s+)?(?:what(?:'s| is)\s+)?stale/i.test(prompt) || /^(?:show|find|list)\s+stale/i.test(prompt)) {
+      // "show me what's stale", "show stale nodes", "find stale" → list stale nodes
+      dispatchCommand(prompt, () => {
+        const staleNodes = nodes.filter(n => n.data.status === 'stale');
+        if (staleNodes.length === 0) return 'No stale nodes. Everything is up to date.';
+        return `**${staleNodes.length} stale node${staleNodes.length > 1 ? 's' : ''}:**\n${staleNodes.map(n => `- **${n.data.label}** (${n.data.category})`).join('\n')}\n\nRun \`propagate\` to refresh them.`;
+      });
     } else if (/^(?:focus|select|show|go to|find|zoom)\s+(?:on\s+)?["']?.+["']?\s*$/i.test(prompt)) {
       addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
       const nameMatch = prompt.match(/(?:focus|select|show|go to|find|zoom)\s+(?:on\s+)?["']?(.+?)["']?\s*$/i);
@@ -641,6 +648,31 @@ export default function CIDPanel() {
       dispatchCommand(prompt, () => clearExecutionResults(), 200, undefined, true, true);
     } else if (/^(?:diff\s+(?:last|prev(?:ious)?)|compare\s+(?:run|execution)s?)\s*$/i.test(prompt)) {
       dispatchCommand(prompt, () => diffLastRun());
+    } else if (/^(?:refresh|update|regenerate)\s+(?:the\s+)?["']?(.+?)["']?\s*$/i.test(prompt)) {
+      // "refresh the quiz bank", "update the rubric", "regenerate study guide" → execute specific node
+      const refreshMatch = prompt.match(/^(?:refresh|update|regenerate)\s+(?:the\s+)?["']?(.+?)["']?\s*$/i);
+      if (refreshMatch) {
+        const target = findNodeByName(refreshMatch[1], nodes);
+        if (target) {
+          addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
+          setProcessing(true);
+          setTimeout(async () => {
+            await executeNode(target.id);
+            const updated = useLifecycleStore.getState().nodes.find(n => n.id === target.id);
+            const status = updated?.data.executionStatus;
+            const msg = status === 'success'
+              ? `Refreshed **${target.data.label}** successfully.`
+              : status === 'error'
+                ? `Failed to refresh **${target.data.label}**: ${updated?.data.executionError || 'Unknown error'}`
+                : `Processed **${target.data.label}**.`;
+            sendStreamingResponse(msg);
+          }, 300);
+        } else {
+          addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
+          setProcessing(true);
+          setTimeout(() => sendStreamingResponse(`No node matching "${refreshMatch[1]}". Available: ${nodes.map(n => n.data.label).join(', ')}.`), 200);
+        }
+      }
     } else if (/^(?:run|execute|start)\s+(?:workflow|all|pipeline|everything)\s*$/i.test(prompt)) {
       addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
       setProcessing(true);
