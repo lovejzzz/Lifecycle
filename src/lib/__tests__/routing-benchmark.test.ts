@@ -144,6 +144,9 @@ const BENCHMARK: BenchmarkCase[] = [
   { prompt: 'add review called Peer Review', expected: 'add-node', context: 'professor' },
   { prompt: 'run workflow', expected: 'run-workflow', context: 'professor' },
   { prompt: 'what should I do next', expected: 'suggest', context: 'professor' },
+  { prompt: 'create a hiring pipeline', expected: 'generate', context: 'PM' },
+  { prompt: 'link Assignments to Rubrics', expected: 'connect', context: 'professor' },
+  { prompt: 'health breakdown', expected: 'health-detail', context: 'PM' },
 
   // ── Natural language that should fall to LLM ──
   { prompt: 'why is my rubric out of date', expected: 'llm-fallback', context: 'professor' },
