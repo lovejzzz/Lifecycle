@@ -1,5 +1,16 @@
 # Changelog
 
+### 2026-03-11 — E2E Coverage Expansion: 82 Browser Tests
+
+- **13 new Playwright E2E tests** (69 → 82 total):
+  - Staleness cascade: mark stale → verify cascade report, show stale after marking
+  - Template browser: Cmd+T modal, TopBar Templates button
+  - CID analysis: validate, what-if impact, isolate subgraph
+  - Project management: project name, import/export buttons
+  - Multi-step workflows: rename, delete (confirm dialog), connect
+  - Keyboard shortcuts: Cmd+/ help overlay
+- 885 vitest + 110 routing benchmark + 82 E2E tests all passing, build clean.
+
 ### 2026-03-11 — E2E Coverage Expansion: 69 Browser Tests
 
 - **17 new Playwright E2E tests** (52 → 69 total):
