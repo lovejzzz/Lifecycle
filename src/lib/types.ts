@@ -3,8 +3,48 @@ import React from 'react';
 // NodeCategory is a string so CID can create custom types beyond the built-in ones
 export type NodeCategory = string;
 
+// ── Simplified category system ──────────────────────────────────────────────
+// User-facing: 5 categories that match how people actually think
+//   input       — starting material you provide
+//   process     — transforms or actions (intermediate work)
+//   deliverable — content the system generates (all treated equally, all exportable)
+//   review      — quality check / gate
+//   note        — rough thoughts, not structured yet
+//
+// Legacy categories still work internally — they map to the new ones for display.
+// The AI prompt system uses the legacy names for execution prompt specialization,
+// but users see and pick from the simplified set.
+
+export const SIMPLIFIED_CATEGORIES: NodeCategory[] = [
+  'input', 'process', 'deliverable', 'review', 'note',
+];
+
+/** Map legacy 13-category names to simplified 5-category names */
+export const CATEGORY_SIMPLIFICATION: Record<string, string> = {
+  input: 'input',
+  trigger: 'input',        // triggers are a kind of input
+  dependency: 'input',     // dependencies are prerequisites (inputs)
+  state: 'process',        // state management is a process
+  cid: 'process',          // CID actions are processes
+  action: 'process',       // actions are processes
+  artifact: 'deliverable', // artifacts are deliverables
+  output: 'deliverable',   // outputs are deliverables (no special treatment)
+  test: 'review',          // tests are a form of review
+  policy: 'review',        // policy checks are a form of review
+  patch: 'process',        // patches are processes
+  review: 'review',
+  note: 'note',
+};
+
+/** Get the simplified user-facing category for display */
+export function getSimplifiedCategory(category: string): string {
+  return CATEGORY_SIMPLIFICATION[category] || category;
+}
+
+// The full list includes both simplified and legacy names for backward compatibility
 export const BUILT_IN_CATEGORIES: NodeCategory[] = [
   'input', 'trigger', 'state', 'artifact', 'note', 'cid', 'action', 'review', 'test', 'policy', 'patch', 'dependency', 'output',
+  'process', 'deliverable', // new simplified names
 ];
 
 export interface LifecycleEvent {
@@ -350,6 +390,19 @@ const BUILT_IN_COLORS: Record<string, NodeColorSet> = {
     border: 'rgba(232, 121, 249, 0.3)',
     glow: 'rgba(232, 121, 249, 0.15)',
   },
+  // Simplified categories
+  process: {
+    primary: '#818cf8',
+    bg: 'rgba(129, 140, 248, 0.08)',
+    border: 'rgba(129, 140, 248, 0.3)',
+    glow: 'rgba(129, 140, 248, 0.15)',
+  },
+  deliverable: {
+    primary: '#8b5cf6',
+    bg: 'rgba(139, 92, 246, 0.08)',
+    border: 'rgba(139, 92, 246, 0.3)',
+    glow: 'rgba(139, 92, 246, 0.15)',
+  },
 };
 
 // Runtime registry for custom categories added by CID
@@ -452,6 +505,9 @@ export const CATEGORY_ICONS: Record<string, React.ElementType> = {
   policy: Shield,
   patch: GitBranch,
   dependency: Link,
+  // Simplified categories
+  process: Play,
+  deliverable: FileText,
   // CID-created custom types
   connector: Waypoints,
   validator: ShieldCheck,

@@ -388,6 +388,9 @@ const CATEGORY_SYSTEM_PROMPTS: Record<string, string> = {
   state: 'You are a state tracker. Report the current state as structured key-value pairs. Highlight what changed from the previous state.',
   dependency: 'You are a dependency resolver. List resolved dependencies with version, status, and any conflicts or warnings.',
   note: 'You are a research assistant. Summarize and organize information clearly, extracting key insights and organizing them into logical sections.',
+  // Simplified categories
+  process: 'You are a workflow executor. Process and transform the input systematically. Report what was done, key decisions made, and outputs produced. Be thorough and structured.',
+  deliverable: 'You are a document author. Produce a well-structured, professional deliverable with headers, sections, and substantive content. Write real content — not placeholders. Use markdown formatting.',
 };
 
 /** Get a category-aware system prompt for node execution. */
@@ -398,9 +401,9 @@ export function getExecutionSystemPrompt(category: string, label: string, upstre
 
 /** Infer effort level from node category for adaptive thinking. */
 export function inferEffortFromCategory(category: string): 'low' | 'medium' | 'high' {
-  if (['input', 'trigger', 'dependency', 'output'].includes(category)) return 'low';
-  if (['cid', 'action', 'artifact'].includes(category)) return 'high';
-  return 'medium'; // review, test, policy, state, note, patch
+  if (['input', 'trigger', 'dependency'].includes(category)) return 'low';
+  if (['cid', 'action', 'artifact', 'deliverable', 'process'].includes(category)) return 'high';
+  return 'medium'; // review, test, policy, state, note, patch, output
 }
 
 // ─── Note Refinement Prompt ──────────────────────────────────────────────────

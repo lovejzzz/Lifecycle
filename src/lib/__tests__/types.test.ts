@@ -17,14 +17,18 @@ import React from 'react';
 describe('types.ts', () => {
   // ── BUILT_IN_CATEGORIES ──
 
-  it('BUILT_IN_CATEGORIES contains all 13 categories', () => {
-    expect(BUILT_IN_CATEGORIES).toHaveLength(13);
+  it('BUILT_IN_CATEGORIES contains all categories (legacy + simplified)', () => {
+    expect(BUILT_IN_CATEGORIES.length).toBeGreaterThanOrEqual(13);
+    // Legacy categories still present
     expect(BUILT_IN_CATEGORIES).toContain('input');
     expect(BUILT_IN_CATEGORIES).toContain('output');
     expect(BUILT_IN_CATEGORIES).toContain('artifact');
     expect(BUILT_IN_CATEGORIES).toContain('cid');
     expect(BUILT_IN_CATEGORIES).toContain('trigger');
     expect(BUILT_IN_CATEGORIES).toContain('dependency');
+    // New simplified categories
+    expect(BUILT_IN_CATEGORIES).toContain('process');
+    expect(BUILT_IN_CATEGORIES).toContain('deliverable');
   });
 
   // ── getNodeColors ──

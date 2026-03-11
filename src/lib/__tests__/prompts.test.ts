@@ -109,13 +109,14 @@ describe('inferEffortFromCategory', () => {
     expect(inferEffortFromCategory('input')).toBe('low');
     expect(inferEffortFromCategory('trigger')).toBe('low');
     expect(inferEffortFromCategory('dependency')).toBe('low');
-    expect(inferEffortFromCategory('output')).toBe('low');
   });
 
   it('returns high for AI-powered categories', () => {
     expect(inferEffortFromCategory('cid')).toBe('high');
     expect(inferEffortFromCategory('action')).toBe('high');
     expect(inferEffortFromCategory('artifact')).toBe('high');
+    expect(inferEffortFromCategory('process')).toBe('high');
+    expect(inferEffortFromCategory('deliverable')).toBe('high');
   });
 
   it('returns medium for other categories', () => {

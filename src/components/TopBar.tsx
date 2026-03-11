@@ -14,18 +14,10 @@ import { getAgent } from '@/lib/agents';
 
 const BUILT_IN_TYPES: { category: NodeCategory; label: string }[] = [
   { category: 'input', label: 'Input' },
-  { category: 'trigger', label: 'Trigger' },
-  { category: 'state', label: 'State' },
-  { category: 'artifact', label: 'Artifact' },
-  { category: 'note', label: 'Note' },
-  { category: 'cid', label: 'CID Action' },
-  { category: 'action', label: 'Action' },
+  { category: 'process', label: 'Process' },
+  { category: 'deliverable', label: 'Deliverable' },
   { category: 'review', label: 'Review' },
-  { category: 'test', label: 'Test' },
-  { category: 'policy', label: 'Policy' },
-  { category: 'patch', label: 'Patch' },
-  { category: 'dependency', label: 'Dependency' },
-  { category: 'output', label: 'Output' },
+  { category: 'note', label: 'Note' },
 ];
 
 export default function TopBar() {

@@ -149,6 +149,12 @@ export function inferEdgeLabel(srcCat?: string, tgtCat?: string): string {
     'action->state': 'updates', 'action->output': 'outputs', 'action->artifact': 'drives',
     'action->review': 'triggers', 'action->test': 'triggers', 'action->cid': 'feeds',
     'output->state': 'informs', 'output->cid': 'triggers',
+    // Simplified categories
+    'input->process': 'feeds', 'input->deliverable': 'feeds',
+    'process->process': 'feeds', 'process->deliverable': 'drives', 'process->review': 'triggers',
+    'deliverable->deliverable': 'refines', 'deliverable->review': 'validates', 'deliverable->process': 'feeds',
+    'review->deliverable': 'refines', 'review->process': 'triggers',
+    'note->process': 'informs', 'note->deliverable': 'drives',
   };
   return EDGE_INFERENCE[key] || 'connects';
 }
@@ -244,17 +250,21 @@ export function validateGraphInvariants(
 // ─── Node Utilities ─────────────────────────────────────────────────────────
 
 export const CATEGORY_LABELS: Record<NodeCategory, string> = {
+  // Simplified categories (user-facing)
   input: 'Input',
+  process: 'Process',
+  deliverable: 'Deliverable',
+  review: 'Review',
+  note: 'Note',
+  // Legacy categories (backward compatible)
   output: 'Output',
   trigger: 'Trigger',
   test: 'Test',
   action: 'Action',
-  state: 'New State',
-  artifact: 'New Artifact',
-  note: 'New Note',
+  state: 'State',
+  artifact: 'Artifact',
   cid: 'CID Action',
-  review: 'Review Gate',
-  policy: 'Policy Rule',
+  policy: 'Policy',
   patch: 'Patch',
   dependency: 'Dependency',
 };
