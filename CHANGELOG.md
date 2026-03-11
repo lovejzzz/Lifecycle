@@ -1,5 +1,14 @@
 # Changelog
 
+### 2026-03-11 — Auth Provider Wiring (v1.0.58)
+
+- **Feature 1 step 5**: Created `src/components/Providers.tsx` with AuthContext
+- Wired `<Providers>` into `src/app/layout.tsx` wrapping all children
+- `useAuth()` hook exposes `user`, `isCloud`, `loading` to any component
+- Auth state automatically activates SupabaseBackend or LocalStorageBackend
+- When Supabase not configured, skips auth entirely (zero-friction local mode)
+- 989 vitest tests passing, build clean.
+
 ### 2026-03-11 — AuthGate Component (v1.0.57)
 
 - **Feature 1 step 4**: Created `src/components/AuthGate.tsx`
