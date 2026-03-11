@@ -114,6 +114,9 @@ export function classifyRoute(prompt: string, hasWorkflow: boolean = false): Com
   // Optimize
   if (/^optimi/i.test(prompt)) return 'optimize';
 
+  // Batch where (MUST come before batch approve/unlock/activate to avoid "batch approve where..." matching approve-all)
+  if (/^batch\s+\w+\s+where\s+/i.test(prompt)) return 'batch-where';
+
   // Batch status changes
   if (/^(?:approve\s+all|batch\s+approve)\b/i.test(prompt)) return 'approve-all';
   if (/^(?:unlock\s+all|batch\s+unlock)\b/i.test(prompt)) return 'unlock-all';
@@ -136,6 +139,9 @@ export function classifyRoute(prompt: string, hasWorkflow: boolean = false): Com
   // Focus / select / show <node>
   if (/^(?:focus|select|show|go to|find|zoom)\s+(?:on\s+)?["']?.+["']?\s*$/i.test(prompt)) return 'focus';
 
+  // Clone workflow (MUST come before duplicate to avoid "clone workflow" matching duplicate)
+  if (/^(?:clone|duplicate)\s+(?:workflow|graph|project|all)\s*$/i.test(prompt)) return 'clone-workflow';
+
   // Duplicate
   if (/^(?:duplicate|clone|copy)\s+["']?.+["']?\s*$/i.test(prompt)) return 'duplicate';
 
@@ -149,7 +155,7 @@ export function classifyRoute(prompt: string, hasWorkflow: boolean = false): Com
   if (/^(?:list|show|inventory)\s+/i.test(prompt)) return 'list';
 
   // Describe
-  if (/^(?:describe|annotate|document)\s+.+\s+(?:as|:)\s+/i.test(prompt)) return 'describe';
+  if (/^(?:describe|annotate|document)\s+.+\s+(?:as:?|:)\s+/i.test(prompt)) return 'describe';
 
   // Swap
   if (/^(?:swap|switch|exchange)\s+.+\s+(?:and|with|↔)\s+/i.test(prompt)) return 'swap';
@@ -207,8 +213,6 @@ export function classifyRoute(prompt: string, hasWorkflow: boolean = false): Com
   // Validate
   if (/^(?:validate|integrity|check|audit)\s*$/i.test(prompt)) return 'validate';
 
-  // Clone workflow
-  if (/^(?:clone|duplicate)\s+(?:workflow|graph|project|all)\s*$/i.test(prompt)) return 'clone-workflow';
 
   // What if
   if (/^(?:what\s*if|impact|without)\b/i.test(prompt)) return 'what-if';
@@ -257,9 +261,6 @@ export function classifyRoute(prompt: string, hasWorkflow: boolean = false): Com
   // Diff snapshot
   if (/^(?:diff|compare)\s+["']?(.+?)["']?\s*$/i.test(prompt)) return 'diff-snapshot';
 
-  // Batch where
-  if (/^batch\s+\w+\s+where\s+/i.test(prompt)) return 'batch-where';
-
   // Plan
   if (/^(?:plan|execution\s*plan|steps|order)\s*$/i.test(prompt)) return 'plan';
 
@@ -273,7 +274,7 @@ export function classifyRoute(prompt: string, hasWorkflow: boolean = false): Com
   if (/^(?:bottleneck|bottlenecks|choke|chokepoint|hub|hubs|spof)\s*$/i.test(prompt)) return 'bottlenecks';
 
   // Suggest
-  if (/^(?:suggest|next|what\s*(?:should|can)\s*I\s*do|recommendations?)\s*$/i.test(prompt)) return 'suggest';
+  if (/^(?:suggest|next|what\s*(?:should|can)\s*I\s*do(?:\s+next|\s+now)?|recommendations?)\s*$/i.test(prompt)) return 'suggest';
 
   // Auto-describe
   if (/^(?:auto[- ]?describe|describe\s+all|fill\s+descriptions?)\s*$/i.test(prompt)) return 'auto-describe';

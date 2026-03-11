@@ -842,7 +842,7 @@ function CanvasInner() {
                 </div>
               )}
               {/* Template cards */}
-              <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-2 pointer-events-auto max-w-lg mx-auto">
+              <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-2 pointer-events-auto max-w-xl mx-auto">
                 {([
                   { label: 'Software Development', icon: Code2, desc: '7 nodes — requirements to deploy', iconClass: 'text-cyan-400/70 group-hover:text-cyan-400' },
                   { label: 'Content Pipeline', icon: FileText, desc: '6 nodes — research to publish', iconClass: 'text-violet-400/70 group-hover:text-violet-400' },
@@ -866,7 +866,7 @@ function CanvasInner() {
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <Icon size={13} className={`${iconClass} transition-colors`} />
-                      <span className="text-[11px] font-medium text-white/70 group-hover:text-white/90 transition-colors truncate">{label}</span>
+                      <span className="text-[11px] font-medium text-white/70 group-hover:text-white/90 transition-colors">{label}</span>
                     </div>
                     <p className="text-[9px] text-white/30 group-hover:text-white/45 transition-colors leading-relaxed">{desc}</p>
                   </button>

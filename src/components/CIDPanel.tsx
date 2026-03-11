@@ -291,12 +291,17 @@ export default function CIDPanel() {
     cleanupRef.current?.();
     const msgId = `msg-${Date.now()}-r`;
     addMessage({ id: msgId, role: 'cid', content: '', timestamp: Date.now() });
-    // Stream word-by-word (35ms/word)
+    // For large responses (>100 words), stream line-by-line to avoid 15+ second waits.
+    // For short responses, stream word-by-word for a natural typing effect.
     const words = response.split(' ');
+    const isLargeResponse = words.length > 100;
+    const chunks = isLargeResponse ? response.split('\n') : words;
+    const separator = isLargeResponse ? '\n' : ' ';
+    const interval_ms = isLargeResponse ? 25 : 35;
     let current = '';
     let i = 0;
     const interval = setInterval(() => {
-      if (i >= words.length) {
+      if (i >= chunks.length) {
         clearInterval(interval);
         // Attach follow-up suggestions after streaming completes
         const s = useLifecycleStore.getState();
@@ -309,10 +314,10 @@ export default function CIDPanel() {
         afterStream?.();
         return;
       }
-      current += (i === 0 ? '' : ' ') + words[i];
+      current += (i === 0 ? '' : separator) + chunks[i];
       updateStreamingMessage(msgId, current);
       i++;
-    }, 35);
+    }, interval_ms);
     cleanupRef.current = () => clearInterval(interval);
   };
 
@@ -480,6 +485,9 @@ export default function CIDPanel() {
       // Structural optimization analysis + layout
       analyzeOptimizations();
       optimizeLayout();
+    } else if (/^batch\s+\w+\s+where\s+/i.test(prompt)) {
+      // Batch where (MUST come before batch approve/unlock/activate)
+      dispatchCommand(prompt, () => batchWhere(prompt).message);
     } else if (/^(?:approve\s+all|batch\s+approve)\b/i.test(prompt)) {
       dispatchCommand(prompt, () => {
         const count = batchUpdateStatus('reviewing', 'active');
@@ -538,6 +546,9 @@ export default function CIDPanel() {
           setTimeout(() => sendStreamingResponse(`No node matching "${nameMatch[1]}". Available: ${nodes.map(n => n.data.label).join(', ')}.`), 200);
         }
       }
+    } else if (/^(?:clone|duplicate)\s+(?:workflow|graph|project|all)\s*$/i.test(prompt)) {
+      // Clone workflow (MUST come before duplicate to avoid "clone workflow" matching duplicate)
+      dispatchCommand(prompt, () => cloneWorkflow());
     } else if (/^(?:duplicate|clone|copy)\s+["']?.+["']?\s*$/i.test(prompt)) {
       addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
       const dupMatch = prompt.match(/(?:duplicate|clone|copy)\s+["']?(.+?)["']?\s*$/i);
@@ -559,7 +570,7 @@ export default function CIDPanel() {
       dispatchCommand(prompt, () => setStatusByName(prompt).message);
     } else if (/^(?:list|show|inventory)\s+/i.test(prompt)) {
       dispatchCommand(prompt, () => listNodes(prompt), 300);
-    } else if (/^(?:describe|annotate|document)\s+.+\s+(?:as|:)\s+/i.test(prompt)) {
+    } else if (/^(?:describe|annotate|document)\s+.+\s+(?:as:?|:)\s+/i.test(prompt)) {
       dispatchCommand(prompt, () => describeByName(prompt).message);
     } else if (/^(?:swap|switch|exchange)\s+.+\s+(?:and|with|↔)\s+/i.test(prompt)) {
       dispatchCommand(prompt, () => swapByName(prompt).message);
@@ -633,8 +644,6 @@ export default function CIDPanel() {
       dispatchCommand(prompt, () => summarize());
     } else if (/^(?:validate|integrity|check|audit)\s*$/i.test(prompt)) {
       dispatchCommand(prompt, () => validate());
-    } else if (/^(?:clone|duplicate)\s+(?:workflow|graph|project|all)\s*$/i.test(prompt)) {
-      dispatchCommand(prompt, () => cloneWorkflow());
     } else if (/^(?:what\s*if|impact|without)\b/i.test(prompt)) {
       dispatchCommand(prompt, () => whatIf(prompt));
     } else if (/^(?:pre\s*flight|flight\s*check|dry\s*run|plan\s+run|execution\s+plan)\s*$/i.test(prompt)) {
@@ -829,8 +838,6 @@ export default function CIDPanel() {
     } else if (/^(?:diff|compare)\s+["']?(.+?)["']?\s*$/i.test(prompt)) {
       const diffMatch = prompt.match(/(?:diff|compare)\s+["']?(.+?)["']?\s*$/i);
       if (diffMatch) dispatchCommand(prompt, () => diffSnapshot(diffMatch[1].trim()));
-    } else if (/^batch\s+\w+\s+where\s+/i.test(prompt)) {
-      dispatchCommand(prompt, () => batchWhere(prompt).message);
     } else if (/^(?:plan|execution\s*plan|steps|order)\s*$/i.test(prompt)) {
       dispatchCommand(prompt, () => generatePlan());
     } else if (/^(?:search|find|grep)\s+(.+)$/i.test(prompt)) {
@@ -840,7 +847,7 @@ export default function CIDPanel() {
       dispatchCommand(prompt, () => compressWorkflow(), 500);
     } else if (/^(?:bottleneck|bottlenecks|choke|chokepoint|hub|hubs|spof)\s*$/i.test(prompt)) {
       dispatchCommand(prompt, () => findBottlenecks(), 400);
-    } else if (/^(?:suggest|next|what\s*(?:should|can)\s*I\s*do|recommendations?)\s*$/i.test(prompt)) {
+    } else if (/^(?:suggest|next|what\s*(?:should|can)\s*I\s*do(?:\s+next|\s+now)?|recommendations?)\s*$/i.test(prompt)) {
       dispatchCommand(prompt, () => suggestNextSteps(), 400);
     } else if (/^(?:auto[- ]?describe|describe\s+all|fill\s+descriptions?)\s*$/i.test(prompt)) {
       addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
@@ -1349,7 +1356,7 @@ export default function CIDPanel() {
                 key={action.label}
                 onClick={() => handleQuickAction(action.prompt)}
                 disabled={isProcessing}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] text-[10px] text-white/45 hover:text-white/70 hover:bg-white/[0.07] hover:border-white/[0.1] transition-all whitespace-nowrap disabled:opacity-30`}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] text-[10px] text-white/45 hover:text-white/70 hover:bg-white/[0.07] hover:border-white/[0.1] transition-all whitespace-nowrap disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white/[0.04] disabled:hover:text-white/45`}
               >
                 <action.icon size={10} />
                 {action.label}
@@ -1412,7 +1419,7 @@ export default function CIDPanel() {
             }}
             placeholder={poirotContext.phase === 'interviewing' ? agent.placeholderInterviewing : agent.placeholder}
             disabled={isProcessing}
-            className="flex-1 bg-transparent text-[12.5px] text-white/80 placeholder-white/20 outline-none disabled:opacity-40"
+            className="flex-1 bg-transparent text-[12.5px] text-white/80 placeholder-white/20 outline-none disabled:opacity-40 disabled:cursor-not-allowed"
           />
           {isProcessing ? (
             <button

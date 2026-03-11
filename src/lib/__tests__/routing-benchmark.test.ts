@@ -17,7 +17,7 @@ interface BenchmarkCase {
   hasWorkflow?: boolean;
 }
 
-// ─── The Benchmark: 60 real user prompts ────────────────────────────────────
+// ─── The Benchmark: 82 real user prompts ────────────────────────────────────
 
 const BENCHMARK: BenchmarkCase[] = [
   // ── Workflow generation (professor) ──
@@ -118,11 +118,40 @@ const BENCHMARK: BenchmarkCase[] = [
   { prompt: 'plan', expected: 'plan' },
   { prompt: 'clear results', expected: 'clear-results' },
 
+  // ── Education lifecycle actions ──
+  { prompt: 'regenerate Quiz Bank', expected: 'refresh-node', context: 'professor' },
+  { prompt: 'what if I remove Assignments', expected: 'what-if', context: 'professor' },
+  { prompt: 'connect Rubrics to Study Guide', expected: 'connect', context: 'professor' },
+  { prompt: 'show me what\'s stale', expected: 'show-stale', context: 'professor' },
+  { prompt: 'batch approve where category=artifact', expected: 'batch-where', context: 'PM' },
+  { prompt: 'teach: always generate rubrics with 4 performance levels', expected: 'teach', context: 'professor' },
+  { prompt: 'save template my-course-v2', expected: 'save-template', context: 'professor' },
+  { prompt: 'deps Rubrics', expected: 'deps', context: 'professor' },
+  { prompt: 'swap Assignments and Quiz Bank', expected: 'swap', context: 'professor' },
+  { prompt: 'describe Syllabus as: The master course outline and schedule', expected: 'describe', context: 'professor' },
+  { prompt: 'isolate Learning Objectives', expected: 'isolate', context: 'professor' },
+  { prompt: 'set Rubrics to locked', expected: 'set-status', context: 'professor' },
+  { prompt: 'clone workflow', expected: 'clone-workflow', context: 'PM' },
+  { prompt: 'content Lesson Plans: Week 1 covers intro to algorithms', expected: 'content', context: 'professor' },
+  { prompt: 'disconnect Rubrics from Quiz Bank', expected: 'disconnect', context: 'professor' },
+  { prompt: 'lock Syllabus', expected: 'set-status', context: 'professor' },
+  { prompt: 'search learning objectives', expected: 'search', context: 'professor' },
+  { prompt: 'forget 2', expected: 'forget-rule', context: 'professor' },
+  { prompt: 'find stale nodes', expected: 'show-stale', context: 'professor' },
+  { prompt: 'explain', expected: 'explain', context: 'professor' },
+  { prompt: 'reverse Rubrics', expected: 'reverse', context: 'professor' },
+  { prompt: 'show stale', expected: 'show-stale', context: 'professor' },
+  { prompt: 'add review called Peer Review', expected: 'add-node', context: 'professor' },
+  { prompt: 'run workflow', expected: 'run-workflow', context: 'professor' },
+  { prompt: 'what should I do next', expected: 'suggest', context: 'professor' },
+
   // ── Natural language that should fall to LLM ──
   { prompt: 'why is my rubric out of date', expected: 'llm-fallback', context: 'professor' },
+  { prompt: 'why does the rubric depend on assignments', expected: 'llm-fallback', context: 'professor' },
   { prompt: 'what changed since yesterday', expected: 'llm-fallback', context: 'PM' },
   { prompt: 'how does the lifecycle loop work', expected: 'llm-fallback' },
   { prompt: 'can you make this workflow faster', expected: 'llm-fallback' },
+  { prompt: 'should I run the quiz bank next', expected: 'llm-fallback', context: 'professor' },
   { prompt: 'tell me about the quiz bank node', expected: 'llm-fallback' },
 ];
 
