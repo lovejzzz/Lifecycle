@@ -8,6 +8,7 @@ import { getAgent, getInterviewQuestions, buildEnrichedPrompt } from '@/lib/agen
 import { buildSystemPrompt, buildMessages, getExecutionSystemPrompt, inferEffortFromCategory, buildNoteRefinementPrompt } from '@/lib/prompts';
 import type { NoteRefinementResult } from '@/lib/prompts';
 import { classifyEdit } from '@/lib/edits';
+import { buildCacheKey, sha256, getCacheEntry, setCacheEntry } from '@/lib/cache';
 import {
   createDefaultHabits, createDefaultGeneration, createDefaultReflection,
   migrateHabitsV1toV2, migrateReflectionV1toV2,
@@ -1650,6 +1651,31 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       ? `## Direct inputs:\n${directContext}${ancestorSummary}`
       : d.content || 'No input provided.';
 
+    // ── Cache check: skip LLM call if inputs haven't changed ──
+    const cacheKeyRaw = buildCacheKey({
+      nodeId,
+      prompt: autoPrompt,
+      upstreamResults,
+      model: store.cidAIModel,
+      category: d.category,
+      content: d.content,
+    });
+    const cacheHash = await sha256(cacheKeyRaw);
+    const cached = getCacheEntry(nodeId);
+    if (cached && cached.hash === cacheHash) {
+      cidLog('executeNode:cache-hit', { nodeId, label: d.label });
+      store.updateNodeData(nodeId, {
+        executionResult: cached.result,
+        executionStatus: 'success',
+        executionError: undefined,
+        _executionStartedAt: _execStart,
+        _executionDurationMs: Date.now() - _execStart,
+      });
+      store.updateNodeStatus(nodeId, 'active');
+      get()._unlockNode(nodeId);
+      return;
+    }
+
     store.updateNodeData(nodeId, { executionStatus: 'running', executionError: undefined, _executionStartedAt: _execStart });
     store.updateNodeStatus(nodeId, 'generating');
     set({ executionStartTime: _execStart });
@@ -1715,6 +1741,15 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       store.updateNodeStatus(nodeId, 'active');
       store.addEvent({ id: uid(), type: 'regenerated', message: `Executed "${d.label}" successfully (${(_execDuration / 1000).toFixed(1)}s)`, timestamp: Date.now(), nodeId, agent: true });
       cidLog('executeNode:success', { nodeId, outputLength: output.length, durationMs: _execDuration });
+
+      // Cache the result for future deduplication
+      setCacheEntry(nodeId, {
+        hash: cacheHash,
+        result: output,
+        timestamp: Date.now(),
+        inputTokensEstimate: Math.ceil(cacheKeyRaw.length / 4),
+        outputTokensEstimate: Math.ceil(output.length / 4),
+      });
     } catch (err) {
       const isTimeout = err instanceof DOMException && err.name === 'AbortError';
       const errMsg = isTimeout
