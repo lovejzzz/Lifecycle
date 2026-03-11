@@ -1167,3 +1167,183 @@ test.describe('Keyboard shortcuts — extended', () => {
     await expect(page.getByText(/⌘K|Cmd\+K|shortcut/i).first()).toBeVisible({ timeout: 3000 });
   });
 });
+
+// ── CID solve/optimize commands ────────────────────────────────────────────
+
+test.describe('CID solve and optimize commands', () => {
+  test('solve command on workflow produces diagnostics', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('solve');
+    await cidInput.press('Enter');
+
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(cidPanel.getByText(/solve|fix|problem|issue|clean|healthy/i).first()).toBeVisible({ timeout: 5000 });
+  });
+
+  test('optimize command on workflow', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('optimize');
+    await cidInput.press('Enter');
+
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(cidPanel.getByText(/optim|improv|suggest|efficien|already/i).first()).toBeVisible({ timeout: 5000 });
+  });
+
+  test('layout command rearranges and confirms', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Software Development/ }).click();
+    await expect(page.locator('.react-flow__node').first()).toBeVisible({ timeout: 5000 });
+
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('layout');
+    await cidInput.press('Enter');
+
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(cidPanel.getByText(/layout|arrange|tier|optimiz/i).first()).toBeVisible({ timeout: 5000 });
+  });
+});
+
+// ── Activity panel ─────────────────────────────────────────────────────────
+
+test.describe('Activity panel', () => {
+  test('Activity button toggles activity panel', async ({ page }) => {
+    await page.goto('/');
+    // Activity button only appears after nodes exist
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    // Click Activity button in TopBar
+    const activityBtn = page.getByRole('button', { name: /Activity log/i });
+    await activityBtn.click();
+    // Activity panel should be visible with events
+    await expect(page.getByText(/Activity/i).first()).toBeVisible({ timeout: 2000 });
+  });
+
+  test('template load creates activity event', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    // Activity should show the layout event
+    await expect(page.getByText(/layout|arrang|Optimized/i).first()).toBeVisible({ timeout: 5000 });
+  });
+});
+
+// ── CID agent mode switching ───────────────────────────────────────────────
+
+test.describe('CID agent mode', () => {
+  test('Switch to Poirot button exists and is clickable', async ({ page }) => {
+    await page.goto('/');
+    const switchBtn = page.getByRole('button', { name: /Switch to Poirot/i });
+    await expect(switchBtn).toBeVisible({ timeout: 3000 });
+    await switchBtn.click();
+    // After switching, should show Poirot name
+    await expect(page.getByText('Poirot').first()).toBeVisible({ timeout: 3000 });
+  });
+
+  test('Switch back to Rowan after switching to Poirot', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /Switch to Poirot/i }).click();
+    await expect(page.getByText('Poirot').first()).toBeVisible({ timeout: 3000 });
+
+    await page.getByRole('button', { name: /Switch to Rowan/i }).click();
+    await expect(page.getByText('Rowan').first()).toBeVisible({ timeout: 3000 });
+  });
+});
+
+// ── Edge interactions ──────────────────────────────────────────────────────
+
+test.describe('Edge interactions', () => {
+  test('edges are visible after template load', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(2000);
+
+    // React Flow edges should be rendered
+    const edges = page.locator('.react-flow__edge');
+    const edgeCount = await edges.count();
+    expect(edgeCount).toBeGreaterThan(0);
+  });
+
+  test('edge labels are visible on template edges', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(2000);
+
+    // Edge labels like "derives", "structures", "produces" should be visible
+    await expect(page.getByText('derives').first()).toBeVisible({ timeout: 3000 });
+  });
+});
+
+// ── CID clear chat and chat persistence ────────────────────────────────────
+
+test.describe('CID chat management', () => {
+  test('Clear chat button resets conversation', async ({ page }) => {
+    await page.goto('/');
+    // Send a command first
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('help');
+    await cidInput.press('Enter');
+    await page.waitForTimeout(2000);
+
+    // Click Clear chat button
+    const clearBtn = page.getByRole('button', { name: /Clear chat/i });
+    await clearBtn.click();
+
+    // Chat should be reset — welcome message should reappear
+    await expect(page.getByText('CID online').first()).toBeVisible({ timeout: 3000 });
+  });
+
+  test('multiple commands stack in chat history', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const cidInput = page.locator('[data-cid-input]');
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+
+    await cidInput.fill('count');
+    await cidInput.press('Enter');
+    await page.waitForTimeout(1500);
+
+    await cidInput.fill('validate');
+    await cidInput.press('Enter');
+    await page.waitForTimeout(1500);
+
+    // Both command outputs should be in the chat
+    await expect(cidPanel.getByText(/\d+ node/i).first()).toBeVisible();
+    await expect(cidPanel.getByText(/valid|pass|check|integrity/i).first()).toBeVisible();
+  });
+});
+
+// ── Minimap ────────────────────────────────────────────────────────────────
+
+test.describe('Canvas controls', () => {
+  test('minimap is visible after template load', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    await expect(page.locator('.react-flow__minimap')).toBeVisible({ timeout: 3000 });
+  });
+
+  test('zoom controls are visible', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.locator('.react-flow__node').first()).toBeVisible({ timeout: 5000 });
+
+    await expect(page.getByRole('button', { name: 'Zoom In' })).toBeVisible({ timeout: 3000 });
+    await expect(page.getByRole('button', { name: 'Zoom Out' })).toBeVisible({ timeout: 3000 });
+    await expect(page.getByRole('button', { name: 'Fit View' })).toBeVisible({ timeout: 3000 });
+  });
+});
