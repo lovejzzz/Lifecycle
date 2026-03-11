@@ -109,7 +109,7 @@ export function classifyRoute(prompt: string, hasWorkflow: boolean = false): Com
   if (/^(?:propagate?|sync|refresh\s*stale|regenerate\s*stale|update\s+(?:all\s+)?stale|run\s+(?:the\s+)?stale)\b/i.test(prompt)) return 'propagate';
 
   // Layout
-  if (/^(?:layout|arrange)\b/i.test(prompt)) return 'layout';
+  if (/^(?:layout|arrange|lay\s+out)\b/i.test(prompt)) return 'layout';
 
   // Optimize
   if (/^optimi/i.test(prompt)) return 'optimize';
@@ -122,9 +122,10 @@ export function classifyRoute(prompt: string, hasWorkflow: boolean = false): Com
   if (/^(?:unlock\s+all|batch\s+unlock)\b/i.test(prompt)) return 'unlock-all';
   if (/^(?:activate\s+all|batch\s+activate)\b/i.test(prompt)) return 'activate-all';
 
-  // Connect / disconnect
+  // Connect / disconnect (MUST come before delete to avoid "remove the connection" matching delete)
   if (/^(?:connect|link|wire|attach)\s+.+\s+(?:to|with|→|->)\s+/i.test(prompt)) return 'connect';
   if (/^(?:disconnect|unlink|unwire|detach)\s+.+\s+(?:from|and|→|->)\s+/i.test(prompt)) return 'disconnect';
+  if (/^(?:remove|break|cut)\s+(?:the\s+)?(?:connection|link|edge)\s+(?:between|from)\s+/i.test(prompt)) return 'disconnect';
 
   // Delete
   if (/^(?:delete|remove|drop|destroy)\s+.+/i.test(prompt)) return 'delete';

@@ -479,7 +479,7 @@ export default function CIDPanel() {
           sendStreamingResponse(agent.responses.propagateClean());
         }, 300);
       }
-    } else if (/^(?:layout|arrange)\b/i.test(prompt)) {
+    } else if (/^(?:layout|arrange|lay\s+out)\b/i.test(prompt)) {
       dispatchCommand(prompt, () => agent.responses.optimized(nodes.length), 600, optimizeLayout);
     } else if (/^optimi/i.test(prompt)) {
       // Structural optimization analysis + layout
@@ -506,6 +506,8 @@ export default function CIDPanel() {
     } else if (/^(?:connect|link|wire|attach)\s+.+\s+(?:to|with|→|->)\s+/i.test(prompt)) {
       dispatchCommand(prompt, () => connectByName(prompt).message, 400, undefined, true);
     } else if (/^(?:disconnect|unlink|unwire|detach)\s+.+\s+(?:from|and|→|->)\s+/i.test(prompt)) {
+      dispatchCommand(prompt, () => disconnectByName(prompt).message, 400, undefined, true);
+    } else if (/^(?:remove|break|cut)\s+(?:the\s+)?(?:connection|link|edge)\s+(?:between|from)\s+/i.test(prompt)) {
       dispatchCommand(prompt, () => disconnectByName(prompt).message, 400, undefined, true);
     } else if (/^(?:delete|remove|drop|destroy)\s+.+/i.test(prompt)) {
       // Preview what will be deleted
