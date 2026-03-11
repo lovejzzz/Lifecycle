@@ -1,5 +1,13 @@
 # Changelog
 
+### 2026-03-11 — Document Parsing Tests (v1.0.69)
+
+- **Feature 2 step 7**: Tests for `docparse.ts`
+- 23 tests covering detectFileType, extractTxtText, estimateTokens, detectSections, chunkDocument
+- Section detection tests: numbered sections, markdown headings, syllabus sections, week/module patterns
+- Chunking tests: single chunk, multi-chunk, data preservation, paragraph boundary splitting
+- 1041 vitest tests passing, build clean.
+
 ### 2026-03-11 — File Drop on Input Nodes (v1.0.68)
 
 - **Feature 2 step 5**: File drop handling in `LifecycleNode.tsx`
