@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Bot, Activity, Layers, Circle, Plus, Undo2, Redo2, Search,
-  Download, Upload, Heart, FilePlus2, Play,
+  Download, Upload, Heart, FilePlus2, Play, LayoutGrid,
   ChevronDown, Trash2, Pencil, Check, FolderOpen,
 } from 'lucide-react';
 import { useLifecycleStore } from '@/store/useStore';
@@ -451,6 +451,15 @@ export default function TopBar() {
             </button>
           </>
         )}
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent('lifecycle:open-template-browser'))}
+          title={`Browse templates (${mod}T)`}
+          aria-label={`Browse templates (${mod}T)`}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all bg-white/[0.04] text-white/40 border border-white/[0.06] hover:text-white/60"
+        >
+          <LayoutGrid size={12} />
+          <span className="hidden sm:inline">Templates</span>
+        </button>
         <button
           onClick={toggleCIDPanel}
           title={`${agent.name} (${mod}K)`}

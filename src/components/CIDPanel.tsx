@@ -14,6 +14,7 @@ import type { CIDCard } from '@/lib/types';
 import { relativeTime } from '@/lib/types';
 import { renderMarkdown } from '@/lib/markdown';
 import { exportAndDownload } from '@/lib/export';
+import { resetOnboardingTour } from '@/components/OnboardingTour';
 
 const COMMAND_HINTS_BY_SECTION: { section: string; hints: { trigger: string; label: string }[] }[] = [
   { section: '📊 Analysis', hints: [
@@ -102,6 +103,7 @@ const COMMAND_HINTS_BY_SECTION: { section: string; hints: { trigger: string; lab
     { trigger: '/export', label: '/export — Export workflow as JSON' },
     { trigger: '/export-chat', label: '/export-chat — Export conversation as Markdown' },
     { trigger: '/template', label: '/template <name> — Load a workflow template' },
+    { trigger: '/tour', label: '/tour — Replay the onboarding tour' },
   ]},
 ];
 
@@ -400,6 +402,11 @@ export default function CIDPanel() {
     }
     if (prompt === '/mode' || prompt === '/switch') {
       setCIDMode(cidMode === 'rowan' ? 'poirot' : 'rowan');
+      return;
+    }
+    if (prompt === '/tour') {
+      resetOnboardingTour();
+      addToast('Onboarding tour restarted', 'info');
       return;
     }
     if (prompt.startsWith('/template')) {

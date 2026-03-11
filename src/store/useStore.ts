@@ -346,6 +346,9 @@ interface LifecycleStore {
   // Execution progress tracking
   executionProgress: { current: number; total: number; currentLabel: string; running: boolean; stage?: number; totalStages?: number; succeeded?: number; failed?: number; skipped?: number } | null;
 
+  // Elapsed time tracking for node execution
+  executionStartTime: number | null;
+
   // Context-aware next-step suggestions
   suggestNextSteps: () => string;
 
@@ -1648,7 +1651,12 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
 
     store.updateNodeData(nodeId, { executionStatus: 'running', executionError: undefined, _executionStartedAt: _execStart });
     store.updateNodeStatus(nodeId, 'generating');
+    set({ executionStartTime: _execStart });
     cidLog('executeNode:running', { nodeId, label: d.label, model: store.cidAIModel, upstreamCount: upstreamResults.length });
+
+    // Timeout abort controller — 120s max
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), 120_000);
 
     try {
       // All AI execution routes through the server-side /api/cid route
@@ -1667,6 +1675,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
             effortLevel,
             messages: [{ role: 'user', content: `${autoPrompt}\n\n${inputContext}` }],
           }),
+          signal: abortController.signal,
         });
 
         if (!res.ok) {
@@ -1706,12 +1715,22 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       store.addEvent({ id: uid(), type: 'regenerated', message: `Executed "${d.label}" successfully (${(_execDuration / 1000).toFixed(1)}s)`, timestamp: Date.now(), nodeId, agent: true });
       cidLog('executeNode:success', { nodeId, outputLength: output.length, durationMs: _execDuration });
     } catch (err) {
-      const errMsg = err instanceof Error ? err.message : 'Execution failed';
+      const isTimeout = err instanceof DOMException && err.name === 'AbortError';
+      const errMsg = isTimeout
+        ? 'Execution timed out after 120s'
+        : (err instanceof Error ? err.message : 'Execution failed');
       store.updateNodeData(nodeId, { executionStatus: 'error', executionError: errMsg, _executionDurationMs: Date.now() - _execStart });
       store.updateNodeStatus(nodeId, 'active');
-      store.addToast(`Node "${d.label}" failed: ${errMsg.slice(0, 80)}`, 'error');
+      store.addToast(
+        isTimeout
+          ? `Node "${d.label}" timed out. Try again or skip.`
+          : `Node "${d.label}" failed: ${errMsg.slice(0, 80)}`,
+        'error'
+      );
       cidLog('executeNode:error', errMsg);
     } finally {
+      clearTimeout(timeoutId);
+      set({ executionStartTime: null });
       get()._unlockNode(nodeId);
     }
   },
@@ -6236,6 +6255,9 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
 
   // Execution progress state
   executionProgress: null,
+
+  // Elapsed time for node execution
+  executionStartTime: null,
 
   // Context-aware next-step suggestions — analyzes full graph state
   suggestNextSteps: () => {

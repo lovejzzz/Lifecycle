@@ -7,6 +7,7 @@ import TopBar from '@/components/TopBar';
 import Canvas from '@/components/Canvas';
 import PreviewPanel from '@/components/PreviewPanel';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import OnboardingTour from '@/components/OnboardingTour';
 import { useLifecycleStore } from '@/store/useStore';
 
 const TOAST_ICONS = {
@@ -61,6 +62,7 @@ export default function Home() {
           <PreviewPanel />
         </div>
         <Toasts />
+        <OnboardingTour />
       </div>
     </ErrorBoundary>
   );

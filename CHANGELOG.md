@@ -1,5 +1,21 @@
 # Changelog
 
+### 2026-03-11 — Phase 4 Batch 2: Quality of Life (Items 20-24)
+
+Five features implemented in parallel:
+
+**Item 20 — Execution Timeout Resilience**: Added 120s auto-abort via AbortController on node execution. Elapsed time counter shows in Canvas progress overlay with context-sensitive messages ("Still working..." at 30s, "This is taking a while..." at 60s). Toast notification on timeout with retry guidance.
+
+**Item 21 — Node Hover Preview**: New NodeHoverPreview component shows full content on 500ms hover delay. Displays label, category badge, status, description, content (300 chars), execution result (300 chars), and version. Smart above/below positioning. Dismisses on leave, selection, or drag.
+
+**Item 22 — Batch Node Operations**: New BatchToolbar component replaces inline multi-select code in Canvas. Floating pill toolbar at bottom-center with 6 actions: Lock All, Approve All, Activate, Mark Stale, Delete All (with confirm), Deselect. Framer Motion slide-up animation.
+
+**Item 23 — Template Browser Modal**: New TemplateBrowser component with visual grid of all 8 built-in + custom templates. Search/filter bar, category pills, node/edge counts, descriptions. Cmd+T shortcut, "Browse All Templates" button in empty state, Templates button in TopBar. Framer Motion scale+fade entrance.
+
+**Item 24 — First-Run Onboarding Tour**: New OnboardingTour component with 3-step overlay: "Describe your workflow", "Watch it build", "Edit and stay in sync". Step navigation with animated transitions. localStorage persistence. `/tour` CID command to re-trigger.
+
+769 tests passing, build clean. Phase 4 items 15-24 complete (10/11 done).
+
 ### 2026-03-11 — Phase 4 Batch 1: Production Readiness (Items 15-19)
 
 Five features implemented in parallel:

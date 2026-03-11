@@ -1,14 +1,15 @@
 'use client';
 
-import React, { memo, useState, useRef, useEffect } from 'react';
+import React, { memo, useState, useRef, useEffect, useCallback } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Lock, AlertTriangle, Loader2, Eye, Link, Upload, Play, Pencil,
 } from 'lucide-react';
 import type { NodeData } from '@/lib/types';
 import { getNodeColors, CategoryIcon } from '@/lib/types';
 import { useLifecycleStore } from '@/store/useStore';
+import NodeHoverPreview from './NodeHoverPreview';
 
 const STATUS_INDICATOR: Record<string, { icon: React.ElementType | null; color: string; pulse: boolean }> = {
   active: { icon: null, color: '#22c55e', pulse: false },
@@ -61,6 +62,50 @@ function LifecycleNode({ data, id, dragging }: NodeProps) {
     prevSelectedRef.current = isSelected;
   }, [isSelected]);
 
+  // Hover preview
+  const [showHoverPreview, setShowHoverPreview] = useState(false);
+  const [hoverPosition, setHoverPosition] = useState<'above' | 'below'>('above');
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const nodeRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseEnter = useCallback(() => {
+    if (isSelected || dragging) return;
+    hoverTimerRef.current = setTimeout(() => {
+      // Determine position: if node is in upper half of viewport, show below; else above
+      if (nodeRef.current) {
+        const rect = nodeRef.current.getBoundingClientRect();
+        setHoverPosition(rect.top < window.innerHeight / 2 ? 'below' : 'above');
+      }
+      setShowHoverPreview(true);
+    }, 500);
+  }, [isSelected, dragging]);
+
+  const handleMouseLeave = useCallback(() => {
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
+    }
+    setShowHoverPreview(false);
+  }, []);
+
+  // Dismiss preview when node becomes selected or starts dragging
+  useEffect(() => {
+    if (isSelected || dragging) {
+      if (hoverTimerRef.current) {
+        clearTimeout(hoverTimerRef.current);
+        hoverTimerRef.current = null;
+      }
+      setShowHoverPreview(false);
+    }
+  }, [isSelected, dragging]);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    };
+  }, []);
+
   // Inline label editing
   const [editingLabel, setEditingLabel] = useState(false);
   const [labelDraft, setLabelDraft] = useState(label);
@@ -80,10 +125,13 @@ function LifecycleNode({ data, id, dragging }: NodeProps) {
 
   return (
     <motion.div
-      className={`group ${dragging ? 'cursor-grabbing' : 'cursor-pointer'}`}
+      ref={nodeRef}
+      className={`group relative ${dragging ? 'cursor-grabbing' : 'cursor-pointer'}`}
       initial={{ scale: 0.7, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={{ type: 'spring', stiffness: 400, damping: 25, duration: 0.3 }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       <div
         className={`relative rounded-xl border backdrop-blur-2xl transition-all duration-300 hover:scale-[1.02]${
@@ -452,6 +500,13 @@ function LifecycleNode({ data, id, dragging }: NodeProps) {
           </div>
         </div>
       </div>
+
+      {/* Hover preview card */}
+      <AnimatePresence>
+        {showHoverPreview && !editingLabel && (
+          <NodeHoverPreview nodeData={nodeData} position={hoverPosition} />
+        )}
+      </AnimatePresence>
 
       <Handle
         type="target"

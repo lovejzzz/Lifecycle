@@ -26,6 +26,8 @@ import CIDPanel from './CIDPanel';
 import NodeContextMenu from './NodeContextMenu';
 import ArtifactPanel from './ArtifactPanel';
 import ImpactPreview from './ImpactPreview';
+import TemplateBrowser from './TemplateBrowser';
+import BatchToolbar from './BatchToolbar';
 import { getNodeColors, EDGE_LABEL_COLORS } from '@/lib/types';
 import type { NodeData, NodeCategory } from '@/lib/types';
 import { getAgent } from '@/lib/agents';
@@ -254,6 +256,18 @@ function CanvasInner() {
   } = useLifecycleStore();
   const fitViewCounter = useLifecycleStore((s) => s.fitViewCounter);
   const executionProgress = useLifecycleStore((s) => s.executionProgress);
+  const executionStartTime = useLifecycleStore((s) => s.executionStartTime);
+
+  // Elapsed time counter for execution progress
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  useEffect(() => {
+    if (!executionStartTime) { setElapsedSeconds(0); return; }
+    setElapsedSeconds(Math.floor((Date.now() - executionStartTime) / 1000));
+    const interval = setInterval(() => {
+      setElapsedSeconds(Math.floor((Date.now() - executionStartTime) / 1000));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [executionStartTime]);
 
   const [mounted, setMounted] = useState(false);
   // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration guard: must setMounted after SSR to avoid mismatch
@@ -293,6 +307,15 @@ function CanvasInner() {
   const [showSearch, setShowSearch] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showLegend, setShowLegend] = useState(false);
+  const [showTemplateBrowser, setShowTemplateBrowser] = useState(false);
+
+  // Listen for template browser open event from TopBar
+  useEffect(() => {
+    const handler = () => setShowTemplateBrowser(true);
+    window.addEventListener('lifecycle:open-template-browser', handler);
+    return () => window.removeEventListener('lifecycle:open-template-browser', handler);
+  }, []);
+
   const [searchSelectedIndex, setSearchSelectedIndex] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -517,6 +540,7 @@ function CanvasInner() {
 
       // Escape: close overlays in priority order
       if (e.key === 'Escape') {
+        if (showTemplateBrowser) { setShowTemplateBrowser(false); return; }
         if (showPalette) { setShowPalette(false); return; }
         if (showShortcuts) { setShowShortcuts(false); return; }
         if (showSearch) { setShowSearch(false); setSearchQuery(''); setSearchSelectedIndex(0); return; }
@@ -554,6 +578,13 @@ function CanvasInner() {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setShowPalette(prev => !prev);
+        return;
+      }
+
+      // Cmd+T / Ctrl+T: open template browser
+      if ((e.metaKey || e.ctrlKey) && e.key === 't') {
+        e.preventDefault();
+        setShowTemplateBrowser(prev => !prev);
         return;
       }
 
@@ -628,7 +659,7 @@ function CanvasInner() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [selectedNodeId, deleteNode, undo, redo, showCIDPanel, toggleCIDPanel, showSearch, showShortcuts, showPalette, setSearchQuery, edgePicker, pendingEdge, selectNode, setPendingEdge, searchSelectedIndex, matchingNodes, multiSelectedIds, deleteMultiSelected, fitView]);
+  }, [selectedNodeId, deleteNode, undo, redo, showCIDPanel, toggleCIDPanel, showSearch, showShortcuts, showPalette, showTemplateBrowser, setSearchQuery, edgePicker, pendingEdge, selectNode, setPendingEdge, searchSelectedIndex, matchingNodes, multiSelectedIds, deleteMultiSelected, fitView]);
 
   const minimapNodeColor = useCallback((node: any) => {
     const data = node.data as NodeData;
@@ -840,6 +871,17 @@ function CanvasInner() {
                     <p className="text-[9px] text-white/30 group-hover:text-white/45 transition-colors leading-relaxed">{desc}</p>
                   </button>
                 ))}
+                <button
+                  onClick={() => setShowTemplateBrowser(true)}
+                  className={`col-span-2 sm:col-span-3 text-center py-2 rounded-xl border border-dashed transition-all duration-200 hover:scale-[1.01] ${
+                    agent.accent === 'amber'
+                      ? 'border-amber-500/15 text-amber-400/40 hover:text-amber-400/70 hover:border-amber-500/30 hover:bg-amber-500/[0.04]'
+                      : 'border-emerald-500/15 text-emerald-400/40 hover:text-emerald-400/70 hover:border-emerald-500/30 hover:bg-emerald-500/[0.04]'
+                  }`}
+                >
+                  <span className="text-[10px] font-medium">Browse All Templates</span>
+                  <span className="text-[9px] ml-1.5 opacity-50">{typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent) ? '\u2318' : 'Ctrl+'}T</span>
+                </button>
               </div>
               {/* Prompt categories with contextual suggestions */}
               <div className="mt-5 pointer-events-auto space-y-2">
@@ -1221,6 +1263,15 @@ function CanvasInner() {
                 <div className="flex items-center gap-2">
                   <Loader2 size={10} className="text-cyan-400/60 animate-spin" />
                   <span className="text-[10px] text-white/40 truncate max-w-[160px]">{executionProgress.currentLabel}</span>
+                  {executionStartTime && (
+                    <span className="text-[10px] text-white/30 font-mono">
+                      {elapsedSeconds < 30
+                        ? `${elapsedSeconds}s`
+                        : elapsedSeconds < 60
+                          ? `${elapsedSeconds}s — Still working...`
+                          : `${elapsedSeconds}s — This is taking a while...`}
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 text-[9px] font-mono">
                   {(executionProgress.succeeded ?? 0) > 0 && (
@@ -1233,6 +1284,31 @@ function CanvasInner() {
                     <span className="text-amber-400/60">{executionProgress.skipped}⊘</span>
                   )}
                 </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Single-node execution elapsed time (when no workflow progress overlay) */}
+        <AnimatePresence>
+          {executionStartTime && !executionProgress && (
+            <motion.div
+              key="exec-elapsed"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.2 }}
+              className="fixed top-4 left-1/2 -translate-x-1/2 z-50 rounded-xl border border-cyan-500/20 bg-[#0e0e18]/95 backdrop-blur-xl px-5 py-3 shadow-2xl min-w-[220px]"
+            >
+              <div className="flex items-center gap-2">
+                <Loader2 size={12} className="text-cyan-400/60 animate-spin" />
+                <span className="text-[11px] text-white/60">
+                  {elapsedSeconds < 30
+                    ? `Executing... (${elapsedSeconds}s)`
+                    : elapsedSeconds < 60
+                      ? `Still working... (${elapsedSeconds}s)`
+                      : `This is taking a while... (${elapsedSeconds}s)`}
+                </span>
               </div>
             </motion.div>
           )}
@@ -1374,62 +1450,8 @@ function CanvasInner() {
           </div>
         )}
 
-        {/* Multi-select action bar */}
-        <AnimatePresence>
-          {multiSelectedIds.size > 1 && (
-            <motion.div
-              key="multi-bar"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              transition={{ duration: 0.15 }}
-              className="absolute bottom-16 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 px-4 py-2.5 rounded-xl border border-white/[0.1] bg-[#0e0e18]/95 backdrop-blur-xl shadow-2xl"
-            >
-              <span className="text-[11px] text-white/50 font-medium">{multiSelectedIds.size} selected</span>
-              <div className="h-4 w-px bg-white/[0.08]" />
-              {[
-                { label: 'Activate', status: 'active' as const, color: '#22c55e' },
-                { label: 'Mark stale', status: 'stale' as const, color: '#f59e0b' },
-                { label: 'Lock', status: 'locked' as const, color: '#94a3b8' },
-              ].map(({ label, status, color }) => (
-                <button
-                  key={status}
-                  onClick={() => {
-                    const store = useLifecycleStore.getState();
-                    store.pushHistory();
-                    multiSelectedIds.forEach(id => {
-                      if (status === 'locked') store.lockNode(id);
-                      else store.updateNodeStatus(id, status);
-                    });
-                    store.addEvent({ id: `ev-${Date.now()}`, type: 'edited' as any, message: `Batch ${label.toLowerCase()}: ${multiSelectedIds.size} nodes`, timestamp: Date.now() });
-                    clearMultiSelect();
-                  }}
-                  className="px-2 py-1 rounded-lg bg-white/[0.04] border border-white/[0.08] text-[10px] font-medium hover:bg-white/[0.08] transition-colors"
-                  style={{ color }}
-                >
-                  {label}
-                </button>
-              ))}
-              <div className="h-4 w-px bg-white/[0.08]" />
-              <button
-                onClick={() => {
-                  const names = nodes.filter(n => multiSelectedIds.has(n.id)).map(n => n.data.label).join(', ');
-                  if (!window.confirm(`Delete ${multiSelectedIds.size} nodes (${names})?`)) return;
-                  deleteMultiSelected();
-                }}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[10px] font-medium hover:bg-rose-500/20 transition-colors"
-              >
-                Delete
-              </button>
-              <button
-                onClick={clearMultiSelect}
-                className="text-[10px] text-white/30 hover:text-white/60 transition-colors"
-              >
-                Cancel
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Multi-select batch toolbar */}
+        <BatchToolbar />
 
         {/* Overlays */}
         {mounted && !isEmpty && <NodeDetailPanel />}
@@ -1445,6 +1467,9 @@ function CanvasInner() {
 
       {/* CID Panel */}
       {mounted && showCIDPanel && <CIDPanel />}
+
+      {/* Template Browser Modal */}
+      {mounted && <TemplateBrowser isOpen={showTemplateBrowser} onClose={() => setShowTemplateBrowser(false)} />}
     </div>
   );
 }
