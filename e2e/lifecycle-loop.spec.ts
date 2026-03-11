@@ -979,3 +979,191 @@ test.describe('CID set-status commands', () => {
     await expect(cidPanel.getByText(/unlock|unlocked|active|Syllabus/i).first()).toBeVisible({ timeout: 5000 });
   });
 });
+
+// ── Staleness & lifecycle cascade ──────────────────────────────────────────
+
+test.describe('Staleness cascade — the core product promise', () => {
+  test('marking a node stale via CID reports the cascade', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(2000);
+
+    // Mark Lesson Plans stale — downstream nodes (Assignments, Rubrics, Quiz Bank, Study Guide, FAQ) should cascade
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('set Lesson Plans to stale');
+    await cidInput.press('Enter');
+
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    // Should mention the cascade or stale status change
+    await expect(cidPanel.getByText(/stale|cascade|downstream|marked/i).first()).toBeVisible({ timeout: 5000 });
+  });
+
+  test('show stale command lists stale nodes after marking', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(2000);
+
+    const cidInput = page.locator('[data-cid-input]');
+    // Mark a node stale first
+    await cidInput.fill('set Lesson Plans to stale');
+    await cidInput.press('Enter');
+    await page.waitForTimeout(2000);
+
+    // Now show stale
+    await cidInput.fill('show stale');
+    await cidInput.press('Enter');
+
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    // Should list stale nodes
+    await expect(cidPanel.getByText(/stale|Lesson Plans/i).first()).toBeVisible({ timeout: 5000 });
+  });
+});
+
+// ── Template browser modal ─────────────────────────────────────────────────
+
+test.describe('Template browser interactions', () => {
+  test('Cmd+T opens template browser modal', async ({ page }) => {
+    await page.goto('/');
+    // Focus canvas first
+    await page.locator('.react-flow').click({ position: { x: 200, y: 200 } });
+    await page.waitForTimeout(200);
+    await page.keyboard.press('Meta+t');
+    // Template browser modal should appear — look for heading-level template names
+    await expect(page.getByRole('heading', { name: 'Course Design' })).toBeVisible({ timeout: 3000 });
+  });
+
+  test('TopBar Templates button opens template browser', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /Browse templates/i }).click();
+    // Should show the modal with multiple templates
+    await expect(page.getByText('Software Development').first()).toBeVisible({ timeout: 3000 });
+    await expect(page.getByText('Content Pipeline').first()).toBeVisible({ timeout: 3000 });
+  });
+});
+
+// ── CID workflow analysis commands ─────────────────────────────────────────
+
+test.describe('CID analysis commands', () => {
+  test('validate command on loaded workflow checks integrity', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('validate');
+    await cidInput.press('Enter');
+
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(cidPanel.getByText(/valid|pass|check|integrity|clean/i).first()).toBeVisible({ timeout: 5000 });
+  });
+
+  test('what-if command shows impact analysis', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('what if remove Lesson Plans');
+    await cidInput.press('Enter');
+
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(cidPanel.getByText(/impact|affect|downstream|remove|orphan/i).first()).toBeVisible({ timeout: 5000 });
+  });
+
+  test('isolate command shows subgraph for a node', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('isolate Lesson Plans');
+    await cidInput.press('Enter');
+
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(cidPanel.getByText(/isolat|subgraph|neighborhood|Lesson Plans/i).first()).toBeVisible({ timeout: 5000 });
+  });
+});
+
+// ── Project management ─────────────────────────────────────────────────────
+
+test.describe('Project management', () => {
+  test('project name is visible in TopBar', async ({ page }) => {
+    await page.goto('/');
+    // Default project name should be visible
+    await expect(page.getByRole('button', { name: /Untitled/i })).toBeVisible({ timeout: 3000 });
+  });
+
+  test('import/export buttons appear after loading a template', async ({ page }) => {
+    await page.goto('/');
+    // Export/Import only show when there are nodes
+    await page.getByRole('button', { name: /^Software Development/ }).click();
+    await expect(page.locator('.react-flow__node').first()).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('button', { name: /Export workflow/i })).toBeVisible({ timeout: 3000 });
+    await expect(page.getByRole('button', { name: /Import workflow/i })).toBeVisible({ timeout: 3000 });
+  });
+});
+
+// ── CID multi-step workflow ────────────────────────────────────────────────
+
+test.describe('CID multi-step workflow', () => {
+  test('load template → rename → verify renamed node appears', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('rename Syllabus to Course Outline');
+    await cidInput.press('Enter');
+
+    // Should see the rename confirmation and the new name
+    await expect(page.getByText('Course Outline').first()).toBeVisible({ timeout: 5000 });
+  });
+
+  test('load template → delete node → verify node removed', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Course FAQ').first()).toBeVisible({ timeout: 8000 });
+    await page.waitForTimeout(2000);
+
+    const initialCount = await page.locator('.react-flow__node').count();
+
+    const cidInput = page.locator('[data-cid-input]');
+    // Use page.once to auto-accept the confirm dialog
+    page.once('dialog', dialog => dialog.accept());
+    await cidInput.fill('delete Course FAQ');
+    await cidInput.press('Enter');
+    await page.waitForTimeout(2000);
+
+    const newCount = await page.locator('.react-flow__node').count();
+    expect(newCount).toBeLessThan(initialCount);
+  });
+
+  test('load template → connect → verify edge created', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Rubrics').first()).toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(2000);
+
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('connect Rubrics to Course FAQ');
+    await cidInput.press('Enter');
+
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(cidPanel.getByText(/connect|linked|edge|Rubrics.*FAQ|FAQ.*Rubrics/i).first()).toBeVisible({ timeout: 5000 });
+  });
+});
+
+// ── Keyboard shortcuts (extended) ──────────────────────────────────────────
+
+test.describe('Keyboard shortcuts — extended', () => {
+  test('Cmd+/ shows keyboard shortcuts help overlay', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('.react-flow').click({ position: { x: 200, y: 200 } });
+    await page.waitForTimeout(200);
+    await page.keyboard.press('Meta+/');
+    // Should show shortcuts overlay with key bindings
+    await expect(page.getByText(/⌘K|Cmd\+K|shortcut/i).first()).toBeVisible({ timeout: 3000 });
+  });
+});
