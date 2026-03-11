@@ -17,7 +17,7 @@ interface BenchmarkCase {
   hasWorkflow?: boolean;
 }
 
-// ─── The Benchmark: 140 real user prompts ────────────────────────────────────
+// ─── The Benchmark: 143 real user prompts ────────────────────────────────────
 
 const BENCHMARK: BenchmarkCase[] = [
   // ── Workflow generation (professor) ──
@@ -183,6 +183,11 @@ const BENCHMARK: BenchmarkCase[] = [
   { prompt: 'include a discussion prompt after each lesson', expected: 'extend', context: 'professor', hasWorkflow: true },
   { prompt: 'show me unconnected nodes', expected: 'orphans', context: 'professor' },
   { prompt: 'execution plan', expected: 'preflight', context: 'PM' },
+
+  // ── Round 9: autoresearch-generated prompts ──
+  { prompt: 'plus a homework submission node', expected: 'extend', context: 'professor', hasWorkflow: true },
+  { prompt: 'run stale', expected: 'propagate', context: 'professor' },
+  { prompt: 'show the isolated nodes', expected: 'orphans', context: 'professor' },
 
   // ── Natural language that should fall to LLM ──
   { prompt: 'why is my rubric out of date', expected: 'llm-fallback', context: 'professor' },
