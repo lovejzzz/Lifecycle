@@ -144,7 +144,7 @@ export default function TopBar() {
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] text-white/50 text-[11px] font-medium hover:text-white/80 hover:bg-white/[0.07] transition-colors max-w-[180px]"
             >
               <FolderOpen size={11} className="shrink-0" />
-              <span className="truncate">{currentProjectName}</span>
+              <span className="truncate">{mounted ? currentProjectName : 'Untitled'}</span>
               <ChevronDown size={10} className="shrink-0 text-white/25" />
             </button>
           )}
