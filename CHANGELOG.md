@@ -1,5 +1,11 @@
 # Changelog
 
+### 2026-03-11 — AI Cost Guardrails + Output Validation Complete (v1.0.53)
+
+- **Feature 3 complete (AI Cost Guardrails)**: _usageStats in store (totalCalls, tokens, cachedSkips), cost estimation in ImpactPreview, usage badge in TopBar, 30 cache tests
+- **Feature 4 complete (Output Quality Validation)**: validate.ts (keyword extraction, overlap scoring, category-specific rules), _validationWarnings on NodeData, warning badge on LifecycleNode, expandable details in NodeDetailPanel, 24 validate tests
+- 962 vitest tests passing, build clean.
+
 ### 2026-03-11 — Category Simplification + Cost Guardrails Progress (v1.0.52)
 
 - **Category simplification**: 13 categories → 5 user-facing (input, process, deliverable, review, note) with backward-compatible legacy mapping
