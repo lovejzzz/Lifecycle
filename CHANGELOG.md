@@ -1,5 +1,21 @@
 # Changelog
 
+### 2026-03-11 — Phase 4 Batch 1: Production Readiness (Items 15-19)
+
+Five features implemented in parallel:
+
+**Item 15 — Cycle Detection on Connect**: onConnect now validates that new edges won't create cycles via DFS before adding them. Shows warning toast if rejected. 3 new tests.
+
+**Item 16 — Education Workflow Templates**: Added 3 education-specific templates — Course Design (8 nodes: Syllabus→Objectives→Lesson Plans→Assignments/Rubrics/Quiz Bank/Study Guide→FAQ), Lesson Planning (6 nodes), Assignment Design (5 nodes). Added template cards to empty canvas UI with icons. Updated CID help text.
+
+**Item 17 — On-Canvas Content Preview**: Nodes now show a 2-3 line preview of execution results or content directly on the canvas. 10px muted text, max 80 chars, strips markdown formatting. Hidden during generation.
+
+**Item 18 — Viewport Meta & Responsive Panels**: Added Next.js viewport export for mobile/tablet. CIDPanel becomes full-screen overlay on mobile. NodeDetailPanel stretches to viewport width. TopBar hides non-essential buttons on small screens with overflow handling.
+
+**Item 19 — ARIA Accessibility Foundations**: Added ARIA labels to 7 TopBar buttons, role="toolbar" on button groups, role="alert" + aria-live on toasts, role="complementary" on CID/NodeDetail panels, role="dialog" + aria-modal on ImpactPreview, aria-label on canvas wrapper.
+
+Phase 4 roadmap (items 15-25) written to docs/ROADMAP.md. 769 tests passing.
+
 ### 2026-03-10 — Coverage Push: useStore.ts 50% → 70%, Overall 61% → 76%
 
 Added 127 new tests across 8 scenarios (27-34) covering previously untested store functions:

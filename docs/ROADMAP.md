@@ -663,3 +663,173 @@ After item 14, Lifecycle Agent has:
 - Multiple projects with reliable undo
 
 That's a product someone can actually use, not a feature collection.
+
+---
+---
+
+# Phase 4 — Production Readiness
+
+Phases 1-3 built the features. Phase 4 makes them **reliable, accessible, and usable in the real world**. These address the question: "Can a professor actually use this without hitting walls?"
+
+---
+
+### 15. Cycle Detection on Connect
+
+**Why**: Users can currently draw A→B→C→A cycles on the canvas with no warning. The cycle is only caught at execution time, leaving the user confused. The spec says the system should "prevent invalid states" proactively.
+
+**What it does**: When a user drags an edge, validate that it won't create a cycle. If it would, reject the connection and show a toast explaining why.
+
+**How to implement**:
+1. **`src/store/useStore.ts` — `onConnect()`**: Before adding edge, run DFS from target node through existing edges + proposed edge. If source is reachable from target, reject.
+2. **Toast**: "Cannot connect — would create a cycle: A → B → C → A"
+3. **Visual**: Flash the proposed edge red briefly before dismissing.
+
+---
+
+### 16. Education Workflow Templates
+
+**Why**: The product was born from an education use case (syllabus → lesson plans → rubrics → quizzes), but has zero education templates. All 5 existing templates are generic (software, content, incident). A professor opening the app sees nothing relevant to their work.
+
+**What it does**: Add 3 education-specific templates that demonstrate the lifecycle loop in action.
+
+**Templates**:
+1. **Course Design** (8 nodes): Syllabus → Learning Objectives → Lesson Plans → Assignments → Rubrics → Quiz Bank → Study Guide → Course FAQ
+2. **Lesson Planning** (6 nodes): Topic → Learning Goals → Activities → Materials → Assessment → Reflection
+3. **Assignment Design** (5 nodes): Brief → Requirements → Rubric → Sample Solution → Student Guide
+
+---
+
+### 17. On-Canvas Content Preview
+
+**Why**: Nodes only show labels on the canvas. To see content or execution results, users must click each node individually. With 10+ nodes, this is tedious. The "transparent factory" vision requires seeing content at a glance.
+
+**What it does**: Nodes show a 2-3 line preview of their content or execution result directly on the canvas. Truncated with "..." for long content.
+
+**How to implement**:
+1. **`src/components/LifecycleNode.tsx`**: Add a content preview section below the label. Show first ~80 chars of `executionResult || content`, truncated.
+2. **Conditional**: Only show if content exists. Collapse for nodes with no content.
+3. **Styling**: Smaller text (text-[10px]), muted color, max 3 lines with overflow hidden.
+
+---
+
+### 18. Viewport Meta & Responsive Panels
+
+**Why**: Missing `<meta name="viewport">` means mobile/tablet renders at desktop scale. Sidebar panels have fixed pixel widths that overflow on small screens. An educator on an iPad can't use the app.
+
+**What it does**: Basic mobile/tablet support — viewport meta tag, collapsible panels, responsive breakpoints.
+
+**How to implement**:
+1. **`src/app/layout.tsx`**: Add `<meta name="viewport" content="width=device-width, initial-scale=1">`.
+2. **Panels**: On screens <768px, panels become full-width overlays instead of side-by-side.
+3. **TopBar**: Stack controls vertically on mobile, hide non-essential items.
+
+---
+
+### 19. Accessibility Foundations
+
+**Why**: Zero ARIA labels across the entire app. Canvas is invisible to screen readers. Toasts don't announce. Interactive panels have no roles. This blocks usage by users with disabilities and fails WCAG 2.1 AA.
+
+**What it does**: Add ARIA labels, roles, and live regions to all major interactive elements.
+
+**How to implement**:
+1. **Toasts**: Add `role="alert"` and `aria-live="polite"`.
+2. **Panels**: Add `role="dialog"` or `role="complementary"` with `aria-label`.
+3. **Buttons**: Add `aria-label` to icon-only buttons (already have titles, add aria too).
+4. **Canvas**: Add `aria-label="Workflow canvas"` and screen-reader-only node list.
+5. **Modals**: Add `role="dialog"`, `aria-modal="true"`, focus trapping.
+
+---
+
+### 20. Execution Streaming & Timeout Resilience
+
+**Why**: LLM calls can take 5-30s per node. The UI blocks with a spinner. If DeepSeek hits its 240s timeout, the UI hangs with no feedback. Users don't know if the system is working or frozen.
+
+**What it does**: Stream partial results during execution, and handle timeouts gracefully with retry options.
+
+**How to implement**:
+1. **`/api/cid/route.ts`**: Add SSE (Server-Sent Events) streaming option for supported models.
+2. **`src/store/useStore.ts`**: Update `executeNode()` to consume streaming responses, updating node content progressively.
+3. **Timeout handling**: If a node execution exceeds 60s, show "Still working..." with option to skip.
+4. **Fallback**: For non-streaming models (DeepSeek Reasoner), show elapsed time counter.
+
+---
+
+### 21. Node Hover Preview
+
+**Why**: Even with on-canvas snippets (item 17), users need to see full content without committing to a click. Hover previews show the full execution result in a tooltip-like panel.
+
+**What it does**: Hovering over a node for 500ms shows a floating preview card with the node's full content, execution result, and version info.
+
+---
+
+### 22. Batch Node Operations
+
+**Why**: Users can multi-select nodes (Shift+Click) but can only delete them as a group. No batch execute, batch export, or batch status change from the canvas. Managing 10+ nodes one at a time is tedious.
+
+**What it does**: Multi-selected nodes get a floating toolbar: Execute Selected, Export Selected, Lock All, Approve All, Delete All.
+
+---
+
+### 23. Template Browser UI
+
+**Why**: Templates are only accessible via CID chat commands (`load template <name>`). New users don't know templates exist. A visual browser with previews would help discovery.
+
+**What it does**: A modal/panel showing all templates (built-in + custom) with node count, description, and a visual preview thumbnail.
+
+---
+
+### 24. First-Run Onboarding
+
+**Why**: New users land on an empty canvas with no guidance. The empty state has template chips, but no explanation of what the app does or how to use it. First impressions matter.
+
+**What it does**: A 3-step overlay tour on first launch: (1) "Describe your workflow to CID", (2) "Watch the graph build", (3) "Edit any node — the lifecycle keeps everything in sync".
+
+---
+
+### 25. Smart Auto-Connect Suggestions
+
+**Why**: After adding nodes manually, users often forget to connect them. CID should notice disconnected nodes and suggest connections based on category and label similarity.
+
+**What it does**: When a new node is created manually, CID silently checks if it should connect to existing nodes and offers a suggestion card.
+
+---
+
+## Phase 4 implementation order
+
+```
+[15. Cycle Detection]          — Prevent invalid state
+        ↓
+[16. Education Templates]      — Core use case support
+        ↓
+[17. Content Preview]          — Transparent factory vision
+        ↓
+[18. Responsive/Viewport]      — Mobile/tablet access
+        ↓
+[19. Accessibility]            — WCAG foundations
+        ↓
+[20. Streaming/Timeout]        — Execution resilience
+        ↓
+[21. Hover Preview]            — Content discovery
+        ↓
+[22. Batch Operations]         — Power user efficiency
+        ↓
+[23. Template Browser]         — Feature discovery
+        ↓
+[24. Onboarding]               — First-run experience
+        ↓
+[25. Auto-Connect]             — Intelligent assistance
+```
+
+Items 15-19 are the **critical batch** — they fix real blockers.
+Items 20-25 are **quality-of-life** — they make the product delightful.
+
+---
+
+## Phase 4 timeline estimate
+
+```
+Phase 4a — Critical (items 15-19)     ~4-5 hours
+Phase 4b — Quality (items 20-25)      ~5-6 hours
+                                      ─────────
+                                      ~9-11 hours
+```

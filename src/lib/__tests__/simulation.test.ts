@@ -4140,4 +4140,61 @@ describe('User Simulation: Real Journeys', () => {
       expect(result).toContain('3 nodes');
     });
   });
+
+  // ── Cycle Detection on Connect ──────────────────────────────────────────────
+  describe('Cycle Detection on Connect', () => {
+    beforeEach(() => resetStore());
+
+    it('rejects connection that would create a cycle (A→B when B→A exists)', () => {
+      const store = getStore();
+      // Set up two nodes with B→A edge
+      useLifecycleStore.setState({
+        nodes: [mkNode('A', 'Node A'), mkNode('B', 'Node B')],
+        edges: [mkEdge('e-ba', 'B', 'A')],
+      });
+
+      // Try to connect A→B, which would create a cycle
+      store.onConnect({ source: 'A', target: 'B' } as Connection);
+
+      // Edge should NOT be added — still only the original edge
+      const edges = getStore().edges;
+      expect(edges).toHaveLength(1);
+      expect(edges[0].id).toBe('e-ba');
+
+      // A warning toast should have been shown
+      const toasts = getStore().toasts;
+      expect(toasts.length).toBeGreaterThanOrEqual(1);
+      expect(toasts.some((t: { message: string }) => t.message.includes('cycle'))).toBe(true);
+    });
+
+    it('allows valid connections that do not create a cycle', () => {
+      const store = getStore();
+      useLifecycleStore.setState({
+        nodes: [mkNode('A', 'Node A'), mkNode('B', 'Node B'), mkNode('C', 'Node C')],
+        edges: [mkEdge('e-ab', 'A', 'B')],
+      });
+
+      // Connect B→C — no cycle
+      store.onConnect({ source: 'B', target: 'C' } as Connection);
+
+      const edges = getStore().edges;
+      expect(edges).toHaveLength(2);
+      expect(edges.some((e: Edge) => e.source === 'B' && e.target === 'C')).toBe(true);
+    });
+
+    it('rejects connection that would create a longer cycle (A→B→C→A)', () => {
+      const store = getStore();
+      useLifecycleStore.setState({
+        nodes: [mkNode('A', 'Node A'), mkNode('B', 'Node B'), mkNode('C', 'Node C')],
+        edges: [mkEdge('e-ab', 'A', 'B'), mkEdge('e-bc', 'B', 'C')],
+      });
+
+      // Try to connect C→A, which would create A→B→C→A cycle
+      store.onConnect({ source: 'C', target: 'A' } as Connection);
+
+      const edges = getStore().edges;
+      expect(edges).toHaveLength(2); // No new edge added
+      expect(getStore().toasts.some((t: { message: string }) => t.message.includes('cycle'))).toBe(true);
+    });
+  });
 });

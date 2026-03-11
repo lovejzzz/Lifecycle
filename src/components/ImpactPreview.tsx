@@ -62,6 +62,9 @@ export default function ImpactPreview() {
         exit={{ opacity: 0, y: 20, scale: 0.95 }}
         transition={{ duration: 0.2 }}
         className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[420px] max-w-[90vw] rounded-2xl border border-amber-500/20 bg-[#0e0e18]/95 backdrop-blur-xl shadow-2xl shadow-amber-500/5"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Impact Preview"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 pt-3 pb-2">

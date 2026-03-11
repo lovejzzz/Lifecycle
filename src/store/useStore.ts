@@ -153,6 +153,9 @@ interface LifecycleStore {
   // Generate AI content for a node
   generateNodeContent: (nodeId: string) => void;
 
+  // Auto-save indicator
+  lastSavedAt: number;
+
   // Toast notifications
   toasts: Array<{ id: string; message: string; type: 'success' | 'info' | 'warning' | 'error' }>;
   addToast: (message: string, type?: 'success' | 'info' | 'warning' | 'error', autoDismissMs?: number) => void;
@@ -608,6 +611,8 @@ function flushSave() {
         state.edges.length,
       );
     }
+    // Update auto-save indicator timestamp
+    useLifecycleStore.setState({ lastSavedAt: Date.now() });
   } catch (e) {
     console.error('[Storage] Save failed:', e);
     // Emergency save with aggressive trimming
@@ -2393,6 +2398,16 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     if (!connection.source || !connection.target) return;
     // Prevent self-loops
     if (connection.source === connection.target) return;
+    // Prevent cycles: check if adding this edge would create a cycle
+    const proposedEdges = [
+      ...store.edges.map(e => ({ source: e.source, target: e.target, label: typeof e.label === 'string' ? e.label : undefined })),
+      { source: connection.source, target: connection.target },
+    ];
+    const { hasCycle } = detectCycle(store.nodes, proposedEdges, { excludeLabels: [] });
+    if (hasCycle) {
+      store.addToast('Cannot connect: this would create a cycle in the workflow', 'warning');
+      return;
+    }
     store.pushHistory();
     set((s) => {
       const exists = s.edges.some(
@@ -3581,6 +3596,9 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     });
   },
 
+  // Auto-save indicator
+  lastSavedAt: 0,
+
   // Toast notifications
   toasts: [],
   addToast: (message, type = 'info', autoDismissMs) => {
@@ -4571,6 +4589,52 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
           { from: 0, to: 1, label: 'triggers' }, { from: 1, to: 2, label: 'drives' },
           { from: 2, to: 3, label: 'feeds' }, { from: 3, to: 4, label: 'validates' },
           { from: 4, to: 5, label: 'feeds' }, { from: 5, to: 6, label: 'outputs' },
+        ],
+      },
+      'Course Design': {
+        nodes: [
+          { label: 'Syllabus', category: 'input', description: 'The uploaded or authored course syllabus: title, description, schedule, policies, and high-level topic sequence.' },
+          { label: 'Learning Objectives', category: 'state', description: 'Extract and organize the course-level learning objectives from the syllabus. Use Bloom\'s taxonomy verbs. Map each objective to the weeks/modules it spans.' },
+          { label: 'Lesson Plans', category: 'artifact', description: 'Generate a lesson plan for each module/week. Include topics, activities, timing, and which learning objectives each lesson addresses.' },
+          { label: 'Assignments', category: 'artifact', description: 'Design assignments aligned to the lesson plans. Each assignment should reference specific learning objectives and lesson topics. Include format, length, and submission guidelines.' },
+          { label: 'Rubrics', category: 'artifact', description: 'Create grading rubrics for each assignment. Define criteria, performance levels, and point allocations that map directly to the assignment requirements.' },
+          { label: 'Quiz Bank', category: 'artifact', description: 'Generate a bank of quiz and exam questions organized by lesson/module. Include multiple question types (MCQ, short answer, essay prompts) covering key concepts from the lesson plans.' },
+          { label: 'Study Guide', category: 'artifact', description: 'Compile a student-facing study guide summarizing key concepts, vocabulary, and review questions for each module. Cross-reference lesson plans and quiz bank topics.' },
+          { label: 'Course FAQ', category: 'output', description: 'Generate a comprehensive course FAQ answering common student questions about assignments, grading policies, schedule, and study strategies based on all upstream artifacts.' },
+        ],
+        edges: [
+          { from: 0, to: 1, label: 'derives' }, { from: 1, to: 2, label: 'structures' },
+          { from: 2, to: 3, label: 'produces' }, { from: 3, to: 4, label: 'validates' },
+          { from: 2, to: 5, label: 'tests' }, { from: 2, to: 6, label: 'guides' },
+          { from: 6, to: 7, label: 'answers' },
+        ],
+      },
+      'Lesson Planning': {
+        nodes: [
+          { label: 'Topic', category: 'input', description: 'The lesson topic or theme, including any prerequisites, target audience, and time constraints.' },
+          { label: 'Learning Goals', category: 'state', description: 'Define specific, measurable learning goals for this lesson using Bloom\'s taxonomy. State what students should know or be able to do by the end.' },
+          { label: 'Activities', category: 'action', description: 'Design a sequence of learning activities (lecture segments, discussions, group work, practice problems) with timing. Each activity should map to at least one learning goal.' },
+          { label: 'Materials', category: 'artifact', description: 'List and create supporting materials: slide outlines, handouts, readings, media links, and any scaffolding resources needed for the activities.' },
+          { label: 'Assessment', category: 'test', description: 'Create formative and/or summative assessments to measure whether learning goals were met. Include exit tickets, quiz questions, or short assignments with answer keys.' },
+          { label: 'Reflection', category: 'review', description: 'Post-lesson reflection template: What worked? What didn\'t? Were learning goals met? Student engagement observations and adjustments for next time.' },
+        ],
+        edges: [
+          { from: 0, to: 1, label: 'defines' }, { from: 1, to: 2, label: 'guides' },
+          { from: 2, to: 3, label: 'supports' }, { from: 2, to: 4, label: 'evaluates' },
+          { from: 4, to: 5, label: 'refines' },
+        ],
+      },
+      'Assignment Design': {
+        nodes: [
+          { label: 'Brief', category: 'input', description: 'The assignment brief: what students should produce, the learning objectives it assesses, target skill level, and any constraints (length, format, tools allowed).' },
+          { label: 'Requirements', category: 'state', description: 'Break the brief into detailed, actionable requirements. List deliverables, evaluation criteria, academic integrity expectations, and submission format.' },
+          { label: 'Rubric', category: 'artifact', description: 'Build a detailed grading rubric with criteria derived from the requirements. Define performance levels (excellent, proficient, developing, beginning) with point allocations and descriptors.' },
+          { label: 'Sample Solution', category: 'artifact', description: 'Produce an exemplary sample solution or annotated example that meets all rubric criteria at the highest level. Include inline notes explaining why each element earns full marks.' },
+          { label: 'Student Guide', category: 'output', description: 'Write a student-facing guide that explains the assignment expectations, tips for success, common pitfalls to avoid, and how the rubric will be applied. Reference the requirements without revealing the sample solution.' },
+        ],
+        edges: [
+          { from: 0, to: 1, label: 'specifies' }, { from: 1, to: 2, label: 'validates' },
+          { from: 2, to: 3, label: 'demonstrates' }, { from: 2, to: 4, label: 'guides' },
         ],
       },
     };

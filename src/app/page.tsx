@@ -21,7 +21,7 @@ function Toasts() {
   const removeToast = useLifecycleStore(s => s.removeToast);
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 items-center pointer-events-none">
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 items-center pointer-events-none" role="alert" aria-live="polite">
       <AnimatePresence>
         {toasts.map(toast => {
           const style = TOAST_ICONS[toast.type];

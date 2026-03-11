@@ -103,14 +103,14 @@ export default function TopBar() {
   }, [showAddMenu, showProjectMenu]);
 
   return (
-    <div className="h-12 border-b border-white/[0.06] bg-[#0a0a0f]/90 backdrop-blur-xl flex items-center justify-between px-5 z-30 relative">
+    <div className="h-12 border-b border-white/[0.06] bg-[#0a0a0f]/90 backdrop-blur-xl flex items-center justify-between px-3 md:px-5 z-30 relative overflow-x-auto">
       {/* Left */}
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-2 md:gap-4 min-w-0">
+        <div className="flex items-center gap-2.5 shrink-0">
           <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 flex items-center justify-center border border-emerald-500/20">
             <Layers size={14} className="text-emerald-400" />
           </div>
-          <span className="text-sm font-semibold text-white/90 tracking-tight">Lifecycle Agent</span>
+          <span className="text-sm font-semibold text-white/90 tracking-tight hidden sm:inline">Lifecycle Agent</span>
         </div>
         <div className="h-4 w-px bg-white/[0.08]" />
 
@@ -295,11 +295,12 @@ export default function TopBar() {
         </div>
 
         {/* Undo/Redo */}
-        <div className="flex items-center gap-1">
+        <div className="hidden sm:flex items-center gap-1" role="toolbar" aria-label="Undo and redo">
           <button
             onClick={undo}
             disabled={history.length === 0}
             title={`Undo (${mod}Z)`}
+            aria-label={`Undo (${mod}Z)`}
             className="w-7 h-7 rounded-lg flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-white/30"
           >
             <Undo2 size={13} />
@@ -308,6 +309,7 @@ export default function TopBar() {
             onClick={redo}
             disabled={future.length === 0}
             title={`Redo (${mod}⇧Z)`}
+            aria-label={`Redo (${mod}⇧Z)`}
             className="w-7 h-7 rounded-lg flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-white/30"
           >
             <Redo2 size={13} />
@@ -316,7 +318,7 @@ export default function TopBar() {
 
         {/* Export/Import */}
         {mounted && nodes.length > 0 && (
-          <div className="flex items-center gap-1">
+          <div className="hidden md:flex items-center gap-1">
             <button
               onClick={() => {
                 const json = exportWorkflow();
@@ -329,6 +331,7 @@ export default function TopBar() {
                 setTimeout(() => URL.revokeObjectURL(url), 1000);
               }}
               title={`Export workflow (${mod}E)`}
+              aria-label={`Export workflow (${mod}E)`}
               className="w-7 h-7 rounded-lg flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors"
             >
               <Download size={13} />
@@ -336,6 +339,7 @@ export default function TopBar() {
             <button
               onClick={() => fileInputRef.current?.click()}
               title="Import workflow from JSON"
+              aria-label="Import workflow from JSON"
               className="w-7 h-7 rounded-lg flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors"
             >
               <Upload size={13} />
@@ -422,6 +426,7 @@ export default function TopBar() {
             <button
               onClick={togglePreviewPanel}
               title="Preview panel"
+              aria-label="Preview panel"
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
                 showPreviewPanel
                   ? 'bg-violet-500/10 text-violet-400 border border-violet-500/20'
@@ -434,6 +439,7 @@ export default function TopBar() {
             <button
               onClick={toggleActivityPanel}
               title="Activity log"
+              aria-label="Activity log"
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
                 showActivityPanel
                   ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
@@ -448,6 +454,7 @@ export default function TopBar() {
         <button
           onClick={toggleCIDPanel}
           title={`${agent.name} (${mod}K)`}
+          aria-label={`${agent.name} (${mod}K)`}
           className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
             showCIDPanel
               ? agent.accent === 'amber'

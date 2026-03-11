@@ -17,7 +17,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bot, Sparkles, ArrowRight, Search, X, HelpCircle, Keyboard, ChevronRight, Copy, Trash2, MessageSquare, Lock, Loader2, Code2, FileText, ShieldAlert, Rocket, MessageCircle } from 'lucide-react';
+import { Bot, Sparkles, ArrowRight, Search, X, HelpCircle, Keyboard, ChevronRight, Copy, Trash2, MessageSquare, Lock, Loader2, Code2, FileText, ShieldAlert, Rocket, MessageCircle, GraduationCap, BookOpen, ClipboardList } from 'lucide-react';
 import { useLifecycleStore, resolveOverlap } from '@/store/useStore';
 import LifecycleNode from './LifecycleNode';
 import NodeDetailPanel from './NodeDetailPanel';
@@ -700,7 +700,7 @@ function CanvasInner() {
 
   return (
     <div className="flex w-full h-full overflow-hidden" style={{ flex: '1 1 0%', minHeight: 0 }}>
-      <div style={{ flex: '1 1 0%', minWidth: 0, position: 'relative', height: '100%' }}>
+      <div style={{ flex: '1 1 0%', minWidth: 0, position: 'relative', height: '100%' }} aria-label="Workflow canvas">
         <ReactFlow
           nodes={mounted ? (connectedNodeIds ? nodes.map(n => ({
             ...n,
@@ -818,6 +818,9 @@ function CanvasInner() {
                   { label: 'Incident Response', icon: ShieldAlert, desc: '6 nodes — alert to postmortem', iconClass: 'text-rose-400/70 group-hover:text-rose-400' },
                   { label: 'Product Launch', icon: Rocket, desc: '7 nodes — research to metrics', iconClass: 'text-orange-400/70 group-hover:text-orange-400' },
                   { label: 'Chatbot', icon: MessageCircle, desc: '7 nodes — message to reply', iconClass: 'text-sky-400/70 group-hover:text-sky-400' },
+                  { label: 'Course Design', icon: GraduationCap, desc: '8 nodes — syllabus to FAQ', iconClass: 'text-emerald-400/70 group-hover:text-emerald-400' },
+                  { label: 'Lesson Planning', icon: BookOpen, desc: '6 nodes — topic to reflection', iconClass: 'text-amber-400/70 group-hover:text-amber-400' },
+                  { label: 'Assignment Design', icon: ClipboardList, desc: '5 nodes — brief to guide', iconClass: 'text-pink-400/70 group-hover:text-pink-400' },
                 ] as const).map(({ label, icon: Icon, desc, iconClass }) => (
                   <button
                     key={label}

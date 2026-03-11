@@ -639,7 +639,9 @@ function NodeDetailPanelContent({ nodeId }: { nodeId: string }) {
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: -320, opacity: 0 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      className="absolute top-4 left-4 w-[300px] rounded-xl border border-white/[0.06] bg-[#0c0c14]/95 backdrop-blur-xl overflow-hidden z-20 shadow-2xl max-h-[calc(100vh-120px)] flex flex-col"
+      className="absolute top-4 left-4 w-[300px] max-md:w-[calc(100vw-2rem)] max-md:left-2 max-md:right-2 rounded-xl border border-white/[0.06] bg-[#0c0c14]/95 backdrop-blur-xl overflow-hidden z-20 shadow-2xl max-h-[calc(100vh-120px)] flex flex-col"
+      role="complementary"
+      aria-label="Node Details"
     >
         {/* Accent */}
         <div className="h-[2px] flex-shrink-0" style={{ background: `linear-gradient(90deg, ${colors.primary}, transparent)` }} />

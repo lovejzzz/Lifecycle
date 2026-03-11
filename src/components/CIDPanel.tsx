@@ -407,7 +407,7 @@ export default function CIDPanel() {
       if (!name) {
         addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
         setProcessing(true);
-        setTimeout(() => sendStreamingResponse('Available templates: **Software Development**, **Content Pipeline**, **Incident Response**, **Product Launch**\n\nUse: `/template Software Development`'), 200);
+        setTimeout(() => sendStreamingResponse('Available templates: **Software Development**, **Content Pipeline**, **Incident Response**, **Product Launch**, **Chatbot**, **Course Design**, **Lesson Planning**, **Assignment Design**\n\nUse: `/template Software Development`'), 200);
         return;
       }
       loadTemplate(name);
@@ -751,7 +751,7 @@ export default function CIDPanel() {
         '- `/new` — Start a new project',
         '- `/export` — Export workflow as JSON',
         '- `/mode` — Switch agent (Rowan ↔ Poirot)',
-        '- `/template <name>` — Load a template (Software Development, Content Pipeline, Incident Response, Product Launch)',
+        '- `/template <name>` — Load a template (Software Development, Content Pipeline, Incident Response, Product Launch, Chatbot, Course Design, Lesson Planning, Assignment Design)',
         '- `/export-chat` — Export conversation as Markdown file',
         '',
         '**Learning**',
@@ -912,7 +912,9 @@ export default function CIDPanel() {
 
   return (
     <div
-      className="h-full flex flex-col border-l border-white/[0.06] bg-[#0c0c14]/95 backdrop-blur-xl relative"
+      className="h-full flex flex-col border-l border-white/[0.06] bg-[#0c0c14]/95 backdrop-blur-xl relative max-md:!w-full max-md:absolute max-md:inset-0 max-md:z-40 max-md:border-l-0"
+      role="complementary"
+      aria-label="CID Agent Panel"
       style={{ width: panelWidth }}
     >
       {/* Resize handle */}

@@ -207,6 +207,20 @@ function LifecycleNode({ data, id, dragging }: NodeProps) {
             </p>
           )}
 
+          {/* On-canvas content preview (execution result or content snippet) */}
+          {status !== 'generating' && (() => {
+            const previewText = (nodeData.executionResult || nodeData.content || '').replace(/^#+\s*/gm, '').replace(/\*\*/g, '').trim();
+            if (!previewText) return null;
+            const snippet = previewText.length > 80 ? previewText.slice(0, 80) + '...' : previewText;
+            return (
+              <div className="mb-2 pt-1.5 border-t border-white/[0.06]">
+                <p className="text-[10px] text-white/40 leading-[1.4] line-clamp-3 overflow-hidden">
+                  {snippet}
+                </p>
+              </div>
+            );
+          })()}
+
           {/* URL Input for service-linked nodes */}
           {inputType === 'url' && (
             <div
