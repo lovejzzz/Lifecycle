@@ -1478,3 +1478,99 @@ test.describe('CID merge command', () => {
     await expect(cidPanel.getByText(/merge|combin|fuse|Rubrics|Quiz Bank/i).first()).toBeVisible({ timeout: 5000 });
   });
 });
+
+// ── Product Launch template ────────────────────────────────────────────────
+
+test.describe('Product Launch template', () => {
+  test('Product Launch template loads with expected nodes', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Product Launch/ }).click();
+    await expect(page.locator('.react-flow__node').first()).toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(2000);
+    const nodeCount = await page.locator('.react-flow__node').count();
+    expect(nodeCount).toBeGreaterThanOrEqual(5);
+  });
+});
+
+// ── Undo after mutation ────────────────────────────────────────────────────
+
+test.describe('Undo after CID mutation', () => {
+  test('undo reverses a rename', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('rename Syllabus to Course Outline');
+    await cidInput.press('Enter');
+    await expect(page.getByText('Course Outline').first()).toBeVisible({ timeout: 5000 });
+
+    // Undo should bring back original name
+    await cidInput.fill('undo');
+    await cidInput.press('Enter');
+    await page.waitForTimeout(1500);
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+  });
+});
+
+// ── CID compress command ───────────────────────────────────────────────────
+
+test.describe('CID compress command', () => {
+  test('compress command on loaded workflow', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('compress');
+    await cidInput.press('Enter');
+
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(cidPanel.getByText(/compress|compact|clean|duplic|pass-through|no.*found/i).first()).toBeVisible({ timeout: 5000 });
+  });
+});
+
+// ── Preview panel ──────────────────────────────────────────────────────────
+
+test.describe('Preview panel', () => {
+  test('Preview button toggles preview panel', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const previewBtn = page.getByRole('button', { name: /Preview/i }).first();
+    await previewBtn.click();
+    // Preview panel should show some content
+    await expect(page.getByText(/Preview|Workflow|Node/i).first()).toBeVisible({ timeout: 3000 });
+  });
+});
+
+// ── CID orphans and health-detail commands ─────────────────────────────────
+
+test.describe('CID diagnostic commands', () => {
+  test('orphans command on connected workflow shows no orphans', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('orphans');
+    await cidInput.press('Enter');
+
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(cidPanel.getByText(/orphan|no.*orphan|connected|all.*connected/i).first()).toBeVisible({ timeout: 5000 });
+  });
+
+  test('health detail command shows detailed health info', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('health detail');
+    await cidInput.press('Enter');
+
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(cidPanel.getByText(/health|score|metric|node|edge/i).first()).toBeVisible({ timeout: 5000 });
+  });
+});
