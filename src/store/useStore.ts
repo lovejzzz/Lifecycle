@@ -410,6 +410,7 @@ interface LifecycleStore {
   _dismissedSuggestionIds: Set<string>;
   applySuggestion: (suggestionId: string) => void;
   dismissSuggestion: (suggestionId: string) => void;
+  suggestAutoConnect: (nodeId: string) => void;
 
   // ── Workflow Optimization ──
   _lastOptimizations: Optimization[];
@@ -2192,56 +2193,10 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     });
     set({ selectedNodeId: id });
 
-    // Auto-connect: find the best existing node to connect to based on category inference
-    if (store.nodes.length > 1) {
-      const otherNodes = store.nodes.filter(n => n.id !== id);
-      // Score each potential connection and pick the best
-      let bestTarget: Node<NodeData> | null = null;
-      let bestScore = 0;
-      for (const other of otherNodes) {
-        // Try both directions and pick the one with a non-generic label
-        const fwdLabel = inferEdgeLabel(category, other.data.category);
-        const revLabel = inferEdgeLabel(other.data.category, category);
-        const fwdScore = fwdLabel !== 'connects' ? 2 : 0;
-        const revScore = revLabel !== 'connects' ? 2 : 0;
-        // Prefer leaf nodes (no outgoing edges) as targets for new connections
-        const isLeaf = !store.edges.some(e => e.source === other.id);
-        const leafBonus = isLeaf ? 1 : 0;
-        const score = Math.max(fwdScore, revScore) + leafBonus;
-        if (score > bestScore) {
-          bestScore = score;
-          bestTarget = other;
-        }
-      }
-      if (bestTarget && bestScore > 0) {
-        // Determine direction: if reverse scored higher, other→new; else new→other
-        const revLabel = inferEdgeLabel(bestTarget.data.category, category);
-        const fwdLabel = inferEdgeLabel(category, bestTarget.data.category);
-        const isReverse = revLabel !== 'connects' && (fwdLabel === 'connects' || revLabel !== fwdLabel);
-        const srcId = isReverse ? bestTarget.id : id;
-        const tgtId = isReverse ? id : bestTarget.id;
-        const edgeLabel = isReverse ? revLabel : fwdLabel;
-        store.addEdge(createStyledEdge(srcId, tgtId, edgeLabel));
-        store.addEvent({
-          id: `ev-${Date.now()}-ac`, type: 'created',
-          message: `Auto-connected ${isReverse ? bestTarget.data.label : node.data.label} → ${isReverse ? node.data.label : bestTarget.data.label} (${edgeLabel})`,
-          timestamp: Date.now(), nodeId: id, agent: true,
-        });
-        if (store.showCIDPanel) {
-          const ag = getAgent(store.cidMode);
-          const msg = ag.accent === 'amber'
-            ? `Ah, a new node — **${node.data.label}**. I have connected it to **${bestTarget.data.label}** (${edgeLabel}). Drag handles to adjust if needed.`
-            : `New node: **${node.data.label}** — auto-connected to **${bestTarget.data.label}** (${edgeLabel}). Adjust as needed.`;
-          store.addMessage({ id: `msg-${Date.now()}-ac`, role: 'cid', content: msg, timestamp: Date.now() });
-        }
-      } else if (store.showCIDPanel) {
-        const ag = getAgent(store.cidMode);
-        const existingNames = otherNodes.map(n => n.data.label).slice(0, 5);
-        const msg = ag.accent === 'amber'
-          ? `A new node appears — **${node.data.label}**. I could not determine a logical connection. Perhaps it relates to: ${existingNames.join(', ')}?`
-          : `New node: **${node.data.label}**. No auto-connection inferred. Drag handles to connect or use \`connect\`.`;
-        store.addMessage({ id: `msg-${Date.now()}-suggest`, role: 'cid', content: msg, timestamp: Date.now() });
-      }
+    // Suggest auto-connect via interactive cards (only when 2+ nodes exist)
+    if (store.nodes.length >= 2) {
+      // Defer to next tick so the node is fully in state
+      setTimeout(() => get().suggestAutoConnect(id), 0);
     }
   },
 
@@ -2742,6 +2697,114 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       _dismissedSuggestionIds: new Set([...s._dismissedSuggestionIds, suggestionId]),
       _lastSuggestions: s._lastSuggestions.filter(x => x.id !== suggestionId),
     }));
+  },
+
+  // ── Smart Auto-Connect Suggestions ──
+  suggestAutoConnect: (nodeId: string) => {
+    const store = get();
+    const newNode = store.nodes.find(n => n.id === nodeId);
+    if (!newNode) return;
+
+    const category = newNode.data.category;
+    const otherNodes = store.nodes.filter(n => n.id !== nodeId);
+    if (otherNodes.length === 0) return;
+
+    // Score each candidate connection
+    type Candidate = { node: Node<NodeData>; srcId: string; tgtId: string; label: string; score: number };
+    const candidates: Candidate[] = [];
+
+    for (const other of otherNodes) {
+      // Try both directions
+      const fwdLabel = inferEdgeLabel(other.data.category, category);
+      const revLabel = inferEdgeLabel(category, other.data.category);
+      const fwdScore = fwdLabel !== 'connects' ? 2 : 0;
+      const revScore = revLabel !== 'connects' ? 2 : 0;
+
+      // Prefer leaf nodes (no outgoing edges) as sources
+      const isLeaf = !store.edges.some(e => e.source === other.id);
+      const leafBonus = isLeaf ? 1 : 0;
+
+      // Prefer orphan nodes (no edges at all) — connecting them is high value
+      const isOrphan = !store.edges.some(e => e.source === other.id || e.target === other.id);
+      const orphanBonus = isOrphan ? 1 : 0;
+
+      // Already connected to this node? skip
+      const alreadyConnected = store.edges.some(
+        e => (e.source === other.id && e.target === nodeId) || (e.source === nodeId && e.target === other.id)
+      );
+      if (alreadyConnected) continue;
+
+      // Pick the best direction
+      if (fwdScore >= revScore && fwdScore > 0) {
+        // other → newNode
+        candidates.push({ node: other, srcId: other.id, tgtId: nodeId, label: fwdLabel, score: fwdScore + leafBonus + orphanBonus });
+      } else if (revScore > 0) {
+        // newNode → other
+        candidates.push({ node: other, srcId: nodeId, tgtId: other.id, label: revLabel, score: revScore + orphanBonus });
+      }
+    }
+
+    // Sort by score descending, take top 2
+    candidates.sort((a, b) => b.score - a.score);
+    const top = candidates.slice(0, 2);
+
+    if (top.length === 0) {
+      // No good matches — just inform
+      if (store.showCIDPanel) {
+        const ag = getAgent(store.cidMode);
+        const existingNames = otherNodes.map(n => n.data.label).slice(0, 5);
+        const msg = ag.accent === 'amber'
+          ? `A new node appears — **${newNode.data.label}**. I could not determine a logical connection. Perhaps it relates to: ${existingNames.join(', ')}?`
+          : `New node: **${newNode.data.label}**. No auto-connection inferred. Drag handles to connect or use \`connect\`.`;
+        store.addMessage({ id: `msg-${Date.now()}-suggest`, role: 'cid', content: msg, timestamp: Date.now() });
+      }
+      return;
+    }
+
+    // Build suggestion cards and ProactiveSuggestion entries
+    const suggestions: ProactiveSuggestion[] = [];
+    const chipLabels: string[] = [];
+    const lines: string[] = [];
+    const ag = getAgent(store.cidMode);
+
+    const intro = ag.accent === 'amber'
+      ? `Ah, a new node — **${newNode.data.label}**. I see ${top.length === 1 ? 'a possible connection' : 'possible connections'}:`
+      : `New node: **${newNode.data.label}**. Suggested connection${top.length > 1 ? 's' : ''}:`;
+    lines.push(intro);
+
+    for (let i = 0; i < top.length; i++) {
+      const c = top[i];
+      const srcNode = store.nodes.find(n => n.id === c.srcId)!;
+      const tgtNode = store.nodes.find(n => n.id === c.tgtId)!;
+      const suggId = `autoconnect-${nodeId}-${i}`;
+      const chipLabel = `Connect: ${srcNode.data.label} → ${tgtNode.data.label}`;
+
+      lines.push(`- **${srcNode.data.label}** —[${c.label}]→ **${tgtNode.data.label}**`);
+      chipLabels.push(`${suggId}|${chipLabel}`);
+
+      suggestions.push({
+        id: suggId,
+        priority: 'medium' as const,
+        message: `${srcNode.data.label} → ${tgtNode.data.label} (${c.label})`,
+        chipLabel,
+        actionType: 'add-edge',
+        actionPayload: { from: srcNode.data.label, to: tgtNode.data.label, label: c.label },
+      });
+    }
+
+    // Register suggestions so applySuggestion can handle clicks
+    set(s => ({ _lastSuggestions: [...s._lastSuggestions, ...suggestions] }));
+
+    // Post CID message with clickable suggestion chips
+    if (store.showCIDPanel) {
+      store.addMessage({
+        id: `msg-${Date.now()}-autoconnect`,
+        role: 'cid',
+        content: lines.join('\n'),
+        timestamp: Date.now(),
+        suggestions: chipLabels,
+      });
+    }
   },
 
   // ── Workflow Optimization ──
@@ -4972,6 +5035,11 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       message: `Created ${category} node "${name.trim()}"`,
       timestamp: Date.now(), nodeId: id, agent: true,
     });
+
+    // Suggest auto-connect via interactive cards (only when 2+ nodes exist)
+    if (store.nodes.length >= 2) {
+      setTimeout(() => get().suggestAutoConnect(id), 0);
+    }
 
     return { success: true, message: `Created **${name.trim()}** (${category}). Select it to add content and description.` };
   },
