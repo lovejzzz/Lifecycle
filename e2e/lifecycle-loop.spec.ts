@@ -1278,10 +1278,11 @@ test.describe('Edge interactions', () => {
     await page.goto('/');
     await page.getByRole('button', { name: /^Course Design/ }).click();
     await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
-    await page.waitForTimeout(2000);
+    // Edge labels may take extra time to render after the React Flow layout settles
+    await page.waitForTimeout(3000);
 
     // Edge labels like "derives", "structures", "produces" should be visible
-    await expect(page.getByText('derives').first()).toBeVisible({ timeout: 3000 });
+    await expect(page.getByText('derives').first()).toBeVisible({ timeout: 5000 });
   });
 });
 
@@ -1725,5 +1726,587 @@ test.describe('Keyboard shortcuts for undo/redo', () => {
     // Both buttons should exist (even if disabled)
     const buttons = toolbar.locator('button');
     await expect(buttons).toHaveCount(2);
+  });
+});
+
+// ── CID agent extended command coverage ──────────────────────────────────────
+
+test.describe('CID extend and generate commands', () => {
+  test('extend command adds nodes to existing workflow', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const input = page.locator('[data-cid-input]');
+    await input.fill('add artifact called "Final Exam"');
+    await input.press('Enter');
+
+    const panel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(panel).toContainText(/Final Exam|added|created/i, { timeout: 5000 });
+  });
+
+  test('build command generates new workflow', async ({ page }) => {
+    await page.goto('/');
+
+    const input = page.locator('[data-cid-input]');
+    await input.fill('build a blog content pipeline');
+    await input.press('Enter');
+
+    const panel = page.locator('[aria-label="CID Agent Panel"]');
+    // Should show processing or response (may need AI)
+    await expect(panel).toContainText(/build|workflow|blog|pipeline|generat/i, { timeout: 10000 });
+  });
+});
+
+test.describe('CID batch commands', () => {
+  test('approve all command on workflow', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const input = page.locator('[data-cid-input]');
+    await input.fill('approve all');
+    await input.press('Enter');
+
+    const panel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(panel).toContainText(/approve|review|no.*node/i, { timeout: 5000 });
+  });
+
+  test('unlock all command on workflow', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const input = page.locator('[data-cid-input]');
+    await input.fill('unlock all');
+    await input.press('Enter');
+
+    const panel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(panel).toContainText(/unlock|locked|no.*node/i, { timeout: 5000 });
+  });
+
+  test('activate all command on workflow', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const input = page.locator('[data-cid-input]');
+    await input.fill('activate all');
+    await input.press('Enter');
+
+    const panel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(panel).toContainText(/activat|stale|no.*node/i, { timeout: 5000 });
+  });
+});
+
+test.describe('CID graph analysis commands', () => {
+  test('critical path command shows longest chain', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const input = page.locator('[data-cid-input]');
+    await input.fill('critical path');
+    await input.press('Enter');
+
+    const panel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(panel).toContainText(/critical|path|chain|longest|node/i, { timeout: 5000 });
+  });
+
+  test('bottleneck command finds hub nodes', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const input = page.locator('[data-cid-input]');
+    await input.fill('show bottleneck');
+    await input.press('Enter');
+
+    const panel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(panel).toContainText(/bottleneck|hub|connect|node/i, { timeout: 5000 });
+  });
+
+  test('deps command shows dependencies for a node', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const input = page.locator('[data-cid-input]');
+    await input.fill('deps Syllabus');
+    await input.press('Enter');
+
+    const panel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(panel).toContainText(/Syllabus|depend|upstream|downstream/i, { timeout: 5000 });
+  });
+
+  test('summary command provides workflow overview', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const input = page.locator('[data-cid-input]');
+    await input.fill('summary');
+    await input.press('Enter');
+
+    const panel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(panel).toContainText(/summary|overview|node|edge/i, { timeout: 5000 });
+  });
+});
+
+test.describe('CID node mutation commands', () => {
+  test('focus command selects and zooms to a node', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const input = page.locator('[data-cid-input]');
+    await input.fill('focus Syllabus');
+    await input.press('Enter');
+
+    const panel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(panel).toContainText(/Focused.*Syllabus|focus/i, { timeout: 5000 });
+  });
+
+  test('duplicate command clones a node', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+    // Wait for layout optimization to finish and nodes to be fully registered
+    await page.waitForTimeout(3000);
+
+    const input = page.locator('[data-cid-input]');
+    await input.fill('duplicate Syllabus');
+    await input.press('Enter');
+
+    const panel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(panel).toContainText(/Duplicated.*Syllabus|copy|placed/i, { timeout: 5000 });
+  });
+
+  test('connect command creates edge between nodes', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const input = page.locator('[data-cid-input]');
+    await input.fill('connect Rubrics to Assignments');
+    await input.press('Enter');
+
+    const panel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(panel).toContainText(/connect|linked|edge|already|created/i, { timeout: 5000 });
+  });
+
+  test('disconnect command removes edge between nodes', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const input = page.locator('[data-cid-input]');
+    await input.fill('disconnect Syllabus from Lesson Plans');
+    await input.press('Enter');
+
+    const panel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(panel).toContainText(/disconnect|removed|edge|no.*connection/i, { timeout: 5000 });
+  });
+
+  test('group by category command organizes nodes', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const input = page.locator('[data-cid-input]');
+    await input.fill('group by category');
+    await input.press('Enter');
+
+    const panel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(panel).toContainText(/group|category|organized|cluster/i, { timeout: 5000 });
+  });
+});
+
+test.describe('CID content and export commands', () => {
+  test('content command writes to a node', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const input = page.locator('[data-cid-input]');
+    await input.fill('content Syllabus: Introduction to Computer Science');
+    await input.press('Enter');
+
+    const panel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(panel).toContainText(/content|updated|Syllabus|written/i, { timeout: 5000 });
+  });
+
+  test('snapshots command lists saved snapshots', async ({ page }) => {
+    await page.goto('/');
+
+    const input = page.locator('[data-cid-input]');
+    await input.fill('snapshots');
+    await input.press('Enter');
+
+    const panel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(panel).toContainText(/snapshot|saved|no.*snapshot|bookmark/i, { timeout: 5000 });
+  });
+
+  test('templates command lists custom templates', async ({ page }) => {
+    await page.goto('/');
+
+    const input = page.locator('[data-cid-input]');
+    await input.fill('templates');
+    await input.press('Enter');
+
+    const panel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(panel).toContainText(/template|saved|no.*template|custom/i, { timeout: 5000 });
+  });
+});
+
+test.describe('CID undo/redo via chat', () => {
+  test('undo command in chat reverts last change', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    // Make a change first
+    const input = page.locator('[data-cid-input]');
+    await input.fill('rename Syllabus to Curriculum');
+    await input.press('Enter');
+    await expect(page.locator('[aria-label="CID Agent Panel"]')).toContainText(/renamed|Curriculum/i, { timeout: 5000 });
+
+    // Now undo via chat
+    await input.fill('undo');
+    await input.press('Enter');
+
+    const panel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(panel).toContainText(/undo|reverted|previous/i, { timeout: 5000 });
+  });
+
+  test('redo command in chat reapplies change', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    // Make a change, undo it, then redo
+    const input = page.locator('[data-cid-input]');
+    await input.fill('rename Syllabus to Curriculum');
+    await input.press('Enter');
+    await expect(page.locator('[aria-label="CID Agent Panel"]')).toContainText(/renamed|Curriculum/i, { timeout: 5000 });
+
+    await input.fill('undo');
+    await input.press('Enter');
+    await page.waitForTimeout(1000);
+
+    await input.fill('redo');
+    await input.press('Enter');
+
+    const panel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(panel).toContainText(/redo|reapplied|done/i, { timeout: 5000 });
+  });
+});
+
+test.describe('CID slash commands', () => {
+  test('/new command starts fresh project', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const input = page.locator('[data-cid-input]');
+    await input.fill('/new');
+    await input.press('Enter');
+
+    // Should show toast about new project
+    await expect(page.getByText(/[Nn]ew project/)).toBeVisible({ timeout: 3000 });
+  });
+
+  test('/mode command toggles agent mode', async ({ page }) => {
+    await page.goto('/');
+
+    const panel = page.locator('[aria-label="CID Agent Panel"]');
+    // Check initial mode
+    const initialMode = await panel.textContent();
+    const wasRowan = initialMode?.includes('Rowan');
+
+    const input = page.locator('[data-cid-input]');
+    await input.fill('/mode');
+    await input.press('Enter');
+
+    // Should switch mode
+    if (wasRowan) {
+      await expect(panel).toContainText('Poirot', { timeout: 3000 });
+    } else {
+      await expect(panel).toContainText('Rowan', { timeout: 3000 });
+    }
+  });
+
+  test('/template command without name lists available templates', async ({ page }) => {
+    await page.goto('/');
+
+    const input = page.locator('[data-cid-input]');
+    await input.fill('/template');
+    await input.press('Enter');
+
+    const panel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(panel).toContainText(/Software Development|Course Design|Content Pipeline/i, { timeout: 5000 });
+  });
+
+  test('/template command with name loads specific template', async ({ page }) => {
+    await page.goto('/');
+
+    const input = page.locator('[data-cid-input]');
+    await input.fill('/template Incident Response');
+    await input.press('Enter');
+
+    const panel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(panel).toContainText(/Loaded.*Incident Response.*template/i, { timeout: 5000 });
+  });
+});
+
+test.describe('Keyboard shortcuts', () => {
+  test('Cmd+K opens CID panel and focuses input', async ({ page }) => {
+    await page.goto('/');
+
+    // Close CID panel first if open
+    const closeBtn = page.locator('[aria-label="CID Agent Panel"]').locator('button').filter({ hasText: /×|close/i }).first();
+    if (await closeBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await closeBtn.click();
+    }
+
+    await page.keyboard.press('Meta+k');
+    await expect(page.locator('[aria-label="CID Agent Panel"]')).toBeVisible({ timeout: 3000 });
+  });
+
+  test('Cmd+F opens search bar on canvas', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    // Press Cmd+F to open search
+    await page.keyboard.press('Meta+f');
+
+    // Should show search input with "Search nodes..." placeholder
+    await expect(page.getByPlaceholder('Search nodes...')).toBeVisible({ timeout: 3000 });
+  });
+});
+
+test.describe('Responsive viewport — tablet and mobile', () => {
+  test('canvas and CID panel render on 768px viewport', async ({ page }) => {
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await page.goto('/');
+
+    await expect(page.locator('[aria-label="Workflow canvas"]')).toBeVisible();
+    // CID panel or toggle should be accessible
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    const cidButton = page.getByRole('button', { name: /CID|Rowan|Poirot/i });
+    const isVisible = await cidPanel.isVisible().catch(() => false);
+    if (!isVisible) {
+      // On smaller viewports, may need to click to open
+      await cidButton.first().click();
+      await expect(cidPanel).toBeVisible({ timeout: 3000 });
+    }
+  });
+
+  test('template chips render without overflow on mobile', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto('/');
+
+    // Page should render without horizontal overflow
+    const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
+    expect(bodyWidth).toBeLessThanOrEqual(375 + 20); // small tolerance
+  });
+});
+
+test.describe('Error states and edge cases', () => {
+  test('focus on non-existent node shows error message', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const input = page.locator('[data-cid-input]');
+    await input.fill('focus NonExistentNode');
+    await input.press('Enter');
+
+    const panel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(panel).toContainText(/no.*node|not found|matching/i, { timeout: 5000 });
+  });
+
+  test('rename non-existent node shows error', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const input = page.locator('[data-cid-input]');
+    await input.fill('rename FakeNode to RealNode');
+    await input.press('Enter');
+
+    const panel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(panel).toContainText(/not found|no.*node|couldn.*find/i, { timeout: 5000 });
+  });
+
+  test('empty command does not crash', async ({ page }) => {
+    await page.goto('/');
+
+    const input = page.locator('[data-cid-input]');
+    await input.fill('   ');
+    await input.press('Enter');
+
+    // Should not crash — page remains functional
+    await expect(page.locator('[aria-label="Workflow canvas"]')).toBeVisible();
+  });
+
+  test('undo on fresh state says nothing to undo', async ({ page }) => {
+    await page.goto('/');
+
+    const input = page.locator('[data-cid-input]');
+    await input.fill('undo');
+    await input.press('Enter');
+
+    const panel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(panel).toContainText(/nothing.*undo|no.*undo|can.*undo/i, { timeout: 5000 });
+  });
+
+  test('redo on fresh state says nothing to redo', async ({ page }) => {
+    await page.goto('/');
+
+    const input = page.locator('[data-cid-input]');
+    await input.fill('redo');
+    await input.press('Enter');
+
+    const panel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(panel).toContainText(/nothing.*redo|no.*redo|can.*redo/i, { timeout: 5000 });
+  });
+});
+
+test.describe('Node context and detail interactions', () => {
+  test('double-clicking a node opens detail panel', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(1000);
+
+    const node = page.getByText('Syllabus').first();
+    await node.dblclick();
+
+    // Either detail panel opens or node gets selected
+    const detailPanel = page.locator('[aria-label="Node Details"]');
+    await expect(detailPanel).toBeVisible({ timeout: 5000 });
+  });
+
+  test('closing node detail panel works via close button', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(1000);
+
+    // Open detail panel
+    await page.getByText('Syllabus').first().click();
+    const detailPanel = page.locator('[aria-label="Node Details"]');
+    await expect(detailPanel).toBeVisible({ timeout: 5000 });
+
+    // Close it via the X button in the panel header
+    const closeBtn = detailPanel.locator('button[aria-label="Close node details"]');
+    await closeBtn.click();
+    await expect(detailPanel).not.toBeVisible({ timeout: 3000 });
+  });
+});
+
+test.describe('CID propagation and staleness commands', () => {
+  test('propagate on clean workflow says nothing to propagate', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const input = page.locator('[data-cid-input]');
+    await input.fill('propagate');
+    await input.press('Enter');
+
+    const panel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(panel).toContainText(/no.*stale|clean|up to date|nothing|propagat/i, { timeout: 5000 });
+  });
+
+  test('mark stale then show stale lists affected nodes', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const input = page.locator('[data-cid-input]');
+    // Mark Syllabus stale
+    await input.fill('mark Syllabus as stale');
+    await input.press('Enter');
+    await page.waitForTimeout(2000);
+
+    // Now show stale
+    await input.fill('show stale');
+    await input.press('Enter');
+
+    const panel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(panel).toContainText(/stale/i, { timeout: 5000 });
+  });
+});
+
+test.describe('Template browser modal', () => {
+  test('template browser shows search/filter functionality', async ({ page }) => {
+    await page.goto('/');
+
+    // Open template browser
+    await page.keyboard.press('Meta+t');
+    await page.waitForTimeout(500);
+
+    // Should show template browser modal with templates
+    await expect(page.getByText(/Software Development|Course Design/).first()).toBeVisible({ timeout: 3000 });
+  });
+
+  test('Escape closes template browser', async ({ page }) => {
+    await page.goto('/');
+
+    // Open template browser
+    await page.keyboard.press('Meta+t');
+    await page.waitForTimeout(500);
+
+    // Close with Escape
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(500);
+
+    // Should be back to normal canvas state
+    await expect(page.locator('[aria-label="Workflow canvas"]')).toBeVisible();
+  });
+});
+
+test.describe('Incident Response template', () => {
+  test('Incident Response template loads with expected nodes', async ({ page }) => {
+    await page.goto('/');
+
+    await page.getByRole('button', { name: /^Incident Response/ }).click();
+    await page.waitForTimeout(2000);
+
+    // Should have incident-specific nodes
+    const panel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(panel).toContainText(/Loaded.*Incident Response.*template/i, { timeout: 5000 });
+    await expect(panel).toContainText(/\d+ nodes.*\d+ connections/i, { timeout: 5000 });
+  });
+});
+
+test.describe('CID execution commands', () => {
+  test('preflight command shows execution plan', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const input = page.locator('[data-cid-input]');
+    await input.fill('preflight');
+    await input.press('Enter');
+
+    const panel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(panel).toContainText(/pre.*flight|flight.*check|plan|execution|level|node/i, { timeout: 5000 });
+  });
+
+  test('clear results command on workflow', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const input = page.locator('[data-cid-input]');
+    await input.fill('clear results');
+    await input.press('Enter');
+
+    const panel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(panel).toContainText(/clear|reset|result|execution/i, { timeout: 5000 });
   });
 });

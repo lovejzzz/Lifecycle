@@ -1,7 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
 // CID API route — uses DeepSeek as primary, OpenRouter as fallback.
 // DeepSeek API is OpenAI-compatible.
+
+// ─── Server-Side Auth Verification ──────────────────────────────────────────
+// When NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set AND
+// REQUIRE_AUTH=true, every request must include a valid Supabase JWT.
+// This prevents unauthorized LLM usage while keeping local dev frictionless.
+
+async function verifyAuth(req: NextRequest): Promise<{ userId: string | null; error: NextResponse | null }> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const requireAuth = process.env.REQUIRE_AUTH === 'true';
+
+  // If auth is not required or Supabase is not configured, allow anonymous
+  if (!requireAuth || !supabaseUrl || !serviceRoleKey) {
+    return { userId: null, error: null };
+  }
+
+  // Extract JWT from Authorization header
+  const authHeader = req.headers.get('authorization');
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+
+  if (!token) {
+    return {
+      userId: null,
+      error: NextResponse.json(
+        { error: 'unauthorized', message: 'Authentication required. Include Authorization: Bearer <token>' },
+        { status: 401 },
+      ),
+    };
+  }
+
+  // Verify the JWT using the service role client
+  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+
+  if (error || !user) {
+    return {
+      userId: null,
+      error: NextResponse.json(
+        { error: 'unauthorized', message: 'Invalid or expired token' },
+        { status: 401 },
+      ),
+    };
+  }
+
+  return { userId: user.id, error: null };
+}
 
 // ─── Self-Correcting Retry Loop ──────────────────────────────────────────────
 // Scores a generated workflow for structural quality. Returns a list of issues
@@ -104,6 +154,10 @@ function validateWorkflowQuality(
 
 export async function POST(req: NextRequest) {
   try {
+    // ── Auth gate ─────────────────────────────────────────────────────────
+    const { error: authError } = await verifyAuth(req);
+    if (authError) return authError;
+
     const body = await req.json();
     const { systemPrompt, messages, model: requestedModel, taskType, _retryCount, effortLevel: rawEffort } = body as {
       systemPrompt: string;

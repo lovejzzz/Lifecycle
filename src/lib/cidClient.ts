@@ -3,6 +3,8 @@
  * Replaces 5 inline fetch('/api/cid') calls with a typed, consistent interface.
  */
 
+import { getSession } from './supabase';
+
 export type TaskType = 'generate' | 'execute' | 'analyze';
 
 export interface CIDRequest {
@@ -39,9 +41,20 @@ export async function callCID(req: CIDRequest): Promise<CIDResponse> {
   }
 
   try {
+    // Attach auth token if available (for server-side JWT verification)
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    try {
+      const session = await getSession();
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+    } catch {
+      // Auth not available — proceed without token (anonymous mode)
+    }
+
     const res = await fetch('/api/cid', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({
         systemPrompt: req.systemPrompt,
         messages: req.messages,

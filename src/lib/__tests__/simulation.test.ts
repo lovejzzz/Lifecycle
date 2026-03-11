@@ -1552,7 +1552,7 @@ describe('User Simulation: Real Journeys', () => {
       expect(updated.find(n => n.id === nodes[2].id)!.data.status).toBe('stale');
     });
 
-    it('staleness cascade stops at locked nodes', () => {
+    it('staleness traverses through locked nodes — locked node protected, downstream stale', () => {
       const nodes = getStore().nodes;
       // Lock the artifact node
       getStore().lockNode(nodes[1].id);
@@ -1561,10 +1561,10 @@ describe('User Simulation: Real Journeys', () => {
       getStore().updateNodeStatus(nodes[0].id, 'stale');
       const updated = getStore().nodes;
       expect(updated.find(n => n.id === nodes[0].id)!.data.status).toBe('stale');
-      // Locked artifact should NOT become stale
+      // Locked artifact should NOT become stale (it's protected)
       expect(updated.find(n => n.id === nodes[1].id)!.data.status).toBe('locked');
-      // Review (downstream of locked) should also be protected
-      expect(updated.find(n => n.id === nodes[2].id)!.data.status).not.toBe('stale');
+      // Review (downstream of locked) DOES become stale — no stale islands
+      expect(updated.find(n => n.id === nodes[2].id)!.data.status).toBe('stale');
     });
 
     it('lockNode sets locked status and flag', () => {

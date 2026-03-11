@@ -1,5 +1,15 @@
 # Changelog
 
+### 2026-03-11 — Server-Side Auth + BFS Traversal Fix (v1.0.59)
+
+- **Feature 1 step 6**: Server-side JWT verification in `/api/cid/route.ts`
+- `verifyAuth()` checks `REQUIRE_AUTH=true` + Supabase service role to validate Bearer tokens
+- `cidClient.ts` auto-attaches JWT from Supabase session to API requests
+- Auth is opt-in: without `REQUIRE_AUTH=true`, anonymous access continues working
+- **Staleness BFS fix**: Locked nodes are protected from becoming stale but BFS traverses through them so downstream nodes get properly notified
+- **Course Design template**: Richer edge topology (11 edges vs 7) for proper lifecycle cascade
+- 26 new tests (course design lifecycle cascade scenarios), 991 vitest tests passing, build clean.
+
 ### 2026-03-11 — Auth Provider Wiring (v1.0.58)
 
 - **Feature 1 step 5**: Created `src/components/Providers.tsx` with AuthContext

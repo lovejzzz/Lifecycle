@@ -2296,15 +2296,20 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       // Locked nodes are protected — staleness stops at them (spec Section 18)
       if (status === 'stale') {
         const downstream = new Set<string>();
+        const visited = new Set<string>([id]);
         const queue = [id];
         while (queue.length > 0) {
           const current = queue.shift()!;
           for (const edge of s.edges) {
-            if (edge.source === current && !downstream.has(edge.target)) {
+            if (edge.source === current && !visited.has(edge.target)) {
+              visited.add(edge.target);
               const targetNode = nodes.find(n => n.id === edge.target);
-              if (targetNode?.data.locked) continue; // Skip locked nodes
-              downstream.add(edge.target);
-              queue.push(edge.target);
+              // Locked nodes are protected from becoming stale themselves,
+              // but we still traverse THROUGH them so their downstream gets notified
+              if (!targetNode?.data.locked) {
+                downstream.add(edge.target);
+              }
+              queue.push(edge.target); // always continue BFS through locked nodes
             }
           }
         }
@@ -4753,10 +4758,16 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
           { label: 'Course FAQ', category: 'deliverable', description: 'Generate a comprehensive course FAQ answering common student questions about assignments, grading policies, schedule, and study strategies based on all upstream artifacts.' },
         ],
         edges: [
+          // Core chain: Syllabus → Objectives → Lesson Plans
           { from: 0, to: 1, label: 'derives' }, { from: 1, to: 2, label: 'structures' },
-          { from: 2, to: 3, label: 'produces' }, { from: 3, to: 4, label: 'validates' },
-          { from: 2, to: 5, label: 'tests' }, { from: 2, to: 6, label: 'guides' },
-          { from: 6, to: 7, label: 'answers' },
+          // Lesson Plans produce downstream deliverables
+          { from: 2, to: 3, label: 'produces' }, { from: 2, to: 5, label: 'tests' }, { from: 2, to: 6, label: 'guides' },
+          // Assignments connect to everything they affect
+          { from: 3, to: 4, label: 'validates' }, { from: 3, to: 5, label: 'feeds' }, { from: 3, to: 6, label: 'feeds' },
+          // Quiz Bank and Rubrics feed into Study Guide
+          { from: 5, to: 6, label: 'feeds' }, { from: 4, to: 7, label: 'feeds' },
+          // Study Guide + Assignments feed FAQ
+          { from: 6, to: 7, label: 'answers' }, { from: 3, to: 7, label: 'feeds' },
         ],
       },
       'Lesson Planning': {

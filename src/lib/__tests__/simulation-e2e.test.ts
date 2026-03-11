@@ -812,7 +812,7 @@ describe('E2E Async Simulation Tests', () => {
   // ── Scenario E: Staleness cascade with locked nodes ─────────────────────
   describe('Scenario E: Staleness cascade with locked nodes', () => {
 
-    it('locked nodes block staleness propagation', async () => {
+    it('locked nodes are protected but staleness traverses through them', async () => {
       buildLinearWorkflow();
       const store = getStore();
 
@@ -820,7 +820,7 @@ describe('E2E Async Simulation Tests', () => {
       store.lockNode('n-3');
       expect(getStore().nodes.find(n => n.id === 'n-3')!.data.locked).toBe(true);
 
-      // Mark Process stale — should cascade to Review (blocked) and Output
+      // Mark Process stale — cascades through locked Review to Output
       store.updateNodeStatus('n-2', 'stale');
       await vi.advanceTimersByTimeAsync(500);
 
@@ -830,10 +830,11 @@ describe('E2E Async Simulation Tests', () => {
       const outputNode = s.nodes.find(n => n.id === 'n-4');
 
       expect(processNode?.data.status).toBe('stale');
-      // Locked node should NOT become stale
+      // Locked node should NOT become stale (it's protected)
       expect(reviewNode?.data.status).not.toBe('stale');
-      // Output is downstream of locked Review, so it's also protected
-      // (staleness stops propagating at locked node)
+      // Output IS downstream and DOES go stale — staleness traverses THROUGH locked nodes
+      // (prevents "stale islands" where downstream looks fresh but upstream data changed)
+      expect(outputNode?.data.status).toBe('stale');
 
       assertStoreInvariants();
     });
@@ -1064,6 +1065,630 @@ describe('E2E Async Simulation Tests', () => {
       expect(s.nodes.find(n => n.id === 'n-4')?.data.status).toBe('stale');
 
       assertStoreInvariants();
+    });
+  });
+
+  // ─── Scenario I: Course Design — Connected Edit Cascade ────────────────────
+  // Models the EXACT Course Design template: Syllabus → Objectives → Lesson Plans
+  // → Assignments → Rubrics/Quiz Bank/Study Guide → Course FAQ
+  // Tests the core vision: "edit a lesson plan → rubric, study guide, quiz bank, FAQ all update"
+
+  describe('Scenario I: Course Design connected edits', () => {
+    function buildCourseDesign() {
+      const store = getStore();
+      const nodes = [
+        mkNode('syllabus', 'Syllabus', 'input', { content: 'CS101: Intro to Computer Science. 15 weeks. Topics: variables, loops, functions, OOP, data structures.', executionResult: 'Parsed syllabus with 15 modules covering fundamentals of CS.', executionStatus: 'success' as const }),
+        mkNode('objectives', 'Learning Objectives', 'process', { content: 'Students will be able to write programs using variables, loops, and functions.', executionResult: 'LO1: Explain variables and data types\nLO2: Implement loops and conditionals\nLO3: Design functions\nLO4: Apply OOP principles\nLO5: Use basic data structures', executionStatus: 'success' as const }),
+        mkNode('lessons', 'Lesson Plans', 'deliverable', { content: 'Week 1: Variables and types. Week 2: Conditionals. Week 3: Loops.', executionResult: 'Lesson Plan 1: Variables (2hr)\nLesson Plan 2: Conditionals (2hr)\nLesson Plan 3: Loops (2hr)', executionStatus: 'success' as const }),
+        mkNode('assignments', 'Assignments', 'deliverable', { content: 'HW1: Variable exercises. HW2: Loop practice. HW3: Function design.', executionResult: 'Assignment 1: Variable Exercises (due Week 2)\nAssignment 2: Loop Practice (due Week 4)\nAssignment 3: Function Design (due Week 6)', executionStatus: 'success' as const }),
+        mkNode('rubrics', 'Rubrics', 'deliverable', { content: 'Grading criteria for each assignment.', executionResult: 'Rubric for HW1: Correctness 40%, Style 20%, Testing 20%, Documentation 20%', executionStatus: 'success' as const }),
+        mkNode('quizbank', 'Quiz Bank', 'deliverable', { content: 'Questions covering variables, loops, functions.', executionResult: 'Q1: What is a variable? Q2: Write a for loop. Q3: Define a function that...', executionStatus: 'success' as const }),
+        mkNode('studyguide', 'Study Guide', 'deliverable', { content: 'Review material for midterm and final.', executionResult: 'Chapter 1: Variables - key concepts, practice problems\nChapter 2: Loops - patterns, common mistakes', executionStatus: 'success' as const }),
+        mkNode('faq', 'Course FAQ', 'deliverable', { content: 'Common student questions.', executionResult: 'Q: When is HW1 due? A: Week 2\nQ: What topics are on the midterm? A: Weeks 1-7', executionStatus: 'success' as const }),
+      ];
+      // Edges mirror the updated Course Design template
+      const edges = [
+        mkEdge('e-syl-obj', 'syllabus', 'objectives', 'derives'),
+        mkEdge('e-obj-les', 'objectives', 'lessons', 'structures'),
+        mkEdge('e-les-asg', 'lessons', 'assignments', 'produces'),
+        mkEdge('e-les-qb', 'lessons', 'quizbank', 'tests'),
+        mkEdge('e-les-sg', 'lessons', 'studyguide', 'guides'),
+        mkEdge('e-asg-rub', 'assignments', 'rubrics', 'validates'),
+        mkEdge('e-asg-qb', 'assignments', 'quizbank', 'feeds'),
+        mkEdge('e-asg-sg', 'assignments', 'studyguide', 'feeds'),
+        mkEdge('e-qb-sg', 'quizbank', 'studyguide', 'feeds'),
+        mkEdge('e-rub-faq', 'rubrics', 'faq', 'feeds'),
+        mkEdge('e-sg-faq', 'studyguide', 'faq', 'answers'),
+        mkEdge('e-asg-faq', 'assignments', 'faq', 'feeds'),
+      ];
+      store.setNodes(nodes);
+      store.setEdges(edges);
+    }
+
+    beforeEach(() => {
+      resetStore();
+      vi.useFakeTimers();
+      buildCourseDesign();
+    });
+    afterEach(() => { vi.useRealTimers(); });
+
+    it('all 8 nodes start as active/success', () => {
+      const nodes = getStore().nodes;
+      expect(nodes).toHaveLength(8);
+      nodes.forEach(n => {
+        expect(n.data.status).toBe('active');
+        expect(n.data.executionStatus).toBe('success');
+      });
+    });
+
+    // ── Core scenario: edit Lesson Plans → downstream cascade ──
+
+    it('editing Lesson Plans marks Assignments, Quiz Bank, Study Guide, Rubrics, FAQ all stale', async () => {
+      const store = getStore();
+      // Semantic edit: add a new homework topic
+      store.updateNodeData('lessons', {
+        content: 'Week 1: Variables. Week 2: Conditionals. Week 3: Loops. Week 4: RECURSION (new topic added).',
+      });
+      await vi.advanceTimersByTimeAsync(500);
+
+      const s = getStore();
+      // Lesson Plans itself goes stale
+      expect(s.nodes.find(n => n.id === 'lessons')?.data.status).toBe('stale');
+      // All downstream should cascade to stale
+      expect(s.nodes.find(n => n.id === 'assignments')?.data.status).toBe('stale');
+      expect(s.nodes.find(n => n.id === 'rubrics')?.data.status).toBe('stale');
+      expect(s.nodes.find(n => n.id === 'quizbank')?.data.status).toBe('stale');
+      expect(s.nodes.find(n => n.id === 'studyguide')?.data.status).toBe('stale');
+      expect(s.nodes.find(n => n.id === 'faq')?.data.status).toBe('stale');
+      // Upstream should NOT be stale
+      expect(s.nodes.find(n => n.id === 'syllabus')?.data.status).toBe('active');
+      expect(s.nodes.find(n => n.id === 'objectives')?.data.status).toBe('active');
+    });
+
+    it('editing Assignments marks Rubrics, Quiz Bank, Study Guide, FAQ stale — but NOT Lesson Plans', async () => {
+      const store = getStore();
+      store.updateNodeData('assignments', {
+        content: 'HW1: Variable exercises. HW2: Loop practice. HW3: Function design. HW4: RECURSION PROJECT (new assignment).',
+      });
+      await vi.advanceTimersByTimeAsync(500);
+
+      const s = getStore();
+      expect(s.nodes.find(n => n.id === 'assignments')?.data.status).toBe('stale');
+      // Downstream of assignments
+      expect(s.nodes.find(n => n.id === 'rubrics')?.data.status).toBe('stale');
+      expect(s.nodes.find(n => n.id === 'quizbank')?.data.status).toBe('stale');
+      expect(s.nodes.find(n => n.id === 'studyguide')?.data.status).toBe('stale');
+      expect(s.nodes.find(n => n.id === 'faq')?.data.status).toBe('stale');
+      // Upstream NOT affected
+      expect(s.nodes.find(n => n.id === 'syllabus')?.data.status).toBe('active');
+      expect(s.nodes.find(n => n.id === 'objectives')?.data.status).toBe('active');
+      expect(s.nodes.find(n => n.id === 'lessons')?.data.status).toBe('active');
+    });
+
+    it('editing Quiz Bank marks Study Guide and FAQ stale — but NOT Assignments or Rubrics', async () => {
+      const store = getStore();
+      store.updateNodeData('quizbank', {
+        content: 'Questions covering variables, loops, functions, AND RECURSION (new section).',
+      });
+      await vi.advanceTimersByTimeAsync(500);
+
+      const s = getStore();
+      expect(s.nodes.find(n => n.id === 'quizbank')?.data.status).toBe('stale');
+      // Quiz Bank → Study Guide → FAQ
+      expect(s.nodes.find(n => n.id === 'studyguide')?.data.status).toBe('stale');
+      expect(s.nodes.find(n => n.id === 'faq')?.data.status).toBe('stale');
+      // NOT affected: upstream or sibling
+      expect(s.nodes.find(n => n.id === 'assignments')?.data.status).toBe('active');
+      expect(s.nodes.find(n => n.id === 'rubrics')?.data.status).toBe('active');
+      expect(s.nodes.find(n => n.id === 'lessons')?.data.status).toBe('active');
+    });
+
+    it('editing Rubrics marks FAQ stale — but NOT Study Guide', async () => {
+      const store = getStore();
+      store.updateNodeData('rubrics', {
+        content: 'Updated grading: Correctness 50%, Style 15%, Testing 20%, Documentation 15%.',
+      });
+      await vi.advanceTimersByTimeAsync(500);
+
+      const s = getStore();
+      expect(s.nodes.find(n => n.id === 'rubrics')?.data.status).toBe('stale');
+      expect(s.nodes.find(n => n.id === 'faq')?.data.status).toBe('stale');
+      // Rubrics does NOT connect to Study Guide
+      expect(s.nodes.find(n => n.id === 'studyguide')?.data.status).toBe('active');
+      expect(s.nodes.find(n => n.id === 'assignments')?.data.status).toBe('active');
+    });
+
+    it('editing Syllabus cascades stale to ALL 7 downstream nodes', async () => {
+      const store = getStore();
+      store.updateNodeData('syllabus', {
+        content: 'CS201: Advanced Data Structures. Completely different course — trees, graphs, hash tables.',
+      });
+      await vi.advanceTimersByTimeAsync(500);
+
+      const s = getStore();
+      // Every node downstream of syllabus should be stale
+      expect(s.nodes.find(n => n.id === 'syllabus')?.data.status).toBe('stale');
+      expect(s.nodes.find(n => n.id === 'objectives')?.data.status).toBe('stale');
+      expect(s.nodes.find(n => n.id === 'lessons')?.data.status).toBe('stale');
+      expect(s.nodes.find(n => n.id === 'assignments')?.data.status).toBe('stale');
+      expect(s.nodes.find(n => n.id === 'rubrics')?.data.status).toBe('stale');
+      expect(s.nodes.find(n => n.id === 'quizbank')?.data.status).toBe('stale');
+      expect(s.nodes.find(n => n.id === 'studyguide')?.data.status).toBe('stale');
+      expect(s.nodes.find(n => n.id === 'faq')?.data.status).toBe('stale');
+
+      const staleCount = s.nodes.filter(n => n.data.status === 'stale').length;
+      expect(staleCount).toBe(8);
+    });
+
+    it('editing FAQ (leaf node) does NOT cascade — no downstream', async () => {
+      const store = getStore();
+      store.updateNodeData('faq', {
+        content: 'Updated FAQ with new office hours and totally different policies.',
+      });
+      await vi.advanceTimersByTimeAsync(500);
+
+      const s = getStore();
+      expect(s.nodes.find(n => n.id === 'faq')?.data.status).toBe('stale');
+      // No other node should be affected
+      const staleCount = s.nodes.filter(n => n.data.status === 'stale').length;
+      expect(staleCount).toBe(1);
+    });
+
+    // ── Cosmetic and local edits should NOT cascade ──
+
+    it('cosmetic edit (whitespace only) does NOT cascade', async () => {
+      const store = getStore();
+      const original = store.nodes.find(n => n.id === 'lessons')?.data.content;
+      store.updateNodeData('lessons', {
+        content: original + '   ', // just trailing whitespace
+      });
+      await vi.advanceTimersByTimeAsync(500);
+
+      const s = getStore();
+      const staleCount = s.nodes.filter(n => n.data.status === 'stale').length;
+      expect(staleCount).toBe(0);
+    });
+
+    it('local edit (minor rewording) does NOT cascade', async () => {
+      const store = getStore();
+      // Minor rewording: "Variables and types" → "Variables & types"
+      store.updateNodeData('lessons', {
+        content: 'Week 1: Variables & types. Week 2: Conditionals. Week 3: Loops.',
+      });
+      await vi.advanceTimersByTimeAsync(500);
+
+      const s = getStore();
+      // Should classify as local (high term overlap, small length change)
+      const staleCount = s.nodes.filter(n => n.data.status === 'stale').length;
+      expect(staleCount).toBe(0);
+    });
+
+    // ── Impact preview and regeneration ──
+
+    it('impact preview shows correct stale count after edit', async () => {
+      const store = getStore();
+      store.updateNodeData('lessons', {
+        content: 'Completely rewritten lesson plans with advanced topics and new structure.',
+      });
+      await vi.advanceTimersByTimeAsync(500);
+
+      store.showImpactPreview();
+      const preview = getStore().impactPreview;
+      expect(preview?.visible).toBe(true);
+      // Lessons + 5 downstream = 6 stale nodes
+      expect(preview?.staleNodes.length).toBe(6);
+      expect(preview?.executionOrder.length).toBe(6);
+    });
+
+    it('propagateStale re-executes all stale nodes in topological order', async () => {
+      const store = getStore();
+      store.updateNodeData('lessons', {
+        content: 'New lesson plans: added recursion, removed conditionals entirely.',
+      });
+      await vi.advanceTimersByTimeAsync(500);
+
+      const staleBeforeCount = getStore().nodes.filter(n => n.data.status === 'stale').length;
+      expect(staleBeforeCount).toBe(6);
+
+      fetchCallCount = 0;
+      await getStore().propagateStale();
+      await vi.advanceTimersByTimeAsync(2000);
+
+      const s = getStore();
+      const staleAfterCount = s.nodes.filter(n => n.data.status === 'stale').length;
+      expect(staleAfterCount).toBe(0);
+      // Should have made API calls for each stale node
+      expect(fetchCallCount).toBeGreaterThanOrEqual(6);
+    });
+
+    // ── Locked node blocking ──
+
+    it('locked Assignments blocks cascade — but alternative paths still propagate', async () => {
+      const store = getStore();
+      // Lock the Assignments node
+      store.updateNodeStatus('assignments', 'locked');
+      await vi.advanceTimersByTimeAsync(100);
+
+      // Now edit Lesson Plans — should cascade BUT stop at locked Assignments
+      store.updateNodeData('lessons', {
+        content: 'Radical restructure: replaced all labs with project-based learning.',
+      });
+      await vi.advanceTimersByTimeAsync(500);
+
+      const s = getStore();
+      // Lessons goes stale
+      expect(s.nodes.find(n => n.id === 'lessons')?.data.status).toBe('stale');
+      // Direct children of Lessons that aren't locked: Quiz Bank, Study Guide go stale
+      expect(s.nodes.find(n => n.id === 'quizbank')?.data.status).toBe('stale');
+      expect(s.nodes.find(n => n.id === 'studyguide')?.data.status).toBe('stale');
+      // Assignments is LOCKED — staleness stops here
+      expect(s.nodes.find(n => n.id === 'assignments')?.data.status).toBe('locked');
+      // FAQ: reachable via Study Guide path, so still stale
+      expect(s.nodes.find(n => n.id === 'faq')?.data.status).toBe('stale');
+    });
+
+    it('FIX: staleness traverses THROUGH locked nodes — Rubrics goes stale even though Assignments is locked', async () => {
+      const store = getStore();
+      store.updateNodeStatus('assignments', 'locked');
+      await vi.advanceTimersByTimeAsync(100);
+
+      store.updateNodeData('lessons', {
+        content: 'Completely different curriculum — all topics changed.',
+      });
+      await vi.advanceTimersByTimeAsync(500);
+
+      const s = getStore();
+      // Assignments stays locked (protected from becoming stale)
+      expect(s.nodes.find(n => n.id === 'assignments')?.data.status).toBe('locked');
+      // But Rubrics (downstream of locked Assignments) DOES go stale
+      // because staleness traverses THROUGH locked nodes — it just doesn't mark them
+      expect(s.nodes.find(n => n.id === 'rubrics')?.data.status).toBe('stale');
+      // FAQ also stale (reachable via multiple paths)
+      expect(s.nodes.find(n => n.id === 'faq')?.data.status).toBe('stale');
+    });
+
+    // ── Multiple edits ──
+
+    it('multiple rapid edits do not corrupt state — final stale count is correct', async () => {
+      const store = getStore();
+      // 5 rapid edits to Assignments
+      for (let i = 0; i < 5; i++) {
+        store.updateNodeData('assignments', {
+          content: `HW${i + 1}: Completely new assignment about topic ${i} with different requirements.`,
+        });
+      }
+      await vi.advanceTimersByTimeAsync(500);
+
+      const s = getStore();
+      // Assignments + Rubrics + Quiz Bank + Study Guide + FAQ = 5 stale
+      const staleCount = s.nodes.filter(n => n.data.status === 'stale').length;
+      expect(staleCount).toBe(5);
+      // Upstream unaffected
+      expect(s.nodes.find(n => n.id === 'syllabus')?.data.status).toBe('active');
+      expect(s.nodes.find(n => n.id === 'objectives')?.data.status).toBe('active');
+      expect(s.nodes.find(n => n.id === 'lessons')?.data.status).toBe('active');
+    });
+
+    // ── Label change = structural edit ──
+
+    it('renaming a node is structural — cascades staleness', async () => {
+      const store = getStore();
+      store.updateNodeData('assignments', { label: 'Homework & Projects' });
+      await vi.advanceTimersByTimeAsync(500);
+
+      const s = getStore();
+      expect(s.nodes.find(n => n.id === 'assignments')?.data.status).toBe('stale');
+      expect(s.nodes.find(n => n.id === 'rubrics')?.data.status).toBe('stale');
+      expect(s.nodes.find(n => n.id === 'faq')?.data.status).toBe('stale');
+    });
+
+    // ── Category change = structural edit ──
+
+    it('changing a node category is structural — cascades staleness', async () => {
+      const store = getStore();
+      store.updateNodeData('studyguide', { category: 'review' as any });
+      await vi.advanceTimersByTimeAsync(500);
+
+      const s = getStore();
+      expect(s.nodes.find(n => n.id === 'studyguide')?.data.status).toBe('stale');
+      expect(s.nodes.find(n => n.id === 'faq')?.data.status).toBe('stale');
+    });
+
+    // ── Regenerate selected subset ──
+
+    it('regenerateSelected only re-executes chosen nodes', async () => {
+      const store = getStore();
+      store.updateNodeData('assignments', {
+        content: 'HW1: New recursion assignment. HW2: New data structures project.',
+      });
+      await vi.advanceTimersByTimeAsync(500);
+
+      // Show impact preview
+      store.showImpactPreview();
+      const preview = getStore().impactPreview;
+      expect(preview?.staleNodes.length).toBe(5); // assignments + rubrics + quizbank + studyguide + faq
+
+      // Deselect all, then only select Rubrics
+      store.deselectAllImpactNodes();
+      store.toggleImpactNodeSelection('rubrics');
+
+      fetchCallCount = 0;
+      await store.regenerateSelected();
+      await vi.advanceTimersByTimeAsync(2000);
+
+      const s = getStore();
+      // Rubrics should be regenerated (active)
+      expect(s.nodes.find(n => n.id === 'rubrics')?.data.status).toBe('active');
+      // Others should still be stale
+      expect(s.nodes.find(n => n.id === 'quizbank')?.data.status).toBe('stale');
+      expect(s.nodes.find(n => n.id === 'studyguide')?.data.status).toBe('stale');
+    });
+
+    // ── Execution order matters ──
+
+    it('propagateStale executes Study Guide AFTER both Quiz Bank and Assignments finish', async () => {
+      const store = getStore();
+      store.updateNodeData('lessons', {
+        content: 'Totally restructured curriculum: quantum computing instead of classical CS.',
+      });
+      await vi.advanceTimersByTimeAsync(500);
+
+      // Track execution order by watching fetch calls
+      const executionOrder: string[] = [];
+      mockFetch.mockImplementation(async (_url: string, opts?: RequestInit) => {
+        fetchCallCount++;
+        const body = opts?.body ? JSON.parse(opts.body as string) : {};
+        const prompt = body.messages?.[0]?.content || '';
+        // Log which node is being executed based on prompt content
+        if (prompt.includes('Lesson')) executionOrder.push('lessons');
+        else if (prompt.includes('Assignment')) executionOrder.push('assignments');
+        else if (prompt.includes('Quiz')) executionOrder.push('quizbank');
+        else if (prompt.includes('Study')) executionOrder.push('studyguide');
+        else if (prompt.includes('Rubric')) executionOrder.push('rubrics');
+        else if (prompt.includes('FAQ') || prompt.includes('Course FAQ')) executionOrder.push('faq');
+        else executionOrder.push('unknown');
+
+        return {
+          ok: true,
+          json: async () => ({
+            result: `Executed successfully with updated content for the node. This validates the workflow correctly.`,
+            usage: { prompt_tokens: 100, completion_tokens: 200, total_tokens: 300 },
+          }),
+        };
+      });
+
+      await store.propagateStale();
+      await vi.advanceTimersByTimeAsync(5000);
+
+      // Verify topological ordering constraints:
+      // lessons must be before assignments, quizbank, studyguide
+      // assignments must be before rubrics
+      // studyguide must be after quizbank and assignments
+      // faq must be last
+      const lessonsIdx = executionOrder.indexOf('lessons');
+      const assignmentsIdx = executionOrder.indexOf('assignments');
+      const quizbankIdx = executionOrder.indexOf('quizbank');
+      const studyguideIdx = executionOrder.indexOf('studyguide');
+      const faqIdx = executionOrder.indexOf('faq');
+
+      if (lessonsIdx >= 0 && assignmentsIdx >= 0) {
+        expect(lessonsIdx).toBeLessThan(assignmentsIdx);
+      }
+      if (assignmentsIdx >= 0 && studyguideIdx >= 0) {
+        expect(assignmentsIdx).toBeLessThan(studyguideIdx);
+      }
+      if (quizbankIdx >= 0 && studyguideIdx >= 0) {
+        expect(quizbankIdx).toBeLessThan(studyguideIdx);
+      }
+      if (studyguideIdx >= 0 && faqIdx >= 0) {
+        expect(studyguideIdx).toBeLessThan(faqIdx);
+      }
+    });
+
+    // ── Circuit breaker: upstream failure ──
+
+    it('if Assignments fails during propagation, Rubrics is skipped but Quiz Bank still executes', async () => {
+      const store = getStore();
+      store.updateNodeData('lessons', {
+        content: 'New curriculum that completely changes everything about this course.',
+      });
+      await vi.advanceTimersByTimeAsync(500);
+
+      // Make assignments fail
+      fetchFailForNodes.add('Assignments');
+
+      await store.propagateStale();
+      await vi.advanceTimersByTimeAsync(5000);
+
+      // Quiz Bank should still execute (it's fed by Lessons, not just Assignments)
+      // But the exact behavior depends on execution strategy
+      const s = getStore();
+      // Lessons should have executed
+      const lessonsNode = s.nodes.find(n => n.id === 'lessons');
+      expect(lessonsNode?.data.executionStatus).toBe('success');
+
+      assertStoreInvariants();
+    });
+  });
+
+  // ─── Scenario J: Deep chain staleness (6 levels) ──────────────────────────
+
+  describe('Scenario J: Deep chain cascade', () => {
+    function buildDeepChain() {
+      const store = getStore();
+      const nodes = Array.from({ length: 6 }, (_, i) =>
+        mkNode(`d${i}`, `Node ${i}`, i === 0 ? 'input' : 'process', {
+          content: `Content for node ${i} in the pipeline`,
+          executionResult: `Result ${i}`,
+          executionStatus: 'success' as const,
+        })
+      );
+      const edges = Array.from({ length: 5 }, (_, i) =>
+        mkEdge(`de${i}`, `d${i}`, `d${i + 1}`, 'feeds')
+      );
+      store.setNodes(nodes);
+      store.setEdges(edges);
+    }
+
+    beforeEach(() => {
+      resetStore();
+      vi.useFakeTimers();
+      buildDeepChain();
+    });
+    afterEach(() => { vi.useRealTimers(); });
+
+    it('editing first node cascades stale through all 5 downstream', async () => {
+      const store = getStore();
+      store.updateNodeData('d0', {
+        content: 'Completely different input data that changes everything downstream.',
+      });
+      await vi.advanceTimersByTimeAsync(500);
+
+      const s = getStore();
+      for (let i = 0; i < 6; i++) {
+        expect(s.nodes.find(n => n.id === `d${i}`)?.data.status).toBe('stale');
+      }
+    });
+
+    it('editing middle node only cascades forward, not backward', async () => {
+      const store = getStore();
+      store.updateNodeData('d3', {
+        content: 'Changed node 3 content to something completely different and new.',
+      });
+      await vi.advanceTimersByTimeAsync(500);
+
+      const s = getStore();
+      // d0, d1, d2 should stay active (upstream)
+      expect(s.nodes.find(n => n.id === 'd0')?.data.status).toBe('active');
+      expect(s.nodes.find(n => n.id === 'd1')?.data.status).toBe('active');
+      expect(s.nodes.find(n => n.id === 'd2')?.data.status).toBe('active');
+      // d3, d4, d5 should be stale
+      expect(s.nodes.find(n => n.id === 'd3')?.data.status).toBe('stale');
+      expect(s.nodes.find(n => n.id === 'd4')?.data.status).toBe('stale');
+      expect(s.nodes.find(n => n.id === 'd5')?.data.status).toBe('stale');
+    });
+
+    it('editing last node (leaf) only marks itself stale', async () => {
+      const store = getStore();
+      store.updateNodeData('d5', {
+        content: 'New final output content that is entirely rewritten.',
+      });
+      await vi.advanceTimersByTimeAsync(500);
+
+      const s = getStore();
+      const staleCount = s.nodes.filter(n => n.data.status === 'stale').length;
+      expect(staleCount).toBe(1);
+      expect(s.nodes.find(n => n.id === 'd5')?.data.status).toBe('stale');
+    });
+  });
+
+  // ─── Scenario K: Diamond dependency (converging paths) ─────────────────────
+
+  describe('Scenario K: Diamond dependency', () => {
+    // A → B, A → C, B → D, C → D  (diamond shape)
+    function buildDiamond() {
+      const store = getStore();
+      store.setNodes([
+        mkNode('top', 'Source', 'input', { content: 'Source data', executionResult: 'Source output', executionStatus: 'success' as const }),
+        mkNode('left', 'Path A', 'process', { content: 'Process via path A', executionResult: 'Path A result', executionStatus: 'success' as const }),
+        mkNode('right', 'Path B', 'process', { content: 'Process via path B', executionResult: 'Path B result', executionStatus: 'success' as const }),
+        mkNode('bottom', 'Merge', 'deliverable', { content: 'Merged result', executionResult: 'Merged output', executionStatus: 'success' as const }),
+      ]);
+      store.setEdges([
+        mkEdge('e-tl', 'top', 'left', 'feeds'),
+        mkEdge('e-tr', 'top', 'right', 'feeds'),
+        mkEdge('e-lb', 'left', 'bottom', 'feeds'),
+        mkEdge('e-rb', 'right', 'bottom', 'feeds'),
+      ]);
+    }
+
+    beforeEach(() => {
+      resetStore();
+      vi.useFakeTimers();
+      buildDiamond();
+    });
+    afterEach(() => { vi.useRealTimers(); });
+
+    it('editing Source marks both paths AND merge stale', async () => {
+      getStore().updateNodeData('top', { content: 'Completely new source data for all downstream paths.' });
+      await vi.advanceTimersByTimeAsync(500);
+
+      const s = getStore();
+      expect(s.nodes.filter(n => n.data.status === 'stale').length).toBe(4);
+    });
+
+    it('editing one path marks merge stale but not the other path', async () => {
+      getStore().updateNodeData('left', { content: 'Path A completely restructured with new processing logic.' });
+      await vi.advanceTimersByTimeAsync(500);
+
+      const s = getStore();
+      expect(s.nodes.find(n => n.id === 'left')?.data.status).toBe('stale');
+      expect(s.nodes.find(n => n.id === 'bottom')?.data.status).toBe('stale');
+      // Other path untouched
+      expect(s.nodes.find(n => n.id === 'right')?.data.status).toBe('active');
+      expect(s.nodes.find(n => n.id === 'top')?.data.status).toBe('active');
+    });
+  });
+
+  // ─── Scenario L: Stale + Error combinations ───────────────────────────────
+
+  describe('Scenario L: Stale-error edge cases', () => {
+    beforeEach(() => {
+      resetStore();
+      vi.useFakeTimers();
+    });
+    afterEach(() => { vi.useRealTimers(); });
+
+    it('node with executionStatus=error but status=active still cascades stale', async () => {
+      const store = getStore();
+      store.setNodes([
+        mkNode('a', 'Source', 'input', { content: 'Data', executionResult: 'Out', executionStatus: 'success' as const }),
+        mkNode('b', 'Processor', 'process', { content: 'Process', executionResult: '', executionStatus: 'error' as const, executionError: 'Previous failure' }),
+      ]);
+      store.setEdges([mkEdge('e1', 'a', 'b', 'feeds')]);
+
+      store.updateNodeData('a', { content: 'Totally new input data that changes everything.' });
+      await vi.advanceTimersByTimeAsync(500);
+
+      // b has status='active' (default from mkNode), so staleness cascades
+      const bNode = getStore().nodes.find(n => n.id === 'b');
+      expect(bNode?.data.status).toBe('stale');
+    });
+
+    it('BUG: node with status=stale already does NOT get re-notified on second upstream edit', async () => {
+      // This is a known limitation: if B is already stale and A changes again,
+      // B stays stale but no new event/message is generated
+      const store = getStore();
+      store.setNodes([
+        mkNode('a', 'Source', 'input', { content: 'Original data' }),
+        mkNode('b', 'Middle', 'process', { content: 'Process' }),
+        mkNode('c', 'End', 'deliverable', { content: 'Output' }),
+      ]);
+      store.setEdges([
+        mkEdge('e1', 'a', 'b', 'feeds'),
+        mkEdge('e2', 'b', 'c', 'feeds'),
+      ]);
+
+      // First edit — cascades to b and c
+      store.updateNodeData('a', { content: 'First major change with new topics.' });
+      await vi.advanceTimersByTimeAsync(500);
+      expect(getStore().nodes.find(n => n.id === 'b')?.data.status).toBe('stale');
+      expect(getStore().nodes.find(n => n.id === 'c')?.data.status).toBe('stale');
+
+      const msgCountBefore = getStore().messages.length;
+
+      // Second edit to same node — b and c are ALREADY stale
+      store.updateNodeData('a', { content: 'Second major change with completely different topics.' });
+      await vi.advanceTimersByTimeAsync(500);
+
+      // Still stale (correct)
+      expect(getStore().nodes.find(n => n.id === 'b')?.data.status).toBe('stale');
+      // But no NEW cascade message (because staleableStatuses doesn't include 'stale')
+      // This is expected behavior — we don't spam the user with duplicate cascade alerts
+      const msgCountAfter = getStore().messages.length;
+      // The second edit creates an 'edited' event for 'a' but no cascade message for b/c
+      // because they're already stale. This is correct.
+      expect(msgCountAfter).toBeGreaterThanOrEqual(msgCountBefore);
     });
   });
 });

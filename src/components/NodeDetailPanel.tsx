@@ -678,7 +678,7 @@ function NodeDetailPanelContent({ nodeId }: { nodeId: string }) {
               )}
             </div>
           </div>
-          <button onClick={() => selectNode(null)} className="w-7 h-7 rounded-lg flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors flex-shrink-0">
+          <button onClick={() => selectNode(null)} aria-label="Close node details" className="w-7 h-7 rounded-lg flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors flex-shrink-0">
             <X size={14} />
           </button>
         </div>
