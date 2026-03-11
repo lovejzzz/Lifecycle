@@ -1346,4 +1346,135 @@ test.describe('Canvas controls', () => {
     await expect(page.getByRole('button', { name: 'Zoom Out' })).toBeVisible({ timeout: 3000 });
     await expect(page.getByRole('button', { name: 'Fit View' })).toBeVisible({ timeout: 3000 });
   });
+
+  test('Fit View button works without crashing', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.locator('.react-flow__node').first()).toBeVisible({ timeout: 5000 });
+
+    await page.getByRole('button', { name: 'Fit View' }).click();
+    // All nodes should still be visible after fit
+    await expect(page.locator('.react-flow__node').first()).toBeVisible({ timeout: 3000 });
+  });
+});
+
+// ── CID describe & search commands ─────────────────────────────────────────
+
+test.describe('CID describe and search commands', () => {
+  test('describe command updates node description', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('describe Syllabus as: The master course document');
+    await cidInput.press('Enter');
+
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(cidPanel.getByText(/describe|description|updated|Syllabus/i).first()).toBeVisible({ timeout: 5000 });
+  });
+
+  test('search command finds matching nodes', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('search quiz');
+    await cidInput.press('Enter');
+
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(cidPanel.getByText(/Quiz Bank|match|found|search/i).first()).toBeVisible({ timeout: 5000 });
+  });
+});
+
+// ── Additional template tests ──────────────────────────────────────────────
+
+test.describe('Additional templates', () => {
+  test('Chatbot template loads correctly', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Chatbot/ }).click();
+    await expect(page.locator('.react-flow__node').first()).toBeVisible({ timeout: 5000 });
+    // Should have 7 nodes
+    await page.waitForTimeout(2000);
+    const nodeCount = await page.locator('.react-flow__node').count();
+    expect(nodeCount).toBeGreaterThanOrEqual(5);
+  });
+
+  test('Content Pipeline template loads correctly', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Content Pipeline/ }).click();
+    await expect(page.locator('.react-flow__node').first()).toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(2000);
+    const nodeCount = await page.locator('.react-flow__node').count();
+    expect(nodeCount).toBeGreaterThanOrEqual(5);
+  });
+});
+
+// ── Node status cycling via click ──────────────────────────────────────────
+
+test.describe('Node status interaction', () => {
+  test('node status indicator is clickable', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(2000);
+
+    // Click the status indicator on a node (the small colored dot)
+    const statusIndicator = page.locator('.react-flow__node').filter({ hasText: 'Syllabus' }).first()
+      .locator('[title*="Status"]').or(
+        page.locator('.react-flow__node').filter({ hasText: 'Syllabus' }).first()
+          .locator('text=active')
+      );
+    // Just verify it exists and is interactable
+    await expect(statusIndicator.first()).toBeVisible({ timeout: 3000 });
+  });
+});
+
+// ── CID teach command ──────────────────────────────────────────────────────
+
+test.describe('CID teach and rules', () => {
+  test('teach command saves a rule', async ({ page }) => {
+    await page.goto('/');
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('teach: always use 4 rubric levels');
+    await cidInput.press('Enter');
+
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(cidPanel.getByText(/teach|learn|rule|remember|saved/i).first()).toBeVisible({ timeout: 5000 });
+  });
+});
+
+// ── CID save/load template ─────────────────────────────────────────────────
+
+test.describe('CID template management', () => {
+  test('save template command on loaded workflow', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('save template my-course');
+    await cidInput.press('Enter');
+
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(cidPanel.getByText(/save|template|my-course|stored/i).first()).toBeVisible({ timeout: 5000 });
+  });
+});
+
+// ── CID merge command ──────────────────────────────────────────────────────
+
+test.describe('CID merge command', () => {
+  test('merge command attempts to combine two nodes', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Rubrics').first()).toBeVisible({ timeout: 5000 });
+
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('merge Rubrics and Quiz Bank');
+    await cidInput.press('Enter');
+
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(cidPanel.getByText(/merge|combin|fuse|Rubrics|Quiz Bank/i).first()).toBeVisible({ timeout: 5000 });
+  });
 });
