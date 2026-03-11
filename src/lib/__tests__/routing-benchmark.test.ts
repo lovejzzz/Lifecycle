@@ -149,6 +149,9 @@ const BENCHMARK: BenchmarkCase[] = [
   { prompt: 'compact the graph', expected: 'compress', context: 'PM' },
   { prompt: 'audit the workflow', expected: 'validate', context: 'PM' },
   { prompt: 'flip Quiz Bank', expected: 'reverse', context: 'professor' },
+  { prompt: 'simplify the workflow', expected: 'compress', context: 'PM' },
+  { prompt: 'check the workflow', expected: 'validate', context: 'PM' },
+  { prompt: 'detach Rubrics from Quiz Bank', expected: 'disconnect', context: 'professor' },
 
   // ── Natural language that should fall to LLM ──
   { prompt: 'why is my rubric out of date', expected: 'llm-fallback', context: 'professor' },
