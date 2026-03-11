@@ -17,7 +17,7 @@ interface BenchmarkCase {
   hasWorkflow?: boolean;
 }
 
-// ─── The Benchmark: 126 real user prompts ────────────────────────────────────
+// ─── The Benchmark: 129 real user prompts ────────────────────────────────────
 
 const BENCHMARK: BenchmarkCase[] = [
   // ── Workflow generation (professor) ──
@@ -163,6 +163,9 @@ const BENCHMARK: BenchmarkCase[] = [
   { prompt: 'lay out the nodes nicely', expected: 'layout', context: 'professor' },
   { prompt: 'list dependencies', expected: 'list', context: 'PM' },
   { prompt: 'remove the connection between Rubrics and Quiz Bank', expected: 'disconnect', context: 'professor' },
+  { prompt: 'show me the critical path', expected: 'critical-path', context: 'PM' },
+  { prompt: 'what are the bottlenecks', expected: 'bottlenecks', context: 'PM' },
+  { prompt: 'rename Lesson Plans to Weekly Plans', expected: 'rename', context: 'professor' },
 
   // ── Natural language that should fall to LLM ──
   { prompt: 'why is my rubric out of date', expected: 'llm-fallback', context: 'professor' },

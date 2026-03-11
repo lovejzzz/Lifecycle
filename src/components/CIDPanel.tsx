@@ -534,6 +534,10 @@ export default function CIDPanel() {
         if (staleNodes.length === 0) return 'No stale nodes. Everything is up to date.';
         return `**${staleNodes.length} stale node${staleNodes.length > 1 ? 's' : ''}:**\n${staleNodes.map(n => `- **${n.data.label}** (${n.data.category})`).join('\n')}\n\nRun \`propagate\` to refresh them.`;
       });
+    } else if (/^(?:show|find|what(?:'s| is| are))\s+(?:me\s+)?(?:the\s+)?(?:critical\s*path|longest\s*chain)/i.test(prompt)) {
+      dispatchCommand(prompt, () => criticalPath());
+    } else if (/^(?:show|find|what(?:'s| is| are))\s+(?:me\s+)?(?:the\s+)?(?:bottleneck|chokepoint|hub|spof)/i.test(prompt)) {
+      dispatchCommand(prompt, () => findBottlenecks(), 400);
     } else if (/^(?:focus|select|show|go to|find|zoom)\s+(?:on\s+)?["']?.+["']?\s*$/i.test(prompt)) {
       addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
       const nameMatch = prompt.match(/(?:focus|select|show|go to|find|zoom)\s+(?:on\s+)?["']?(.+?)["']?\s*$/i);

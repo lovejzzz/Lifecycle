@@ -137,6 +137,10 @@ export function classifyRoute(prompt: string, hasWorkflow: boolean = false): Com
   if (/^(?:show|find|list)\s+(?:me\s+)?(?:what(?:'s| is)\s+)?stale/i.test(prompt)) return 'show-stale';
   if (/^(?:show|find|list)\s+stale/i.test(prompt)) return 'show-stale';
 
+  // "show me the critical path" / "show me bottlenecks" (MUST come before generic focus/show)
+  if (/^(?:show|find|what(?:'s| is| are))\s+(?:me\s+)?(?:the\s+)?(?:critical\s*path|longest\s*chain)/i.test(prompt)) return 'critical-path';
+  if (/^(?:show|find|what(?:'s| is| are))\s+(?:me\s+)?(?:the\s+)?(?:bottleneck|chokepoint|hub|spof)/i.test(prompt)) return 'bottlenecks';
+
   // Focus / select / show <node>
   if (/^(?:focus|select|show|go to|find|zoom)\s+(?:on\s+)?["']?.+["']?\s*$/i.test(prompt)) return 'focus';
 
