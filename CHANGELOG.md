@@ -1,5 +1,14 @@
 # Changelog
 
+### 2026-03-11 — E2E Coverage Expansion: 104 Browser Tests
+
+- **9 new Playwright E2E tests** (95 → 104 total):
+  - CID commands: describe node, search, teach rule, save template, merge nodes
+  - Additional templates: Chatbot, Content Pipeline
+  - Node status indicator visible and interactable
+  - Fit View canvas control
+- 896 vitest + 117 routing benchmark + 104 E2E tests all passing, build clean.
+
 ### 2026-03-11 — E2E Coverage Expansion: 95 Browser Tests
 
 - **13 new Playwright E2E tests** (82 → 95 total):
