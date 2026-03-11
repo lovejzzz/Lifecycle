@@ -103,7 +103,7 @@ export default function TopBar() {
   }, [showAddMenu, showProjectMenu]);
 
   return (
-    <div className="h-12 border-b border-white/[0.06] bg-[#0a0a0f]/90 backdrop-blur-xl flex items-center justify-between px-3 md:px-5 z-30 relative overflow-x-auto">
+    <div className="h-12 border-b border-white/[0.06] bg-[#0a0a0f]/90 backdrop-blur-xl flex items-center justify-between px-3 md:px-5 z-50 relative">
       {/* Left */}
       <div className="flex items-center gap-2 md:gap-4 min-w-0">
         <div className="flex items-center gap-2.5 shrink-0">

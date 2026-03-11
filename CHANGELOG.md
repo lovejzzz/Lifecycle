@@ -1,5 +1,17 @@
 # Changelog
 
+### 2026-03-11 — Hydration Fixes + E2E Expansion: 121 Browser Tests
+
+- **Fix**: Modifier key hydration mismatch (⌘ vs Ctrl+) in TopBar, Canvas, TemplateBrowser — guard `navigator.userAgent` with mounted state
+- **Fix**: Project dropdown (My Workflow) clipped by TopBar `overflow-x-auto` — removed overflow, bumped z-index
+- **Feature 3 step 1**: `src/lib/cache.ts` — SHA-256 content hashing, in-memory execution cache (200 entries), model pricing, batch cost estimation, usage stats types
+- **11 new Playwright E2E tests** (110 → 121 total):
+  - Education templates: Lesson Planning, Assignment Design
+  - CID commands: count, plan, progress, why, reverse, clone workflow
+  - Node detail panel: content area, category badge
+  - Keyboard toolbar: undo/redo buttons
+- 902 vitest + 123 routing benchmark + 121 E2E tests all passing, build clean.
+
 ### 2026-03-11 — E2E Coverage Expansion: 110 Browser Tests
 
 - **6 new Playwright E2E tests** (104 → 110 total):
