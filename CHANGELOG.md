@@ -1,5 +1,14 @@
 # Changelog
 
+### 2026-03-11 — File Upload UI in CIDPanel (v1.0.67)
+
+- **Feature 2 step 4**: File upload UI in CIDPanel
+- Paperclip button in input bar opens file picker (PDF, DOCX, TXT, MD, CSV)
+- Uploads to /api/upload, shows parsed file preview banner (filename, sections, tokens)
+- Auto-composes CID prompt from parsed document for workflow generation
+- Loading spinner during upload, toast notifications for success/failure
+- 1018 vitest tests passing, build clean.
+
 ### 2026-03-11 — Document Analysis Prompt (v1.0.66)
 
 - **Feature 2 step 3**: Added `buildDocumentAnalysisPrompt()` to `src/lib/prompts.ts`

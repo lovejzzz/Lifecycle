@@ -1436,9 +1436,41 @@ export default function CIDPanel() {
             ))}
           </div>
         )}
+        {/* File upload preview banner */}
+        {uploadedFile && (
+          <div className="flex items-center gap-2 px-3 py-1.5 mb-1 bg-cyan-500/10 border border-cyan-500/20 rounded-lg text-[11px]">
+            <FileText size={12} className="text-cyan-400 shrink-0" />
+            <span className="text-cyan-300 truncate">{uploadedFile.name}</span>
+            <span className="text-cyan-500/60 shrink-0">{uploadedFile.sections}s ~{uploadedFile.tokens}t</span>
+            <button onClick={() => setUploadedFile(null)} className="ml-auto text-cyan-500/40 hover:text-cyan-300 transition-colors">
+              <XCircle size={12} />
+            </button>
+          </div>
+        )}
         <div className={`flex items-center gap-2 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2.5 transition-colors ${
           isAmber ? 'focus-within:border-amber-500/30' : 'focus-within:border-emerald-500/30'
         }`}>
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.docx,.txt,.md,.csv"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleFileUpload(file);
+              e.target.value = '';
+            }}
+          />
+          {/* Upload button */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading || isProcessing}
+            title="Upload document (PDF, DOCX, TXT)"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/[0.06] transition-colors disabled:opacity-20"
+          >
+            {isUploading ? <Loader2 size={13} className="animate-spin" /> : <Paperclip size={13} />}
+          </button>
           <input
             ref={inputRef}
             data-cid-input
