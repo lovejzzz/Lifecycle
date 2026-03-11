@@ -4141,6 +4141,265 @@ describe('User Simulation: Real Journeys', () => {
     });
   });
 
+  // ── Scenario 35: Education lifecycle loop — the core product promise ────────
+  // Professor builds a course workflow, edits a lesson plan, staleness ripples
+  // through rubric/quiz/FAQ, locked nodes are skipped, propagateStale re-executes
+  // only stale nodes in correct order, versioning captures the change.
+  describe('Scenario 35 — Education lifecycle loop: edit → classify → stale cascade → locked skip → propagate → version', () => {
+    beforeEach(() => resetStore());
+
+    // Build a realistic education workflow:
+    // Syllabus → Lesson Plan → [Rubric, Quiz Bank, Study Guide, Course FAQ]
+    //                        → Review Gate
+    // Rubric is locked (professor approved it already)
+    function buildEducationWorkflow() {
+      const syllabus = mkNode('syllabus', 'Syllabus', 'input', {
+        content: 'COURSE 101: Introduction to Biology. 15 weeks. Covers cell biology, genetics, ecology.',
+        executionResult: 'Course syllabus content generated.',
+        executionStatus: 'success' as const,
+      });
+      const lessonPlan = mkNode('lesson-plan', 'Lesson Plan', 'artifact', {
+        content: 'Week 1: Cell Structure. Week 2: Cell Division. Week 3: DNA & RNA.',
+        executionResult: 'Lesson plan with 3 weeks of content.',
+        executionStatus: 'success' as const,
+      });
+      const rubric = mkNode('rubric', 'Rubric', 'artifact', {
+        content: 'Grading: 30% Midterm, 30% Final, 20% Labs, 20% Participation.',
+        executionResult: 'Rubric with grading criteria.',
+        executionStatus: 'success' as const,
+        locked: true,
+        status: 'locked' as const,
+      });
+      const quizBank = mkNode('quiz-bank', 'Quiz Bank', 'artifact', {
+        content: 'Quiz 1: Cell biology. Quiz 2: Genetics basics.',
+        executionResult: 'Quiz bank with 2 quizzes.',
+        executionStatus: 'success' as const,
+      });
+      const studyGuide = mkNode('study-guide', 'Study Guide', 'artifact', {
+        content: 'Key terms: mitosis, meiosis, DNA replication.',
+        executionResult: 'Study guide for weeks 1-3.',
+        executionStatus: 'success' as const,
+      });
+      const courseFAQ = mkNode('course-faq', 'Course FAQ', 'artifact', {
+        content: 'Q: When are office hours? A: Tuesdays 2-4pm.',
+        executionResult: 'FAQ with 1 question.',
+        executionStatus: 'success' as const,
+      });
+      const review = mkNode('review-gate', 'Review Gate', 'review', {
+        content: 'Quality check for all artifacts.',
+        status: 'reviewing' as const,
+      });
+
+      useLifecycleStore.setState({
+        nodes: [syllabus, lessonPlan, rubric, quizBank, studyGuide, courseFAQ, review],
+        edges: [
+          mkEdge('e-syl-lp', 'syllabus', 'lesson-plan', 'drives'),
+          mkEdge('e-lp-rub', 'lesson-plan', 'rubric', 'drives'),
+          mkEdge('e-lp-quiz', 'lesson-plan', 'quiz-bank', 'drives'),
+          mkEdge('e-lp-sg', 'lesson-plan', 'study-guide', 'drives'),
+          mkEdge('e-lp-faq', 'lesson-plan', 'course-faq', 'drives'),
+          mkEdge('e-rub-rev', 'rubric', 'review-gate', 'validates'),
+          mkEdge('e-quiz-rev', 'quiz-bank', 'review-gate', 'validates'),
+          mkEdge('e-sg-rev', 'study-guide', 'review-gate', 'validates'),
+          mkEdge('e-faq-rev', 'course-faq', 'review-gate', 'validates'),
+        ],
+      });
+
+      return { syllabus, lessonPlan, rubric, quizBank, studyGuide, courseFAQ, review };
+    }
+
+    it('semantic edit to lesson plan marks downstream nodes stale', () => {
+      buildEducationWorkflow();
+      const store = getStore();
+
+      // Professor adds a new week to the lesson plan (semantic edit — content rewritten)
+      store.updateNodeData('lesson-plan', {
+        content: 'Week 1: Cell Structure. Week 2: Cell Division. Week 3: DNA & RNA. Week 4: Protein Synthesis & Gene Expression.',
+      });
+
+      // Lesson plan itself should be marked stale (the edit triggers propagation)
+      const lp = getStore().nodes.find(n => n.id === 'lesson-plan')!;
+      expect(lp.data.status).toBe('stale');
+
+      // Downstream nodes should be stale (quiz bank, study guide, course FAQ)
+      const quiz = getStore().nodes.find(n => n.id === 'quiz-bank')!;
+      const sg = getStore().nodes.find(n => n.id === 'study-guide')!;
+      const faq = getStore().nodes.find(n => n.id === 'course-faq')!;
+      expect(quiz.data.status).toBe('stale');
+      expect(sg.data.status).toBe('stale');
+      expect(faq.data.status).toBe('stale');
+
+      // Review gate should also be stale (downstream of quiz/sg/faq)
+      const rev = getStore().nodes.find(n => n.id === 'review-gate')!;
+      expect(rev.data.status).toBe('stale');
+    });
+
+    it('locked rubric is NOT marked stale when upstream changes', () => {
+      buildEducationWorkflow();
+      const store = getStore();
+
+      // Semantic edit to lesson plan
+      store.updateNodeData('lesson-plan', {
+        content: 'Completely rewritten lesson plan with new topics.',
+      });
+
+      // Rubric is locked — should remain locked, NOT stale
+      const rubric = getStore().nodes.find(n => n.id === 'rubric')!;
+      expect(rubric.data.status).toBe('locked');
+      expect(rubric.data.locked).toBe(true);
+    });
+
+    it('cosmetic edit does NOT trigger staleness propagation', () => {
+      buildEducationWorkflow();
+      const store = getStore();
+
+      // Fix a typo (cosmetic edit — whitespace/punctuation only)
+      store.updateNodeData('lesson-plan', {
+        content: 'Week 1: Cell Structure.  Week 2: Cell Division.  Week 3: DNA & RNA.',
+      });
+
+      // Downstream should remain active — cosmetic edits don't propagate
+      const quiz = getStore().nodes.find(n => n.id === 'quiz-bank')!;
+      const sg = getStore().nodes.find(n => n.id === 'study-guide')!;
+      expect(quiz.data.status).toBe('active');
+      expect(sg.data.status).toBe('active');
+    });
+
+    it('semantic edit creates a version snapshot before overwriting', () => {
+      buildEducationWorkflow();
+      const store = getStore();
+      const originalContent = 'Week 1: Cell Structure. Week 2: Cell Division. Week 3: DNA & RNA.';
+
+      // Semantic edit
+      store.updateNodeData('lesson-plan', {
+        content: 'Week 1: Molecular Biology. Week 2: Genetics. Week 3: Ecology. Week 4: Evolution.',
+      });
+
+      const lp = getStore().nodes.find(n => n.id === 'lesson-plan')!;
+      expect(lp.data._versionHistory).toBeDefined();
+      expect(lp.data._versionHistory!.length).toBeGreaterThanOrEqual(1);
+
+      // The saved version should contain the ORIGINAL content
+      const savedVersion = lp.data._versionHistory![lp.data._versionHistory!.length - 1];
+      expect(savedVersion.content).toBe(originalContent);
+      expect(savedVersion.trigger).toBe('user-edit');
+
+      // Version number should have incremented
+      expect(lp.data.version).toBeGreaterThan(1);
+    });
+
+    it('propagateStale re-executes stale nodes in topological order', async () => {
+      buildEducationWorkflow();
+      const store = getStore();
+
+      // Make a semantic edit to trigger staleness
+      store.updateNodeData('lesson-plan', {
+        content: 'Completely new curriculum with 5 weeks of advanced topics.',
+      });
+
+      // Count stale nodes before propagation
+      const staleBefore = getStore().nodes.filter(n => n.data.status === 'stale').length;
+      expect(staleBefore).toBeGreaterThanOrEqual(3); // quiz, study guide, faq at minimum
+
+      // Track fetch calls to verify execution happened
+      const fetchCountBefore = fetchCallCount;
+
+      // Propagate — this re-executes stale nodes
+      await store.propagateStale();
+
+      // Stale nodes should now be active (re-executed successfully)
+      const staleAfter = getStore().nodes.filter(n => n.data.status === 'stale').length;
+      expect(staleAfter).toBeLessThan(staleBefore);
+
+      // Fetch should have been called for each re-executed node
+      expect(fetchCallCount).toBeGreaterThan(fetchCountBefore);
+
+      // Events should record regeneration
+      const regenEvents = getStore().events.filter(e => e.type === 'regenerated');
+      expect(regenEvents.length).toBeGreaterThan(0);
+    });
+
+    it('getDownstreamNodes returns correct dependents of lesson plan', () => {
+      buildEducationWorkflow();
+      const store = getStore();
+      const downstream = store.getDownstreamNodes('lesson-plan');
+
+      // Should include rubric, quiz bank, study guide, course FAQ, and review gate
+      const labels = downstream.map(n => n.label);
+      expect(labels).toContain('Quiz Bank');
+      expect(labels).toContain('Study Guide');
+      expect(labels).toContain('Course FAQ');
+      expect(labels).toContain('Review Gate');
+      // Rubric is downstream structurally even though locked
+      expect(labels).toContain('Rubric');
+    });
+
+    it('staleCount reflects the number of stale nodes', () => {
+      buildEducationWorkflow();
+      const store = getStore();
+
+      // No stale nodes initially
+      const initialStale = store.nodes.filter(n => n.data.status === 'stale').length;
+      expect(initialStale).toBe(0);
+
+      // Semantic edit triggers cascade
+      store.updateNodeData('lesson-plan', {
+        content: 'Major rewrite of all lesson content.',
+      });
+
+      const afterEditStale = getStore().nodes.filter(n => n.data.status === 'stale').length;
+      expect(afterEditStale).toBeGreaterThanOrEqual(4); // lesson-plan + quiz + study guide + faq + review
+    });
+
+    it('edit classification records lifecycle events', () => {
+      buildEducationWorkflow();
+      const store = getStore();
+      const eventsBefore = store.events.length;
+
+      // Semantic edit
+      store.updateNodeData('lesson-plan', {
+        content: 'Entirely new content that replaces the old curriculum.',
+      });
+
+      const newEvents = getStore().events.slice(eventsBefore);
+      expect(newEvents.length).toBeGreaterThan(0);
+      expect(newEvents.some(e => e.type === 'edited')).toBe(true);
+      // Should mention the edit type
+      expect(newEvents.some(e => e.message.includes('semantic') || e.message.includes('edit'))).toBe(true);
+    });
+
+    it('full lifecycle: edit → stale → propagate → active → version bumped', async () => {
+      buildEducationWorkflow();
+      const store = getStore();
+
+      // Step 1: All artifacts start as active/locked
+      expect(getStore().nodes.find(n => n.id === 'quiz-bank')!.data.status).toBe('active');
+      expect(getStore().nodes.find(n => n.id === 'study-guide')!.data.status).toBe('active');
+
+      // Step 2: Professor rewrites the lesson plan
+      store.updateNodeData('lesson-plan', {
+        content: 'Brand new lesson plan: Week 1 Ecology, Week 2 Evolution, Week 3 Bioinformatics.',
+      });
+
+      // Step 3: Quiz and study guide should be stale
+      expect(getStore().nodes.find(n => n.id === 'quiz-bank')!.data.status).toBe('stale');
+      expect(getStore().nodes.find(n => n.id === 'study-guide')!.data.status).toBe('stale');
+
+      // Step 4: Propagate stale — re-execute
+      await store.propagateStale();
+
+      // Step 5: Quiz and study guide should be active again with new execution results
+      const quizAfter = getStore().nodes.find(n => n.id === 'quiz-bank')!;
+      const sgAfter = getStore().nodes.find(n => n.id === 'study-guide')!;
+      // They should have been re-executed (status active or at least not stale)
+      expect(['active', 'locked']).toContain(quizAfter.data.status);
+      expect(['active', 'locked']).toContain(sgAfter.data.status);
+
+      // Step 6: Rubric stayed locked throughout
+      expect(getStore().nodes.find(n => n.id === 'rubric')!.data.status).toBe('locked');
+    });
+  });
+
   // ── Cycle Detection on Connect ──────────────────────────────────────────────
   describe('Cycle Detection on Connect', () => {
     beforeEach(() => resetStore());

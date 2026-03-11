@@ -2244,10 +2244,13 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
           }
         }
         if (downstream.size > 0) {
-          const affected = nodes.filter(n => downstream.has(n.id) && n.data.status === 'active');
+          // Mark downstream nodes stale — any non-locked, non-stale status should become stale
+          // (active, reviewing, pending, generating all go stale when upstream changes)
+          const staleableStatuses = new Set(['active', 'reviewing', 'pending', 'generating']);
+          const affected = nodes.filter(n => downstream.has(n.id) && staleableStatuses.has(n.data.status));
           if (affected.length > 0) {
             nodes = nodes.map((n) =>
-              downstream.has(n.id) && n.data.status === 'active'
+              downstream.has(n.id) && staleableStatuses.has(n.data.status)
                 ? { ...n, data: { ...n.data, status: 'stale' as const } }
                 : n
             );
