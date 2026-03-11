@@ -1,5 +1,15 @@
 # Changelog
 
+### 2026-03-11 — AuthGate Component (v1.0.57)
+
+- **Feature 1 step 4**: Created `src/components/AuthGate.tsx`
+- Full sign-in UI: email/password, magic link (OTP), Google OAuth
+- Anonymous fallback for local-only mode
+- Inline user badge variant (for TopBar integration)
+- Auto-detects existing session on mount, listens for auth state changes
+- Gracefully skips when Supabase is not configured
+- 965 vitest tests passing, build clean.
+
 ### 2026-03-11 — StorageBackend Abstraction (v1.0.56)
 
 - **Feature 1 step 3**: Refactored `src/lib/storage.ts` with `StorageBackend` interface
