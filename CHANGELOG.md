@@ -1,5 +1,12 @@
 # Changelog
 
+### 2026-03-11 — Storage Backend Tests (v1.0.62)
+
+- **Feature 1 step 9 (COMPLETE)**: 22 new tests for storage backends
+- Tests for: LocalStorageBackend class (async API), StorageBackend interface contract, SupabaseBackend shape verification, backend management (activate/get), debounced sync, migration, edge cases (corrupted JSON, unique IDs, large data, nonexistent projects)
+- **Feature 1 COMPLETE** — all 9 steps done
+- 1013 vitest tests passing, build clean.
+
 ### 2026-03-11 — localStorage to Supabase Migration (v1.0.61)
 
 - **Feature 1 step 8**: `migrateLocalToSupabase()` — one-time migration of all localStorage projects to Supabase on first sign-in
