@@ -315,6 +315,74 @@ export function activateLocalBackend(): LocalStorageBackend {
   return backend;
 }
 
+// ── Debounced Background Sync ───────────────────────────────────────────────
+// When SupabaseBackend is active, every localStorage save also triggers a
+// debounced background sync to Supabase. This gives us:
+//   1. Optimistic local-first writes (instant, no latency)
+//   2. Background cloud persistence (2s debounce to batch rapid edits)
+//   3. Graceful failure (Supabase errors don't block the UI)
+
+const SYNC_DEBOUNCE_MS = 2000;
+let _syncTimer: ReturnType<typeof setTimeout> | null = null;
+let _pendingSync: { id: string; name: string; data: ProjectData; nodeCount: number; edgeCount: number } | null = null;
+let _syncInFlight = false;
+
+/**
+ * Schedule a debounced background sync to Supabase.
+ * Only fires when SupabaseBackend is active.
+ */
+function scheduleSyncToCloud(id: string, name: string, data: ProjectData, nodeCount: number, edgeCount: number): void {
+  if (_activeBackend.kind !== 'supabase') return;
+
+  _pendingSync = { id, name, data, nodeCount, edgeCount };
+
+  if (_syncTimer) clearTimeout(_syncTimer);
+  _syncTimer = setTimeout(async () => {
+    if (!_pendingSync || _syncInFlight) return;
+    const pending = _pendingSync;
+    _pendingSync = null;
+    _syncInFlight = true;
+
+    try {
+      await _activeBackend.saveProject(pending.id, pending.name, pending.data, pending.nodeCount, pending.edgeCount);
+      console.log(`[storage:sync] Synced project ${pending.id} to cloud`);
+    } catch (err) {
+      console.warn('[storage:sync] Background sync failed:', err instanceof Error ? err.message : 'unknown');
+      // Don't retry automatically — next save will schedule a new sync
+    } finally {
+      _syncInFlight = false;
+    }
+  }, SYNC_DEBOUNCE_MS);
+}
+
+/**
+ * Force an immediate sync of the pending save (e.g., before page unload).
+ * Returns a promise that resolves when sync completes.
+ */
+export async function flushSync(): Promise<void> {
+  if (_syncTimer) {
+    clearTimeout(_syncTimer);
+    _syncTimer = null;
+  }
+  if (!_pendingSync || _activeBackend.kind !== 'supabase') return;
+
+  const pending = _pendingSync;
+  _pendingSync = null;
+
+  try {
+    await _activeBackend.saveProject(pending.id, pending.name, pending.data, pending.nodeCount, pending.edgeCount);
+  } catch (err) {
+    console.warn('[storage:sync] Flush sync failed:', err instanceof Error ? err.message : 'unknown');
+  }
+}
+
+/**
+ * Returns true if there is a pending background sync.
+ */
+export function hasPendingSync(): boolean {
+  return _pendingSync !== null || _syncInFlight;
+}
+
 // ── Backward-compatible synchronous exports ─────────────────────────────────
 // These all delegate to LocalStorageBackend directly (not the active backend)
 // to preserve the synchronous API the store currently expects.
@@ -344,12 +412,20 @@ export function saveProject(
   nodeCount: number,
   edgeCount: number,
 ): void {
-  // Fire-and-forget the async version (it's actually sync for LocalStorageBackend)
+  // Synchronous local save (instant, optimistic)
   void _localBackend.saveProject(id, name, data, nodeCount, edgeCount);
+  // Schedule debounced cloud sync if Supabase is active
+  scheduleSyncToCloud(id, name, data, nodeCount, edgeCount);
 }
 
 export function deleteProject(id: string): void {
   void _localBackend.deleteProject(id);
+  // Also delete from cloud if Supabase is active
+  if (_activeBackend.kind === 'supabase') {
+    void _activeBackend.deleteProject(id).catch(err => {
+      console.warn('[storage:sync] Cloud delete failed:', err instanceof Error ? err.message : 'unknown');
+    });
+  }
 }
 
 export function createProject(name: string): string {
@@ -367,6 +443,12 @@ export function createProject(name: string): string {
 
 export function renameProject(id: string, newName: string): void {
   void _localBackend.renameProject(id, newName);
+  // Also rename in cloud if Supabase is active
+  if (_activeBackend.kind === 'supabase') {
+    void _activeBackend.renameProject(id, newName).catch(err => {
+      console.warn('[storage:sync] Cloud rename failed:', err instanceof Error ? err.message : 'unknown');
+    });
+  }
 }
 
 /**

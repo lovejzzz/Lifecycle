@@ -1,5 +1,16 @@
 # Changelog
 
+### 2026-03-11 — Debounced Background Sync (v1.0.60)
+
+- **Feature 1 step 7**: Debounced background sync to Supabase (2s debounce)
+- Optimistic local-first: localStorage saves are instant, cloud syncs in background
+- `scheduleSyncToCloud()` batches rapid edits into single Supabase writes
+- `flushSync()` for forced sync (before page unload)
+- `hasPendingSync()` for UI indicators
+- Cloud delete/rename operations fire immediately (no debounce needed)
+- Graceful failure: cloud sync errors logged but never block the UI
+- 991 vitest tests passing, build clean.
+
 ### 2026-03-11 — Server-Side Auth + BFS Traversal Fix (v1.0.59)
 
 - **Feature 1 step 6**: Server-side JWT verification in `/api/cid/route.ts`

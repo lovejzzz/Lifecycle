@@ -1068,12 +1068,12 @@ describe('E2E Async Simulation Tests', () => {
     });
   });
 
-  // ─── Scenario I: Course Design — Connected Edit Cascade ────────────────────
+  // ─── Scenario M: Course Design — Connected Edit Cascade ─────────────────────
   // Models the EXACT Course Design template: Syllabus → Objectives → Lesson Plans
   // → Assignments → Rubrics/Quiz Bank/Study Guide → Course FAQ
   // Tests the core vision: "edit a lesson plan → rubric, study guide, quiz bank, FAQ all update"
 
-  describe('Scenario I: Course Design connected edits', () => {
+  describe('Scenario M: Course Design connected edits', () => {
     function buildCourseDesign() {
       const store = getStore();
       const nodes = [
@@ -1511,9 +1511,9 @@ describe('E2E Async Simulation Tests', () => {
     });
   });
 
-  // ─── Scenario J: Deep chain staleness (6 levels) ──────────────────────────
+  // ─── Scenario N: Deep chain staleness (6 levels) ──────────────────────────
 
-  describe('Scenario J: Deep chain cascade', () => {
+  describe('Scenario N: Deep chain cascade', () => {
     function buildDeepChain() {
       const store = getStore();
       const nodes = Array.from({ length: 6 }, (_, i) =>
@@ -1582,9 +1582,9 @@ describe('E2E Async Simulation Tests', () => {
     });
   });
 
-  // ─── Scenario K: Diamond dependency (converging paths) ─────────────────────
+  // ─── Scenario O: Diamond dependency (converging paths) ──────────────────────
 
-  describe('Scenario K: Diamond dependency', () => {
+  describe('Scenario O: Diamond dependency', () => {
     // A → B, A → C, B → D, C → D  (diamond shape)
     function buildDiamond() {
       const store = getStore();
@@ -1630,9 +1630,9 @@ describe('E2E Async Simulation Tests', () => {
     });
   });
 
-  // ─── Scenario L: Stale + Error combinations ───────────────────────────────
+  // ─── Scenario P: Stale + Error combinations ────────────────────────────────
 
-  describe('Scenario L: Stale-error edge cases', () => {
+  describe('Scenario P: Stale-error edge cases', () => {
     beforeEach(() => {
       resetStore();
       vi.useFakeTimers();
