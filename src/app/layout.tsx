@@ -14,7 +14,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'Lifecycle Agent',
+  title: 'Lifecycle',
   description: 'A transparent, stateful visual workflow system powered by CID Agent',
 };
 

@@ -106,12 +106,20 @@ export default function TopBar() {
     <div className="h-12 border-b border-white/[0.06] bg-[#0a0a0f]/90 backdrop-blur-xl flex items-center justify-between px-3 md:px-5 z-50 relative">
       {/* Left */}
       <div className="flex items-center gap-2 md:gap-4 min-w-0">
-        <div className="flex items-center gap-2.5 shrink-0">
+        <button
+          className="flex items-center gap-2.5 shrink-0 hover:opacity-80 transition-opacity"
+          onClick={() => {
+            if (nodes.length === 0 || window.confirm('Start a new project? Unsaved changes to the current project will be preserved.')) {
+              newProject();
+            }
+          }}
+          title="New project"
+        >
           <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 flex items-center justify-center border border-emerald-500/20">
             <Layers size={14} className="text-emerald-400" />
           </div>
-          <span className="text-sm font-semibold text-white/90 tracking-tight hidden sm:inline">Lifecycle Agent</span>
-        </div>
+          <span className="text-sm font-semibold text-white/90 tracking-tight hidden sm:inline">Lifecycle</span>
+        </button>
         <div className="h-4 w-px bg-white/[0.08]" />
 
         {/* Project Switcher */}
