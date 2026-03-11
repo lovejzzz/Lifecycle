@@ -205,6 +205,8 @@ describe('buildSystemPrompt', () => {
   it('uses 5-layer personality when agent and layers provided', () => {
     const agent = getAgent('rowan');
     const layers: AgentPersonalityLayers = {
+      temperament: agent.temperament,
+      drivingForce: agent.drivingForce,
       habits: createDefaultHabits('rowan'),
       generation: createDefaultGeneration(),
       reflection: createDefaultReflection(),
@@ -237,6 +239,8 @@ describe('compilePersonalityPrompt', () => {
   it('compiles all 5 layers for rowan', () => {
     const agent = getAgent('rowan');
     const layers: AgentPersonalityLayers = {
+      temperament: agent.temperament,
+      drivingForce: agent.drivingForce,
       habits: createDefaultHabits('rowan'),
       generation: createDefaultGeneration(),
       reflection: createDefaultReflection(),
@@ -249,6 +253,8 @@ describe('compilePersonalityPrompt', () => {
   it('compiles all 5 layers for poirot', () => {
     const agent = getAgent('poirot');
     const layers: AgentPersonalityLayers = {
+      temperament: agent.temperament,
+      drivingForce: agent.drivingForce,
       habits: createDefaultHabits('poirot'),
       generation: createDefaultGeneration(),
       reflection: createDefaultReflection(),
@@ -265,6 +271,8 @@ describe('compilePersonalityPrompt', () => {
     habits.totalInteractions = 50;
     habits.relationshipDepth = 0.5;
     const layers: AgentPersonalityLayers = {
+      temperament: agent.temperament,
+      drivingForce: agent.drivingForce,
       habits,
       generation: createDefaultGeneration(),
       reflection: createDefaultReflection(),
@@ -284,6 +292,8 @@ describe('compilePersonalityPrompt', () => {
     gen.context.sessionDepth = 'marathon';
     gen.context.conversationMomentum = 'stuck';
     const layers: AgentPersonalityLayers = {
+      temperament: agent.temperament,
+      drivingForce: agent.drivingForce,
       habits: createDefaultHabits('rowan'),
       generation: gen,
       reflection: createDefaultReflection(),
@@ -303,6 +313,8 @@ describe('compilePersonalityPrompt', () => {
     reflection.growthEdges.push({ area: 'security', reason: 'developing', priority: 0.7, identifiedAt: Date.now() });
     reflection.driveEvolutionLog.push({ driveName: 'speed', oldWeight: 0.5, newWeight: 0.55, reason: 'spike', timestamp: Date.now() });
     const layers: AgentPersonalityLayers = {
+      temperament: agent.temperament,
+      drivingForce: agent.drivingForce,
       habits: createDefaultHabits('rowan'),
       generation: createDefaultGeneration(),
       reflection,
@@ -319,6 +331,8 @@ describe('compilePersonalityPrompt', () => {
     const gen = createDefaultGeneration();
     gen.reframedInput = 'A puzzle to be solved methodically';
     const layers: AgentPersonalityLayers = {
+      temperament: agent.temperament,
+      drivingForce: agent.drivingForce,
       habits: createDefaultHabits('rowan'),
       generation: gen,
       reflection: createDefaultReflection(),

@@ -284,14 +284,20 @@ describe('computeCuriositySpikes', () => {
 
 describe('applyTemperamentReframing', () => {
   const mkTemperament = (): TemperamentLayer => ({
-    frame: { worldview: 'test', selfConcept: 'test', userModel: 'test' },
+    frame: {
+      lens: 'mission-objective',
+      threatModel: 'neutral-scan',
+      attentionPriorities: ['blockers'],
+      categorizationSchema: { threats: ['test'] },
+    },
     disposition: 'balanced',
     reframingRules: [
       { trigger: 'bug', reframeAs: 'An opportunity to strengthen the system' },
       { trigger: 'broken', reframeAs: 'A puzzle waiting to be solved' },
     ],
-    emotionalRange: { min: 0, max: 1, default: 0.5 },
-    communicationDefaults: { formality: 0.5, directness: 0.8, warmth: 0.5 },
+    communicationStyle: 'test',
+    worldview: 'test',
+    emotionalBaseline: 'test',
   });
 
   it('returns reframe when trigger matches', () => {

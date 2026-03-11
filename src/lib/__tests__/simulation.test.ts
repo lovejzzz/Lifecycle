@@ -107,7 +107,7 @@ const originalClearTimeout = globalThis.clearTimeout;
 
 // Now import the store (after mocks are in place)
 import { useLifecycleStore } from '@/store/useStore';
-import type { Node, Edge } from '@xyflow/react';
+import type { Node, Edge, Connection } from '@xyflow/react';
 import type { NodeData, NodeCategory } from '@/lib/types';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -1815,7 +1815,7 @@ describe('User Simulation: Real Journeys', () => {
         ok: false,
         status: 500,
         json: async () => ({}),
-      }));
+      } as unknown as Response));
       await getStore().executeNode(nodes[1].id);
       const artifact = getStore().nodes.find(n => n.id === nodes[1].id)!;
       expect(artifact.data.executionStatus).toBe('error');
@@ -1833,7 +1833,7 @@ describe('User Simulation: Real Journeys', () => {
       mockFetch.mockImplementationOnce(async () => ({
         ok: true,
         json: async () => ({ error: 'no_api_key', message: 'No API key configured' }),
-      }));
+      } as unknown as Response));
       await getStore().executeNode(nodes[1].id);
       const artifact = getStore().nodes.find(n => n.id === nodes[1].id)!;
       expect(artifact.data.executionStatus).toBe('error');
@@ -1948,7 +1948,7 @@ describe('User Simulation: Real Journeys', () => {
       getStore().createNewNode('input');
       useLifecycleStore.setState({
         nodes: getStore().nodes.map(n => ({ ...n, data: { ...n.data, status: 'stale' as const, inputValue: 'x' } })),
-        impactPreview: { visible: true, nodeIds: [], selectedNodeIds: new Set() },
+        impactPreview: { visible: true, staleNodes: [], executionOrder: [], estimatedCalls: 0, selectedNodeIds: new Set<string>() },
       });
       await getStore().propagateStale();
       expect(getStore().impactPreview).toBeNull();
@@ -1993,7 +1993,7 @@ describe('User Simulation: Real Journeys', () => {
         json: async () => ({
           result: { message: 'Hello! I can help with that.', workflow: null },
         }),
-      }));
+      } as unknown as Response));
 
       await getStore().chatWithCID('hello');
 
@@ -2008,7 +2008,7 @@ describe('User Simulation: Real Journeys', () => {
       mockFetch.mockImplementationOnce(async () => ({
         ok: true,
         json: async () => ({ error: 'no_api_key' }),
-      }));
+      } as unknown as Response));
 
       await getStore().chatWithCID('build a workflow');
 
@@ -2022,7 +2022,7 @@ describe('User Simulation: Real Journeys', () => {
       mockFetch.mockImplementationOnce(async () => ({
         ok: true,
         json: async () => ({ error: 'api_error', message: '429 rate limit' }),
-      }));
+      } as unknown as Response));
 
       await getStore().chatWithCID('build a workflow');
 
@@ -2043,7 +2043,7 @@ describe('User Simulation: Real Journeys', () => {
             },
           },
         }),
-      }));
+      } as unknown as Response));
 
       getStore().createNewNode('input');
       const origDesc = getStore().nodes[0].data.description;
@@ -2070,7 +2070,7 @@ describe('User Simulation: Real Journeys', () => {
             },
           },
         }),
-      }));
+      } as unknown as Response));
 
       await getStore().chatWithCID('update the input node description');
 
@@ -2105,7 +2105,7 @@ describe('User Simulation: Real Journeys', () => {
           json: async () => ({
             result: { message: 'Got it!', workflow: null },
           }),
-        };
+        } as unknown as Response;
       });
 
       await getStore().chatWithCID('explain this node');
@@ -2198,7 +2198,7 @@ describe('User Simulation: Real Journeys', () => {
       mockFetch.mockImplementationOnce(async () => ({
         ok: false,
         json: async () => ({ error: 'server error' }),
-      }));
+      } as unknown as Response));
 
       await getStore().executeWorkflow();
 
@@ -2891,7 +2891,7 @@ describe('User Simulation: Real Journeys', () => {
       getStore().createNewNode('input');
       const nodeId = getStore().nodes[0].id;
       useLifecycleStore.setState({
-        impactPreview: { editedNodeId: nodeId, impactedNodeIds: [nodeId], selectedNodeIds: new Set([nodeId]) },
+        impactPreview: { visible: true, staleNodes: [{ id: nodeId, label: 'Input', category: 'input' }], executionOrder: [nodeId], estimatedCalls: 1, selectedNodeIds: new Set([nodeId]) },
       });
       await getStore().regenerateSelected([nodeId]);
       expect(getStore().impactPreview).toBeNull();
