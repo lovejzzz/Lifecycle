@@ -1,5 +1,14 @@
 # Changelog
 
+### 2026-03-11 — File Drop on Input Nodes (v1.0.68)
+
+- **Feature 2 step 5**: File drop handling in `LifecycleNode.tsx`
+- Input/trigger/dependency nodes accept drag-and-drop files (PDF, DOCX, TXT, MD, CSV)
+- Visual drop zone indicator with dashed cyan border and "Drop file here" label
+- Dropped files parsed via /api/upload, content set on the node, label auto-updated
+- Toast notifications for success/failure, event log entry for file uploads
+- 1018 vitest tests passing, build clean.
+
 ### 2026-03-11 — File Upload UI in CIDPanel (v1.0.67)
 
 - **Feature 2 step 4**: File upload UI in CIDPanel

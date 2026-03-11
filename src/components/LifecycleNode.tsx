@@ -31,6 +31,7 @@ function LifecycleNode({ data, id, dragging }: NodeProps) {
   const openArtifactPanel = useLifecycleStore((s) => s.openArtifactPanel);
   const updateNodeStatus = useLifecycleStore((s) => s.updateNodeStatus);
   const addEvent = useLifecycleStore((s) => s.addEvent);
+  const addToast = useLifecycleStore((s) => s.addToast);
   const isMultiSelected = useLifecycleStore((s) => s.multiSelectedIds.has(id));
   const isImpactHighlighted = useLifecycleStore((s) => s.impactPreview?.visible && s.impactPreview.selectedNodeIds.has(id));
   const isImpactDimmed = useLifecycleStore((s) => s.impactPreview?.visible && !s.impactPreview.selectedNodeIds.has(id) && status !== 'stale');
@@ -106,6 +107,51 @@ function LifecycleNode({ data, id, dragging }: NodeProps) {
     };
   }, []);
 
+  // File drop zone (input nodes only)
+  const [isDragOver, setIsDragOver] = useState(false);
+  const isInputCategory = category === 'input' || category === 'trigger' || category === 'dependency';
+
+  const handleFileDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    if (!isInputCategory) return;
+
+    const file = e.dataTransfer?.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const ext = file.name.toLowerCase().split('.').pop() ?? '';
+    if (!['pdf', 'docx', 'txt', 'md', 'csv'].includes(ext)) {
+      addToast(`Unsupported file: ${file.name}`, 'error');
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+
+      if (!res.ok) {
+        addToast(data.message || 'Upload failed', 'error');
+        return;
+      }
+
+      // Set the parsed text as the node's content
+      const preview = data.text?.slice(0, 2000) || '';
+      updateNodeData(id, {
+        content: preview + (data.text?.length > 2000 ? '\n\n... (truncated — full document parsed)' : ''),
+        label: label === 'Input' || label === 'Untitled' ? file.name.replace(/\.[^.]+$/, '') : label,
+        description: `Uploaded: ${file.name} (${data.type}, ~${data.tokenEstimate} tokens, ${data.sections?.length ?? 0} sections)`,
+      });
+      addToast(`${file.name} loaded into "${label}"`, 'success');
+      addEvent({ id: `ev-${Date.now()}`, type: 'edited' as const, message: `Uploaded ${file.name} to "${label}"`, timestamp: Date.now(), nodeId: id });
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Upload failed', 'error');
+    }
+  }, [id, label, isInputCategory, updateNodeData, addEvent, addToast]);
+
   // Inline label editing
   const [editingLabel, setEditingLabel] = useState(false);
   const [labelDraft, setLabelDraft] = useState(label);
@@ -132,6 +178,9 @@ function LifecycleNode({ data, id, dragging }: NodeProps) {
       transition={{ type: 'spring', stiffness: 400, damping: 25, duration: 0.3 }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      onDragOver={isInputCategory ? (e) => { e.preventDefault(); e.stopPropagation(); setIsDragOver(true); } : undefined}
+      onDragLeave={isInputCategory ? (e) => { e.preventDefault(); setIsDragOver(false); } : undefined}
+      onDrop={isInputCategory ? handleFileDrop : undefined}
     >
       <div
         className={`relative rounded-xl border backdrop-blur-2xl transition-all duration-300 hover:scale-[1.02]${
@@ -157,6 +206,20 @@ function LifecycleNode({ data, id, dragging }: NodeProps) {
           maxWidth: 270,
         }}
       >
+        {/* File drop zone indicator */}
+        {isDragOver && isInputCategory && (
+          <motion.div
+            className="absolute inset-0 rounded-xl pointer-events-none z-10 flex items-center justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            style={{ background: 'rgba(6, 182, 212, 0.15)', border: '2px dashed rgba(6, 182, 212, 0.5)' }}
+          >
+            <div className="flex items-center gap-1.5 text-cyan-400 text-[11px] font-medium">
+              <Upload size={14} />
+              Drop file here
+            </div>
+          </motion.div>
+        )}
         {/* Scroll-to highlight pulse ring */}
         {showPulse && (
           <motion.div
