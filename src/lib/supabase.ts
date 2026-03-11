@@ -36,6 +36,7 @@ export interface Database {
           display_name?: string | null;
           updated_at?: string;
         };
+        Relationships: [];
       };
       projects: {
         Row: {
@@ -53,13 +54,26 @@ export interface Database {
           name: string;
           node_count?: number;
           edge_count?: number;
+          created_at?: string;
+          last_modified?: string;
         };
         Update: {
+          id?: string;
+          user_id?: string;
           name?: string;
           node_count?: number;
           edge_count?: number;
           last_modified?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: 'projects_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       project_data: {
         Row: {
@@ -70,11 +84,22 @@ export interface Database {
         Insert: {
           project_id: string;
           data: Record<string, unknown>;
+          updated_at?: string;
         };
         Update: {
+          project_id?: string;
           data?: Record<string, unknown>;
           updated_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: 'project_data_project_id_fkey';
+            columns: ['project_id'];
+            isOneToOne: true;
+            referencedRelation: 'projects';
+            referencedColumns: ['id'];
+          },
+        ];
       };
     };
     Views: Record<string, never>;

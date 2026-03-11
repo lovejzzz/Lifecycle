@@ -1,5 +1,15 @@
 # Changelog
 
+### 2026-03-11 — StorageBackend Abstraction (v1.0.56)
+
+- **Feature 1 step 3**: Refactored `src/lib/storage.ts` with `StorageBackend` interface
+- `LocalStorageBackend` class wraps existing localStorage logic (async API)
+- `SupabaseBackend` class implements full CRUD against Supabase tables (projects + project_data)
+- `getStorageBackend()`, `activateSupabaseBackend(userId)`, `activateLocalBackend()` for switching
+- All existing synchronous exports preserved for backward compatibility (no store changes needed yet)
+- Fixed Database type in supabase.ts: added `Relationships` tuples required by Supabase generics
+- 965 vitest tests passing, build clean.
+
 ### 2026-03-11 — Supabase Migration Schema (v1.0.55)
 
 - **Feature 1 step 2**: Created `supabase/migrations/001_initial.sql`
