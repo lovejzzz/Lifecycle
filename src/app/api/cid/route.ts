@@ -258,6 +258,12 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await response.json();
+
+    // Extract token usage from provider response (OpenAI/DeepSeek vs Anthropic format)
+    const usage = provider === 'anthropic'
+      ? { prompt_tokens: data.usage?.input_tokens ?? 0, completion_tokens: data.usage?.output_tokens ?? 0, total_tokens: (data.usage?.input_tokens ?? 0) + (data.usage?.output_tokens ?? 0) }
+      : { prompt_tokens: data.usage?.prompt_tokens ?? 0, completion_tokens: data.usage?.completion_tokens ?? 0, total_tokens: data.usage?.total_tokens ?? 0 };
+
     // Anthropic returns content[0].text, OpenAI-compatible returns choices[0].message.content
     // deepseek-reasoner returns reasoning_content + content in message
     const text = provider === 'anthropic'
@@ -287,7 +293,7 @@ export async function POST(req: NextRequest) {
       // If parsed JSON doesn't look like a CID response (no message, no workflow, no modifications),
       // treat the raw text as the message — the model generated content, not CID format
       if (!parsed.message && !parsed.workflow && !parsed.modifications) {
-        return NextResponse.json({ result: { message: text, workflow: null }, provider, model });
+        return NextResponse.json({ result: { message: text, workflow: null }, provider, model, usage });
       }
 
       // Normalize edge format — some models return source/target instead of from/to
@@ -566,9 +572,9 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      return NextResponse.json({ result: parsed, provider, model });
+      return NextResponse.json({ result: parsed, provider, model, usage });
     } catch {
-      return NextResponse.json({ result: { message: text, workflow: null }, provider, model });
+      return NextResponse.json({ result: { message: text, workflow: null }, provider, model, usage });
     }
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';
