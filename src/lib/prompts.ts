@@ -587,3 +587,89 @@ export function buildMessages(
 
   return messages;
 }
+
+// ─── Document Analysis Prompt ───────────────────────────────────────────────
+
+interface DocumentAnalysisInput {
+  /** Full document text (or first chunk for large docs) */
+  text: string;
+  /** Detected sections from docparse */
+  sections: Array<{ title: string; content: string }>;
+  /** Original filename */
+  filename: string;
+  /** Detected file type */
+  type: string;
+  /** Approximate total token count */
+  tokenEstimate: number;
+  /** Whether this is a partial chunk of a larger document */
+  isChunk?: boolean;
+  /** Chunk index (0-based) if chunked */
+  chunkIndex?: number;
+  /** Total chunks if chunked */
+  totalChunks?: number;
+}
+
+/**
+ * Build a system prompt for CID to analyze an uploaded document and suggest a workflow.
+ * Used when a user uploads a syllabus, PRD, spec, or other structured document.
+ *
+ * The LLM should:
+ *   1. Identify what type of document it is (syllabus, PRD, brief, etc.)
+ *   2. Extract key entities (topics, assignments, deliverables, milestones)
+ *   3. Suggest a workflow structure that turns the document into a living lifecycle
+ */
+export function buildDocumentAnalysisPrompt(input: DocumentAnalysisInput): {
+  systemPrompt: string;
+  userMessage: string;
+} {
+  const sectionSummary = input.sections.length > 0
+    ? input.sections.map(s => `  - "${s.title}" (${s.content.length} chars)`).join('\n')
+    : '  (no sections detected)';
+
+  const chunkNote = input.isChunk
+    ? `\n\nNOTE: This is chunk ${(input.chunkIndex ?? 0) + 1} of ${input.totalChunks ?? '?'} from a large document (~${input.tokenEstimate} tokens total). Analyze what you can see and note if critical information might be in other chunks.`
+    : '';
+
+  const systemPrompt = `You are CID (Consider It Done), analyzing an uploaded document to suggest a workflow.
+
+TASK: Analyze the document and return a JSON response with:
+1. A "message" summarizing what you found (document type, key sections, recommended workflow)
+2. A "workflow" with nodes and edges that turn this document into a living lifecycle
+
+DOCUMENT ANALYSIS RULES:
+- Identify the document type: syllabus, PRD, project brief, technical spec, research paper, business plan, etc.
+- Extract key entities: topics, assignments, deliverables, milestones, dependencies, review points
+- Create input nodes for source material (the uploaded document, reference materials)
+- Create process nodes for transformations (analysis, generation, review cycles)
+- Create deliverable nodes for each output artifact the document implies
+- Create review nodes for quality gates and approval points
+- Connect everything with meaningful edges that show the lifecycle flow
+- For syllabi: each week/module should inform lesson plans, assignments, rubrics, quizzes, study guides
+- For PRDs: features should flow through design → implementation → testing → deployment
+- Write REAL content in each node, not placeholders
+
+RESPONSE FORMAT:
+{
+  "message": "Analysis summary and recommended workflow description",
+  "workflow": {
+    "nodes": [{ "label": "...", "category": "...", "description": "...", "content": "..." }],
+    "edges": [{ "from": 0, "to": 1, "label": "drives|feeds|refines|validates|..." }]
+  }
+}`;
+
+  const userMessage = `I've uploaded a document: **${input.filename}** (${input.type}, ~${input.tokenEstimate} tokens)
+
+Detected sections:
+${sectionSummary}
+${chunkNote}
+
+Here is the document content:
+
+---
+${input.text}
+---
+
+Please analyze this document and suggest a workflow that turns it into a living lifecycle. Identify the key deliverables, dependencies, and review points.`;
+
+  return { systemPrompt, userMessage };
+}

@@ -1,5 +1,13 @@
 # Changelog
 
+### 2026-03-11 — Document Analysis Prompt (v1.0.66)
+
+- **Feature 2 step 3**: Added `buildDocumentAnalysisPrompt()` to `src/lib/prompts.ts`
+- Generates system prompt + user message for CID to analyze uploaded documents
+- Handles syllabi, PRDs, specs, research papers — produces workflow suggestions
+- Supports chunked documents with chunk index/total metadata
+- 1013 vitest tests passing, build clean.
+
 ### 2026-03-11 — Upload API Route (v1.0.65)
 
 - **Feature 2 step 2**: Created `src/app/api/upload/route.ts`
