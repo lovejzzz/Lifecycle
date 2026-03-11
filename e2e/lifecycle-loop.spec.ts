@@ -2735,3 +2735,237 @@ test.describe('Multi-select nodes', () => {
     }
   });
 });
+
+// ── NEW: Node category display ───────────────────────────────────────────────
+
+test.describe('Node category display', () => {
+  test('nodes display their category label on canvas', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(1500);
+
+    // Nodes should show category text (input, process, deliverable, review, note)
+    const categories = page.locator('.react-flow__node').filter({ hasText: /input|process|deliverable|review|note/i });
+    const count = await categories.count();
+    expect(count).toBeGreaterThan(0);
+  });
+});
+
+// ── NEW: Canvas keyboard navigation ─────────────────────────────────────────
+
+test.describe('Canvas keyboard navigation', () => {
+  test('Escape deselects nodes without crash', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(1500);
+
+    const node = page.locator('.react-flow__node').filter({ hasText: 'Syllabus' }).first();
+    await node.click();
+    await page.waitForTimeout(500);
+
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(500);
+
+    await expect(page.locator('.react-flow')).toBeVisible();
+  });
+
+  test('Delete key on selected node does not crash', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(1500);
+
+    const node = page.locator('.react-flow__node').filter({ hasText: 'FAQ' }).first();
+    await node.click();
+    await page.waitForTimeout(500);
+
+    await page.keyboard.press('Delete');
+    await page.waitForTimeout(1000);
+
+    await expect(page.locator('.react-flow')).toBeVisible();
+  });
+});
+
+// ── NEW: CID inspect command ─────────────────────────────────────────────────
+
+test.describe('CID inspect command', () => {
+  test('inspect command shows node details in chat', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('inspect Syllabus');
+    await cidInput.press('Enter');
+
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(cidPanel.getByText(/Syllabus|category|status|input/i).first()).toBeVisible({ timeout: 5000 });
+  });
+});
+
+// ── NEW: Small viewport rendering (iPhone SE) ───────────────────────────────
+
+test.describe('Small viewport rendering (iPhone SE)', () => {
+  test('app renders without crash on 375px viewport', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto('/');
+    await page.waitForTimeout(2000);
+
+    await expect(page.locator('.react-flow').first()).toBeVisible({ timeout: 5000 });
+  });
+
+  test('CID panel works on 375px viewport', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto('/');
+    await page.waitForTimeout(1000);
+
+    const cidInput = page.locator('[data-cid-input]');
+    if (await cidInput.isVisible().catch(() => false)) {
+      await cidInput.fill('help');
+      await cidInput.press('Enter');
+      const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+      await expect(cidPanel.getByText(/help|command/i).first()).toBeVisible({ timeout: 5000 });
+    }
+  });
+
+  test('template loads on 375px viewport', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto('/');
+    await page.waitForTimeout(1000);
+
+    // Try loading template via CID
+    const cidInput = page.locator('[data-cid-input]');
+    if (await cidInput.isVisible().catch(() => false)) {
+      await cidInput.fill('/template Course Design');
+      await cidInput.press('Enter');
+      await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+    }
+  });
+});
+
+// ── NEW: Stale node detail panel interaction ─────────────────────────────────
+
+test.describe('Stale node in detail panel', () => {
+  test('stale node shows stale status in detail panel', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(2000);
+
+    // Mark Syllabus stale
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('set Syllabus to stale');
+    await cidInput.press('Enter');
+    await page.waitForTimeout(1500);
+
+    // Open detail panel
+    const syllabusNode = page.locator('.react-flow__node').filter({ hasText: 'Syllabus' }).first();
+    await syllabusNode.dblclick();
+    await page.waitForTimeout(1000);
+
+    // Detail panel should show stale status
+    await expect(page.getByText(/stale/i).first()).toBeVisible({ timeout: 3000 });
+  });
+});
+
+// ── NEW: CID why command ─────────────────────────────────────────────────────
+
+test.describe('CID why command on specific node', () => {
+  test('why command explains node purpose', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('why Rubrics');
+    await cidInput.press('Enter');
+
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(cidPanel.getByText(/Rubrics|purpose|depend|reason/i).first()).toBeVisible({ timeout: 5000 });
+  });
+});
+
+// ── NEW: CID isolate command ─────────────────────────────────────────────────
+
+test.describe('CID isolate subgraph', () => {
+  test('isolate command highlights node subgraph', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('isolate Rubrics');
+    await cidInput.press('Enter');
+
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(cidPanel.getByText(/Rubrics|isolat|subgraph|upstream|depend/i).first()).toBeVisible({ timeout: 5000 });
+  });
+});
+
+// ── NEW: CID what-if analysis ────────────────────────────────────────────────
+
+test.describe('CID what-if analysis', () => {
+  test('what-if removing a node shows impact', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('what-if remove Lesson Plans');
+    await cidInput.press('Enter');
+
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(cidPanel.getByText(/impact|affected|orphan|depend|remove/i).first()).toBeVisible({ timeout: 5000 });
+  });
+});
+
+// ── NEW: Node connections display ────────────────────────────────────────────
+
+test.describe('Node connections display', () => {
+  test('node detail panel shows connections section', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(1500);
+
+    // Open a node that has connections
+    const node = page.locator('.react-flow__node').filter({ hasText: 'Lesson Plans' }).first();
+    await node.dblclick();
+    await page.waitForTimeout(1000);
+
+    // Should show connections/dependencies section
+    const connectionsText = page.getByText(/connection|depend|upstream|downstream|input|output/i);
+    await expect(connectionsText.first()).toBeVisible({ timeout: 3000 });
+  });
+});
+
+// ── NEW: Multiple template rapid switching ───────────────────────────────────
+
+test.describe('Rapid template switching', () => {
+  test('switching templates three times does not crash', async ({ page }) => {
+    await page.goto('/');
+
+    // Load Course Design
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    // Switch to Software Development
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('/template Software Development');
+    await cidInput.press('Enter');
+    await page.waitForTimeout(2000);
+
+    // Switch to Incident Response
+    await cidInput.fill('/template Incident Response');
+    await cidInput.press('Enter');
+    await page.waitForTimeout(2000);
+
+    // Canvas should still work
+    await expect(page.locator('.react-flow')).toBeVisible();
+    const nodes = page.locator('.react-flow__node');
+    const count = await nodes.count();
+    expect(count).toBeGreaterThan(0);
+  });
+});

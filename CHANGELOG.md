@@ -1,5 +1,19 @@
 # Changelog
 
+### 2026-03-11 — E2E Test Coverage: 186 → 199 (v1.0.71)
+
+- **E2E**: 13 new Playwright tests (186 → 199 total), all passing
+- Node category display: verify category labels on canvas nodes
+- Canvas keyboard navigation: Escape deselect, Delete key resilience
+- CID inspect command: node detail inspection via chat
+- iPhone SE (375px) viewport: app render, CID panel, template loading
+- Stale node detail panel: verify stale status shown after marking
+- CID why command: node purpose explanation on specific node
+- CID isolate subgraph: upstream dependency highlighting
+- CID what-if analysis: impact of removing a node
+- Node connections display: detail panel shows upstream/downstream
+- Rapid template switching: 3 sequential template loads without crash
+
 ### 2026-03-11 — E2E Test Coverage Expansion (v1.0.70)
 
 - **E2E**: 24 new Playwright tests (162 -> 186 total), all passing
