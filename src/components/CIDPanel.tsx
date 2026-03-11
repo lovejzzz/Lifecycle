@@ -430,7 +430,7 @@ export default function CIDPanel() {
       chatWithCID(`Extend the current workflow: ${prompt}. Add new nodes and connect them to existing nodes where appropriate. Return a workflow with ONLY the NEW nodes and edges to add. Use the existing node labels in edge references.`);
     } else if (isGenerateRequest) {
       generateWorkflow(prompt);
-    } else if (/^(?:solve|fix|diagnos|heal|repair)\b/i.test(prompt)) {
+    } else if (/^(?:solve|fix|diagnose?|heal|repair)\b/i.test(prompt)) {
       // Run local solve first, then enrich with AI analysis if available
       setProcessing(true);
       addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
@@ -450,6 +450,8 @@ export default function CIDPanel() {
           sendStreamingResponse(result.message);
         }
       }, agent.responses.preInvestigate ? 1500 : 600);
+    } else if (/^(?:health\s+detail|health\s+breakdown|detailed?\s+health|health\s+report)\s*$/i.test(prompt)) {
+      dispatchCommand(prompt, () => healthBreakdown(), 400);
     } else if (/^(?:status|report|health|dashboard)\b/i.test(prompt)) {
       // AI-powered status report when available
       if (aiEnabled && nodes.length > 0) {
@@ -458,7 +460,7 @@ export default function CIDPanel() {
       } else {
         dispatchCommand(prompt, () => getStatusReport());
       }
-    } else if (/^(?:propagat|sync|refresh\s*stale|regenerate\s*stale|update\s+(?:all\s+)?stale|run\s+(?:the\s+)?stale)\b/i.test(prompt)) {
+    } else if (/^(?:propagate?|sync|refresh\s*stale|regenerate\s*stale|update\s+(?:all\s+)?stale|run\s+(?:the\s+)?stale)\b/i.test(prompt)) {
       addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
       const currentNodes = useLifecycleStore.getState().nodes;
       const sc = currentNodes.filter((n) => n.data.status === 'stale').length;
@@ -805,7 +807,7 @@ export default function CIDPanel() {
         '- Right-click a node → "Ask CID" or "Generate Content" for AI-powered node actions',
       ].join('\n');
       setTimeout(() => sendStreamingResponse(helpText), 200);
-    } else if (/^(?:why|reason|purpose)\s+/i.test(prompt)) {
+    } else if (/^(?:why|reason|purpose)\s+/i.test(prompt) && !/^why\s+(?:is|does|do|are|was|were|can|should|would|has|have|did)\b/i.test(prompt)) {
       dispatchCommand(prompt, () => whyNode(prompt));
     } else if (/^(?:relabel|re-label|fix\s+labels?|infer\s+labels?)\s*(?:all|edges?)?\s*$/i.test(prompt)) {
       dispatchCommand(prompt, () => relabelAllEdges().message);
@@ -840,8 +842,6 @@ export default function CIDPanel() {
       dispatchCommand(prompt, () => findBottlenecks(), 400);
     } else if (/^(?:suggest|next|what\s*(?:should|can)\s*I\s*do|recommendations?)\s*$/i.test(prompt)) {
       dispatchCommand(prompt, () => suggestNextSteps(), 400);
-    } else if (/^(?:health\s+detail|health\s+breakdown|detailed?\s+health|health\s+report)\s*$/i.test(prompt)) {
-      dispatchCommand(prompt, () => healthBreakdown(), 400);
     } else if (/^(?:auto[- ]?describe|describe\s+all|fill\s+descriptions?)\s*$/i.test(prompt)) {
       addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
       setProcessing(true);
