@@ -119,9 +119,17 @@ export function analyzeIntent(prompt: string): IntentAnalysis {
 
   // 4. Detect transformation target
   const transformTargets = [
+    // Education-specific (checked first — more specific than generic matches)
     { keywords: ['lesson plan', 'lesson syllabus'], name: 'Lesson Plan' },
     { keywords: ['syllabus', 'curriculum'], name: 'Course Syllabus' },
+    { keywords: ['study guide'], name: 'Study Guide' },
+    { keywords: ['rubric', 'grading criteria', 'marking scheme'], name: 'Rubric' },
+    { keywords: ['discussion prompt', 'discussion question'], name: 'Discussion Prompts' },
+    { keywords: ['lecture note', 'lecture'], name: 'Lecture Notes' },
+    { keywords: ['homework', 'assignment brief'], name: 'Assignment' },
+    { keywords: ['course faq', 'course question'], name: 'Course FAQ' },
     { keywords: ['course'], name: 'Course Material' },
+    // General
     { keywords: ['summary', 'summarize'], name: 'Summary' },
     { keywords: ['outline'], name: 'Outline' },
     { keywords: ['transcript', 'transcription'], name: 'Transcript' },
@@ -135,7 +143,8 @@ export function analyzeIntent(prompt: string): IntentAnalysis {
     { keywords: ['resume', 'cv'], name: 'Resume' },
     { keywords: ['quiz', 'test', 'exam', 'assessment'], name: 'Assessment' },
     { keywords: ['flashcard'], name: 'Flashcards' },
-    { keywords: ['tutorial', 'guide', 'how-to'], name: 'Tutorial' },
+    { keywords: ['tutorial', 'how-to'], name: 'Tutorial' },
+    { keywords: ['guide'], name: 'Guide' },
     { keywords: ['documentation', 'docs'], name: 'Documentation' },
     { keywords: ['spec', 'specification'], name: 'Specification' },
     { keywords: ['prd'], name: 'PRD' },
@@ -323,7 +332,7 @@ export function buildNodesFromPrompt(
   const artifactNames: string[] = [];
   if (intent.transformation) {
     artifactNames.push(intent.transformation);
-    const educationTypes = ['Lesson Plan', 'Course Syllabus', 'Course Material', 'Assessment', 'Flashcards', 'Tutorial'];
+    const educationTypes = ['Lesson Plan', 'Course Syllabus', 'Course Material', 'Assessment', 'Flashcards', 'Tutorial', 'Rubric', 'Study Guide', 'Discussion Prompts', 'Lecture Notes', 'Assignment', 'Course FAQ'];
     if (educationTypes.includes(intent.transformation)) {
       if (intent.transformation !== 'Lesson Plan' && /\blesson\b/.test(lower)) artifactNames.push('Lesson Plan');
       if (!artifactNames.includes('Learning Objectives')) artifactNames.push('Learning Objectives');
@@ -385,6 +394,46 @@ export function buildNodesFromPrompt(
         { id: 's1', title: 'Knowledge Goals', status: 'current' as const },
         { id: 's2', title: 'Skill Outcomes', status: 'current' as const },
         { id: 's3', title: 'Assessment Alignment', status: 'current' as const },
+      ];
+    } else if (name === 'Rubric') {
+      sections = [
+        { id: 's1', title: 'Criteria & Dimensions', status: 'current' as const },
+        { id: 's2', title: 'Performance Levels', status: 'current' as const },
+        { id: 's3', title: 'Scoring Guide', status: 'current' as const },
+        { id: 's4', title: 'Feedback Templates', status: 'current' as const },
+      ];
+    } else if (name === 'Study Guide') {
+      sections = [
+        { id: 's1', title: 'Key Concepts', status: 'current' as const },
+        { id: 's2', title: 'Important Terms', status: 'current' as const },
+        { id: 's3', title: 'Review Questions', status: 'current' as const },
+        { id: 's4', title: 'Practice Problems', status: 'current' as const },
+      ];
+    } else if (name === 'Discussion Prompts') {
+      sections = [
+        { id: 's1', title: 'Opening Questions', status: 'current' as const },
+        { id: 's2', title: 'Critical Thinking Prompts', status: 'current' as const },
+        { id: 's3', title: 'Application Scenarios', status: 'current' as const },
+      ];
+    } else if (name === 'Lecture Notes') {
+      sections = [
+        { id: 's1', title: 'Outline & Key Points', status: 'current' as const },
+        { id: 's2', title: 'Detailed Content', status: 'current' as const },
+        { id: 's3', title: 'Examples & Illustrations', status: 'current' as const },
+        { id: 's4', title: 'Discussion Notes', status: 'current' as const },
+      ];
+    } else if (name === 'Assignment') {
+      sections = [
+        { id: 's1', title: 'Task Description', status: 'current' as const },
+        { id: 's2', title: 'Requirements & Deliverables', status: 'current' as const },
+        { id: 's3', title: 'Grading Criteria', status: 'current' as const },
+        { id: 's4', title: 'Due Date & Submission', status: 'current' as const },
+      ];
+    } else if (name === 'Course FAQ') {
+      sections = [
+        { id: 's1', title: 'Course Logistics', status: 'current' as const },
+        { id: 's2', title: 'Assignment Questions', status: 'current' as const },
+        { id: 's3', title: 'Grading & Policies', status: 'current' as const },
       ];
     }
     newNodes.push({
