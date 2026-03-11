@@ -1,5 +1,13 @@
 # Changelog
 
+### 2026-03-11 — Supabase Migration Schema (v1.0.55)
+
+- **Feature 1 step 2**: Created `supabase/migrations/001_initial.sql`
+- Tables: profiles, projects, project_data with RLS policies scoped to authenticated user
+- Auto-create profile trigger on auth.users insert
+- Auto-touch updated_at triggers on all tables
+- 965 vitest tests passing, build clean.
+
 ### 2026-03-11 — Supabase Client Setup (v1.0.54)
 
 - **Feature 1 step 1**: Installed `@supabase/supabase-js`, created `src/lib/supabase.ts`
