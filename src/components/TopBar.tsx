@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Bot, Activity, Layers, Circle, Plus, Undo2, Redo2, Search,
   Download, Upload, Heart, FilePlus2, Play, LayoutGrid,
-  ChevronDown, Trash2, Pencil, Check, FolderOpen,
+  ChevronDown, Trash2, Pencil, Check, FolderOpen, Zap,
 } from 'lucide-react';
 import { useLifecycleStore } from '@/store/useStore';
 import type { NodeCategory } from '@/lib/types';
@@ -21,7 +21,7 @@ const BUILT_IN_TYPES: { category: NodeCategory; label: string }[] = [
 ];
 
 export default function TopBar() {
-  const { nodes, toggleCIDPanel, toggleActivityPanel, togglePreviewPanel, showCIDPanel, showActivityPanel, showPreviewPanel, createNewNode, undo, redo, history, future, cidMode, exportWorkflow, importWorkflow, newProject, messages, getHealthScore, showImpactPreview, currentProjectName, renameCurrentProject, switchProject, deleteCurrentProject, listProjects, currentProjectId } = useLifecycleStore();
+  const { nodes, toggleCIDPanel, toggleActivityPanel, togglePreviewPanel, showCIDPanel, showActivityPanel, showPreviewPanel, createNewNode, undo, redo, history, future, cidMode, exportWorkflow, importWorkflow, newProject, messages, getHealthScore, showImpactPreview, currentProjectName, renameCurrentProject, switchProject, deleteCurrentProject, listProjects, currentProjectId, _usageStats } = useLifecycleStore();
   const agent = getAgent(cidMode);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showAddMenu, setShowAddMenu] = useState(false);
@@ -399,6 +399,18 @@ export default function TopBar() {
               <Heart size={8} className={healthScore >= 80 ? 'text-emerald-400' : healthScore >= 50 ? 'text-amber-400' : 'text-rose-400'} fill={healthScore >= 80 ? '#22c55e' : healthScore >= 50 ? '#f59e0b' : '#f43f5e'} />
               <span className={healthScore >= 80 ? 'text-emerald-400/60' : healthScore >= 50 ? 'text-amber-400/60' : 'text-rose-400/60'}>{healthScore}%</span>
             </div>
+            {_usageStats.totalCalls > 0 && (
+              <div
+                className="hidden lg:flex items-center gap-1.5 text-[10px]"
+                title={`API: ${_usageStats.totalCalls} calls (${_usageStats.cachedSkips} cached) · ${_usageStats.totalInputTokens + _usageStats.totalOutputTokens} tokens`}
+              >
+                <Zap size={8} className="text-indigo-400" />
+                <span className="text-indigo-400/60">
+                  {_usageStats.totalCalls}
+                  {_usageStats.cachedSkips > 0 && <span className="text-emerald-400/50"> ({_usageStats.cachedSkips}✓)</span>}
+                </span>
+              </div>
+            )}
             <AnimatePresence>
               {showSaved && (
                 <motion.div

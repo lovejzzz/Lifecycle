@@ -2,9 +2,10 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Play, CheckSquare, Square, Zap, AlertTriangle, ChevronRight } from 'lucide-react';
+import { X, Play, CheckSquare, Square, Zap, AlertTriangle, ChevronRight, DollarSign } from 'lucide-react';
 import { useLifecycleStore } from '@/store/useStore';
 import { getCategoryIcon, getNodeColors } from '@/lib/types';
+import { estimateBatchCost, formatCost } from '@/lib/cache';
 
 export default function ImpactPreview() {
   const {
@@ -17,6 +18,7 @@ export default function ImpactPreview() {
     selectNode,
     isProcessing,
     setProcessing,
+    cidAIModel,
   } = useLifecycleStore();
 
   if (!impactPreview || !impactPreview.visible) return null;
@@ -53,6 +55,13 @@ export default function ImpactPreview() {
   const orderedNodes = executionOrder
     .map(id => staleNodes.find(n => n.id === id))
     .filter(Boolean) as typeof staleNodes;
+
+  // Estimate cost for selected nodes
+  const selectedNodes = orderedNodes.filter(n => selectedNodeIds.has(n.id));
+  const costEstimate = estimateBatchCost(
+    selectedNodes.map(n => ({ promptLength: (n.label?.length || 20) * 10 + 500 })),
+    cidAIModel,
+  );
 
   return (
     <AnimatePresence>
@@ -133,9 +142,17 @@ export default function ImpactPreview() {
 
         {/* Footer */}
         <div className="flex items-center justify-between px-4 py-3 border-t border-white/[0.06]">
-          <div className="flex items-center gap-2 text-[10px] text-white/30">
-            <Zap size={10} />
-            <span>{estimatedCalls} API call{estimatedCalls !== 1 ? 's' : ''}</span>
+          <div className="flex items-center gap-3 text-[10px] text-white/30">
+            <span className="flex items-center gap-1">
+              <Zap size={10} />
+              {selectedNodeIds.size} call{selectedNodeIds.size !== 1 ? 's' : ''}
+            </span>
+            {selectedNodeIds.size > 0 && (
+              <span className="flex items-center gap-1">
+                <DollarSign size={10} />
+                {formatCost(costEstimate.totalCostUSD)}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <button
