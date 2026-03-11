@@ -1,5 +1,16 @@
 # Changelog
 
+### 2026-03-11 — Category Simplification + Cost Guardrails Progress (v1.0.52)
+
+- **Category simplification**: 13 categories → 5 user-facing (input, process, deliverable, review, note) with backward-compatible legacy mapping
+- **TopBar**: Add Node menu shows 5 simplified categories instead of 13
+- **Templates**: All 8 templates migrated to simplified categories
+- **Execution prompts**: Added process/deliverable-specific prompts, updated effort levels
+- **Edge inference**: Added simplified category edge rules in graph.ts
+- **Feature 3 steps 1-3 done**: cache.ts (hashing + pricing), executeNode cache wiring, token usage passthrough from /api/cid
+- **Rebrand**: "Lifecycle Agent" → "Lifecycle", logo click returns to landing page
+- 908 vitest tests passing, build clean.
+
 ### 2026-03-11 — Hydration Fixes + E2E Expansion: 121 Browser Tests
 
 - **Fix**: Modifier key hydration mismatch (⌘ vs Ctrl+) in TopBar, Canvas, TemplateBrowser — guard `navigator.userAgent` with mounted state
