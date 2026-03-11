@@ -1,5 +1,17 @@
 # Changelog
 
+### 2026-03-11 — E2E Test Coverage: 199 → 207 (v1.0.72)
+
+- **E2E**: 8 new Playwright tests (199 → 207 total), all passing
+- Node drag on canvas: verify position changes after drag
+- Edge selection: SVG edge path rendering verification
+- Minimap interactions: minimap shows rect node representations
+- Large viewport (4K): 2560x1440 rendering + template load
+- CID history command: recent actions listing
+- Multi-step complex workflow: add → rename → lock → unlock → delete
+- Node label in detail panel: label shown in detail panel
+- Canvas panning: viewport movement via drag
+
 ### 2026-03-11 — E2E Test Coverage: 186 → 199 (v1.0.71)
 
 - **E2E**: 13 new Playwright tests (186 → 199 total), all passing

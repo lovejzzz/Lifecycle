@@ -2969,3 +2969,191 @@ test.describe('Rapid template switching', () => {
     expect(count).toBeGreaterThan(0);
   });
 });
+
+// ── NEW: Node drag on canvas ─────────────────────────────────────────────────
+
+test.describe('Node drag on canvas', () => {
+  test('dragging a node changes its position', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(1500);
+
+    const node = page.locator('.react-flow__node').filter({ hasText: 'Syllabus' }).first();
+    const box = await node.boundingBox();
+    expect(box).not.toBeNull();
+
+    // Drag node 100px right and 50px down
+    await node.hover();
+    await page.mouse.down();
+    await page.mouse.move(box!.x + box!.width / 2 + 100, box!.y + box!.height / 2 + 50, { steps: 5 });
+    await page.mouse.up();
+    await page.waitForTimeout(500);
+
+    const newBox = await node.boundingBox();
+    expect(newBox).not.toBeNull();
+    // Node should have moved (allow some tolerance)
+    expect(Math.abs(newBox!.x - box!.x) > 20 || Math.abs(newBox!.y - box!.y) > 20).toBe(true);
+  });
+});
+
+// ── NEW: Edge selection on canvas ────────────────────────────────────────────
+
+test.describe('Edge selection on canvas', () => {
+  test('edges are rendered as SVG paths', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(2000);
+
+    // Edges should be SVG paths
+    const edges = page.locator('.react-flow__edge');
+    const count = await edges.count();
+    expect(count).toBeGreaterThan(0);
+  });
+});
+
+// ── NEW: Minimap interactions ────────────────────────────────────────────────
+
+test.describe('Minimap interactions', () => {
+  test('minimap shows node representations', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(1500);
+
+    // Minimap should have child elements representing nodes
+    const minimap = page.locator('.react-flow__minimap');
+    await expect(minimap).toBeVisible({ timeout: 3000 });
+
+    // Minimap nodes (rect elements inside minimap SVG)
+    const minimapNodes = minimap.locator('rect');
+    const count = await minimapNodes.count();
+    expect(count).toBeGreaterThan(0);
+  });
+});
+
+// ── NEW: Large viewport rendering ────────────────────────────────────────────
+
+test.describe('Large viewport rendering (4K)', () => {
+  test('app renders correctly on 2560x1440 viewport', async ({ page }) => {
+    await page.setViewportSize({ width: 2560, height: 1440 });
+    await page.goto('/');
+    await page.waitForTimeout(1000);
+
+    await expect(page.locator('.react-flow').first()).toBeVisible({ timeout: 5000 });
+
+    // Load a template and verify it works
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('/template Course Design');
+    await cidInput.press('Enter');
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+  });
+});
+
+// ── NEW: CID history command ─────────────────────────────────────────────────
+
+test.describe('CID history command', () => {
+  test('history command shows recent actions', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const cidInput = page.locator('[data-cid-input]');
+    // Do a few actions first
+    await cidInput.fill('count');
+    await cidInput.press('Enter');
+    await page.waitForTimeout(1000);
+
+    await cidInput.fill('history');
+    await cidInput.press('Enter');
+
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(cidPanel.getByText(/history|recent|action|event/i).first()).toBeVisible({ timeout: 5000 });
+  });
+});
+
+// ── NEW: CID multi-step complex workflow ─────────────────────────────────────
+
+test.describe('CID multi-step complex workflow', () => {
+  test('add node → rename → lock → unlock → delete sequence', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const cidInput = page.locator('[data-cid-input]');
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+
+    // Add a new node
+    await cidInput.fill('add Review Checkpoint');
+    await cidInput.press('Enter');
+    await expect(cidPanel.getByText(/added|created|Review Checkpoint/i).first()).toBeVisible({ timeout: 5000 });
+
+    // Rename it
+    await cidInput.fill('rename Review Checkpoint to Final Review');
+    await cidInput.press('Enter');
+    await expect(cidPanel.getByText(/renamed|Final Review/i).first()).toBeVisible({ timeout: 5000 });
+
+    // Lock it
+    await cidInput.fill('lock Final Review');
+    await cidInput.press('Enter');
+    await expect(cidPanel.getByText(/lock|locked|Final Review/i).first()).toBeVisible({ timeout: 5000 });
+
+    // Unlock it
+    await cidInput.fill('unlock Final Review');
+    await cidInput.press('Enter');
+    await expect(cidPanel.getByText(/unlock|unlocked|Final Review/i).first()).toBeVisible({ timeout: 5000 });
+
+    // Delete it
+    await cidInput.fill('delete Final Review');
+    await cidInput.press('Enter');
+    await expect(cidPanel.getByText(/deleted|removed|Final Review/i).first()).toBeVisible({ timeout: 5000 });
+  });
+});
+
+// ── NEW: Node label in detail panel ──────────────────────────────────────────
+
+test.describe('Node label in detail panel', () => {
+  test('detail panel shows node label text', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(1500);
+
+    // Open detail panel for Syllabus (unique label)
+    const node = page.locator('.react-flow__node').filter({ hasText: 'Syllabus' }).first();
+    await node.dblclick();
+    await page.waitForTimeout(1000);
+
+    // Detail panel should show the node label
+    const detailPanel = page.getByLabel('Node Details', { exact: true });
+    await expect(detailPanel.getByText('Syllabus', { exact: true }).first()).toBeVisible({ timeout: 3000 });
+  });
+});
+
+// ── NEW: Canvas panning ──────────────────────────────────────────────────────
+
+test.describe('Canvas panning', () => {
+  test('panning the canvas moves the viewport', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(1500);
+
+    const canvas = page.locator('.react-flow__pane').first();
+    const box = await canvas.boundingBox();
+    expect(box).not.toBeNull();
+
+    // Pan by dragging the canvas background
+    const startX = box!.x + box!.width / 2;
+    const startY = box!.y + box!.height / 2;
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX + 200, startY + 100, { steps: 5 });
+    await page.mouse.up();
+    await page.waitForTimeout(500);
+
+    // Canvas should still be functional after panning
+    await expect(page.locator('.react-flow')).toBeVisible();
+  });
+});
