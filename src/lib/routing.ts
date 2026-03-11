@@ -223,7 +223,7 @@ export function classifyRoute(prompt: string, hasWorkflow: boolean = false): Com
   if (/^(?:what\s*if|impact|without)\b/i.test(prompt)) return 'what-if';
 
   // Preflight
-  if (/^(?:pre\s*flight|flight\s*check|dry\s*run|plan\s+run|execution\s+plan)\s*$/i.test(prompt)) return 'preflight';
+  if (/^(?:pre\s*flight|flight\s*check|dry\s*run|plan\s+run|execution\s+plan)\b/i.test(prompt)) return 'preflight';
 
   // Retry failed
   if (/^(?:retry|rerun|re-run)\s+(?:failed|errors?|skipped)\s*$/i.test(prompt)) return 'retry-failed';

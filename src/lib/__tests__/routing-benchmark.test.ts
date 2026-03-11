@@ -17,7 +17,7 @@ interface BenchmarkCase {
   hasWorkflow?: boolean;
 }
 
-// ─── The Benchmark: 129 real user prompts ────────────────────────────────────
+// ─── The Benchmark: 132 real user prompts ────────────────────────────────────
 
 const BENCHMARK: BenchmarkCase[] = [
   // ── Workflow generation (professor) ──
@@ -166,6 +166,11 @@ const BENCHMARK: BenchmarkCase[] = [
   { prompt: 'show me the critical path', expected: 'critical-path', context: 'PM' },
   { prompt: 'what are the bottlenecks', expected: 'bottlenecks', context: 'PM' },
   { prompt: 'rename Lesson Plans to Weekly Plans', expected: 'rename', context: 'professor' },
+
+  // ── Round 6: autoresearch-generated prompts ──
+  { prompt: 'expand the workflow with a peer review step', expected: 'extend', context: 'professor', hasWorkflow: true },
+  { prompt: 'show me bottlenecks in the pipeline', expected: 'bottlenecks', context: 'PM' },
+  { prompt: 'dry run the pipeline', expected: 'preflight', context: 'PM' },
 
   // ── Natural language that should fall to LLM ──
   { prompt: 'why is my rubric out of date', expected: 'llm-fallback', context: 'professor' },
