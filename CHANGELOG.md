@@ -1,5 +1,16 @@
 # Changelog
 
+### 2026-03-11 — E2E Browser Tests + Routing Benchmark + UI/UX Fixes
+
+- **52 Playwright E2E tests** covering app renders, template loading, CID chat commands, lifecycle loop, keyboard shortcuts, node interactions, and education workflows
+- **Routing benchmark** grown from 80 → 107 prompts, 100% accuracy maintained
+- **4 routing priority bugs fixed**: batch-where before approve-all, clone-workflow before duplicate, describe regex for `as:` format, suggest regex for `what should I do next`
+- **Line-by-line streaming** for large CID responses (>100 words) — eliminates 15s+ render delays
+- **Template card fixes**: removed name truncation, wider grid container
+- **Disabled state UX**: cursor-not-allowed + muted hover on disabled buttons/inputs
+- **OnboardingTour bypass** in tests via localStorage flag
+- 885 vitest + 107 routing benchmark + 52 E2E tests all passing, build clean.
+
 ### 2026-03-11 — Item 25: Smart Auto-Connect Suggestions (Phase 4 Complete)
 
 Added `suggestAutoConnect()` to useStore.ts — when a node is created manually (via createNewNode or addNodeByName), CID analyzes existing nodes and suggests 1-2 connections based on category-pair heuristics. Scores candidates by edge label meaningfulness, leaf/orphan bonuses. Suggestions appear as clickable cards in CID chat. Replaces previous silent auto-connect with user-controllable suggestions. No API calls — pure heuristic. Phase 4 (items 15-25) is now complete.
