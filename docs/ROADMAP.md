@@ -673,7 +673,7 @@ Phases 1-3 built the features. Phase 4 makes them **reliable, accessible, and us
 
 ---
 
-### 15. Cycle Detection on Connect
+### 15. Cycle Detection on Connect ✅
 
 **Why**: Users can currently draw A→B→C→A cycles on the canvas with no warning. The cycle is only caught at execution time, leaving the user confused. The spec says the system should "prevent invalid states" proactively.
 
@@ -686,7 +686,7 @@ Phases 1-3 built the features. Phase 4 makes them **reliable, accessible, and us
 
 ---
 
-### 16. Education Workflow Templates
+### 16. Education Workflow Templates ✅
 
 **Why**: The product was born from an education use case (syllabus → lesson plans → rubrics → quizzes), but has zero education templates. All 5 existing templates are generic (software, content, incident). A professor opening the app sees nothing relevant to their work.
 
@@ -699,7 +699,7 @@ Phases 1-3 built the features. Phase 4 makes them **reliable, accessible, and us
 
 ---
 
-### 17. On-Canvas Content Preview
+### 17. On-Canvas Content Preview ✅
 
 **Why**: Nodes only show labels on the canvas. To see content or execution results, users must click each node individually. With 10+ nodes, this is tedious. The "transparent factory" vision requires seeing content at a glance.
 
@@ -712,7 +712,7 @@ Phases 1-3 built the features. Phase 4 makes them **reliable, accessible, and us
 
 ---
 
-### 18. Viewport Meta & Responsive Panels
+### 18. Viewport Meta & Responsive Panels ✅
 
 **Why**: Missing `<meta name="viewport">` means mobile/tablet renders at desktop scale. Sidebar panels have fixed pixel widths that overflow on small screens. An educator on an iPad can't use the app.
 
@@ -725,7 +725,7 @@ Phases 1-3 built the features. Phase 4 makes them **reliable, accessible, and us
 
 ---
 
-### 19. Accessibility Foundations
+### 19. Accessibility Foundations ✅
 
 **Why**: Zero ARIA labels across the entire app. Canvas is invisible to screen readers. Toasts don't announce. Interactive panels have no roles. This blocks usage by users with disabilities and fails WCAG 2.1 AA.
 
@@ -740,7 +740,7 @@ Phases 1-3 built the features. Phase 4 makes them **reliable, accessible, and us
 
 ---
 
-### 20. Execution Streaming & Timeout Resilience
+### 20. Execution Streaming & Timeout Resilience ✅
 
 **Why**: LLM calls can take 5-30s per node. The UI blocks with a spinner. If DeepSeek hits its 240s timeout, the UI hangs with no feedback. Users don't know if the system is working or frozen.
 
@@ -754,7 +754,7 @@ Phases 1-3 built the features. Phase 4 makes them **reliable, accessible, and us
 
 ---
 
-### 21. Node Hover Preview
+### 21. Node Hover Preview ✅
 
 **Why**: Even with on-canvas snippets (item 17), users need to see full content without committing to a click. Hover previews show the full execution result in a tooltip-like panel.
 
@@ -762,7 +762,7 @@ Phases 1-3 built the features. Phase 4 makes them **reliable, accessible, and us
 
 ---
 
-### 22. Batch Node Operations
+### 22. Batch Node Operations ✅
 
 **Why**: Users can multi-select nodes (Shift+Click) but can only delete them as a group. No batch execute, batch export, or batch status change from the canvas. Managing 10+ nodes one at a time is tedious.
 
@@ -770,7 +770,7 @@ Phases 1-3 built the features. Phase 4 makes them **reliable, accessible, and us
 
 ---
 
-### 23. Template Browser UI
+### 23. Template Browser UI ✅
 
 **Why**: Templates are only accessible via CID chat commands (`load template <name>`). New users don't know templates exist. A visual browser with previews would help discovery.
 
@@ -778,7 +778,7 @@ Phases 1-3 built the features. Phase 4 makes them **reliable, accessible, and us
 
 ---
 
-### 24. First-Run Onboarding
+### 24. First-Run Onboarding ✅
 
 **Why**: New users land on an empty canvas with no guidance. The empty state has template chips, but no explanation of what the app does or how to use it. First impressions matter.
 
@@ -786,7 +786,7 @@ Phases 1-3 built the features. Phase 4 makes them **reliable, accessible, and us
 
 ---
 
-### 25. Smart Auto-Connect Suggestions
+### 25. Smart Auto-Connect Suggestions ✅
 
 **Why**: After adding nodes manually, users often forget to connect them. CID should notice disconnected nodes and suggest connections based on category and label similarity.
 
