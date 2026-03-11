@@ -8,7 +8,8 @@ import { getAgent, getInterviewQuestions, buildEnrichedPrompt } from '@/lib/agen
 import { buildSystemPrompt, buildMessages, getExecutionSystemPrompt, inferEffortFromCategory, buildNoteRefinementPrompt } from '@/lib/prompts';
 import type { NoteRefinementResult } from '@/lib/prompts';
 import { classifyEdit } from '@/lib/edits';
-import { buildCacheKey, sha256, getCacheEntry, setCacheEntry } from '@/lib/cache';
+import { buildCacheKey, sha256, getCacheEntry, setCacheEntry, createEmptyUsageStats } from '@/lib/cache';
+import type { UsageStats } from '@/lib/cache';
 import {
   createDefaultHabits, createDefaultGeneration, createDefaultReflection,
   migrateHabitsV1toV2, migrateReflectionV1toV2,
@@ -296,6 +297,10 @@ interface LifecycleStore {
   // AI model selection for CID
   cidAIModel: string;
   setCIDAIModel: (model: string) => void;
+
+  // Usage statistics (API calls, tokens, cache hits)
+  _usageStats: UsageStats;
+  resetUsageStats: () => void;
 
   // CID learned rules (teach command)
   cidRules: string[];
@@ -1250,6 +1255,10 @@ export const useLifecycleStore = create<LifecycleStore>((set, get) => ({
     set({ cidAIModel: model });
   },
 
+  // Usage stats
+  _usageStats: createEmptyUsageStats(),
+  resetUsageStats: () => set({ _usageStats: createEmptyUsageStats() }),
+
   // Agent mode
   cidMode: persistedMode,
   setCIDMode: (mode) => set((s) => {
@@ -1674,6 +1683,8 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         _executionDurationMs: Date.now() - _execStart,
       });
       store.updateNodeStatus(nodeId, 'active');
+      // Track cache hit in usage stats
+      set((s) => ({ _usageStats: { ...s._usageStats, totalCalls: s._usageStats.totalCalls + 1, cachedSkips: s._usageStats.cachedSkips + 1 } }));
       get()._unlockNode(nodeId);
       return;
     }
@@ -1721,6 +1732,19 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         }
         // The response may be parsed JSON or raw text
         output = result.result?.content || result.result?.message || (typeof result.result === 'string' ? result.result : JSON.stringify(result.result));
+
+        // Track usage stats from API response
+        const usage = result.usage;
+        const inputTok = usage?.prompt_tokens ?? 0;
+        const outputTok = usage?.completion_tokens ?? 0;
+        set((s) => ({
+          _usageStats: {
+            ...s._usageStats,
+            totalCalls: s._usageStats.totalCalls + 1,
+            totalInputTokens: s._usageStats.totalInputTokens + inputTok,
+            totalOutputTokens: s._usageStats.totalOutputTokens + outputTok,
+          },
+        }));
       }
 
       const _execDuration = Date.now() - _execStart;
