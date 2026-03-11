@@ -1,5 +1,14 @@
 # Changelog
 
+### 2026-03-11 — Upload API Route (v1.0.65)
+
+- **Feature 2 step 2**: Created `src/app/api/upload/route.ts`
+- Multipart file upload (POST /api/upload) with 10MB limit
+- Parses PDF, DOCX, TXT/MD/CSV and returns text, sections, token estimate
+- Auto-chunks documents exceeding 8000 tokens
+- File type validation, size validation, error handling
+- 1013 vitest tests passing, build clean.
+
 ### 2026-03-11 — Document Parsing Utilities (v1.0.64)
 
 - **Feature 2 step 1**: Installed `pdf-parse` + `mammoth`, created `src/lib/docparse.ts`
