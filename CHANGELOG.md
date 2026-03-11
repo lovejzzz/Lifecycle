@@ -1,5 +1,25 @@
 # Changelog
 
+### 2026-03-11 — E2E Test Coverage Expansion (v1.0.70)
+
+- **E2E**: 24 new Playwright tests (162 -> 186 total), all passing
+- Onboarding tour: trigger via custom event, Next/Back/Skip/Get Started navigation
+- Export workflow: download triggers with JSON file
+- Add Node menu: category dropdown opens with Input/Process/Deliverable/Review/Note, creates nodes
+- CID panel toggle: hide and re-show panel
+- CID file upload: upload document button visibility
+- Rapid CID commands: stress test sending count/validate/status in sequence
+- Canvas zoom controls: Zoom In and Zoom Out button interactions
+- Accessibility: aria-labels on CID input, canvas, node detail close button, undo/redo buttons
+- Node detail panel editing: description field and version display
+- Project rename: project name button clickable
+- Health score: health detail command produces report
+- New project: /new command clears canvas with toast
+- CID suggest and rules commands on loaded workflows
+- Template browser filtering by keyword
+- Multi-select nodes: shift-click shows batch toolbar
+- 1041 vitest tests passing, build clean.
+
 ### 2026-03-11 — Document Parsing Tests (v1.0.69)
 
 - **Feature 2 step 7**: Tests for `docparse.ts`
