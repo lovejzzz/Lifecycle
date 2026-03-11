@@ -1,5 +1,15 @@
 # Changelog
 
+### 2026-03-11 — E2E Coverage Expansion: 110 Browser Tests
+
+- **6 new Playwright E2E tests** (104 → 110 total):
+  - Product Launch template loads correctly
+  - Undo reverses a CID rename mutation (lifecycle round-trip)
+  - CID compress, orphans, health detail commands
+  - Preview panel toggle via TopBar
+- Routing benchmark: 123 prompts at 100% (fix: summarize trailing words)
+- 902 vitest + 123 routing benchmark + 110 E2E tests all passing, build clean.
+
 ### 2026-03-11 — E2E Coverage Expansion: 104 Browser Tests
 
 - **9 new Playwright E2E tests** (95 → 104 total):
