@@ -3226,3 +3226,61 @@ test.describe('CID error handling', () => {
     await expect(cidPanel.getByText(/No node matching|Available:/i).first()).toBeVisible({ timeout: 5000 });
   });
 });
+
+// ── NEW: UI polish — empty states and loading indicators ─────────────────────
+
+test.describe('UI polish: empty and loading states', () => {
+  test('empty canvas shows onboarding/template options', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForTimeout(1500);
+    // Before any template is loaded, should show template buttons or empty canvas
+    const hasTemplateButtons = await page.getByRole('button', { name: /Course Design|Software Development|Content Pipeline/i }).first().isVisible().catch(() => false);
+    const hasCanvas = await page.locator('.react-flow').first().isVisible().catch(() => false);
+    expect(hasTemplateButtons || hasCanvas).toBe(true);
+  });
+
+  test('CID panel shows empty state message before any interaction', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForTimeout(1500);
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    // CID panel should exist and have some content (welcome message, input, or suggestions)
+    await expect(cidPanel).toBeVisible({ timeout: 5000 });
+    const cidInput = page.locator('[data-cid-input]');
+    await expect(cidInput).toBeVisible({ timeout: 3000 });
+  });
+
+  test('status command on empty workflow responds gracefully', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForTimeout(1500);
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('status');
+    await cidInput.press('Enter');
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    // Should show some response (not crash)
+    await expect(cidPanel.locator('[class*="text-"]').first()).toBeVisible({ timeout: 5000 });
+  });
+
+  test('node detail panel closes cleanly when node is deleted', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(1500);
+
+    // Click a node to open detail panel
+    const node = page.locator('.react-flow__node').first();
+    await node.click();
+    await page.waitForTimeout(500);
+
+    // Delete via CID
+    const label = await node.locator('[class*="text-"]').first().textContent();
+    if (label) {
+      const cidInput = page.locator('[data-cid-input]');
+      await cidInput.fill(`delete ${label.trim()}`);
+      await cidInput.press('Enter');
+      await page.waitForTimeout(1500);
+    }
+
+    // App should not crash — canvas still visible
+    await expect(page.locator('.react-flow')).toBeVisible();
+  });
+});

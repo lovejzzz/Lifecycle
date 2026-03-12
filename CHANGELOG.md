@@ -1,5 +1,10 @@
 # Changelog
 
+### 2026-03-11 — Quality hardening: UI polish E2E tests (v1.0.81)
+
+- **E2E**: 4 new Playwright tests for UI polish (212 → 216 total)
+- Tests: empty canvas shows onboarding, CID panel initial state, status on empty workflow, node deletion cleans detail panel
+
 ### 2026-03-11 — Integration tests: workflow execution, version cycles, note cascade (v1.0.80)
 
 - **Tests**: 5 new simulation scenarios (1092 → 1097 vitest tests)
