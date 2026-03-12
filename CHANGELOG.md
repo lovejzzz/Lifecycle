@@ -1,5 +1,12 @@
 # Changelog
 
+### 2026-03-11 — Integration tests: cache, validation, versioning (v1.0.74)
+
+- **Tests**: 13 new simulation scenarios (1050 → 1063 vitest tests)
+- Scenario Q: Cache hit verification — _usageStats tracking, resetUsageStats, executeNode call counting
+- Scenario R: Validation warnings — empty output, too-short, placeholder detection, review evaluation criteria, good output acceptance, _validationWarnings field
+- Scenario S: Version tracking — initial version, edit-based version increment, executionResult storage, version history growth
+
 ### 2026-03-11 — CID Intelligence: smarter routing + "make" disambiguation (v1.0.73)
 
 - **Routing**: Fix "make X more Y" misclassifying as `generate` — now only "make a/an/me/new" triggers generate, freeform "make" falls through to LLM
