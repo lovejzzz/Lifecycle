@@ -665,7 +665,7 @@ export default function CIDPanel() {
       dispatchCommand(prompt, () => countNodes());
     } else if (/^(?:merge|combine|fuse)\s+.+\s+(?:and|with|into|&)\s+/i.test(prompt)) {
       dispatchCommand(prompt, () => mergeByName(prompt).message, 400, undefined, true, true);
-    } else if (/^(?:deps|dependencies|depend|upstream|downstream|chain)\s+/i.test(prompt) || /^what(?:'s| is)\s+(?:blocking|preventing|stopping)\s+.+\s+(?:from|to)\s+/i.test(prompt)) {
+    } else if (/^(?:deps|dependencies|depend|upstream|downstream|chain)\s+/i.test(prompt) || /^what(?:'s| is)\s+(?:blocking|preventing|stopping)\s+.+\s+(?:from|to)\s+/i.test(prompt) || /^what(?:'s|\s+(?:is|are))?\s+(?:depend(?:s|ent|ing)?|downstream|upstream)\s+(?:on|of|from)\s+/i.test(prompt) || /^what\s+depends\s+on\s+/i.test(prompt)) {
       dispatchCommand(prompt, () => depsByName(prompt));
     } else if (/^(?:reverse|flip|invert)\s+/i.test(prompt)) {
       dispatchCommand(prompt, () => reverseByName(prompt).message);
@@ -896,7 +896,7 @@ export default function CIDPanel() {
       dispatchCommand(prompt, () => compressWorkflow(), 500);
     } else if (/^(?:bottleneck|bottlenecks|choke|chokepoint|hub|hubs|spof)\s*$/i.test(prompt)) {
       dispatchCommand(prompt, () => findBottlenecks(), 400);
-    } else if (/^(?:suggest|next|what\s*(?:should|can)\s*I\s*do(?:\s+next|\s+now)?|recommendations?)\s*$/i.test(prompt) || /^(?:which|what)\s+nodes?\s+(?:need|require|want)\s+(?:attention|work|updating|fixing|help)/i.test(prompt)) {
+    } else if (/^(?:suggest|next|what\s*(?:should|can)\s*I\s*do(?:\s+next|\s+now)?|recommendations?)\s*$/i.test(prompt) || /^(?:which|what)\s+nodes?\s+(?:need|require|want)\s+(?:attention|work|updating|fixing|help)/i.test(prompt) || /^(?:which|what)\s+nodes?\s+(?:haven't|have\s+not|aren't|are\s+not)\s+been\s+(?:updated|changed|run|executed)/i.test(prompt)) {
       dispatchCommand(prompt, () => suggestNextSteps(), 400);
     } else if (/^(?:auto[- ]?describe|describe\s+all|fill\s+descriptions?)(?:\s+(?:all\s+)?(?:nodes?|empty)?)?\s*$/i.test(prompt)) {
       addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });

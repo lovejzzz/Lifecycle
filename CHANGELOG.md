@@ -1,5 +1,12 @@
 # Changelog
 
+### 2026-03-11 — CID intelligence: dependency + stale discovery routing (v1.0.79)
+
+- **Routing**: "what depends on X" and "what's downstream of X" now route to `deps` (was llm-fallback)
+- **Routing**: "which nodes haven't been updated?" now routes to `suggest` (was llm-fallback)
+- **CIDPanel**: Synced all 3 new routing patterns into command handler
+- **Benchmark**: 147 → 150 prompts, 100% accuracy
+
 ### 2026-03-11 — Note refinement: implicit dependency propagation (v1.0.78)
 
 - **Feature**: Notes now participate in the lifecycle loop — editing a note semantically marks all nodes that reference its label as stale, even without explicit edges

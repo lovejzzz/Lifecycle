@@ -203,6 +203,11 @@ const BENCHMARK: BenchmarkCase[] = [
   { prompt: 'which nodes need attention', expected: 'suggest', context: 'professor checking workflow' },
   { prompt: 'make the rubric more detailed', expected: 'llm-fallback', context: 'professor editing rubric', hasWorkflow: true },
   { prompt: "what's blocking the FAQ from running", expected: 'deps', context: 'professor debugging execution' },
+
+  // Round 14: dependency queries + stale node discovery
+  { prompt: 'what depends on the Syllabus', expected: 'deps', context: 'professor checking downstream impact', hasWorkflow: true },
+  { prompt: "what's downstream of the Quiz Bank?", expected: 'deps', context: 'professor tracing dependencies', hasWorkflow: true },
+  { prompt: "which nodes haven't been updated recently?", expected: 'suggest', context: 'professor reviewing workflow freshness', hasWorkflow: true },
 ];
 
 // ─── Benchmark Runner ───────────────────────────────────────────────────────

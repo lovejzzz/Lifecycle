@@ -196,6 +196,8 @@ export function classifyRoute(prompt: string, hasWorkflow: boolean = false): Com
   // Deps
   if (/^(?:deps|dependencies|depend|upstream|downstream|chain)\s+/i.test(prompt)) return 'deps';
   if (/^what(?:'s| is)\s+(?:blocking|preventing|stopping)\s+.+\s+(?:from|to)\s+/i.test(prompt)) return 'deps';
+  if (/^what(?:'s|\s+(?:is|are))?\s+(?:depend(?:s|ent|ing)?|downstream|upstream)\s+(?:on|of|from)\s+/i.test(prompt)) return 'deps';
+  if (/^what\s+depends\s+on\s+/i.test(prompt)) return 'deps';
 
   // Reverse
   if (/^(?:reverse|flip|invert)\s+/i.test(prompt)) return 'reverse';
@@ -285,6 +287,7 @@ export function classifyRoute(prompt: string, hasWorkflow: boolean = false): Com
   // Suggest
   if (/^(?:suggest|next|what\s*(?:should|can)\s*I\s*do(?:\s+next|\s+now)?|recommendations?)\s*$/i.test(prompt)) return 'suggest';
   if (/^(?:which|what)\s+nodes?\s+(?:need|require|want)\s+(?:attention|work|updating|fixing|help)/i.test(prompt)) return 'suggest';
+  if (/^(?:which|what)\s+nodes?\s+(?:haven't|have\s+not|aren't|are\s+not)\s+been\s+(?:updated|changed|run|executed)/i.test(prompt)) return 'suggest';
 
   // Auto-describe
   if (/^(?:auto[- ]?describe|describe\s+all|fill\s+descriptions?)(?:\s+(?:all\s+)?(?:nodes?|empty)?)?\s*$/i.test(prompt)) return 'auto-describe';
