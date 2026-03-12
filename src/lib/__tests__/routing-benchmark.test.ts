@@ -208,6 +208,11 @@ const BENCHMARK: BenchmarkCase[] = [
   { prompt: 'what depends on the Syllabus', expected: 'deps', context: 'professor checking downstream impact', hasWorkflow: true },
   { prompt: "what's downstream of the Quiz Bank?", expected: 'deps', context: 'professor tracing dependencies', hasWorkflow: true },
   { prompt: "which nodes haven't been updated recently?", expected: 'suggest', context: 'professor reviewing workflow freshness', hasWorkflow: true },
+
+  // Round 15: stale queries + natural propagation phrasing
+  { prompt: "run everything that's stale", expected: 'propagate', context: 'professor wanting to refresh stale nodes', hasWorkflow: true },
+  { prompt: 'what nodes are stale right now?', expected: 'show-stale', context: 'professor checking stale status', hasWorkflow: true },
+  { prompt: 'how many nodes are stale?', expected: 'show-stale', context: 'professor quick stale check', hasWorkflow: true },
 ];
 
 // ─── Benchmark Runner ───────────────────────────────────────────────────────

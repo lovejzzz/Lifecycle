@@ -1,5 +1,12 @@
 # Changelog
 
+### 2026-03-11 — CID intelligence: stale query + natural propagation phrasing (v1.0.83)
+
+- **Routing**: "run everything that's stale" now routes to `propagate` (was `run-workflow`)
+- **Routing**: "what nodes are stale?" and "how many nodes are stale?" now route to `show-stale` (was `llm-fallback`)
+- **CIDPanel**: Synced all 3 new routing patterns
+- **Benchmark**: 150 → 153 prompts, 100% accuracy
+
 ### 2026-03-11 — Integration tests: rollback, branch isolation, deleted node safety (v1.0.82)
 
 - **Tests**: 6 new simulation scenarios (1097 → 1103 vitest tests)

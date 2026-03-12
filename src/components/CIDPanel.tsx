@@ -508,7 +508,7 @@ export default function CIDPanel() {
       } else {
         dispatchCommand(prompt, () => getStatusReport());
       }
-    } else if (/^(?:propagate?|sync|refresh\s*stale|regenerate\s*stale|update\s+(?:all\s+)?stale|run\s+(?:the\s+)?stale)\b/i.test(prompt)) {
+    } else if (/^(?:propagate?|sync|refresh\s*stale|regenerate\s*stale|update\s+(?:all\s+)?stale|run\s+(?:the\s+)?stale)\b/i.test(prompt) || /^run\s+(?:everything|all|anything)\s+(?:that(?:'s| is)|which\s+is)\s+stale/i.test(prompt)) {
       addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
       const currentNodes = useLifecycleStore.getState().nodes;
       const sc = currentNodes.filter((n) => n.data.status === 'stale').length;
@@ -570,7 +570,7 @@ export default function CIDPanel() {
       dispatchCommand(prompt, () => deleteByName(prompt).message, 400, undefined, true, true);
     } else if (/^(?:rename|change name|relabel)\s+.+\s+(?:to|as|→|->)\s+/i.test(prompt)) {
       dispatchCommand(prompt, () => renameByName(prompt).message);
-    } else if (/^(?:show|find|list)\s+(?:me\s+)?(?:what(?:'s| is)\s+)?stale/i.test(prompt) || /^(?:show|find|list)\s+stale/i.test(prompt)) {
+    } else if (/^(?:show|find|list)\s+(?:me\s+)?(?:what(?:'s| is)\s+)?stale/i.test(prompt) || /^(?:show|find|list)\s+stale/i.test(prompt) || /^(?:what|which)\s+nodes?\s+(?:are|is)\s+stale/i.test(prompt) || /^how\s+many\s+(?:nodes?\s+)?(?:are\s+)?stale/i.test(prompt)) {
       // "show me what's stale", "show stale nodes", "find stale" → list stale nodes
       dispatchCommand(prompt, () => {
         const staleNodes = nodes.filter(n => n.data.status === 'stale');

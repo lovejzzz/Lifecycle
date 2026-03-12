@@ -107,8 +107,9 @@ export function classifyRoute(prompt: string, hasWorkflow: boolean = false): Com
   // Status
   if (/^(?:status|report|health|dashboard)\b/i.test(prompt)) return 'status';
 
-  // Propagate (includes "update stale", "run stale")
+  // Propagate (includes "update stale", "run stale", "run everything that's stale")
   if (/^(?:propagate?|sync|refresh\s*stale|regenerate\s*stale|update\s+(?:all\s+)?stale|run\s+(?:the\s+)?stale)\b/i.test(prompt)) return 'propagate';
+  if (/^run\s+(?:everything|all|anything)\s+(?:that(?:'s| is)|which\s+is)\s+stale/i.test(prompt)) return 'propagate';
 
   // Layout
   if (/^(?:layout|arrange|lay\s+out)\b/i.test(prompt)) return 'layout';
@@ -138,6 +139,8 @@ export function classifyRoute(prompt: string, hasWorkflow: boolean = false): Com
   // Show stale (MUST come before generic focus/show)
   if (/^(?:show|find|list)\s+(?:me\s+)?(?:what(?:'s| is)\s+)?stale/i.test(prompt)) return 'show-stale';
   if (/^(?:show|find|list)\s+stale/i.test(prompt)) return 'show-stale';
+  if (/^(?:what|which)\s+nodes?\s+(?:are|is)\s+stale/i.test(prompt)) return 'show-stale';
+  if (/^how\s+many\s+(?:nodes?\s+)?(?:are\s+)?stale/i.test(prompt)) return 'show-stale';
 
   // "show me the critical path" / "show me bottlenecks" / "show me orphan nodes" (MUST come before generic focus/show)
   if (/^(?:show|find|what(?:'s| is| are))\s+(?:me\s+)?(?:the\s+)?(?:critical\s*path|longest\s*chain)/i.test(prompt)) return 'critical-path';
