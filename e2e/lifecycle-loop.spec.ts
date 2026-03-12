@@ -3157,3 +3157,72 @@ test.describe('Canvas panning', () => {
     await expect(page.locator('.react-flow')).toBeVisible();
   });
 });
+
+// ── NEW: CID error handling ──────────────────────────────────────────────────
+
+test.describe('CID error handling', () => {
+  test('focus command with nonexistent node shows available nodes', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('focus Nonexistent Node XYZ');
+    await cidInput.press('Enter');
+
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(cidPanel.getByText(/No node matching|Available:/i).first()).toBeVisible({ timeout: 5000 });
+  });
+
+  test('delete command with unknown node name shows error', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('delete FakeNodeThatDoesNotExist');
+    await cidInput.press('Enter');
+
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(cidPanel.getByText(/not find|no node|Could not/i).first()).toBeVisible({ timeout: 5000 });
+  });
+
+  test('rename command with unknown node shows error', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('rename GhostNode to Something');
+    await cidInput.press('Enter');
+
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(cidPanel.getByText(/not find|no node|Could not/i).first()).toBeVisible({ timeout: 5000 });
+  });
+
+  test('connect command with nonexistent nodes shows error', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('connect FakeA to FakeB');
+    await cidInput.press('Enter');
+
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(cidPanel.getByText(/not find|no node|Could not/i).first()).toBeVisible({ timeout: 5000 });
+  });
+
+  test('duplicate command with unknown node shows available nodes', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+
+    const cidInput = page.locator('[data-cid-input]');
+    await cidInput.fill('duplicate MissingNode');
+    await cidInput.press('Enter');
+
+    const cidPanel = page.locator('[aria-label="CID Agent Panel"]');
+    await expect(cidPanel.getByText(/No node matching|Available:/i).first()).toBeVisible({ timeout: 5000 });
+  });
+});

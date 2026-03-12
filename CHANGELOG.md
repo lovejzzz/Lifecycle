@@ -1,5 +1,11 @@
 # Changelog
 
+### 2026-03-11 — Quality hardening: CID error handling E2E tests (v1.0.76)
+
+- **E2E**: 5 new Playwright tests for CID error handling (207 → 212 total)
+- Tests: focus/delete/rename/connect/duplicate with nonexistent node names show proper error messages
+- Validates CID panel displays "No node matching" and "Available:" feedback for all node-targeting commands
+
 ### 2026-03-11 — Edit interpretation: smarter classifyEdit heuristics (v1.0.75)
 
 - **Edits**: Typo detection — edit distance ≤ 2 on normalized text → cosmetic (no propagation)
