@@ -240,6 +240,87 @@ export interface AgentPersonalityLayers {
   reflection: ReflectionLayer;
 }
 
+// ─── Central Brain Architecture ─────────────────────────────────────────────
+// CID IS the product. The canvas is CID's visual workspace.
+// Every artifact derives from the Central Context — CID's working memory.
+
+export interface CentralContextSource {
+  content: string;             // Raw input (paste, URL content, file text)
+  contentType: 'text' | 'url' | 'file' | 'conversation';
+  title?: string;              // Project/content title
+  metadata?: Record<string, string>;  // Extracted metadata
+  lastUpdated: number;
+}
+
+export interface CentralContextUnderstanding {
+  summary: string;             // 2-3 sentence summary
+  keyEntities: string[];       // People, products, brands, concepts
+  tone: string;                // "professional", "casual", "technical"
+  audience: string;            // Target audience
+  intent: string;              // What the user is trying to achieve
+  constraints: string[];       // Things CID should preserve
+  suggestedArtifacts: string[]; // What CID thinks it can build
+}
+
+export interface ArtifactDerivedField {
+  field: string;               // e.g., "headline", "body", "cta"
+  sourceMapping: string;       // What part of central context it comes from
+  transform: string;           // How it was transformed
+}
+
+export interface ArtifactContract {
+  nodeId: string;
+  artifactType: string;        // "blog-post", "email", "social-thread", etc.
+  derivedFields: ArtifactDerivedField[];
+  generationPrompt: string;    // The prompt CID used to create this
+  model: string;
+  lastSyncedAt: number;
+  lastSourceHash: string;      // Hash of source content at last sync
+  syncStatus: 'current' | 'stale' | 'override' | 'regenerating';
+  userEdits: ArtifactUserEdit[];
+}
+
+export interface ArtifactUserEdit {
+  field: string;
+  originalValue: string;
+  userValue: string;
+  timestamp: number;
+  intent?: string;             // CID's interpretation of why user changed it
+}
+
+export interface Override {
+  id: string;
+  nodeId: string;
+  field: string;
+  originalValue: string;
+  userValue: string;
+  timestamp: number;
+  cidInterpretation?: string;  // "User wants more casual tone in headlines"
+  propagated: boolean;
+  scope: 'this-node' | 'all-similar' | 'global';
+}
+
+export interface SurgicalChange {
+  field: string;
+  before: string;
+  after: string;
+  reason: string;
+}
+
+export interface SurgicalDiff {
+  nodeId: string;
+  changes: SurgicalChange[];
+  skipped: { field: string; reason: string }[];
+  confidence: number;          // 0-1
+}
+
+export interface CentralContext {
+  source: CentralContextSource;
+  understanding: CentralContextUnderstanding;
+  artifacts: Record<string, ArtifactContract>; // nodeId → contract
+  overrides: Override[];
+}
+
 export interface CIDCard {
   id: string;
   label: string;
@@ -304,6 +385,9 @@ export interface NodeData extends Record<string, unknown> {
   outputFormat?: string;     // e.g. 'pdf', 'docx', 'csv', 'md', 'html'
   outputMimeType?: string;   // e.g. 'application/pdf'
   outputFormatLabel?: string; // e.g. 'PDF'
+
+  // Central Brain: artifact contract (CID-managed nodes only)
+  artifactContract?: ArtifactContract;
 }
 
 export interface NodeColorSet {

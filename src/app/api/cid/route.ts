@@ -163,7 +163,7 @@ export async function POST(req: NextRequest) {
       systemPrompt: string;
       messages: Array<{ role: 'user' | 'assistant'; content: string }>;
       model?: string;
-      taskType?: 'generate' | 'execute' | 'analyze';
+      taskType?: 'generate' | 'execute' | 'analyze' | 'sync' | 'understand' | 'interpret-override';
       _retryCount?: number;
       effortLevel?: 'low' | 'medium' | 'high' | 'max';
     };
@@ -227,7 +227,13 @@ export async function POST(req: NextRequest) {
     // Temperature varies by task type: creative generation higher, analysis lower
     // deepseek-reasoner (R1) does not support temperature — omit it
     const isReasonerModel = model.includes('reasoner');
-    const temperature = isReasonerModel ? undefined : (taskType === 'generate' ? 0.8 : taskType === 'analyze' ? 0.4 : 0.7);
+    const temperature = isReasonerModel ? undefined : (
+      taskType === 'generate' ? 0.8 :
+      taskType === 'analyze' || taskType === 'interpret-override' ? 0.4 :
+      taskType === 'sync' ? 0.3 :
+      taskType === 'understand' ? 0.5 :
+      0.7
+    );
 
     const msgCount = messages.length;
     const promptLen = systemPrompt.length;

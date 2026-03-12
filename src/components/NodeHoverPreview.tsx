@@ -28,7 +28,7 @@ export default function NodeHoverPreview({ nodeData, position }: NodeHoverPrevie
   const resultPreview = executionResult ? executionResult.replace(/^#+\s*/gm, '').replace(/\*\*/g, '').trim().slice(0, 300) : '';
 
   // If there's almost nothing to show beyond what the node already displays, skip
-  const hasExtra = description || contentPreview.length > 80 || resultPreview.length > 80;
+  const hasExtra = description || contentPreview.length > 80 || resultPreview.length > 80 || nodeData.artifactContract;
   if (!hasExtra && !executionResult) return null;
 
   return (
@@ -125,6 +125,42 @@ export default function NodeHoverPreview({ nodeData, position }: NodeHoverPrevie
               <p className="text-[9px] text-white/35 leading-relaxed line-clamp-4">
                 {resultPreview}{resultPreview.length >= 300 ? '...' : ''}
               </p>
+            </div>
+          )}
+
+          {/* CID Artifact Contract preview */}
+          {nodeData.artifactContract && (
+            <div className="border-t border-white/[0.06] pt-1.5">
+              <span className="text-[8px] text-cyan-400/40 uppercase tracking-wider font-medium block mb-0.5">CID Contract</span>
+              <div className="space-y-0.5">
+                <p className="text-[9px] text-white/35">
+                  <span className="text-white/20">Type:</span> {nodeData.artifactContract.artifactType}
+                </p>
+                {nodeData.artifactContract.derivedFields.length > 0 && (
+                  <p className="text-[9px] text-white/35">
+                    <span className="text-white/20">Fields:</span> {nodeData.artifactContract.derivedFields.map(f => f.field).join(', ')}
+                  </p>
+                )}
+                <p className="text-[9px] text-white/35">
+                  <span className="text-white/20">Status:</span>{' '}
+                  <span className={
+                    nodeData.artifactContract.syncStatus === 'current' ? 'text-emerald-400/60' :
+                    nodeData.artifactContract.syncStatus === 'stale' ? 'text-amber-400/60' :
+                    nodeData.artifactContract.syncStatus === 'override' ? 'text-blue-400/60' :
+                    'text-cyan-400/60'
+                  }>{nodeData.artifactContract.syncStatus}</span>
+                </p>
+                {nodeData.artifactContract.userEdits.length > 0 && (
+                  <p className="text-[9px] text-blue-400/50">
+                    {nodeData.artifactContract.userEdits.length} override{nodeData.artifactContract.userEdits.length > 1 ? 's' : ''}
+                  </p>
+                )}
+                {nodeData.artifactContract.lastSyncedAt > 0 && (
+                  <p className="text-[8px] text-white/20">
+                    Synced: {new Date(nodeData.artifactContract.lastSyncedAt).toLocaleTimeString()}
+                  </p>
+                )}
+              </div>
             </div>
           )}
         </div>

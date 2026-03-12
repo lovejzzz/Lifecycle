@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getAgent, getInterviewQuestions, buildEnrichedPrompt } from '../agents';
+import { getAgent, getInterviewQuestions, buildEnrichedPrompt, detectPromptSignals, shouldSkipRemainingQuestions, getAdaptiveInterview } from '../agents';
 import type { Node } from '@xyflow/react';
 import type { NodeData } from '../types';
 
@@ -9,7 +9,7 @@ describe('agents', () => {
       const agent = getAgent('rowan');
       expect(agent.name).toBe('CID Rowan');
       expect(agent.accent).toBe('emerald');
-      expect(agent.interviewEnabled).toBe(false);
+      expect(agent.interviewEnabled).toBe(true);
     });
 
     it('returns Poirot for poirot mode', () => {
@@ -218,6 +218,140 @@ describe('agents', () => {
       const answers = { q0: 'nonexistent-id' };
       const result = buildEnrichedPrompt('Build something', answers, qs);
       expect(result).toBe('Build something');
+    });
+  });
+
+  describe('detectPromptSignals', () => {
+    it('detects solo scale signal', () => {
+      const signals = detectPromptSignals('I am working alone on this project');
+      expect(signals.detected.scale).toBe('solo');
+    });
+
+    it('detects small team scale signal', () => {
+      const signals = detectPromptSignals('We have a small team of 2-5 engineers');
+      expect(signals.detected.scale).toBe('small-team');
+    });
+
+    it('detects enterprise scale signal', () => {
+      const signals = detectPromptSignals('This is an enterprise organization-wide initiative');
+      expect(signals.detected.scale).toBe('enterprise');
+    });
+
+    it('detects speed priority signal', () => {
+      const signals = detectPromptSignals('We need to ship this fast, ASAP');
+      expect(signals.detected.priority).toBe('speed');
+    });
+
+    it('detects quality priority signal', () => {
+      const signals = detectPromptSignals('This needs to be high quality and production-ready');
+      expect(signals.detected.priority).toBe('quality');
+    });
+
+    it('detects compliance priority signal', () => {
+      const signals = detectPromptSignals('Must meet HIPAA compliance regulations');
+      expect(signals.detected.priority).toBe('compliance');
+    });
+
+    it('detects deadline constraint signal', () => {
+      const signals = detectPromptSignals('We have a hard deadline by Friday');
+      expect(signals.detected.constraints).toBe('deadline');
+    });
+
+    it('detects ideation stage signal', () => {
+      const signals = detectPromptSignals('Just an idea I want to brainstorm');
+      expect(signals.detected.stage).toBe('ideation');
+    });
+
+    it('detects rescue stage signal', () => {
+      const signals = detectPromptSignals('The project is a mess and needs rescue');
+      expect(signals.detected.stage).toBe('rescue');
+    });
+
+    it('returns empty detected for generic prompt', () => {
+      const signals = detectPromptSignals('Build a blog content workflow');
+      expect(Object.keys(signals.detected).length).toBe(0);
+    });
+
+    it('detects multiple signals from a rich prompt', () => {
+      const signals = detectPromptSignals('Solo developer, need to ship fast, hard deadline by end of week');
+      expect(signals.detected.scale).toBe('solo');
+      expect(signals.detected.priority).toBe('speed');
+      expect(signals.detected.constraints).toBe('deadline');
+    });
+  });
+
+  describe('shouldSkipRemainingQuestions', () => {
+    it('returns true when scale and priority are both answered', () => {
+      const qs = getInterviewQuestions('Build something');
+      const scaleIdx = qs.findIndex(q => q.key === 'scale');
+      const priorityIdx = qs.findIndex(q => q.key === 'priority');
+      const answers: Record<string, string> = {};
+      if (scaleIdx >= 0) answers[`q${scaleIdx}`] = 'solo';
+      if (priorityIdx >= 0) answers[`q${priorityIdx}`] = 'speed';
+      expect(shouldSkipRemainingQuestions(answers, qs)).toBe(true);
+    });
+
+    it('returns false when only scale is answered', () => {
+      const qs = getInterviewQuestions('Build something');
+      const scaleIdx = qs.findIndex(q => q.key === 'scale');
+      const answers: Record<string, string> = {};
+      if (scaleIdx >= 0) answers[`q${scaleIdx}`] = 'solo';
+      expect(shouldSkipRemainingQuestions(answers, qs)).toBe(false);
+    });
+
+    it('returns false with empty answers', () => {
+      const qs = getInterviewQuestions('Build something');
+      expect(shouldSkipRemainingQuestions({}, qs)).toBe(false);
+    });
+  });
+
+  describe('getAdaptiveInterview', () => {
+    it('filters out questions answered by prompt signals', () => {
+      const { questions, preAnswers } = getAdaptiveInterview('Solo developer building fast');
+      const allQs = getInterviewQuestions('Solo developer building fast');
+      // Should have fewer questions since scale and priority are detected
+      expect(questions.length).toBeLessThan(allQs.length);
+      expect(preAnswers).toHaveProperty(
+        `q${allQs.findIndex(q => q.key === 'scale')}`,
+        'solo'
+      );
+      expect(preAnswers).toHaveProperty(
+        `q${allQs.findIndex(q => q.key === 'priority')}`,
+        'speed'
+      );
+    });
+
+    it('returns all questions when no signals detected', () => {
+      const { questions, preAnswers } = getAdaptiveInterview('Build a blog content workflow');
+      const allQs = getInterviewQuestions('Build a blog content workflow');
+      expect(questions.length).toBe(allQs.length);
+      expect(Object.keys(preAnswers).length).toBe(0);
+    });
+
+    it('returns empty questions array when all are pre-answered', () => {
+      // Craft a prompt that answers scale, priority, constraints, and stage
+      const prompt = 'Solo developer, need to ship fast, hard deadline, just an idea';
+      const { questions, preAnswers } = getAdaptiveInterview(prompt);
+      const allQs = getInterviewQuestions(prompt);
+      // All standard keys should be detected
+      expect(Object.keys(preAnswers).length).toBeGreaterThanOrEqual(3);
+      expect(questions.length).toBeLessThan(allQs.length);
+    });
+
+    it('pre-answers use original question indices for buildEnrichedPrompt compatibility', () => {
+      // Use enterprise + compliance signals which have enrichment rules
+      const prompt = 'Enterprise organization-wide compliance audit pipeline';
+      const allQs = getInterviewQuestions(prompt);
+      const { preAnswers } = getAdaptiveInterview(prompt);
+      // Verify pre-answers can enrich the prompt correctly
+      const enriched = buildEnrichedPrompt(prompt, preAnswers, allQs);
+      expect(enriched).not.toBe(prompt); // Should be enriched with policy/compliance text
+    });
+
+    it('works for rowan mode', () => {
+      const { questions } = getAdaptiveInterview('Solo project, ship fast', undefined, undefined, 'rowan');
+      const allQs = getInterviewQuestions('Solo project, ship fast', undefined, undefined, 'rowan');
+      expect(questions.length).toBeLessThan(allQs.length);
     });
   });
 });

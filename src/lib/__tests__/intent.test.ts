@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { analyzeIntent, buildNodesFromPrompt } from '../intent';
+import { analyzeIntent, buildNodesFromPrompt, detectMultipleTransformations } from '../intent';
 
 describe('analyzeIntent', () => {
   it('detects Slack input service', () => {
@@ -297,5 +297,117 @@ describe('buildNodesFromPrompt', () => {
     const { nodes } = buildNodesFromPrompt('Plan the budget for next quarter', uidFn, logFn);
     const labels = nodes.filter(n => n.data.category === 'artifact').map(n => n.data.label);
     expect(labels).toContain('Budget Plan');
+  });
+
+  it('generates multiple artifacts for comma-and-separated prompts', () => {
+    const { nodes, edges } = buildNodesFromPrompt('Create lesson plans, rubrics, and quizzes', uidFn, logFn);
+    const artifacts = nodes.filter(n => n.data.category === 'artifact');
+    const labels = artifacts.map(n => n.data.label);
+    expect(labels).toContain('Lesson Plan');
+    expect(labels).toContain('Rubric');
+    expect(labels).toContain('Assessment'); // "quizzes" maps to Assessment
+
+    // All artifacts should connect to the state node upstream
+    const stateNode = nodes.find(n => n.data.category === 'state');
+    for (const a of artifacts) {
+      expect(edges.some(e => e.source === stateNode!.id && e.target === a.id)).toBe(true);
+    }
+
+    // All artifacts should connect to the review gate downstream
+    const review = nodes.find(n => n.data.category === 'review');
+    for (const a of artifacts) {
+      expect(edges.some(e => e.source === a.id && e.target === review!.id)).toBe(true);
+    }
+  });
+
+  it('generates two artifacts for "and"-separated prompt', () => {
+    const { nodes } = buildNodesFromPrompt('Build a blog post and email newsletter', uidFn, logFn);
+    const artifacts = nodes.filter(n => n.data.category === 'artifact');
+    const labels = artifacts.map(n => n.data.label);
+    expect(labels).toContain('Blog Post');
+    expect(labels).toContain('Email Draft');
+  });
+
+  it('still generates single artifact for simple prompt', () => {
+    const { nodes } = buildNodesFromPrompt('Make a rubric', uidFn, logFn);
+    const artifacts = nodes.filter(n => n.data.category === 'artifact');
+    const labels = artifacts.map(n => n.data.label);
+    expect(labels).toContain('Rubric');
+    // Should also get Learning Objectives as education supplement
+    expect(labels).toContain('Learning Objectives');
+  });
+});
+
+// ─── detectMultipleTransformations ──────────────────────────────────────────
+
+describe('detectMultipleTransformations', () => {
+  it('detects three comma-and-separated artifacts', () => {
+    const result = detectMultipleTransformations('create lesson plans, rubrics, and quizzes');
+    expect(result).toContain('Lesson Plan');
+    expect(result).toContain('Rubric');
+    expect(result).toContain('Assessment');
+    expect(result.length).toBe(3);
+  });
+
+  it('detects two "and"-separated artifacts', () => {
+    const result = detectMultipleTransformations('build a blog post and Twitter thread');
+    // "blog" matches Blog Post; "twitter thread" doesn't match any target
+    expect(result).toContain('Blog Post');
+  });
+
+  it('returns single artifact for simple prompt', () => {
+    const result = detectMultipleTransformations('make a rubric');
+    expect(result).toEqual(['Rubric']);
+  });
+
+  it('returns empty array for unrecognized prompt', () => {
+    const result = detectMultipleTransformations('do something random');
+    expect(result).toEqual([]);
+  });
+
+  it('deduplicates when same target appears multiple times', () => {
+    const result = detectMultipleTransformations('create a quiz and an exam and a test');
+    // quiz, exam, test all map to Assessment
+    expect(result).toEqual(['Assessment']);
+  });
+
+  it('detects mixed education and general artifacts', () => {
+    const result = detectMultipleTransformations('generate a syllabus, a summary, and a rubric');
+    expect(result).toContain('Course Syllabus');
+    expect(result).toContain('Summary');
+    expect(result).toContain('Rubric');
+    expect(result.length).toBe(3);
+  });
+
+  it('handles prompt with email and presentation', () => {
+    const result = detectMultipleTransformations('draft an email and a presentation');
+    expect(result).toContain('Email Draft');
+    expect(result).toContain('Presentation');
+    expect(result.length).toBe(2);
+  });
+});
+
+// ─── analyzeIntent transformations field ────────────────────────────────────
+
+describe('analyzeIntent transformations field', () => {
+  it('populates transformations array for multi-artifact prompt', () => {
+    const result = analyzeIntent('create lesson plans, rubrics, and quizzes');
+    expect(result.transformations).toContain('Lesson Plan');
+    expect(result.transformations).toContain('Rubric');
+    expect(result.transformations).toContain('Assessment');
+    // transformation (singular) still returns the first match
+    expect(result.transformation).toBe('Lesson Plan');
+  });
+
+  it('populates transformations array for single-artifact prompt', () => {
+    const result = analyzeIntent('make a rubric');
+    expect(result.transformations).toEqual(['Rubric']);
+    expect(result.transformation).toBe('Rubric');
+  });
+
+  it('returns empty transformations for unrecognized prompt', () => {
+    const result = analyzeIntent('help me organize my thoughts');
+    expect(result.transformations).toEqual([]);
+    expect(result.transformation).toBeNull();
   });
 });

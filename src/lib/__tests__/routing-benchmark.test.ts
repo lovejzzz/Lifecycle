@@ -8,7 +8,7 @@
  * To run: npx vitest run src/lib/__tests__/routing-benchmark.test.ts
  */
 import { describe, it, expect } from 'vitest';
-import { classifyRoute, type CommandRoute } from '@/lib/routing';
+import { classifyRoute, classifyRouteWithConfidence, routePromptCompat, type CommandRoute, type ConfidenceLevel } from '@/lib/routing';
 
 interface BenchmarkCase {
   prompt: string;
@@ -259,5 +259,74 @@ describe('CID Routing Benchmark', () => {
 
     // The bar: 100% — all prompts must route correctly
     expect(correct).toBe(BENCHMARK.length);
+  });
+});
+
+// ─── Confidence Level Tests ──────────────────────────────────────────────────
+
+describe('Routing Confidence Levels', () => {
+  // Early patterns (slash commands, generate, extend, solve) should be high confidence
+  const highConfidenceCases: Array<{ prompt: string; route: CommandRoute; hasWorkflow?: boolean }> = [
+    { prompt: '/template course', route: 'template' },
+    { prompt: 'build a lesson plan pipeline', route: 'generate' },
+    { prompt: 'add a quiz bank after the lesson plan', route: 'extend', hasWorkflow: true },
+    { prompt: 'solve', route: 'solve' },
+    { prompt: 'status', route: 'status' },
+    { prompt: 'propagate', route: 'propagate' },
+  ];
+
+  for (const tc of highConfidenceCases) {
+    it(`"${tc.prompt}" → high confidence`, () => {
+      const result = classifyRouteWithConfidence(tc.prompt, tc.hasWorkflow ?? false);
+      expect(result.route).toBe(tc.route);
+      expect(result.confidence).toBe('high');
+    });
+  }
+
+  // Mid-range patterns should be medium confidence
+  const mediumConfidenceCases: Array<{ prompt: string; route: CommandRoute }> = [
+    { prompt: 'undo', route: 'undo' },
+    { prompt: 'count', route: 'count' },
+    { prompt: 'merge Rubric and Grading Guide', route: 'merge' },
+    { prompt: 'deps Rubric', route: 'deps' },
+  ];
+
+  for (const tc of mediumConfidenceCases) {
+    it(`"${tc.prompt}" → medium confidence`, () => {
+      const result = classifyRouteWithConfidence(tc.prompt, tc.hasWorkflow ?? false);
+      expect(result.route).toBe(tc.route);
+      expect(result.confidence).toBe('medium');
+    });
+  }
+
+  // Late patterns and LLM fallback should be low confidence
+  const lowConfidenceCases: Array<{ prompt: string; route: CommandRoute }> = [
+    { prompt: 'why is my rubric out of date', route: 'llm-fallback' },
+    { prompt: 'how does the lifecycle loop work', route: 'llm-fallback' },
+  ];
+
+  for (const tc of lowConfidenceCases) {
+    it(`"${tc.prompt}" → low confidence`, () => {
+      const result = classifyRouteWithConfidence(tc.prompt, tc.hasWorkflow ?? false);
+      expect(result.route).toBe(tc.route);
+      expect(result.confidence).toBe('low');
+    });
+  }
+
+  // routePromptCompat should return the same route as classifyRoute
+  it('routePromptCompat returns same route as classifyRoute', () => {
+    const prompts = ['build a pipeline', 'status', 'propagate', 'why is my rubric stale'];
+    for (const p of prompts) {
+      expect(routePromptCompat(p)).toBe(classifyRoute(p));
+    }
+  });
+
+  // classifyRouteWithConfidence result.route should match classifyRoute
+  it('classifyRouteWithConfidence route matches classifyRoute', () => {
+    for (const tc of BENCHMARK) {
+      const result = classifyRouteWithConfidence(tc.prompt, tc.hasWorkflow ?? false);
+      const route = classifyRoute(tc.prompt, tc.hasWorkflow ?? false);
+      expect(result.route).toBe(route);
+    }
   });
 });

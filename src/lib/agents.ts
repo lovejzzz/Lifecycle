@@ -208,9 +208,9 @@ const rowan: AgentPersonality = {
     execute: 'Write production-ready content. Include specific commands, configurations, and decision criteria.',
   },
   responses: rowanResponses,
-  interviewEnabled: false,
-  interviewAck: '',
-  interviewReveal: '',
+  interviewEnabled: true,
+  interviewAck: 'Copy. Need three data points before I move.',
+  interviewReveal: 'Intel received. Executing now.',
 };
 
 // ─── Poirot: The Detective ──────────────────────────────────────────────────
@@ -341,8 +341,10 @@ export function getAgent(mode: CIDMode): AgentPersonality {
   return AGENTS[mode];
 }
 
-// ─── Poirot Interview Questions ─────────────────────────────────────────────
-// These live here because they're part of Poirot's personality, not engine logic.
+// ─── Interview Questions ─────────────────────────────────────────────────────
+// Rowan: 3 questions max, mission-briefing style, 3-4 cards per question.
+// Poirot: 4-6 questions, detective-investigation style, 4+ cards per question.
+// Adaptive: detectPromptSignals() pre-answers questions the user's prompt already covers.
 
 export interface InterviewQuestion {
   question: string;
@@ -350,7 +352,161 @@ export interface InterviewQuestion {
   key: string;
 }
 
-export function getInterviewQuestions(prompt: string, existingNodes?: Node<NodeData>[], _existingEdges?: Edge[]): InterviewQuestion[] {
+export interface PromptSignals {
+  /** Question keys that are already answered, mapped to their detected card IDs */
+  detected: Record<string, string>;
+}
+
+/**
+ * Scans the user's prompt for signals that answer interview questions,
+ * so those questions can be skipped. Returns detected key→cardId pairs.
+ */
+export function detectPromptSignals(prompt: string): PromptSignals {
+  const lower = prompt.toLowerCase();
+  const detected: Record<string, string> = {};
+
+  // Scale signals
+  if (/\b(solo|alone|just me|by myself|one.?person)\b/.test(lower)) detected.scale = 'solo';
+  else if (/\b(small team|2-5|few people|couple (of )?colleagues)\b/.test(lower)) detected.scale = 'small-team';
+  else if (/\b(large team|big team|6\+|many people|cross.?functional)\b/.test(lower)) detected.scale = 'large-team';
+  else if (/\b(enterprise|organization.?wide|company.?wide|cross.?department)\b/.test(lower)) detected.scale = 'enterprise';
+
+  // Priority signals
+  if (/\b(fast|quickly|asap|ship now|speed|rapid|quick turnaround)\b/.test(lower)) detected.priority = 'speed';
+  else if (/\b(high quality|thorough|careful|do it right|polish|production.?ready)\b/.test(lower)) detected.priority = 'quality';
+  else if (/\b(compliance|regulation|legal|audit|gdpr|hipaa|sox|policy)\b/.test(lower)) detected.priority = 'compliance';
+  else if (/\b(team alignment|collaboration|cross.?team|stakeholder)\b/.test(lower)) detected.priority = 'collaboration';
+
+  // Constraints signals
+  if (/\b(deadline|due date|by friday|by end of|time.?critical|urgent)\b/.test(lower)) detected.constraints = 'deadline';
+  else if (/\b(compliance|regulatory|policy gate|audit)\b/.test(lower) && !detected.priority) detected.constraints = 'compliance';
+  else if (/\b(limited budget|low budget|constrained|no resources|small budget)\b/.test(lower)) detected.constraints = 'resources';
+
+  // Stage signals
+  if (/\b(just an idea|brainstorm|starting from scratch|from zero|greenfield)\b/.test(lower)) detected.stage = 'ideation';
+  else if (/\b(planning|have a plan|roadmap|vision)\b/.test(lower)) detected.stage = 'planning';
+  else if (/\b(already started|in progress|existing|ongoing|half.?done)\b/.test(lower)) detected.stage = 'in-progress';
+  else if (/\b(rescue|broken|mess|went wrong|fix|failing)\b/.test(lower)) detected.stage = 'rescue';
+
+  return { detected };
+}
+
+/** High-priority question keys — if all of these are answered, we can skip the rest */
+const HIGH_PRIORITY_KEYS = ['scale', 'priority'];
+
+/**
+ * Determines whether we have enough info to skip remaining interview questions.
+ * - If all high-priority keys are answered (by signal detection or user response) → true
+ * - Otherwise → false
+ */
+export function shouldSkipRemainingQuestions(
+  answers: Record<string, string>,
+  questions: InterviewQuestion[],
+): boolean {
+  // Build a set of answered question keys
+  const answeredKeys = new Set<string>();
+  for (const q of questions) {
+    const idx = questions.indexOf(q);
+    if (answers[`q${idx}`]) answeredKeys.add(q.key);
+  }
+
+  return HIGH_PRIORITY_KEYS.every(k => answeredKeys.has(k));
+}
+
+export function getInterviewQuestions(prompt: string, existingNodes?: Node<NodeData>[], _existingEdges?: Edge[], mode?: CIDMode): InterviewQuestion[] {
+  if (mode === 'rowan') return getRowanInterviewQuestions(prompt, existingNodes);
+  return getPoirotInterviewQuestions(prompt, existingNodes);
+}
+
+/**
+ * Filters interview questions based on prompt signals and returns
+ * { questions, preAnswers } where preAnswers maps `q{idx}` keys for pre-populated answers.
+ * The returned questions are already filtered (signal-detected ones removed).
+ */
+export function getAdaptiveInterview(
+  prompt: string,
+  existingNodes?: Node<NodeData>[],
+  existingEdges?: Edge[],
+  mode?: CIDMode,
+): { questions: InterviewQuestion[]; preAnswers: Record<string, string> } {
+  const allQuestions = getInterviewQuestions(prompt, existingNodes, existingEdges, mode);
+  const signals = detectPromptSignals(prompt);
+  const preAnswers: Record<string, string> = {};
+  const filtered: InterviewQuestion[] = [];
+
+  for (let i = 0; i < allQuestions.length; i++) {
+    const q = allQuestions[i];
+    if (signals.detected[q.key]) {
+      // This question is already answered by the prompt — record the answer
+      // We need to track using the index in the ORIGINAL array so buildEnrichedPrompt works
+      preAnswers[`q${i}`] = signals.detected[q.key];
+    } else {
+      filtered.push(q);
+    }
+  }
+
+  return { questions: filtered.length > 0 ? filtered : [], preAnswers };
+}
+
+// ─── Rowan Interview: 3 questions, fast mission-briefing ─────────────────────
+
+function getRowanInterviewQuestions(_prompt: string, existingNodes?: Node<NodeData>[]): InterviewQuestion[] {
+  const questions: InterviewQuestion[] = [];
+  const hasExistingWorkflow = (existingNodes?.length ?? 0) > 0;
+
+  // Q1: Scale / team size
+  if (hasExistingWorkflow) {
+    const nodeCount = existingNodes!.length;
+    questions.push({
+      key: 'scale',
+      question: `${nodeCount} nodes on the board. Team size?`,
+      cards: [
+        { id: 'solo', label: 'Solo', description: 'One operator' },
+        { id: 'small-team', label: 'Small Squad', description: '2-5 people' },
+        { id: 'large-team', label: 'Full Team', description: '6+ operators' },
+      ],
+    });
+  } else {
+    questions.push({
+      key: 'scale',
+      question: 'Team size?',
+      cards: [
+        { id: 'solo', label: 'Solo', description: 'One operator' },
+        { id: 'small-team', label: 'Small Squad', description: '2-5 people' },
+        { id: 'large-team', label: 'Full Team', description: '6+ operators' },
+      ],
+    });
+  }
+
+  // Q2: Priority — speed or quality
+  questions.push({
+    key: 'priority',
+    question: 'Priority: speed or quality?',
+    cards: [
+      { id: 'speed', label: 'Speed', description: 'Ship now, fix later' },
+      { id: 'quality', label: 'Quality', description: 'Do it right the first time' },
+      { id: 'balanced', label: 'Balanced', description: 'Both matter equally' },
+    ],
+  });
+
+  // Q3: Constraints
+  questions.push({
+    key: 'constraints',
+    question: 'Any hard constraints?',
+    cards: [
+      { id: 'none', label: 'None', description: 'Green light, no blockers' },
+      { id: 'deadline', label: 'Deadline', description: 'Time-critical delivery' },
+      { id: 'compliance', label: 'Compliance', description: 'Regulatory or policy gates' },
+      { id: 'resources', label: 'Resources', description: 'Limited budget or headcount' },
+    ],
+  });
+
+  return questions;
+}
+
+// ─── Poirot Interview: 4-6 questions, detective-investigation style ──────────
+
+function getPoirotInterviewQuestions(prompt: string, existingNodes?: Node<NodeData>[]): InterviewQuestion[] {
   const lower = prompt.toLowerCase();
   const questions: InterviewQuestion[] = [];
   const hasExistingWorkflow = (existingNodes?.length ?? 0) > 0;
@@ -471,6 +627,10 @@ export function buildEnrichedPrompt(original: string, answers: Record<string, st
       if (q.key === 'priority' && answerId === 'quality') parts.push('with quality review and testing');
       if (q.key === 'priority' && answerId === 'compliance') parts.push('with legal review and policy compliance');
       if (q.key === 'priority' && answerId === 'collaboration') parts.push('with design review and notes');
+      if (q.key === 'priority' && answerId === 'balanced') parts.push('balancing speed and quality');
+      if (q.key === 'constraints' && answerId === 'deadline') parts.push('with tight deadline');
+      if (q.key === 'constraints' && answerId === 'compliance') parts.push('with compliance gates');
+      if (q.key === 'constraints' && answerId === 'resources') parts.push('with limited resources');
       if (q.key === 'stage' && answerId === 'ideation') parts.push('with research notes and ideas');
       if (q.key === 'stage' && answerId === 'rescue') parts.push('with analysis report');
       if (q.key === 'launch') {

@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Bot, Activity, Layers, Circle, Plus, Undo2, Redo2, Search,
+  Bot, Layers, Circle, Plus, Undo2, Redo2, Search,
   Download, Upload, Heart, FilePlus2, Play, LayoutGrid,
   ChevronDown, Trash2, Pencil, Check, FolderOpen, Zap,
 } from 'lucide-react';
@@ -21,7 +21,7 @@ const BUILT_IN_TYPES: { category: NodeCategory; label: string }[] = [
 ];
 
 export default function TopBar() {
-  const { nodes, toggleCIDPanel, toggleActivityPanel, togglePreviewPanel, showCIDPanel, showActivityPanel, showPreviewPanel, createNewNode, undo, redo, history, future, cidMode, exportWorkflow, importWorkflow, newProject, messages, getHealthScore, showImpactPreview, currentProjectName, renameCurrentProject, switchProject, deleteCurrentProject, listProjects, currentProjectId, _usageStats } = useLifecycleStore();
+  const { nodes, toggleCIDPanel, togglePreviewPanel, showCIDPanel, showPreviewPanel, createNewNode, undo, redo, history, future, cidMode, exportWorkflow, importWorkflow, newProject, messages, getHealthScore, showImpactPreview, currentProjectName, renameCurrentProject, switchProject, deleteCurrentProject, listProjects, currentProjectId, _usageStats } = useLifecycleStore();
   const agent = getAgent(cidMode);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showAddMenu, setShowAddMenu] = useState(false);
@@ -141,7 +141,7 @@ export default function TopBar() {
               onKeyDown={(e) => {
                 if (e.key === 'ArrowDown' && !showProjectMenu) { e.preventDefault(); setShowProjectMenu(true); setProjectMenuIndex(0); }
               }}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] text-white/50 text-[11px] font-medium hover:text-white/80 hover:bg-white/[0.07] transition-colors max-w-[180px]"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] text-white/65 text-[11px] font-medium hover:text-white/80 hover:bg-white/[0.07] transition-colors max-w-[180px]"
             >
               <FolderOpen size={11} className="shrink-0" />
               <span className="truncate">{mounted ? currentProjectName : 'Untitled'}</span>
@@ -196,7 +196,7 @@ export default function TopBar() {
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="truncate">{p.name}</span>
                     </div>
-                    <span className="text-[9px] text-white/20 shrink-0 ml-2">{p.nodeCount}n</span>
+                    <span className="text-[10px] text-white/35 shrink-0 ml-2">{p.nodeCount}n</span>
                   </button>
                 ))}
                 <div className="border-t border-white/[0.06] mt-1 pt-1">
@@ -285,7 +285,7 @@ export default function TopBar() {
                     >
                       <Icon size={12} style={{ color: colors.primary }} />
                       <span>{label}</span>
-                      {count > 0 && <span className="ml-auto text-[9px] text-white/20 font-mono">{count}</span>}
+                      {count > 0 && <span className="ml-auto text-[10px] text-white/35 font-mono">{count}</span>}
                     </button>
                   );
                 })}
@@ -374,7 +374,7 @@ export default function TopBar() {
           <>
             <div className="flex items-center gap-1.5 text-[10px]" title={`${activeCount} active nodes`}>
               <Circle size={6} fill="#22c55e" className="text-emerald-500" />
-              <span className="text-white/40">{activeCount} <span className="hidden md:inline">active</span></span>
+              <span className="text-white/50">{activeCount} <span className="hidden md:inline">active</span></span>
             </div>
             {staleCount > 0 && (
               <button
@@ -393,7 +393,7 @@ export default function TopBar() {
               </div>
             )}
             <div className="hidden lg:flex items-center gap-1.5 text-[10px]" title={`${nodes.length} total nodes`}>
-              <span className="text-white/20">{nodes.length} nodes</span>
+              <span className="text-white/35">{nodes.length} nodes</span>
             </div>
             <div className="flex items-center gap-1.5 text-[10px]" title={`Graph health: ${healthScore}%`}>
               <Heart size={8} className={healthScore >= 80 ? 'text-emerald-400' : healthScore >= 50 ? 'text-amber-400' : 'text-rose-400'} fill={healthScore >= 80 ? '#22c55e' : healthScore >= 50 ? '#f59e0b' : '#f43f5e'} />
@@ -427,7 +427,7 @@ export default function TopBar() {
             </AnimatePresence>
           </>
         ) : (
-          <span className="text-[11px] text-white/20">{agent.topBarHint}</span>
+          <span className="text-[11px] text-white/40">{agent.topBarHint}</span>
         )}
       </div>
 
@@ -447,19 +447,6 @@ export default function TopBar() {
             >
               <Play size={12} />
               <span className="hidden sm:inline">Preview</span>
-            </button>
-            <button
-              onClick={toggleActivityPanel}
-              title="Activity log"
-              aria-label="Activity log"
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
-                showActivityPanel
-                  ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
-                  : 'bg-white/[0.04] text-white/40 border border-white/[0.06] hover:text-white/60'
-              }`}
-            >
-              <Activity size={12} />
-              <span className="hidden sm:inline">Activity</span>
             </button>
           </>
         )}

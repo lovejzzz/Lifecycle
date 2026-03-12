@@ -230,7 +230,7 @@ describe('buildSystemPrompt', () => {
     const nodes = mkNodes();
     nodes[0].data.status = 'stale';
     const result = buildSystemPrompt('rowan', nodes, mkEdges());
-    expect(result).toContain('1 stale');
+    expect(result).toContain('stale: 1');
   });
 });
 

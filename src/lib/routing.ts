@@ -77,232 +77,297 @@ export type CommandRoute =
   | 'health-detail'      // health detail
   | 'auto-describe'      // auto-describe
   | 'refine'             // refine (note)
+  | 'ingest'             // ingest/feed source material to CID
+  | 'understand'         // show CID's understanding of source
+  | 'create-artifact'    // create <artifact-type> from context
+  | 'sync-artifacts'     // sync stale artifacts
+  | 'diff-artifacts'     // preview what sync would change
+  | 'show-overrides'     // list user overrides
+  | 'forget-override'    // remove an override
+  | 'update-source'      // update/change the source material
   | 'llm-fallback';      // anything else → send to LLM
 
+// ─── Confidence Types ────────────────────────────────────────────────────────
+
+export type ConfidenceLevel = 'high' | 'medium' | 'low';
+
+export interface RouteResult {
+  route: CommandRoute;
+  confidence: ConfidenceLevel;
+}
+
+// ─── Pattern Registry ────────────────────────────────────────────────────────
+// Each entry is a test function + route. Order matters — first match wins.
+// Confidence is derived from position: first 30% = high, 30-70% = medium, rest = low.
+
+type PatternTest = (prompt: string, hasWorkflow: boolean) => boolean;
+
+interface PatternEntry { test: PatternTest; route: CommandRoute }
+
+const PATTERNS: PatternEntry[] = [];
+
+function addPattern(test: PatternTest, route: CommandRoute) {
+  PATTERNS.push({ test, route });
+}
+
+// Slash commands
+addPattern((s) => /^\/template\s+/i.test(s), 'template');
+addPattern((s) => /^\/clear\s*$/i.test(s) || /^\/new\s*$/i.test(s) || /^\/export\s*$/i.test(s) || /^\/mode\s*$/i.test(s), 'template');
+
+// Extend vs generate
+addPattern((s, hw) => hw && /^(?:add|extend|expand|include|append|insert|also|plus|and also)\b/i.test(s), 'extend');
+addPattern((s) => /^(?:build|create|generate|set up|design|start)\b/i.test(s) || /^make\s+(?:a|an|me|new|my)\b/i.test(s), 'generate');
+
+// Solve
+addPattern((s) => /^(?:solve|fix|diagnose?|heal|repair)\b/i.test(s), 'solve');
+
+// Health detail (MUST come before generic status)
+addPattern((s) => /^(?:health\s+detail|health\s+breakdown|detailed?\s+health|health\s+report)\s*$/i.test(s), 'health-detail');
+
+// Status
+addPattern((s) => /^(?:status|report|health|dashboard)\b/i.test(s), 'status');
+
+// Propagate
+addPattern((s) => /^(?:propagate?|sync|refresh\s*stale|regenerate\s*stale|update\s+(?:all\s+)?stale|run\s+(?:the\s+)?stale)\b/i.test(s), 'propagate');
+addPattern((s) => /^run\s+(?:everything|all|anything)\s+(?:that(?:'s| is)|which\s+is)\s+stale/i.test(s), 'propagate');
+
+// Layout
+addPattern((s) => /^(?:layout|arrange|lay\s+out)\b/i.test(s), 'layout');
+
+// Optimize
+addPattern((s) => /^optimi/i.test(s), 'optimize');
+
+// Batch where (MUST come before batch approve/unlock/activate)
+addPattern((s) => /^batch\s+\w+\s+where\s+/i.test(s), 'batch-where');
+
+// Batch status changes
+addPattern((s) => /^(?:approve\s+all|batch\s+approve)\b/i.test(s), 'approve-all');
+addPattern((s) => /^(?:mark|set)\s+(?:all|every\w*)\s+(?:\w+\s+)?(?:as|to)\s+(?:approved|done)\s*$/i.test(s), 'approve-all');
+addPattern((s) => /^(?:unlock\s+all|batch\s+unlock)\b/i.test(s), 'unlock-all');
+addPattern((s) => /^(?:mark|set)\s+(?:all|every\w*)\s+(?:\w+\s+)?(?:as|to)\s+unlocked\s*$/i.test(s), 'unlock-all');
+addPattern((s) => /^(?:activate\s+all|batch\s+activate)\b/i.test(s), 'activate-all');
+addPattern((s) => /^(?:mark|set)\s+(?:all|every\w*)\s+(?:\w+\s+)?(?:as|to)\s+active\s*$/i.test(s), 'activate-all');
+
+// Connect / disconnect (MUST come before delete)
+addPattern((s) => /^(?:connect|link|wire|attach)\s+.+\s+(?:to|with|→|->)\s+/i.test(s), 'connect');
+addPattern((s) => /^(?:disconnect|unlink|unwire|detach)\s+.+\s+(?:from|and|→|->)\s+/i.test(s), 'disconnect');
+addPattern((s) => /^(?:remove|break|cut)\s+(?:the\s+)?(?:connection|link|edge)\s+(?:between|from)\s+/i.test(s), 'disconnect');
+
+// Delete
+addPattern((s) => /^(?:delete|remove|drop|destroy)\s+.+/i.test(s), 'delete');
+
+// Rename
+addPattern((s) => /^(?:rename|change name|relabel)\s+.+\s+(?:to|as|→|->)\s+/i.test(s), 'rename');
+
+// Show stale (MUST come before generic focus/show)
+addPattern((s) => /^(?:show|find|list)\s+(?:me\s+)?(?:what(?:'s| is)\s+)?stale/i.test(s), 'show-stale');
+addPattern((s) => /^(?:show|find|list)\s+stale/i.test(s), 'show-stale');
+addPattern((s) => /^(?:what|which)\s+nodes?\s+(?:are|is)\s+stale/i.test(s), 'show-stale');
+addPattern((s) => /^how\s+many\s+(?:nodes?\s+)?(?:are\s+)?stale/i.test(s), 'show-stale');
+
+// "show me the critical path" / "show me bottlenecks" / "show me orphan nodes"
+addPattern((s) => /^(?:show|find|what(?:'s| is| are))\s+(?:me\s+)?(?:the\s+)?(?:critical\s*path|longest\s*chain)/i.test(s), 'critical-path');
+addPattern((s) => /^(?:show|find|what(?:'s| is| are))\s+(?:me\s+)?(?:the\s+)?(?:bottleneck|chokepoint|hub|spof)/i.test(s), 'bottlenecks');
+addPattern((s) => /^(?:show|find|list)\s+(?:me\s+)?(?:the\s+)?(?:orphan|unconnected|isolat)\w*/i.test(s), 'orphans');
+
+// Focus / select / show <node>
+addPattern((s) => /^(?:focus|select|show|go to|find|zoom)\s+(?:on\s+)?["']?.+["']?\s*$/i.test(s), 'focus');
+
+// Clone workflow (MUST come before duplicate)
+addPattern((s) => /^(?:clone|duplicate)\s+(?:workflow|graph|project|all)\s*$/i.test(s), 'clone-workflow');
+
+// Duplicate
+addPattern((s) => /^(?:duplicate|clone|copy)\s+["']?.+["']?\s*$/i.test(s), 'duplicate');
+
+// Add node by name
+addPattern((s) => /^(?:add|new)\s+\w+\s+(?:called|named|:)\s+/i.test(s) || /^(?:add|new)\s+\w+\s+["'].+["']/i.test(s), 'add-node');
+
+// Set status / lock / unlock
+addPattern((s) => /^(?:set|mark|change)\s+.+\s+(?:to|as|→)\s+\w+\s*$/i.test(s) || /^lock\s+["']?.+["']?\s*$/i.test(s) || /^unlock\s+["']?.+["']?\s*$/i.test(s), 'set-status');
+
+// List
+addPattern((s) => /^(?:list|show|inventory)\s+/i.test(s), 'list');
+
+// Describe
+addPattern((s) => /^(?:describe|annotate|document)\s+.+\s+(?:as:?|:)\s+/i.test(s), 'describe');
+
+// Swap
+addPattern((s) => /^(?:swap|switch|exchange)\s+.+\s+(?:and|with|↔)\s+/i.test(s), 'swap');
+
+// Content
+addPattern((s) => /^(?:content|write|fill)\s+.+(?::|=)\s+/i.test(s), 'content');
+
+// Download
+addPattern((s) => /^(?:download|export\s+node)\s+/i.test(s), 'download');
+
+// Undo / redo
+addPattern((s) => /^undo\s*$/i.test(s), 'undo');
+addPattern((s) => /^redo\s*$/i.test(s), 'redo');
+
+// Group
+addPattern((s) => /^(?:group|cluster|organize)\s*(?:by\s*)?(?:category|type)?\s*$/i.test(s), 'group');
+
+// Clear stale
+addPattern((s) => /^(?:clear|purge|remove)\s+stale\s*$/i.test(s), 'clear-stale');
+
+// Orphans
+addPattern((s) => /^(?:orphan|isolat|unconnected)\w*\s*$/i.test(s), 'orphans');
+
+// Count
+addPattern((s) => /^(?:count|stats|statistics|tally)\s*$/i.test(s), 'count');
+
+// Merge
+addPattern((s) => /^(?:merge|combine|fuse)\s+.+\s+(?:and|with|into|&)\s+/i.test(s), 'merge');
+
+// Deps
+addPattern((s) => /^(?:deps|dependencies|depend|upstream|downstream|chain)\s+/i.test(s), 'deps');
+addPattern((s) => /^what(?:'s| is)\s+(?:blocking|preventing|stopping)\s+.+\s+(?:from|to)\s+/i.test(s), 'deps');
+addPattern((s) => /^what(?:'s|\s+(?:is|are))?\s+(?:depend(?:s|ent|ing)?|downstream|upstream)\s+(?:on|of|from)\s+/i.test(s), 'deps');
+addPattern((s) => /^what\s+depends\s+on\s+/i.test(s), 'deps');
+
+// Reverse
+addPattern((s) => /^(?:reverse|flip|invert)\s+/i.test(s), 'reverse');
+
+// Templates
+addPattern((s) => /^save\s+template\s+["']?(.+?)["']?\s*$/i.test(s), 'save-template');
+addPattern((s) => /^(?:load|use)\s+template\s+["']?(.+?)["']?\s*$/i.test(s), 'load-template');
+addPattern((s) => /^(?:templates?|my\s+templates?)\s*$/i.test(s), 'list-templates');
+
+// Snapshots
+addPattern((s) => /^(?:save|snapshot)\s+["']?(.+?)["']?\s*$/i.test(s), 'save-snapshot');
+addPattern((s) => /^(?:restore|load)\s+["']?(.+?)["']?\s*$/i.test(s), 'restore-snapshot');
+addPattern((s) => /^(?:snapshots?|saved|bookmarks?)\s*$/i.test(s), 'list-snapshots');
+
+// Critical path
+addPattern((s) => /^(?:critical\s*path|longest\s*chain|bottleneck)\s*$/i.test(s), 'critical-path');
+
+// Isolate
+addPattern((s) => /^(?:isolate|subgraph|neighborhood|neighbours?)\s+/i.test(s), 'isolate');
+
+// Summarize
+addPattern((s) => /^(?:summarize|summary|executive|brief|overview)(?:\s+(?:the\s+)?(?:workflow|graph|project|all))?\s*$/i.test(s), 'summarize');
+
+// Validate
+addPattern((s) => /^(?:validate|integrity|check|audit)(?:\s+(?:the\s+)?(?:workflow|graph|project|all))?\s*$/i.test(s), 'validate');
+
+// What if
+addPattern((s) => /^(?:what\s*if|impact|without)\b/i.test(s), 'what-if');
+
+// Preflight
+addPattern((s) => /^(?:pre\s*flight|flight\s*check|dry\s*run|plan\s+run|execution\s+plan)\b/i.test(s), 'preflight');
+addPattern((s) => /^(?:which|what)\s+nodes?\s+(?:are|is)\s+(?:ready|able|eligible)\s+(?:to\s+)?(?:run|execute)/i.test(s), 'preflight');
+
+// Retry failed
+addPattern((s) => /^(?:retry|rerun|re-run)\s+(?:failed|errors?|skipped)\s*$/i.test(s), 'retry-failed');
+
+// Clear results
+addPattern((s) => /^(?:clear|reset)\s+(?:results?|execution|output)\s*$/i.test(s), 'clear-results');
+
+// Diff last run
+addPattern((s) => /^(?:diff\s+(?:last|prev(?:ious)?)|compare\s+(?:run|execution)s?)\s*$/i.test(s), 'diff-last-run');
+
+// Refresh / update / regenerate specific node (MUST come before run-workflow/run-node)
+addPattern((s) => /^(?:refresh|update|regenerate)\s+(?:the\s+)?["']?(.+?)["']?\s*$/i.test(s), 'refresh-node');
+
+// Run workflow
+addPattern((s) => /^(?:run|execute|start)\s+(?:workflow|all|pipeline|everything)\s*$/i.test(s), 'run-workflow');
+
+// Run specific node
+addPattern((s) => /^(?:run|execute)\s+["']?(.+?)["']?\s*$/i.test(s), 'run-node');
+
+// Explain
+addPattern((s) => /^(?:explain|walk\s*through|narrate|trace)\b/i.test(s), 'explain');
+
+// Help
+addPattern((s) => /^(?:help|commands|\?|what can you do)\s*$/i.test(s), 'help');
+
+// Why <node name> — but NOT "why is...", "why does..." (those go to LLM)
+addPattern((s) => /^(?:why|reason|purpose)\s+/i.test(s) && !/^why\s+(?:is|does|do|are|was|were|can|should|would|has|have|did)\b/i.test(s), 'why');
+
+// Relabel
+addPattern((s) => /^(?:relabel|re-label|fix\s+labels?|infer\s+labels?)\s*(?:all|edges?)?\s*$/i.test(s), 'relabel');
+
+// Teach / rules
+addPattern((s) => /^(?:teach|learn|remember)\s*:\s*(.+)$/i.test(s), 'teach');
+addPattern((s) => /^(?:forget|unlearn|remove rule)\s+(\d+)\s*$/i.test(s), 'forget-rule');
+addPattern((s) => /^(?:rules?|taught|learned)\s*$/i.test(s), 'list-rules');
+
+// Progress
+addPattern((s) => /^(?:progress|completion)\s*$/i.test(s), 'progress');
+
+// Diff snapshot
+addPattern((s) => /^(?:diff|compare)\s+["']?(.+?)["']?\s*$/i.test(s), 'diff-snapshot');
+
+// Plan
+addPattern((s) => /^(?:plan|execution\s*plan|steps|order)\s*$/i.test(s), 'plan');
+addPattern((s) => /^what(?:'s|\s+is)\s+the\s+(?:execution\s+)?order/i.test(s), 'plan');
+
+// Search
+addPattern((s) => /^(?:search|find|grep)\s+(.+)$/i.test(s), 'search');
+
+// Compress
+addPattern((s) => /^(?:compress|compact|simplify|dedupe|dedup)(?:\s+(?:the\s+)?(?:workflow|graph|project|all|nodes))?\s*$/i.test(s), 'compress');
+
+// Bottlenecks
+addPattern((s) => /^(?:bottleneck|bottlenecks|choke|chokepoint|hub|hubs|spof)\s*$/i.test(s), 'bottlenecks');
+
+// Suggest
+addPattern((s) => /^(?:suggest|next|what\s*(?:should|can)\s*I\s*do(?:\s+next|\s+now)?|recommendations?)\s*$/i.test(s), 'suggest');
+addPattern((s) => /^(?:which|what)\s+nodes?\s+(?:need|require|want)\s+(?:attention|work|updating|fixing|help)/i.test(s), 'suggest');
+addPattern((s) => /^(?:which|what)\s+nodes?\s+(?:haven't|have\s+not|aren't|are\s+not)\s+been\s+(?:updated|changed|run|executed)/i.test(s), 'suggest');
+
+// Auto-describe
+addPattern((s) => /^(?:auto[- ]?describe|describe\s+all|fill\s+descriptions?)(?:\s+(?:all\s+)?(?:nodes?|empty)?)?\s*$/i.test(s), 'auto-describe');
+
+// Refine
+addPattern((s) => /^(?:refine|extract|structure)(?:\s+(?:this\s+)?note)?\s*$/i.test(s), 'refine');
+
+// ── Central Brain Commands ──
+addPattern((s) => /^(?:ingest|feed|analyze|here(?:'s| is) (?:my|the|some)|take this|source(?:\s*material)?:)/i.test(s), 'ingest');
+addPattern((s) => /^(?:understand(?:ing)?|what do you (?:know|understand)|show (?:me )?(?:your )?(?:understanding|context|source)|context)\s*$/i.test(s), 'understand');
+addPattern((s) => /^(?:create|generate|build|make|write)\s+(?:a\s+)?(?:new\s+)?(?:blog[\s-]?post|email|social[\s-]?(?:thread|post|media)|twitter[\s-]?thread|x[\s-]?thread|ad[\s-]?copy|press[\s-]?release|landing[\s-]?page|newsletter|product[\s-]?description|linkedin[\s-]?post|ph[\s-]?(?:tagline|copy)|pitch|summary|brief|article|copy)/i.test(s), 'create-artifact');
+addPattern((s) => /^(?:sync|sync all|sync stale|sync everything|resync|re-sync)\s*$/i.test(s), 'sync-artifacts');
+addPattern((s) => /^sync\s+["']?.+["']?\s*$/i.test(s), 'sync-artifacts');
+addPattern((s) => /^(?:diff|preview sync|what(?:'s| would) (?:change|sync)|stale artifacts)\s*$/i.test(s), 'diff-artifacts');
+addPattern((s) => /^(?:overrides?|show overrides?|list overrides?|my (?:edits|changes|overrides))\s*$/i.test(s), 'show-overrides');
+addPattern((s) => /^(?:forget|remove|clear)\s+override\b/i.test(s), 'forget-override');
+addPattern((s) => /^(?:update|change|edit|modify)\s+(?:the\s+)?(?:source|input|original|context)\b/i.test(s), 'update-source');
+
+// ─── Public API ──────────────────────────────────────────────────────────────
+
+function computeConfidence(index: number, total: number): ConfidenceLevel {
+  const position = index / total;
+  if (position < 0.3) return 'high';
+  if (position < 0.7) return 'medium';
+  return 'low';
+}
+
 /**
- * Classify a CID chat prompt into a command route.
- * @param prompt - The raw user input
- * @param hasWorkflow - Whether the canvas has existing nodes
+ * Classify a CID chat prompt into a command route with confidence level.
+ * Confidence is based on match position: first 30% = high, 30-70% = medium, rest/fallback = low.
+ */
+export function classifyRouteWithConfidence(prompt: string, hasWorkflow: boolean = false): RouteResult {
+  const total = PATTERNS.length;
+  for (let i = 0; i < total; i++) {
+    if (PATTERNS[i].test(prompt, hasWorkflow)) {
+      return { route: PATTERNS[i].route, confidence: computeConfidence(i, total) };
+    }
+  }
+  return { route: 'llm-fallback', confidence: 'low' };
+}
+
+/**
+ * Classify a CID chat prompt into a command route (backward-compatible).
+ * Returns just the route string. Drop-in replacement for original classifyRoute.
  */
 export function classifyRoute(prompt: string, hasWorkflow: boolean = false): CommandRoute {
-  // Slash commands
-  if (/^\/template\s+/i.test(prompt)) return 'template';
-  if (/^\/clear\s*$/i.test(prompt) || /^\/new\s*$/i.test(prompt) || /^\/export\s*$/i.test(prompt) || /^\/mode\s*$/i.test(prompt)) return 'template'; // slash commands handled separately
+  return classifyRouteWithConfidence(prompt, hasWorkflow).route;
+}
 
-  // Extend vs generate
-  const isExtendRequest = hasWorkflow && /^(?:add|extend|expand|include|append|insert|also|plus|and also)\b/i.test(prompt);
-  // "make" only means generate when followed by "a/an/me/new" (not "make X more Y" or "make the X better")
-  const isMakeGenerate = /^make\s+(?:a|an|me|new|my)\b/i.test(prompt);
-  const isGenerateRequest = /^(?:build|create|generate|set up|design|start)\b/i.test(prompt) || isMakeGenerate;
-
-  if (isExtendRequest) return 'extend';
-  if (isGenerateRequest) return 'generate';
-
-  // Solve
-  if (/^(?:solve|fix|diagnose?|heal|repair)\b/i.test(prompt)) return 'solve';
-
-  // Health detail (MUST come before generic status to avoid "health" matching first)
-  if (/^(?:health\s+detail|health\s+breakdown|detailed?\s+health|health\s+report)\s*$/i.test(prompt)) return 'health-detail';
-
-  // Status
-  if (/^(?:status|report|health|dashboard)\b/i.test(prompt)) return 'status';
-
-  // Propagate (includes "update stale", "run stale", "run everything that's stale")
-  if (/^(?:propagate?|sync|refresh\s*stale|regenerate\s*stale|update\s+(?:all\s+)?stale|run\s+(?:the\s+)?stale)\b/i.test(prompt)) return 'propagate';
-  if (/^run\s+(?:everything|all|anything)\s+(?:that(?:'s| is)|which\s+is)\s+stale/i.test(prompt)) return 'propagate';
-
-  // Layout
-  if (/^(?:layout|arrange|lay\s+out)\b/i.test(prompt)) return 'layout';
-
-  // Optimize
-  if (/^optimi/i.test(prompt)) return 'optimize';
-
-  // Batch where (MUST come before batch approve/unlock/activate to avoid "batch approve where..." matching approve-all)
-  if (/^batch\s+\w+\s+where\s+/i.test(prompt)) return 'batch-where';
-
-  // Batch status changes (including "mark all as X" phrasing)
-  if (/^(?:approve\s+all|batch\s+approve)\b/i.test(prompt)) return 'approve-all';
-  if (/^(?:mark|set)\s+(?:all|every\w*)\s+(?:\w+\s+)?(?:as|to)\s+(?:approved|done)\s*$/i.test(prompt)) return 'approve-all';
-  if (/^(?:unlock\s+all|batch\s+unlock)\b/i.test(prompt)) return 'unlock-all';
-  if (/^(?:mark|set)\s+(?:all|every\w*)\s+(?:\w+\s+)?(?:as|to)\s+unlocked\s*$/i.test(prompt)) return 'unlock-all';
-  if (/^(?:activate\s+all|batch\s+activate)\b/i.test(prompt)) return 'activate-all';
-  if (/^(?:mark|set)\s+(?:all|every\w*)\s+(?:\w+\s+)?(?:as|to)\s+active\s*$/i.test(prompt)) return 'activate-all';
-
-  // Connect / disconnect (MUST come before delete to avoid "remove the connection" matching delete)
-  if (/^(?:connect|link|wire|attach)\s+.+\s+(?:to|with|→|->)\s+/i.test(prompt)) return 'connect';
-  if (/^(?:disconnect|unlink|unwire|detach)\s+.+\s+(?:from|and|→|->)\s+/i.test(prompt)) return 'disconnect';
-  if (/^(?:remove|break|cut)\s+(?:the\s+)?(?:connection|link|edge)\s+(?:between|from)\s+/i.test(prompt)) return 'disconnect';
-
-  // Delete
-  if (/^(?:delete|remove|drop|destroy)\s+.+/i.test(prompt)) return 'delete';
-
-  // Rename
-  if (/^(?:rename|change name|relabel)\s+.+\s+(?:to|as|→|->)\s+/i.test(prompt)) return 'rename';
-
-  // Show stale (MUST come before generic focus/show)
-  if (/^(?:show|find|list)\s+(?:me\s+)?(?:what(?:'s| is)\s+)?stale/i.test(prompt)) return 'show-stale';
-  if (/^(?:show|find|list)\s+stale/i.test(prompt)) return 'show-stale';
-  if (/^(?:what|which)\s+nodes?\s+(?:are|is)\s+stale/i.test(prompt)) return 'show-stale';
-  if (/^how\s+many\s+(?:nodes?\s+)?(?:are\s+)?stale/i.test(prompt)) return 'show-stale';
-
-  // "show me the critical path" / "show me bottlenecks" / "show me orphan nodes" (MUST come before generic focus/show)
-  if (/^(?:show|find|what(?:'s| is| are))\s+(?:me\s+)?(?:the\s+)?(?:critical\s*path|longest\s*chain)/i.test(prompt)) return 'critical-path';
-  if (/^(?:show|find|what(?:'s| is| are))\s+(?:me\s+)?(?:the\s+)?(?:bottleneck|chokepoint|hub|spof)/i.test(prompt)) return 'bottlenecks';
-  if (/^(?:show|find|list)\s+(?:me\s+)?(?:the\s+)?(?:orphan|unconnected|isolat)\w*/i.test(prompt)) return 'orphans';
-
-  // Focus / select / show <node>
-  if (/^(?:focus|select|show|go to|find|zoom)\s+(?:on\s+)?["']?.+["']?\s*$/i.test(prompt)) return 'focus';
-
-  // Clone workflow (MUST come before duplicate to avoid "clone workflow" matching duplicate)
-  if (/^(?:clone|duplicate)\s+(?:workflow|graph|project|all)\s*$/i.test(prompt)) return 'clone-workflow';
-
-  // Duplicate
-  if (/^(?:duplicate|clone|copy)\s+["']?.+["']?\s*$/i.test(prompt)) return 'duplicate';
-
-  // Add node by name
-  if (/^(?:add|new)\s+\w+\s+(?:called|named|:)\s+/i.test(prompt) || /^(?:add|new)\s+\w+\s+["'].+["']/i.test(prompt)) return 'add-node';
-
-  // Set status / lock / unlock
-  if (/^(?:set|mark|change)\s+.+\s+(?:to|as|→)\s+\w+\s*$/i.test(prompt) || /^lock\s+["']?.+["']?\s*$/i.test(prompt) || /^unlock\s+["']?.+["']?\s*$/i.test(prompt)) return 'set-status';
-
-  // List
-  if (/^(?:list|show|inventory)\s+/i.test(prompt)) return 'list';
-
-  // Describe
-  if (/^(?:describe|annotate|document)\s+.+\s+(?:as:?|:)\s+/i.test(prompt)) return 'describe';
-
-  // Swap
-  if (/^(?:swap|switch|exchange)\s+.+\s+(?:and|with|↔)\s+/i.test(prompt)) return 'swap';
-
-  // Content
-  if (/^(?:content|write|fill)\s+.+(?::|=)\s+/i.test(prompt)) return 'content';
-
-  // Download
-  if (/^(?:download|export\s+node)\s+/i.test(prompt)) return 'download';
-
-  // Undo / redo
-  if (/^undo\s*$/i.test(prompt)) return 'undo';
-  if (/^redo\s*$/i.test(prompt)) return 'redo';
-
-  // Group
-  if (/^(?:group|cluster|organize)\s*(?:by\s*)?(?:category|type)?\s*$/i.test(prompt)) return 'group';
-
-  // Clear stale
-  if (/^(?:clear|purge|remove)\s+stale\s*$/i.test(prompt)) return 'clear-stale';
-
-  // Orphans
-  if (/^(?:orphan|isolat|unconnected)\w*\s*$/i.test(prompt)) return 'orphans';
-
-  // Count
-  if (/^(?:count|stats|statistics|tally)\s*$/i.test(prompt)) return 'count';
-
-  // Merge
-  if (/^(?:merge|combine|fuse)\s+.+\s+(?:and|with|into|&)\s+/i.test(prompt)) return 'merge';
-
-  // Deps
-  if (/^(?:deps|dependencies|depend|upstream|downstream|chain)\s+/i.test(prompt)) return 'deps';
-  if (/^what(?:'s| is)\s+(?:blocking|preventing|stopping)\s+.+\s+(?:from|to)\s+/i.test(prompt)) return 'deps';
-  if (/^what(?:'s|\s+(?:is|are))?\s+(?:depend(?:s|ent|ing)?|downstream|upstream)\s+(?:on|of|from)\s+/i.test(prompt)) return 'deps';
-  if (/^what\s+depends\s+on\s+/i.test(prompt)) return 'deps';
-
-  // Reverse
-  if (/^(?:reverse|flip|invert)\s+/i.test(prompt)) return 'reverse';
-
-  // Templates
-  if (/^save\s+template\s+["']?(.+?)["']?\s*$/i.test(prompt)) return 'save-template';
-  if (/^(?:load|use)\s+template\s+["']?(.+?)["']?\s*$/i.test(prompt)) return 'load-template';
-  if (/^(?:templates?|my\s+templates?)\s*$/i.test(prompt)) return 'list-templates';
-
-  // Snapshots
-  if (/^(?:save|snapshot)\s+["']?(.+?)["']?\s*$/i.test(prompt)) return 'save-snapshot';
-  if (/^(?:restore|load)\s+["']?(.+?)["']?\s*$/i.test(prompt)) return 'restore-snapshot';
-  if (/^(?:snapshots?|saved|bookmarks?)\s*$/i.test(prompt)) return 'list-snapshots';
-
-  // Critical path
-  if (/^(?:critical\s*path|longest\s*chain|bottleneck)\s*$/i.test(prompt)) return 'critical-path';
-
-  // Isolate
-  if (/^(?:isolate|subgraph|neighborhood|neighbours?)\s+/i.test(prompt)) return 'isolate';
-
-  // Summarize
-  if (/^(?:summarize|summary|executive|brief|overview)(?:\s+(?:the\s+)?(?:workflow|graph|project|all))?\s*$/i.test(prompt)) return 'summarize';
-
-  // Validate
-  if (/^(?:validate|integrity|check|audit)(?:\s+(?:the\s+)?(?:workflow|graph|project|all))?\s*$/i.test(prompt)) return 'validate';
-
-
-  // What if
-  if (/^(?:what\s*if|impact|without)\b/i.test(prompt)) return 'what-if';
-
-  // Preflight
-  if (/^(?:pre\s*flight|flight\s*check|dry\s*run|plan\s+run|execution\s+plan)\b/i.test(prompt)) return 'preflight';
-  if (/^(?:which|what)\s+nodes?\s+(?:are|is)\s+(?:ready|able|eligible)\s+(?:to\s+)?(?:run|execute)/i.test(prompt)) return 'preflight';
-
-  // Retry failed
-  if (/^(?:retry|rerun|re-run)\s+(?:failed|errors?|skipped)\s*$/i.test(prompt)) return 'retry-failed';
-
-  // Clear results
-  if (/^(?:clear|reset)\s+(?:results?|execution|output)\s*$/i.test(prompt)) return 'clear-results';
-
-  // Diff last run
-  if (/^(?:diff\s+(?:last|prev(?:ious)?)|compare\s+(?:run|execution)s?)\s*$/i.test(prompt)) return 'diff-last-run';
-
-  // Refresh / update / regenerate specific node (MUST come before run-workflow/run-node)
-  if (/^(?:refresh|update|regenerate)\s+(?:the\s+)?["']?(.+?)["']?\s*$/i.test(prompt)) return 'refresh-node';
-
-  // Run workflow
-  if (/^(?:run|execute|start)\s+(?:workflow|all|pipeline|everything)\s*$/i.test(prompt)) return 'run-workflow';
-
-  // Run specific node
-  if (/^(?:run|execute)\s+["']?(.+?)["']?\s*$/i.test(prompt)) return 'run-node';
-
-  // Explain
-  if (/^(?:explain|walk\s*through|narrate|trace)\b/i.test(prompt)) return 'explain';
-
-  // Help
-  if (/^(?:help|commands|\?|what can you do)\s*$/i.test(prompt)) return 'help';
-
-  // Why <node name> — but NOT "why is...", "why does...", "why are..." (those are questions for the LLM)
-  if (/^(?:why|reason|purpose)\s+/i.test(prompt) && !/^why\s+(?:is|does|do|are|was|were|can|should|would|has|have|did)\b/i.test(prompt)) return 'why';
-
-  // Relabel
-  if (/^(?:relabel|re-label|fix\s+labels?|infer\s+labels?)\s*(?:all|edges?)?\s*$/i.test(prompt)) return 'relabel';
-
-  // Teach / rules
-  if (/^(?:teach|learn|remember)\s*:\s*(.+)$/i.test(prompt)) return 'teach';
-  if (/^(?:forget|unlearn|remove rule)\s+(\d+)\s*$/i.test(prompt)) return 'forget-rule';
-  if (/^(?:rules?|taught|learned)\s*$/i.test(prompt)) return 'list-rules';
-
-  // Progress
-  if (/^(?:progress|completion)\s*$/i.test(prompt)) return 'progress';
-
-  // Diff snapshot
-  if (/^(?:diff|compare)\s+["']?(.+?)["']?\s*$/i.test(prompt)) return 'diff-snapshot';
-
-  // Plan
-  if (/^(?:plan|execution\s*plan|steps|order)\s*$/i.test(prompt)) return 'plan';
-  if (/^what(?:'s|\s+is)\s+the\s+(?:execution\s+)?order/i.test(prompt)) return 'plan';
-
-  // Search
-  if (/^(?:search|find|grep)\s+(.+)$/i.test(prompt)) return 'search';
-
-  // Compress
-  if (/^(?:compress|compact|simplify|dedupe|dedup)(?:\s+(?:the\s+)?(?:workflow|graph|project|all|nodes))?\s*$/i.test(prompt)) return 'compress';
-
-  // Bottlenecks
-  if (/^(?:bottleneck|bottlenecks|choke|chokepoint|hub|hubs|spof)\s*$/i.test(prompt)) return 'bottlenecks';
-
-  // Suggest
-  if (/^(?:suggest|next|what\s*(?:should|can)\s*I\s*do(?:\s+next|\s+now)?|recommendations?)\s*$/i.test(prompt)) return 'suggest';
-  if (/^(?:which|what)\s+nodes?\s+(?:need|require|want)\s+(?:attention|work|updating|fixing|help)/i.test(prompt)) return 'suggest';
-  if (/^(?:which|what)\s+nodes?\s+(?:haven't|have\s+not|aren't|are\s+not)\s+been\s+(?:updated|changed|run|executed)/i.test(prompt)) return 'suggest';
-
-  // Auto-describe
-  if (/^(?:auto[- ]?describe|describe\s+all|fill\s+descriptions?)(?:\s+(?:all\s+)?(?:nodes?|empty)?)?\s*$/i.test(prompt)) return 'auto-describe';
-
-  // Refine
-  if (/^(?:refine|extract|structure)(?:\s+(?:this\s+)?note)?\s*$/i.test(prompt)) return 'refine';
-
-  // Everything else → LLM
-  return 'llm-fallback';
+/**
+ * Backward-compatible wrapper that returns just the route string.
+ * Alias for classifyRoute — use when existing callers don't need confidence.
+ */
+export function routePromptCompat(prompt: string, hasWorkflow: boolean = false): CommandRoute {
+  return classifyRoute(prompt, hasWorkflow);
 }

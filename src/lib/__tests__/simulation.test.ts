@@ -2337,7 +2337,7 @@ describe('User Simulation: Real Journeys', () => {
       useLifecycleStore.setState({
         nodes: [], edges: [], events: [], messages: [],
         impactPreview: null, toasts: [], isProcessing: false,
-        showCIDPanel: false, showActivityPanel: false, showPreviewPanel: false,
+        showCIDPanel: false, showPreviewPanel: false,
         selectedNodeId: null, multiSelectedIds: new Set(),
         contextMenu: null, activeArtifactNodeId: null,
       });
@@ -2351,12 +2351,6 @@ describe('User Simulation: Real Journeys', () => {
       expect(getStore().showCIDPanel).toBe(true);
       getStore().toggleCIDPanel();
       expect(getStore().showCIDPanel).toBe(false);
-    });
-
-    it('toggleActivityPanel: toggles showActivityPanel', () => {
-      expect(getStore().showActivityPanel).toBe(false);
-      getStore().toggleActivityPanel();
-      expect(getStore().showActivityPanel).toBe(true);
     });
 
     it('togglePreviewPanel: toggles showPreviewPanel', () => {
@@ -4397,6 +4391,205 @@ describe('User Simulation: Real Journeys', () => {
 
       // Step 6: Rubric stayed locked throughout
       expect(getStore().nodes.find(n => n.id === 'rubric')!.data.status).toBe('locked');
+    });
+  });
+
+  // ── Scenario 36: Override lifecycle — interpret, propagate (this-node, all-similar, global) ──
+  describe('Scenario 36 — interpretOverride & propagateOverride', () => {
+    beforeEach(() => resetStore());
+
+    /** Helper: set up centralContext with two artifact nodes of the same type */
+    function buildOverrideWorkflow() {
+      const blogA = mkNode('blog-a', 'Blog Post A', 'artifact', {
+        content: 'Original blog A content',
+        executionResult: 'Generated blog A.',
+        executionStatus: 'success' as const,
+      });
+      const blogB = mkNode('blog-b', 'Blog Post B', 'artifact', {
+        content: 'Original blog B content',
+        executionResult: 'Generated blog B.',
+        executionStatus: 'success' as const,
+      });
+      const source = mkNode('source-1', 'Source Material', 'input', {
+        content: 'Brand guidelines and tone doc.',
+      });
+
+      useLifecycleStore.setState({
+        nodes: [source, blogA, blogB],
+        edges: [
+          mkEdge('e-s-a', 'source-1', 'blog-a', 'drives'),
+          mkEdge('e-s-b', 'source-1', 'blog-b', 'drives'),
+        ],
+        centralContext: {
+          source: {
+            content: 'Brand guidelines',
+            contentType: 'text' as const,
+            lastUpdated: Date.now(),
+          },
+          understanding: {
+            summary: 'Brand-aligned blog content pipeline',
+            keyEntities: ['Brand'],
+            tone: 'professional',
+            audience: 'marketers',
+            intent: 'Generate consistent blog posts',
+            constraints: [],
+            suggestedArtifacts: ['blog-post'],
+          },
+          artifacts: {
+            'blog-a': {
+              nodeId: 'blog-a',
+              artifactType: 'blog-post',
+              derivedFields: [],
+              generationPrompt: 'Write a blog post',
+              model: 'deepseek-reasoner',
+              lastSyncedAt: Date.now(),
+              lastSourceHash: 'abc123',
+              syncStatus: 'current' as const,
+              userEdits: [],
+            },
+            'blog-b': {
+              nodeId: 'blog-b',
+              artifactType: 'blog-post',
+              derivedFields: [],
+              generationPrompt: 'Write a blog post',
+              model: 'deepseek-reasoner',
+              lastSyncedAt: Date.now(),
+              lastSourceHash: 'abc123',
+              syncStatus: 'current' as const,
+              userEdits: [],
+            },
+          },
+          overrides: [],
+        },
+      });
+
+      return { blogA, blogB, source };
+    }
+
+    it('interpretOverride calls API and stores interpretation on the override', async () => {
+      buildOverrideWorkflow();
+      const store = getStore();
+
+      // Record an override
+      store.recordOverride('blog-a', 'content', 'Original blog A content', 'Rewritten casual blog A');
+
+      // Grab the override id
+      const ctx1 = getStore().centralContext!;
+      expect(ctx1.overrides).toHaveLength(1);
+      const overrideId = ctx1.overrides[0].id;
+      expect(ctx1.overrides[0].propagated).toBe(false);
+
+      // Mock fetch to return interpretation
+      mockFetch.mockImplementationOnce(async () => ({
+        ok: true,
+        json: async () => ({ content: 'User wants a more casual tone for blog content' }),
+      }));
+
+      const interpretation = await store.interpretOverride(overrideId);
+
+      expect(interpretation).toBe('User wants a more casual tone for blog content');
+
+      // Override should now have cidInterpretation stored
+      const ctx2 = getStore().centralContext!;
+      const updated = ctx2.overrides.find(o => o.id === overrideId)!;
+      expect(updated.cidInterpretation).toBe('User wants a more casual tone for blog content');
+    });
+
+    it('propagateOverride with scope this-node marks override propagated and adds CID message', async () => {
+      buildOverrideWorkflow();
+      const store = getStore();
+
+      // Record and interpret override
+      store.recordOverride('blog-a', 'content', 'Original blog A content', 'Casual rewrite');
+      const overrideId = getStore().centralContext!.overrides[0].id;
+
+      // Mock the interpretation fetch (propagateOverride calls interpretOverride if no interpretation)
+      mockFetch.mockImplementationOnce(async () => ({
+        ok: true,
+        json: async () => ({ content: 'User prefers casual tone' }),
+      }));
+
+      await store.propagateOverride(overrideId, 'this-node');
+
+      // Override should be marked propagated with scope 'this-node'
+      const ctx = getStore().centralContext!;
+      const ovr = ctx.overrides.find(o => o.id === overrideId)!;
+      expect(ovr.propagated).toBe(true);
+      expect(ovr.scope).toBe('this-node');
+
+      // A CID message should have been added
+      const msgs = getStore().messages;
+      expect(msgs.length).toBeGreaterThanOrEqual(1);
+      expect(msgs.some((m: { content: string }) => m.content.includes('Override kept for this node only'))).toBe(true);
+    });
+
+    it('propagateOverride with scope all-similar propagates override to similar artifact nodes', async () => {
+      buildOverrideWorkflow();
+      const store = getStore();
+
+      // Record override on blog-a
+      store.recordOverride('blog-a', 'content', 'Original blog A content', 'Casual blog rewrite');
+      const overrideId = getStore().centralContext!.overrides[0].id;
+
+      // Mock the interpretation fetch
+      mockFetch.mockImplementationOnce(async () => ({
+        ok: true,
+        json: async () => ({ content: 'User wants casual tone' }),
+      }));
+
+      await store.propagateOverride(overrideId, 'all-similar');
+
+      const ctx = getStore().centralContext!;
+
+      // Original override should be marked propagated with scope 'all-similar'
+      const originalOvr = ctx.overrides.find(o => o.id === overrideId)!;
+      expect(originalOvr.propagated).toBe(true);
+      expect(originalOvr.scope).toBe('all-similar');
+
+      // blog-b should have gotten a new override (same field, same userValue)
+      const blogBOverrides = ctx.overrides.filter(o => o.nodeId === 'blog-b');
+      expect(blogBOverrides.length).toBeGreaterThanOrEqual(1);
+      expect(blogBOverrides[0].field).toBe('content');
+      expect(blogBOverrides[0].userValue).toBe('Casual blog rewrite');
+
+      // CID message should mention similar artifacts
+      const msgs = getStore().messages;
+      expect(msgs.some((m: { content: string }) => m.content.includes('similar artifact'))).toBe(true);
+    });
+
+    it('propagateOverride with scope global adds interpretation to centralContext constraints', async () => {
+      buildOverrideWorkflow();
+      const store = getStore();
+
+      // Record override on blog-a
+      store.recordOverride('blog-a', 'content', 'Original blog A content', 'Casual rewrite');
+      const overrideId = getStore().centralContext!.overrides[0].id;
+
+      // Pre-set the cidInterpretation so global scope has something to add
+      useLifecycleStore.setState(s => ({
+        centralContext: s.centralContext ? {
+          ...s.centralContext,
+          overrides: s.centralContext.overrides.map(o =>
+            o.id === overrideId ? { ...o, cidInterpretation: 'User prefers casual tone across all content' } : o
+          ),
+        } : null,
+      }));
+
+      await store.propagateOverride(overrideId, 'global');
+
+      const ctx = getStore().centralContext!;
+
+      // Override should be marked propagated with scope 'global'
+      const ovr = ctx.overrides.find(o => o.id === overrideId)!;
+      expect(ovr.propagated).toBe(true);
+      expect(ovr.scope).toBe('global');
+
+      // The interpretation should have been added to understanding.constraints
+      expect(ctx.understanding.constraints).toContain('User prefers casual tone across all content');
+
+      // CID message should mention global understanding update
+      const msgs = getStore().messages;
+      expect(msgs.some((m: { content: string }) => m.content.includes('Updated my understanding globally'))).toBe(true);
     });
   });
 

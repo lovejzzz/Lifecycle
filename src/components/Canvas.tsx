@@ -21,13 +21,12 @@ import { Bot, Sparkles, ArrowRight, Search, X, HelpCircle, Keyboard, ChevronRigh
 import { useLifecycleStore, resolveOverlap } from '@/store/useStore';
 import LifecycleNode from './LifecycleNode';
 import NodeDetailPanel from './NodeDetailPanel';
-import ActivityPanel from './ActivityPanel';
 import CIDPanel from './CIDPanel';
 import NodeContextMenu from './NodeContextMenu';
 import ArtifactPanel from './ArtifactPanel';
 import ImpactPreview from './ImpactPreview';
 import TemplateBrowser from './TemplateBrowser';
-import BatchToolbar from './BatchToolbar';
+// BatchToolbar integrated into NodeDetailPanel
 import { getNodeColors, EDGE_LABEL_COLORS } from '@/lib/types';
 import type { NodeData, NodeCategory } from '@/lib/types';
 import { getAgent } from '@/lib/agents';
@@ -308,6 +307,7 @@ function CanvasInner() {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showLegend, setShowLegend] = useState(false);
   const [showTemplateBrowser, setShowTemplateBrowser] = useState(false);
+  const [showEdges, setShowEdges] = useState(true);
 
   // Listen for template browser open event from TopBar
   useEffect(() => {
@@ -737,7 +737,7 @@ function CanvasInner() {
             ...n,
             style: connectedNodeIds.has(n.id) ? { opacity: 1, transition: 'opacity 0.3s' } : { opacity: 0.3, transition: 'opacity 0.3s' },
           })) : nodes) : []}
-          edges={mounted ? styledEdges : []}
+          edges={mounted && showEdges ? styledEdges : []}
           onNodesChange={onNodesChange}
           onNodeDrag={onNodeDrag}
           onNodeDragStop={onNodeDragStop}
@@ -817,7 +817,7 @@ function CanvasInner() {
               <h2 className="text-xl font-semibold text-white/80 mb-2">
                 Lifecycle
               </h2>
-              <p className="text-[11px] text-white/30 mb-6">Workflows that stay alive after generation</p>
+              <p className="text-[12px] text-white/50 mb-6">Workflows that stay alive after generation</p>
               {!showCIDPanel && (
                 <button
                   onClick={toggleCIDPanel}
@@ -851,31 +851,31 @@ function CanvasInner() {
                     }}
                     className={`group relative text-left px-3 py-2.5 rounded-xl border transition-all duration-200 hover:scale-[1.02] ${
                       agent.accent === 'amber'
-                        ? 'border-white/[0.06] bg-white/[0.02] hover:bg-amber-500/[0.06] hover:border-amber-500/20'
-                        : 'border-white/[0.06] bg-white/[0.02] hover:bg-emerald-500/[0.06] hover:border-emerald-500/20'
+                        ? 'border-white/[0.10] bg-white/[0.04] hover:bg-amber-500/[0.06] hover:border-amber-500/20'
+                        : 'border-white/[0.10] bg-white/[0.04] hover:bg-emerald-500/[0.06] hover:border-emerald-500/20'
                     }`}
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <Icon size={13} className={`${iconClass} transition-colors`} />
                       <span className="text-[11px] font-medium text-white/70 group-hover:text-white/90 transition-colors">{label}</span>
                     </div>
-                    <p className="text-[9px] text-white/30 group-hover:text-white/45 transition-colors leading-relaxed">{desc}</p>
+                    <p className="text-[10px] text-white/45 group-hover:text-white/60 transition-colors leading-relaxed">{desc}</p>
                   </button>
                 ))}
                 <button
                   onClick={() => setShowTemplateBrowser(true)}
-                  className={`col-span-2 sm:col-span-3 text-center py-2 rounded-xl border border-dashed transition-all duration-200 hover:scale-[1.01] ${
+                  className={`col-span-2 sm:col-span-3 text-center py-2 rounded-xl border border-solid transition-all duration-200 hover:scale-[1.01] ${
                     agent.accent === 'amber'
                       ? 'border-amber-500/15 text-amber-400/40 hover:text-amber-400/70 hover:border-amber-500/30 hover:bg-amber-500/[0.04]'
                       : 'border-emerald-500/15 text-emerald-400/40 hover:text-emerald-400/70 hover:border-emerald-500/30 hover:bg-emerald-500/[0.04]'
                   }`}
                 >
-                  <span className="text-[10px] font-medium">Browse All Templates</span>
+                  <span className="text-[11px] font-medium">Browse All Templates</span>
                   <span className="text-[9px] ml-1.5 opacity-50">{mounted && typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent) ? '\u2318' : 'Ctrl+'}T</span>
                 </button>
               </div>
               {/* Keyboard hint */}
-              <div className="mt-4 text-[10px] text-white/30">
+              <div className="mt-4 text-[10px] text-white/40">
                 Press <kbd className="px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] font-mono text-[9px]">⌘K</kbd> to focus CID
               </div>
             </div>
@@ -1281,7 +1281,7 @@ function CanvasInner() {
               onClick={() => setShowShortcuts(false)}
             >
               <div
-                className="bg-[#0e0e18]/95 border border-white/[0.1] rounded-2xl shadow-2xl p-6 w-[340px] max-h-[80vh] overflow-y-auto"
+                className="bg-[#0e0e18]/95 border border-white/[0.1] rounded-2xl shadow-2xl p-6 w-[340px] max-w-[calc(100vw-2rem)] max-h-[80vh] overflow-y-auto"
                 onClick={e => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between mb-4">
@@ -1313,7 +1313,7 @@ function CanvasInner() {
                   { keys: ['?'], desc: 'Open CID help' },
                 ].map(({ keys, desc }) => (
                   <div key={desc} className="flex items-center justify-between py-1.5 border-b border-white/[0.04] last:border-0">
-                    <span className="text-[11px] text-white/50">{desc}</span>
+                    <span className="text-[11px] text-white/60">{desc}</span>
                     <div className="flex items-center gap-1">
                       {keys.map(k => (
                         <kbd key={k} className="px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-[10px] font-mono text-white/40">{k}</kbd>
@@ -1359,7 +1359,7 @@ function CanvasInner() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -10 }}
                 transition={{ duration: 0.15 }}
-                className="absolute bottom-16 left-4 z-30 rounded-xl border border-white/[0.1] bg-[#0e0e18]/95 backdrop-blur-xl shadow-2xl p-3 w-[175px]"
+                className={`absolute bottom-16 z-30 rounded-xl border border-white/[0.1] bg-[#0e0e18]/95 backdrop-blur-xl shadow-2xl p-3 w-[175px] transition-all left-4`}
               >
                 <div className="text-[9px] text-white/30 uppercase tracking-wider font-medium mb-2">
                   {usedLabels.length > 0 ? `Active Labels (${usedLabels.length})` : 'Edge Labels'}
@@ -1382,7 +1382,7 @@ function CanvasInner() {
 
         {/* Shortcuts help button + Legend button */}
         {!isEmpty && (
-          <div className="absolute bottom-4 left-4 z-20 flex gap-1.5">
+          <div className={`absolute bottom-4 z-20 flex gap-1.5 transition-all left-4`}>
             <button
               onClick={() => setShowShortcuts(true)}
               title="Keyboard shortcuts (⌘/)"
@@ -1391,25 +1391,32 @@ function CanvasInner() {
               <HelpCircle size={13} />
             </button>
             {edges.length > 0 && (
-              <button
-                onClick={() => setShowLegend(prev => !prev)}
-                title="Edge color legend"
-                className={`w-7 h-7 rounded-lg flex items-center justify-center border transition-colors ${
-                  showLegend ? 'bg-white/[0.08] border-white/[0.15] text-white/60' : 'bg-white/[0.04] border-white/[0.08] text-white/25 hover:text-white/50 hover:bg-white/[0.08]'
-                }`}
-              >
-                <span className="text-[10px] font-bold">E</span>
-              </button>
+              <>
+                <button
+                  onClick={() => setShowEdges(prev => !prev)}
+                  title={showEdges ? 'Hide edges' : 'Show edges'}
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center border transition-colors ${
+                    showEdges ? 'bg-white/[0.04] border-white/[0.08] text-white/25 hover:text-white/50 hover:bg-white/[0.08]' : 'bg-white/[0.08] border-white/[0.15] text-white/60'
+                  }`}
+                >
+                  <span className="text-[10px] font-bold">{showEdges ? '⊶' : '⊷'}</span>
+                </button>
+                <button
+                  onClick={() => setShowLegend(prev => !prev)}
+                  title="Edge color legend"
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center border transition-colors ${
+                    showLegend ? 'bg-white/[0.08] border-white/[0.15] text-white/60' : 'bg-white/[0.04] border-white/[0.08] text-white/25 hover:text-white/50 hover:bg-white/[0.08]'
+                  }`}
+                >
+                  <span className="text-[10px] font-bold">E</span>
+                </button>
+              </>
             )}
           </div>
         )}
 
-        {/* Multi-select batch toolbar */}
-        <BatchToolbar />
-
         {/* Overlays */}
         {mounted && !isEmpty && <NodeDetailPanel />}
-        {mounted && !isEmpty && <ActivityPanel />}
         {mounted && contextMenu && <NodeContextMenu />}
         <AnimatePresence>
           {mounted && activeArtifactNodeId && <ArtifactPanel />}

@@ -275,8 +275,9 @@ describe('E2E Async Simulation Tests', () => {
     it('generates a workflow from prompt via AI API', async () => {
       const store = getStore();
 
-      // Ensure Rowan mode (no interview gate)
+      // Ensure Rowan mode and skip interview gate
       store.setCIDMode('rowan');
+      useLifecycleStore.setState({ poirotContext: { phase: 'revealing', originalPrompt: 'Build a blog content pipeline', answers: {}, questionIndex: 0 } });
 
       store.generateWorkflow('Build a blog content pipeline');
 

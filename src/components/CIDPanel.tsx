@@ -4,8 +4,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Bot, Send, Sparkles, X, Loader2, Zap, RefreshCw, Lightbulb, Wrench,
-  Search, ChevronRight, Wifi, WifiOff, Trash2, Download,
-  ArrowLeftRight, Square, Pencil, Pin, Check, Paperclip, FileText, XCircle,
+  Search, ChevronRight, ChevronDown, Wifi, WifiOff, Trash2, Download,
+  ArrowLeftRight, Square, Pencil, Pin, Check, Paperclip, FileText, XCircle, Brain,
 } from 'lucide-react';
 import { useLifecycleStore, findNodeByName, getNextHint, getSmartSuggestions } from '@/store/useStore';
 import type { ProactiveSuggestion } from '@/lib/suggestions';
@@ -15,6 +15,7 @@ import { relativeTime } from '@/lib/types';
 import { renderMarkdown } from '@/lib/markdown';
 import { exportAndDownload } from '@/lib/export';
 import { resetOnboardingTour } from '@/components/OnboardingTour';
+import { classifyRouteWithConfidence, type CommandRoute } from '@/lib/routing';
 
 const COMMAND_HINTS_BY_SECTION: { section: string; hints: { trigger: string; label: string }[] }[] = [
   { section: '📊 Analysis', hints: [
@@ -91,6 +92,18 @@ const COMMAND_HINTS_BY_SECTION: { section: string; hints: { trigger: string; lab
     { trigger: 'undo', label: 'undo — Revert last change' },
     { trigger: 'redo', label: 'redo — Reapply undone change' },
     { trigger: 'search', label: 'search <term> — Search chat history' },
+  ]},
+  { section: '🧠 Central Brain', hints: [
+    { trigger: 'ingest', label: 'ingest: <content> — Feed source material to CID' },
+    { trigger: 'understanding', label: 'understanding — Show CID\'s understanding' },
+    { trigger: 'create', label: 'create <type> — Generate artifact from context' },
+    { trigger: 'sync', label: 'sync — Sync all stale artifacts surgically' },
+    { trigger: 'diff', label: 'diff — Preview what sync would change' },
+    { trigger: 'overrides', label: 'overrides — List user overrides' },
+    { trigger: 'interpret override', label: 'interpret override <id> — AI-interpret an override' },
+    { trigger: 'propagate override', label: 'propagate override <id> <scope> — Apply override (this-node|all-similar|global)' },
+    { trigger: 'update source', label: 'update source: <text> — Update source material' },
+    { trigger: 'context', label: 'context — Show current source context' },
   ]},
   { section: '🤖 Agent', hints: [
     { trigger: 'help', label: 'help — List all commands' },
@@ -468,11 +481,119 @@ export default function CIDPanel() {
       return;
     }
 
+    // ── Confidence-driven routing fallback ──
+    // When the router is unsure (low confidence), ask for clarification instead of guessing
+    const hasWorkflow = nodes.length > 0;
+    const { route: classifiedRoute, confidence } = classifyRouteWithConfidence(prompt, hasWorkflow);
+
+    if (confidence === 'low' && classifiedRoute !== 'llm-fallback') {
+      const routeDescriptions: Partial<Record<CommandRoute, string>> = {
+        extend: 'add new nodes to the existing workflow',
+        generate: 'generate a new workflow from scratch',
+        solve: 'diagnose and fix structural problems',
+        status: 'show a health/status report',
+        propagate: 'propagate changes to stale nodes',
+        layout: 'auto-arrange the node layout',
+        optimize: 'optimize the workflow structure',
+        'approve-all': 'approve all nodes in review',
+        'unlock-all': 'unlock all locked nodes',
+        'activate-all': 'activate all stale nodes',
+        connect: 'connect two nodes with an edge',
+        disconnect: 'disconnect two nodes',
+        delete: 'delete a node',
+        rename: 'rename a node',
+        'show-stale': 'show which nodes are stale',
+        focus: 'focus on a specific node',
+        duplicate: 'duplicate a node',
+        'add-node': 'add a new node',
+        'set-status': 'change a node\'s status',
+        list: 'list nodes by category or status',
+        describe: 'set a node\'s description',
+        swap: 'swap two nodes\' positions',
+        content: 'set a node\'s content',
+        download: 'download/export a node',
+        undo: 'undo the last action',
+        redo: 'redo the last undone action',
+        group: 'group nodes by category',
+        'clear-stale': 'remove all stale nodes',
+        orphans: 'find unconnected nodes',
+        count: 'show node count/statistics',
+        merge: 'merge two nodes together',
+        deps: 'show a node\'s dependencies',
+        reverse: 'reverse edge directions on a node',
+        'save-template': 'save workflow as a template',
+        'load-template': 'load a saved template',
+        'list-templates': 'list saved templates',
+        'save-snapshot': 'save a snapshot of the current state',
+        'restore-snapshot': 'restore a saved snapshot',
+        'list-snapshots': 'list saved snapshots',
+        'critical-path': 'show the critical path',
+        isolate: 'show a node\'s subgraph neighborhood',
+        summarize: 'summarize the workflow',
+        validate: 'validate workflow integrity',
+        'clone-workflow': 'clone the entire workflow',
+        'what-if': 'run a what-if impact analysis',
+        preflight: 'show a pre-execution summary',
+        'retry-failed': 'retry failed nodes',
+        'clear-results': 'clear all execution results',
+        'diff-last-run': 'diff against the last execution run',
+        'refresh-node': 'refresh/regenerate a specific node',
+        'run-workflow': 'execute the entire workflow',
+        'run-node': 'execute a specific node',
+        explain: 'explain the workflow step by step',
+        help: 'show available commands',
+        why: 'explain why a node exists',
+        relabel: 'relabel all edges',
+        teach: 'teach CID a new rule',
+        'forget-rule': 'forget a taught rule',
+        'list-rules': 'list taught rules',
+        progress: 'show workflow completion progress',
+        'diff-snapshot': 'diff against a saved snapshot',
+        'batch-where': 'batch update nodes matching a condition',
+        plan: 'show the execution plan',
+        search: 'search through chat history',
+        compress: 'compress/compact the workflow',
+        bottlenecks: 'find bottlenecks and choke points',
+        suggest: 'get next-step suggestions',
+        'health-detail': 'show detailed health breakdown',
+        'auto-describe': 'auto-generate node descriptions',
+        refine: 'refine a note node',
+        ingest: 'ingest source material',
+        understand: 'show CID\'s understanding of the source',
+        'create-artifact': 'create an artifact from context',
+        'sync-artifacts': 'sync stale artifacts',
+        'diff-artifacts': 'preview what sync would change',
+        'show-overrides': 'list user overrides',
+        'forget-override': 'remove a user override',
+        'update-source': 'update the source material',
+      };
+
+      const description = routeDescriptions[classifiedRoute] || classifiedRoute.replace(/-/g, ' ');
+      addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
+      setProcessing(true);
+      setTimeout(() => {
+        sendStreamingResponse(
+          `I'm not sure what you mean — did you want me to **${description}**? Or something else?\n\nTry rephrasing, or type \`help\` to see available commands.`
+        );
+      }, 200);
+      return;
+    }
+
     // Detect "extend" intent — user wants to add to existing workflow
     const isExtendRequest = nodes.length > 0 && /^(?:add|extend|expand|include|append|insert|also|plus|and also)\b/i.test(prompt);
     const isMakeGenerate = /^make\s+(?:a|an|me|new|my)\b/i.test(prompt);
     const isGenerateRequest = /^(?:build|create|generate|set up|design|start)\b/i.test(prompt) || isMakeGenerate;
-    if (isExtendRequest) {
+
+    // Central Brain: when context is ingested, route artifact creation through createArtifact (not generateWorkflow)
+    const hasContext = useLifecycleStore.getState().hasContext();
+    const isArtifactCreate = hasContext && /^(?:create|generate|build|make|write)\s+(?:a\s+)?(?:new\s+)?(?:blog[\s-]?post|email|social[\s-]?(?:thread|post|media)|twitter[\s-]?thread|x[\s-]?thread|ad[\s-]?copy|press[\s-]?release|landing[\s-]?page|newsletter|product[\s-]?description|linkedin[\s-]?post|ph[\s-]?(?:tagline|copy)|pitch|summary|brief|article|copy)/i.test(prompt);
+
+    if (isArtifactCreate) {
+      addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
+      const typeMatch = prompt.match(/(?:create|generate|build|make|write)\s+(?:a\s+)?(?:new\s+)?([\w\s-]+)/i);
+      const artifactType = typeMatch?.[1]?.trim().replace(/\s+/g, '-').toLowerCase() || 'content';
+      useLifecycleStore.getState().createArtifact(artifactType, prompt);
+    } else if (isExtendRequest) {
       // Route through chatWithCID which already has graph context and handles workflow responses
       // chatWithCID adds its own user message, so we don't add one here
       chatWithCID(`Extend the current workflow: ${prompt}. Add new nodes and connect them to existing nodes where appropriate. Return a workflow with ONLY the NEW nodes and edges to add. Use the existing node labels in edge references.`);
@@ -510,6 +631,12 @@ export default function CIDPanel() {
       }
     } else if (/^(?:propagate?|sync|refresh\s*stale|regenerate\s*stale|update\s+(?:all\s+)?stale|run\s+(?:the\s+)?stale)\b/i.test(prompt) || /^run\s+(?:everything|all|anything)\s+(?:that(?:'s| is)|which\s+is)\s+stale/i.test(prompt)) {
       addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
+      // Central Brain: use surgical sync when context exists
+      if (hasContext && /^(?:sync|sync all|sync stale|sync everything|resync|re-sync)\s*$/i.test(prompt)) {
+        setProcessing(true);
+        useLifecycleStore.getState().syncAllStale().finally(() => setProcessing(false));
+        return;
+      }
       const currentNodes = useLifecycleStore.getState().nodes;
       const sc = currentNodes.filter((n) => n.data.status === 'stale').length;
       if (sc > 0) {
@@ -581,7 +708,7 @@ export default function CIDPanel() {
       dispatchCommand(prompt, () => criticalPath());
     } else if (/^(?:show|find|what(?:'s| is| are))\s+(?:me\s+)?(?:the\s+)?(?:bottleneck|chokepoint|hub|spof)/i.test(prompt)) {
       dispatchCommand(prompt, () => findBottlenecks(), 400);
-    } else if (/^(?:focus|select|show|go to|find|zoom)\s+(?:on\s+)?["']?.+["']?\s*$/i.test(prompt)) {
+    } else if (/^(?:focus|select|show|go to|find|zoom)\s+(?:on\s+)?["']?.+["']?\s*$/i.test(prompt) && !/^show\s+(?:me\s+)?(?:your\s+)?(?:understanding|context|source|overrides?)\s*$/i.test(prompt)) {
       addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
       const nameMatch = prompt.match(/(?:focus|select|show|go to|find|zoom)\s+(?:on\s+)?["']?(.+?)["']?\s*$/i);
       if (nameMatch) {
@@ -708,7 +835,7 @@ export default function CIDPanel() {
       dispatchCommand(prompt, () => clearExecutionResults(), 200, undefined, true, true);
     } else if (/^(?:diff\s+(?:last|prev(?:ious)?)|compare\s+(?:run|execution)s?)\s*$/i.test(prompt)) {
       dispatchCommand(prompt, () => diffLastRun());
-    } else if (/^(?:refresh|update|regenerate)\s+(?:the\s+)?["']?(.+?)["']?\s*$/i.test(prompt)) {
+    } else if (/^(?:refresh|update|regenerate)\s+(?:the\s+)?["']?(.+?)["']?\s*$/i.test(prompt) && !/^(?:update|change|edit|modify)\s+(?:the\s+)?(?:source|input|original|context)\b/i.test(prompt)) {
       // "refresh the quiz bank", "update the rubric", "regenerate study guide" → execute specific node
       const refreshMatch = prompt.match(/^(?:refresh|update|regenerate)\s+(?:the\s+)?["']?(.+?)["']?\s*$/i);
       if (refreshMatch) {
@@ -853,6 +980,18 @@ export default function CIDPanel() {
         '- `/template <name>` — Load a template (Software Development, Content Pipeline, Incident Response, Product Launch, Chatbot, Course Design, Lesson Planning, Assignment Design)',
         '- `/export-chat` — Export conversation as Markdown file',
         '',
+        '**Central Brain (Source → Artifacts)**',
+        '- `ingest: <content>` — Feed source material to CID for analysis',
+        '- `understanding` — Show CID\'s understanding of the source',
+        '- `create <type>` — Generate artifact (blog-post, email, social-thread, etc.)',
+        '- `sync` — Surgically sync all stale artifacts with source',
+        '- `sync <name>` — Sync a specific artifact',
+        '- `diff` — Preview what sync would change',
+        '- `overrides` — List user overrides on CID-managed artifacts',
+        '- `interpret override <id>` — AI-interpret what an override means',
+        '- `propagate override <id> <scope>` — Apply override (this-node|all-similar|global)',
+        '- `update source: <content>` — Update the source material',
+        '',
         '**Learning**',
         '- `teach: <rule>` — Teach CID a rule to always follow',
         '- `rules` — List all taught rules',
@@ -918,6 +1057,111 @@ export default function CIDPanel() {
         } else {
           sendStreamingResponse('No note node found. Select a note node or create one first.');
         }
+      }
+    // ── Central Brain Commands ──
+    } else if (/^(?:ingest|feed|analyze|here(?:'s| is) (?:my|the|some)|take this|source(?:\s*material)?:)/i.test(prompt)) {
+      addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
+      // Extract the source content — everything after the command keyword
+      const contentMatch = prompt.match(/^(?:ingest|feed|analyze|here(?:'s| is) (?:my|the|some)|take this|source(?:\s*material)?:?)\s*([\s\S]*)/i);
+      const content = contentMatch?.[1]?.trim() || prompt;
+      useLifecycleStore.getState().ingestSource(content, 'text');
+    } else if (/^(?:understand(?:ing)?|what do you (?:know|understand)|show (?:me )?(?:your )?(?:understanding|context|source)|context)\s*$/i.test(prompt)) {
+      const understanding = useLifecycleStore.getState().getUnderstanding();
+      if (understanding) {
+        dispatchCommand(prompt, () =>
+          `### CID's Understanding\n\n` +
+          `**Summary:** ${understanding.summary}\n` +
+          `**Tone:** ${understanding.tone} · **Audience:** ${understanding.audience}\n` +
+          `**Intent:** ${understanding.intent}\n` +
+          `**Key entities:** ${understanding.keyEntities.join(', ') || 'none'}\n` +
+          `**Constraints:** ${understanding.constraints.join(', ') || 'none'}\n\n` +
+          `**Available artifact types:** ${understanding.suggestedArtifacts.map(a => a.replace(/-/g, ' ')).join(', ')}`
+        );
+      } else {
+        dispatchCommand(prompt, () => 'No source material ingested yet. Paste your content or say "ingest: <your content>" to get started.');
+      }
+    } else if (/^(?:create|generate|build|make|write)\s+(?:a\s+)?(?:new\s+)?(?:blog[\s-]?post|email|social[\s-]?(?:thread|post|media)|twitter[\s-]?thread|x[\s-]?thread|ad[\s-]?copy|press[\s-]?release|landing[\s-]?page|newsletter|product[\s-]?description|linkedin[\s-]?post|ph[\s-]?(?:tagline|copy)|pitch|summary|brief|article|copy)/i.test(prompt)) {
+      addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
+      // Extract artifact type from prompt
+      const typeMatch = prompt.match(/(?:create|generate|build|make|write)\s+(?:a\s+)?(?:new\s+)?([\w\s-]+)/i);
+      const artifactType = typeMatch?.[1]?.trim().replace(/\s+/g, '-').toLowerCase() || 'content';
+      useLifecycleStore.getState().createArtifact(artifactType, prompt);
+    } else if (/^(?:sync|sync all|sync stale|sync everything|resync|re-sync)\s*$/i.test(prompt)) {
+      addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
+      setProcessing(true);
+      useLifecycleStore.getState().syncAllStale().finally(() => setProcessing(false));
+    } else if (/^sync\s+["']?(.+?)["']?\s*$/i.test(prompt)) {
+      addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
+      const syncMatch = prompt.match(/^sync\s+["']?(.+?)["']?\s*$/i);
+      if (syncMatch) {
+        const target = findNodeByName(syncMatch[1], nodes);
+        if (target) {
+          setProcessing(true);
+          useLifecycleStore.getState().syncArtifact(target.id).then(diff => {
+            if (diff) {
+              sendStreamingResponse(`Synced **${target.data.label}**: ${diff.changes.length} change${diff.changes.length !== 1 ? 's' : ''} applied.`);
+            } else {
+              sendStreamingResponse(`**${target.data.label}** is already current or has no artifact contract.`);
+            }
+          });
+        } else {
+          setProcessing(true);
+          setTimeout(() => sendStreamingResponse(`No node matching "${syncMatch[1]}".`), 200);
+        }
+      }
+    } else if (/^(?:diff|preview sync|what(?:'s| would) (?:change|sync)|stale artifacts)\s*$/i.test(prompt)) {
+      const stale = useLifecycleStore.getState().previewSync();
+      dispatchCommand(prompt, () => {
+        if (stale.length === 0) return 'All artifacts are current. Nothing would change.';
+        return `**${stale.length} artifact${stale.length > 1 ? 's' : ''} would be synced:**\n${stale.map(s => {
+          const node = nodes.find(n => n.id === s.nodeId);
+          return `- **${node?.data.label || s.nodeId}** — ${s.reason}`;
+        }).join('\n')}\n\nRun \`sync\` to apply changes.`;
+      });
+    } else if (/^(?:overrides?|show overrides?|list overrides?|my (?:edits|changes|overrides))\s*$/i.test(prompt)) {
+      const ctx = useLifecycleStore.getState().centralContext;
+      dispatchCommand(prompt, () => {
+        if (!ctx || ctx.overrides.length === 0) return 'No overrides recorded. Overrides are tracked when you manually edit CID-managed artifacts.';
+        return `**${ctx.overrides.length} override${ctx.overrides.length > 1 ? 's' : ''}:**\n${ctx.overrides.map(o => {
+          const node = nodes.find(n => n.id === o.nodeId);
+          return `- **${node?.data.label || o.nodeId}** · ${o.field}: "${o.userValue.slice(0, 60)}${o.userValue.length > 60 ? '...' : ''}"${o.cidInterpretation ? ` — *${o.cidInterpretation}*` : ''} (scope: ${o.scope})`;
+        }).join('\n')}`;
+      });
+    } else if (/^interpret\s+override\s+(\S+)\s*$/i.test(prompt)) {
+      const match = prompt.match(/^interpret\s+override\s+(\S+)\s*$/i);
+      if (match) {
+        const overrideId = match[1];
+        addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
+        setProcessing(true);
+        setTimeout(async () => {
+          const interpretation = await useLifecycleStore.getState().interpretOverride(overrideId);
+          if (interpretation) {
+            sendStreamingResponse(`**Override interpreted:**\n\n${interpretation}`);
+          } else {
+            sendStreamingResponse(`Could not interpret override \`${overrideId}\`. It may not exist or has no context.`);
+          }
+        }, 300);
+      }
+    } else if (/^propagate\s+override\s+(\S+)\s+(this-node|all-similar|global)\s*$/i.test(prompt)) {
+      const match = prompt.match(/^propagate\s+override\s+(\S+)\s+(this-node|all-similar|global)\s*$/i);
+      if (match) {
+        const overrideId = match[1];
+        const scope = match[2].toLowerCase() as 'this-node' | 'all-similar' | 'global';
+        addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
+        setProcessing(true);
+        setTimeout(async () => {
+          await useLifecycleStore.getState().propagateOverride(overrideId, scope);
+          sendStreamingResponse(`Override \`${overrideId}\` propagated with scope **${scope}**.`);
+        }, 300);
+      }
+    } else if (/^(?:update|change|edit|modify)\s+(?:the\s+)?(?:source|input|original|context)\b/i.test(prompt)) {
+      addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
+      const newContent = prompt.replace(/^(?:update|change|edit|modify)\s+(?:the\s+)?(?:source|input|original|context)\s*/i, '').trim();
+      if (newContent) {
+        useLifecycleStore.getState().updateSource(newContent);
+      } else {
+        setProcessing(true);
+        setTimeout(() => sendStreamingResponse('Provide the updated source content after the command. Example: `update source: <new content>`'), 200);
       }
     } else {
       chatWithCID(prompt);
@@ -1038,7 +1282,7 @@ export default function CIDPanel() {
             </button>
             {showModelPicker && (
               <div className="absolute top-10 left-0 z-50 w-56 rounded-xl border border-white/[0.1] bg-[#0e0e18]/98 backdrop-blur-xl shadow-2xl py-1.5 animate-in fade-in slide-in-from-top-2 duration-150">
-                <div className="px-3 py-1.5 text-[9px] text-white/30 uppercase tracking-wider font-medium">AI Model</div>
+                <div className="px-3 py-1.5 text-[10px] text-white/40 uppercase tracking-wider font-medium">AI Model</div>
                 {AI_MODELS.map((m) => (
                   <button
                     key={m.id}
@@ -1049,7 +1293,7 @@ export default function CIDPanel() {
                   >
                     <div className="flex-1 min-w-0">
                       <div className="text-[11px] text-white/80 font-medium">{m.label}</div>
-                      <div className="text-[9px] text-white/30">{m.desc}</div>
+                      <div className="text-[10px] text-white/40">{m.desc}</div>
                     </div>
                     {cidAIModel === m.id && (
                       <Check size={12} className={isAmber ? 'text-amber-400' : 'text-emerald-400'} />
@@ -1067,9 +1311,9 @@ export default function CIDPanel() {
                 : <Sparkles size={12} className="text-emerald-400" />
               }
             </div>
-            <div className="text-[10px] text-white/35 uppercase tracking-wider flex items-center gap-1.5">
+            <div className="text-[10px] text-white/45 uppercase tracking-wider flex items-center gap-1.5">
               {agent.subtitle}
-              <span className={`inline-flex items-center gap-0.5 px-1 py-px rounded text-[7px] font-medium ${
+              <span className={`inline-flex items-center gap-0.5 px-1 py-px rounded text-[8px] font-medium ${
                 aiEnabled
                   ? 'bg-emerald-500/15 text-emerald-400/80'
                   : 'bg-white/[0.06] text-white/25'
@@ -1077,6 +1321,11 @@ export default function CIDPanel() {
                 {aiEnabled ? <Wifi size={6} /> : <WifiOff size={6} />}
                 {AI_MODELS.find(m => m.id === cidAIModel)?.label.split(' ').slice(-2).join(' ') || 'Sonnet 4'}
               </span>
+              {useLifecycleStore.getState().hasContext() && (
+                <span className="inline-flex items-center gap-0.5 px-1 py-px rounded text-[8px] font-medium bg-cyan-500/15 text-cyan-400/80" title="Source material ingested">
+                  🧠 Context
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -1126,19 +1375,50 @@ export default function CIDPanel() {
 
       {/* Stats Bar — only show when workflow has nodes */}
       {statsData && (
-        <div className="flex items-center gap-3 px-5 py-1.5 border-b border-white/[0.04] text-[9px] text-white/30">
+        <div className="flex items-center gap-3 px-5 py-1.5 border-b border-white/[0.04] text-[10px] text-white/40">
           <span>{nodes.length} nodes</span>
-          <span className="text-white/25">·</span>
+          <span className="text-white/30">·</span>
           <span>{edges.length} edges</span>
-          <span className="text-white/25">·</span>
+          <span className="text-white/30">·</span>
           <span className={statsData.health >= 80 ? 'text-emerald-400/60' : statsData.health >= 50 ? 'text-amber-400/60' : 'text-rose-400/60'}>{statsData.health}% health</span>
-          <span className="text-white/25">·</span>
-          <span className="text-white/25">{statsData.complexity.label}</span>
-          {statsData.progress.total > 0 && <><span className="text-white/25">·</span><span className="text-cyan-400/50">{statsData.progress.percent}%</span></>}
-          {statsData.stale > 0 && <><span className="text-white/25">·</span><span className="text-amber-400/50">{statsData.stale} stale</span></>}
-          {statsData.orphans > 0 && <><span className="text-white/25">·</span><span className="text-rose-400/50">{statsData.orphans} orphan{statsData.orphans > 1 ? 's' : ''}</span></>}
+          <span className="text-white/30">·</span>
+          <span className="text-white/40">{statsData.complexity.label}</span>
+          {statsData.progress.total > 0 && <><span className="text-white/30">·</span><span className="text-cyan-400/50">{statsData.progress.percent}%</span></>}
+          {statsData.stale > 0 && <><span className="text-white/30">·</span><span className="text-amber-400/50">{statsData.stale} stale</span></>}
+          {statsData.orphans > 0 && <><span className="text-white/30">·</span><span className="text-rose-400/50">{statsData.orphans} orphan{statsData.orphans > 1 ? 's' : ''}</span></>}
         </div>
       )}
+
+      {/* Central Context Summary — collapsible */}
+      {useLifecycleStore.getState().hasContext() && (() => {
+        const understanding = useLifecycleStore.getState().getUnderstanding();
+        const ctx = useLifecycleStore.getState().centralContext;
+        if (!understanding || !ctx) return null;
+        const artifactCount = Object.keys(ctx.artifacts).length;
+        const overrideCount = ctx.overrides.length;
+        return (
+          <details className="border-b border-white/[0.04]">
+            <summary className="flex items-center gap-2 px-5 py-2 cursor-pointer hover:bg-white/[0.02] transition-colors text-[10px] text-cyan-400/60 select-none">
+              <Brain size={11} className="flex-shrink-0" />
+              <span className="font-medium uppercase tracking-wider">Context</span>
+              <span className="text-white/30 ml-auto">{artifactCount} artifact{artifactCount !== 1 ? 's' : ''}{overrideCount > 0 ? ` · ${overrideCount} override${overrideCount !== 1 ? 's' : ''}` : ''}</span>
+            </summary>
+            <div className="px-5 pb-2.5 space-y-1.5 text-[9.5px]">
+              {ctx.source.title && <p className="text-white/60 font-medium">{ctx.source.title}</p>}
+              <p className="text-white/35 leading-relaxed">{understanding.summary}</p>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {understanding.keyEntities.slice(0, 6).map((e, i) => (
+                  <span key={i} className="px-1.5 py-0.5 rounded bg-white/[0.04] text-white/30 text-[8px]">{e}</span>
+                ))}
+              </div>
+              <div className="flex items-center gap-3 text-[8px] text-white/20 mt-1">
+                <span>Tone: {understanding.tone}</span>
+                <span>Audience: {understanding.audience}</span>
+              </div>
+            </div>
+          </details>
+        );
+      })()}
 
       {/* Messages */}
       <div
@@ -1204,7 +1484,7 @@ export default function CIDPanel() {
           const isGrouped = msg.role === 'cid' && prevMsg?.role === 'cid' && (msg.timestamp - prevMsg.timestamp) < 2000;
           return (
           <div
-            key={msg.id}
+            key={`${msg.id}-${msgIdx}`}
             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} group/msg${isGrouped ? ' -mt-2.5' : ''}`}
           >
             <div className="max-w-[90%] relative">
@@ -1247,7 +1527,7 @@ export default function CIDPanel() {
                 )}
               </div>
               {/* Timestamp — visible on hover */}
-              <div className={`mt-0.5 text-[8px] text-white/0 group-hover/msg:text-white/20 transition-colors ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
+              <div className={`mt-0.5 text-[9px] text-white/0 group-hover/msg:text-white/20 transition-colors ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
                 {relativeTime(msg.timestamp)}
               </div>
               {/* Suggestion chips */}
@@ -1345,15 +1625,15 @@ export default function CIDPanel() {
                   <ChevronRight size={10} className="text-amber-400/30 group-hover:text-amber-400/60 transition-colors" />
                 </div>
                 {card.description && (
-                  <span className="text-[9.5px] text-white/30 leading-snug">{card.description}</span>
+                  <span className="text-[9.5px] text-white/45 leading-snug">{card.description}</span>
                 )}
               </button>
             ))}
           </motion.div>
         )}
 
-        {/* Typing indicator — agent-branded with name */}
-        {isProcessing && !messages.some(m => m.action === 'thinking' || m.action === 'investigating' || m.action === 'building') && (
+        {/* Typing indicator — only before streaming text arrives */}
+        {isProcessing && !messages.some(m => m.action === 'thinking' || m.action === 'investigating' || m.action === 'building') && !(messages.length > 0 && messages[messages.length - 1].role === 'cid' && messages[messages.length - 1].content) && (
           <div className="flex justify-start">
             <div className={`rounded-xl px-3.5 py-2 text-[12px] rounded-bl-sm ${
               isAmber
@@ -1423,7 +1703,7 @@ export default function CIDPanel() {
             {matchingHints.map((h, i) => (
               <div key={h.trigger + i}>
                 {'section' in h && h.section && (
-                  <div className="px-3 py-1 text-[8px] text-white/20 uppercase tracking-wider font-medium border-t border-white/[0.04] first:border-t-0">
+                  <div className="px-3 py-1 text-[9px] text-white/35 uppercase tracking-wider font-medium border-t border-white/[0.04] first:border-t-0">
                     {h.section}
                   </div>
                 )}
@@ -1500,7 +1780,7 @@ export default function CIDPanel() {
             }}
             placeholder={poirotContext.phase === 'interviewing' ? agent.placeholderInterviewing : agent.placeholder}
             disabled={isProcessing}
-            className="flex-1 bg-transparent text-[12.5px] text-white/80 placeholder-white/20 outline-none disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex-1 bg-transparent text-[12.5px] text-white/80 placeholder-white/30 outline-none disabled:opacity-40 disabled:cursor-not-allowed"
           />
           {isProcessing ? (
             <button
@@ -1524,7 +1804,7 @@ export default function CIDPanel() {
             </button>
           )}
         </div>
-        <p className="text-[9px] text-white/30 mt-2 text-center">
+        <p className="text-[10px] text-white/40 mt-2 text-center">
           {agent.footerText} · Tab to autocomplete
         </p>
       </div>

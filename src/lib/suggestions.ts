@@ -149,7 +149,34 @@ export function generateProactiveSuggestions(
     });
   }
 
-  // ── 7. Stale nodes after execution ─────────────────────────────────────
+  // ── 7. Execution bottlenecks ────────────────────────────────────────────
+  const timedNodes = nodes.filter(n =>
+    n.data._executionDurationMs != null && n.data._executionDurationMs > 0 &&
+    n.data.executionStatus === 'success'
+  );
+  if (timedNodes.length >= 2) {
+    const durations = timedNodes.map(n => n.data._executionDurationMs!).sort((a, b) => a - b);
+    const mid = Math.floor(durations.length / 2);
+    const median = durations.length % 2 === 0
+      ? (durations[mid - 1] + durations[mid]) / 2
+      : durations[mid];
+    const slowest = timedNodes.reduce((a, b) =>
+      (a.data._executionDurationMs ?? 0) > (b.data._executionDurationMs ?? 0) ? a : b
+    );
+    const slowMs = slowest.data._executionDurationMs ?? 0;
+    if (slowMs > 5000 || (median > 0 && slowMs > median * 2)) {
+      suggestions.push({
+        id: 'bottleneck-optimize',
+        priority: slowMs > 10000 ? 'high' : 'medium',
+        message: `"${slowest.data.label}" took ${(slowMs / 1000).toFixed(1)}s (median: ${(median / 1000).toFixed(1)}s) — consider simplifying its prompt or splitting into smaller nodes`,
+        chipLabel: 'Show bottlenecks',
+        actionType: 'command',
+        actionPayload: { command: 'bottlenecks' },
+      });
+    }
+  }
+
+  // ── 8. Stale nodes after execution ─────────────────────────────────────
   const staleNodes = nodes.filter(n => n.data.status === 'stale');
   if (staleNodes.length > 0) {
     suggestions.push({
@@ -162,10 +189,37 @@ export function generateProactiveSuggestions(
     });
   }
 
-  // Sort by priority and return top suggestions
+  // Sort by priority, then diversify: pick max 1 per category to avoid clustering
   const priorityOrder: Record<SuggestionPriority, number> = { high: 0, medium: 1, low: 2 };
   suggestions.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
-  return suggestions.slice(0, 3);
+
+  // Categorize suggestions by type for diversity
+  const typeMap: Record<string, string> = {
+    'add-output': 'structure', 'add-review': 'structure', 'suggest-parallel': 'structure',
+    'generate-empty': 'content', 'run-workflow': 'execution', 'refresh-stale': 'execution',
+    'bottleneck-optimize': 'performance',
+  };
+  const diverse: ProactiveSuggestion[] = [];
+  const seenCategories = new Set<string>();
+  // First pass: pick highest-priority unique categories
+  for (const s of suggestions) {
+    const cat = typeMap[s.id] || s.id.split('-')[0] || 'other';
+    if (!seenCategories.has(cat)) {
+      diverse.push(s);
+      seenCategories.add(cat);
+      if (diverse.length >= 3) break;
+    }
+  }
+  // Second pass: fill remaining slots if we have <3
+  if (diverse.length < 3) {
+    for (const s of suggestions) {
+      if (!diverse.includes(s)) {
+        diverse.push(s);
+        if (diverse.length >= 3) break;
+      }
+    }
+  }
+  return diverse;
 }
 
 /**

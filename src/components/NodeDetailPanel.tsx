@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, Lock, Unlock, CheckCircle2, RefreshCw, Clock, Trash2,
-  Pencil, Check, Eye, AlertTriangle,
+  Pencil, Check, Eye, AlertTriangle, Zap,
   Plus, Trash, ChevronDown, Copy, Bot, Download,
 } from 'lucide-react';
 import { useLifecycleStore } from '@/store/useStore';
@@ -639,7 +639,7 @@ function NodeDetailPanelContent({ nodeId }: { nodeId: string }) {
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: -320, opacity: 0 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      className="absolute top-4 left-4 w-[300px] max-md:w-[calc(100vw-2rem)] max-md:left-2 max-md:right-2 rounded-xl border border-white/[0.06] bg-[#0c0c14]/95 backdrop-blur-xl overflow-hidden z-20 shadow-2xl max-h-[calc(100vh-120px)] flex flex-col"
+      className="absolute top-4 left-4 w-[300px] max-md:w-[calc(100vw-2rem)] max-md:left-2 max-md:right-2 rounded-xl border border-white/[0.06] bg-[#0c0c14]/95 backdrop-blur-xl overflow-hidden z-20 shadow-2xl flex flex-col max-h-[calc(100vh-120px)]"
       role="complementary"
       aria-label="Node Details"
     >
@@ -838,12 +838,43 @@ function NodeDetailPanelContent({ nodeId }: { nodeId: string }) {
                     {data.inputType === 'url' ? 'URL' : data.inputType === 'file' ? 'File Input' : 'Input Value'}
                   </span>
                 </div>
-                <input
-                  value={data.inputValue ?? ''}
-                  onChange={(e) => updateNodeData(node.id, { inputValue: e.target.value })}
-                  placeholder={data.placeholder || (data.inputType === 'url' ? 'Paste URL here...' : 'Enter input value...')}
-                  className="w-full text-[11px] text-white/60 bg-white/[0.04] rounded-lg px-3 py-2 border border-white/10 outline-none placeholder:text-white/30"
-                />
+                {data.inputType === 'file' ? (
+                  <label
+                    className="flex flex-col items-center justify-center gap-1.5 w-full py-4 rounded-lg border-2 border-dashed border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04] transition-colors cursor-pointer"
+                    onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-cyan-500/40', 'bg-cyan-500/[0.04]'); }}
+                    onDragLeave={(e) => { e.currentTarget.classList.remove('border-cyan-500/40', 'bg-cyan-500/[0.04]'); }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.currentTarget.classList.remove('border-cyan-500/40', 'bg-cyan-500/[0.04]');
+                      const file = e.dataTransfer.files?.[0];
+                      if (file) updateNodeData(node.id, { inputValue: file.name });
+                    }}
+                  >
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept={data.acceptedFileTypes?.join(',') ?? undefined}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) updateNodeData(node.id, { inputValue: file.name });
+                      }}
+                    />
+                    <Download size={16} className="text-white/20" />
+                    <span className="text-[10px] text-white/40">
+                      {data.inputValue ? data.inputValue : 'Drop file here or click to browse'}
+                    </span>
+                    {data.acceptedFileTypes && data.acceptedFileTypes.length > 0 && (
+                      <span className="text-[9px] text-white/20">{data.acceptedFileTypes.join(', ')}</span>
+                    )}
+                  </label>
+                ) : (
+                  <input
+                    value={data.inputValue ?? ''}
+                    onChange={(e) => updateNodeData(node.id, { inputValue: e.target.value })}
+                    placeholder={data.placeholder || (data.inputType === 'url' ? 'Paste URL here...' : 'Enter input value...')}
+                    className="w-full text-[11px] text-white/60 bg-white/[0.04] rounded-lg px-3 py-2 border border-white/10 outline-none placeholder:text-white/30"
+                  />
+                )}
               </div>
             )}
 
@@ -933,6 +964,7 @@ function NodeDetailPanelContent({ nodeId }: { nodeId: string }) {
                     <button
                       onClick={() => {
                         navigator.clipboard.writeText(data.executionResult!);
+                        useLifecycleStore.getState().addToast('Copied to clipboard', 'success');
                       }}
                       className="text-white/20 hover:text-white/50 transition-colors"
                       title="Copy result"
@@ -1068,14 +1100,129 @@ function NodeDetailPanelContent({ nodeId }: { nodeId: string }) {
   );
 }
 
+function BatchActionPanel() {
+  const { multiSelectedIds, clearMultiSelect, deleteMultiSelected, nodes } = useLifecycleStore();
+  const count = multiSelectedIds.size;
+  const selectedNodes = nodes.filter((n) => multiSelectedIds.has(n.id));
+
+  const batchAction = (action: () => void) => {
+    const store = useLifecycleStore.getState();
+    store.pushHistory();
+    action();
+    store.addEvent({
+      id: `ev-${Date.now()}`,
+      type: 'edited' as any,
+      message: `Batch action on ${count} nodes`,
+      timestamp: Date.now(),
+    });
+    clearMultiSelect();
+  };
+
+  return (
+    <motion.div
+      key="batch-panel"
+      initial={{ x: -320, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      exit={{ x: -320, opacity: 0 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+      className="absolute top-4 left-4 w-[300px] max-md:w-[calc(100vw-2rem)] max-md:left-2 max-md:right-2 rounded-xl border border-white/[0.06] bg-[#0c0c14]/95 backdrop-blur-xl overflow-hidden z-20 shadow-2xl flex flex-col max-h-[calc(100vh-120px)]"
+      role="complementary"
+      aria-label="Batch Actions"
+    >
+      <div className="h-[2px] flex-shrink-0 bg-gradient-to-r from-indigo-500 to-transparent" />
+
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06] flex-shrink-0">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-indigo-500/10">
+            <CheckCircle2 size={15} className="text-indigo-400" />
+          </div>
+          <div>
+            <div className="text-[13px] font-semibold text-white/80">{count} Selected</div>
+            <div className="text-[10px] text-white/30">Batch actions</div>
+          </div>
+        </div>
+        <button
+          onClick={clearMultiSelect}
+          className="w-7 h-7 rounded-lg flex items-center justify-center text-white/25 hover:text-white/60 hover:bg-white/5 transition-colors"
+        >
+          <X size={16} />
+        </button>
+      </div>
+
+      {/* Selected nodes list */}
+      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-1">
+        <span className="text-[10px] text-white/35 uppercase tracking-wider">Nodes</span>
+        {selectedNodes.map((n) => (
+          <div key={n.id} className="flex items-center gap-2 py-1.5 px-2 rounded-lg bg-white/[0.02]">
+            <CategoryIcon category={n.data.category} size={12} style={{ color: 'rgba(255,255,255,0.4)' }} />
+            <span className="text-[11px] text-white/60 truncate">{n.data.label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Batch actions */}
+      <div className="px-4 pb-4 pt-2 space-y-2 border-t border-white/[0.04] flex-shrink-0">
+        <div className="flex gap-2">
+          <button
+            onClick={() => batchAction(() => multiSelectedIds.forEach((id) => useLifecycleStore.getState().lockNode(id)))}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-slate-500/10 border border-slate-500/20 text-slate-400 text-[11px] font-medium hover:bg-slate-500/20 transition-colors"
+          >
+            <Lock size={11} />
+            Lock All
+          </button>
+          <button
+            onClick={() => batchAction(() => multiSelectedIds.forEach((id) => useLifecycleStore.getState().approveNode(id)))}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-medium hover:bg-emerald-500/20 transition-colors"
+          >
+            <CheckCircle2 size={11} />
+            Approve
+          </button>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => batchAction(() => multiSelectedIds.forEach((id) => useLifecycleStore.getState().updateNodeStatus(id, 'active')))}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[11px] font-medium hover:bg-blue-500/20 transition-colors"
+          >
+            <Zap size={11} />
+            Activate
+          </button>
+          <button
+            onClick={() => batchAction(() => multiSelectedIds.forEach((id) => useLifecycleStore.getState().updateNodeStatus(id, 'stale')))}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[11px] font-medium hover:bg-amber-500/20 transition-colors"
+          >
+            <AlertTriangle size={11} />
+            Mark Stale
+          </button>
+        </div>
+        <button
+          onClick={() => {
+            const names = selectedNodes.map((n) => n.data.label).join(', ');
+            if (!window.confirm(`Delete ${count} nodes (${names})?`)) return;
+            deleteMultiSelected();
+          }}
+          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg bg-rose-500/8 border border-rose-500/15 text-rose-400/70 text-[11px] font-medium hover:bg-rose-500/15 hover:text-rose-400 transition-colors"
+        >
+          <Trash2 size={11} />
+          Delete All
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
 export default function NodeDetailPanel() {
   const selectedNodeId = useLifecycleStore((s) => s.selectedNodeId);
+  const multiSelectedIds = useLifecycleStore((s) => s.multiSelectedIds);
+  const isMultiSelect = multiSelectedIds.size > 1;
 
   return (
     <AnimatePresence>
-      {selectedNodeId && (
+      {isMultiSelect ? (
+        <BatchActionPanel key="batch" />
+      ) : selectedNodeId ? (
         <NodeDetailPanelContent key={selectedNodeId} nodeId={selectedNodeId} />
-      )}
+      ) : null}
     </AnimatePresence>
   );
 }

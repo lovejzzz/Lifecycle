@@ -146,7 +146,7 @@ export default function TemplateBrowser({ isOpen, onClose }: TemplateBrowserProp
 
           {/* Modal */}
           <motion.div
-            className="relative w-full max-w-2xl max-h-[80vh] mx-4 rounded-xl border border-white/[0.08] bg-[#1a1a2e] shadow-2xl overflow-hidden flex flex-col"
+            className="relative w-full max-w-2xl max-h-[80vh] mx-4 rounded-xl border border-white/[0.08] bg-[#0e0e18] shadow-2xl overflow-hidden flex flex-col"
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
@@ -182,7 +182,7 @@ export default function TemplateBrowser({ isOpen, onClose }: TemplateBrowserProp
                   value={filter}
                   onChange={(e) => setFilter(e.target.value)}
                   placeholder="Filter templates..."
-                  className="flex-1 bg-transparent text-[12px] text-white/80 placeholder-white/25 outline-none"
+                  className="flex-1 bg-transparent text-[12px] text-white/80 placeholder-white/35 outline-none"
                 />
                 {filter && (
                   <button onClick={() => setFilter('')} className="text-white/25 hover:text-white/50">
@@ -197,7 +197,7 @@ export default function TemplateBrowser({ isOpen, onClose }: TemplateBrowserProp
               {/* Built-in templates */}
               {filteredBuiltIn.length > 0 && (
                 <>
-                  <div className="text-[9px] text-white/25 uppercase tracking-widest mb-2">Built-in</div>
+                  <div className="text-[10px] text-white/40 uppercase tracking-widest mb-2">Built-in</div>
                   <div className="grid grid-cols-2 gap-2.5 mb-4">
                     {filteredBuiltIn.map((tmpl) => (
                       <TemplateCard
@@ -217,7 +217,7 @@ export default function TemplateBrowser({ isOpen, onClose }: TemplateBrowserProp
               {/* Custom templates */}
               {customEntries.length > 0 && (
                 <>
-                  <div className="text-[9px] text-white/25 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                  <div className="text-[10px] text-white/40 uppercase tracking-widest mb-2 flex items-center gap-1.5">
                     <Users size={9} />
                     Custom
                   </div>
@@ -282,8 +282,11 @@ function TemplateCard({
 
   return (
     <motion.div
-      className="group relative rounded-xl border border-white/[0.06] bg-white/[0.02] p-3.5 hover:bg-white/[0.05] hover:border-white/[0.12] transition-all duration-200 cursor-pointer"
+      className="group relative rounded-xl border border-white/[0.10] bg-white/[0.04] p-3.5 hover:bg-white/[0.05] hover:border-white/[0.12] transition-all duration-200 cursor-pointer"
       onClick={onLoad}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onLoad(); } }}
       whileHover={{ scale: 1.01 }}
       whileTap={{ scale: 0.99 }}
     >
@@ -299,9 +302,9 @@ function TemplateCard({
 
       {/* Stats */}
       <div className="flex items-center gap-2 mb-2">
-        <span className="text-[10px] text-white/30">{nodeCount} nodes</span>
+        <span className="text-[10px] text-white/45">{nodeCount} nodes</span>
         <span className="text-[10px] text-white/15">&middot;</span>
-        <span className="text-[10px] text-white/30">{edgeCount} edges</span>
+        <span className="text-[10px] text-white/45">{edgeCount} edges</span>
       </div>
 
       {/* Category pills */}
@@ -312,7 +315,7 @@ function TemplateCard({
           return (
             <span
               key={cat}
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] border"
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] border"
               style={{
                 color: colors.primary,
                 borderColor: `${colors.primary}30`,
@@ -330,12 +333,12 @@ function TemplateCard({
       </div>
 
       {/* Description */}
-      <p className="text-[10px] text-white/30 group-hover:text-white/45 transition-colors leading-relaxed line-clamp-2">
+      <p className="text-[10px] text-white/45 group-hover:text-white/60 transition-colors leading-relaxed line-clamp-2">
         {description}
       </p>
 
       {/* Load button (visible on hover) */}
-      <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="absolute top-3 right-3 opacity-60 group-hover:opacity-100 transition-opacity">
         <span className="text-[9px] font-medium text-emerald-400/70 bg-emerald-500/10 border border-emerald-500/20 rounded-md px-2 py-1">
           Load
         </span>

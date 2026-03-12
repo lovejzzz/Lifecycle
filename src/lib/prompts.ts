@@ -3,6 +3,7 @@ import type { NodeData } from './types';
 import type { Node, Edge } from '@xyflow/react';
 import type { AgentPersonality } from './agents';
 import { resolveDriverTensions, computeExpressionModifiers, generateSpontaneousDirectives } from './reflection';
+import { topoSort } from './graph';
 
 // ─── System Prompt Builders ─────────────────────────────────────────────────
 // 5-Layer Architecture: Temperament → Driving Force → Habit → Generation → Reflection
@@ -452,28 +453,137 @@ export function buildNoteRefinementPrompt(noteContent: string, existingNodes: Ar
 
 // ─── Graph Serializer ───────────────────────────────────────────────────────
 
+/** Brief human-readable description of what each node category means. */
+const CATEGORY_DESCRIPTIONS: Record<string, string> = {
+  input: 'data entry point',
+  trigger: 'event/webhook initiator',
+  state: 'status tracker',
+  artifact: 'generated content',
+  note: 'research/ideas',
+  cid: 'AI reasoning step',
+  action: 'operation (deploy/notify/transform)',
+  review: 'quality gate',
+  test: 'QA/validation',
+  policy: 'rules/compliance',
+  patch: 'code change',
+  dependency: 'external requirement',
+  output: 'final deliverable',
+  process: 'workflow processing',
+  deliverable: 'structured deliverable',
+};
+
 function serializeGraph(nodes: Node<NodeData>[], edges: Edge[]): string {
   if (nodes.length === 0) return 'CURRENT GRAPH: Empty — no nodes or edges exist yet.';
 
-  const nodeList = nodes.map((n, i) => {
+  // ─── Topological sort for execution order ─────────────────────────────
+  const { order, levels } = topoSort(nodes, edges);
+  const topoIndex = new Map<string, number>();
+  order.forEach((id, i) => topoIndex.set(id, i));
+
+  // ─── Build adjacency for staleness root-cause analysis ────────────────
+  // For each stale node, find the upstream node(s) that likely caused it:
+  // an immediate parent that was recently executed (success) or is itself stale with no stale parents
+  const parentMap = new Map<string, string[]>();
+  for (const e of edges) {
+    if (!parentMap.has(e.target)) parentMap.set(e.target, []);
+    parentMap.get(e.target)!.push(e.source);
+  }
+
+  const nodeById = new Map<string, Node<NodeData>>();
+  for (const n of nodes) nodeById.set(n.id, n);
+
+  function findStalenessRoot(nodeId: string): string | null {
+    const parents = parentMap.get(nodeId);
+    if (!parents || parents.length === 0) return null;
+    // Look for a parent that was recently executed successfully (the edit/re-execution that caused staleness)
+    const executedParents = parents
+      .map(pid => nodeById.get(pid))
+      .filter((p): p is Node<NodeData> => p != null && p.data.executionStatus === 'success');
+    if (executedParents.length > 0) {
+      // Pick the most recently executed parent
+      return executedParents.reduce((best, p) => {
+        const bestTime = best.data._executionStartedAt ?? 0;
+        const pTime = p.data._executionStartedAt ?? 0;
+        return pTime > bestTime ? p : best;
+      }).data.label;
+    }
+    // Fallback: look for a parent that is stale (the staleness originated further upstream)
+    const staleParents = parents
+      .map(pid => nodeById.get(pid))
+      .filter((p): p is Node<NodeData> => p != null && p.data.status === 'stale');
+    if (staleParents.length > 0) return staleParents[0].data.label;
+    // If no clear cause, check for any non-idle parent (could be recently edited)
+    const activeParents = parents
+      .map(pid => nodeById.get(pid))
+      .filter((p): p is Node<NodeData> => p != null && p.data.status === 'active');
+    if (activeParents.length > 0) return activeParents[0].data.label;
+    return null;
+  }
+
+  // ─── Detect disconnected subgraphs ────────────────────────────────────
+  const visited = new Set<string>();
+  const undirectedAdj = new Map<string, string[]>();
+  for (const n of nodes) undirectedAdj.set(n.id, []);
+  for (const e of edges) {
+    undirectedAdj.get(e.source)?.push(e.target);
+    undirectedAdj.get(e.target)?.push(e.source);
+  }
+  const subgraphs: string[][] = [];
+  for (const n of nodes) {
+    if (visited.has(n.id)) continue;
+    const component: string[] = [];
+    const queue = [n.id];
+    while (queue.length > 0) {
+      const id = queue.shift()!;
+      if (visited.has(id)) continue;
+      visited.add(id);
+      component.push(id);
+      for (const neighbor of (undirectedAdj.get(id) || [])) {
+        if (!visited.has(neighbor)) queue.push(neighbor);
+      }
+    }
+    subgraphs.push(component);
+  }
+
+  // ─── Serialize nodes ──────────────────────────────────────────────────
+  const nodeList = nodes.map((n) => {
     const d = n.data;
+    const topo = topoIndex.get(n.id);
+    const topoStr = topo != null ? `#${topo}` : '#?';
+    const catDesc = CATEGORY_DESCRIPTIONS[d.category] || d.category;
     const sections = d.sections?.map(s => `    - ${s.title} (${s.status})`).join('\n') || '';
-    const durationStr = d._executionDurationMs != null ? `, ${d._executionDurationMs < 1000 ? `${d._executionDurationMs}ms` : `${(d._executionDurationMs / 1000).toFixed(1)}s`}` : '';
+
+    // Execution timing
+    const durationStr = d._executionDurationMs != null
+      ? `, ${d._executionDurationMs < 1000 ? `${d._executionDurationMs}ms` : `${(d._executionDurationMs / 1000).toFixed(1)}s`}`
+      : '';
     const execInfo = d.executionStatus && d.executionStatus !== 'idle'
       ? ` [exec:${d.executionStatus}${durationStr}${d.executionResult ? `, ${d.executionResult.length} chars` : ''}${d.executionError ? `, err: ${d.executionError.slice(0, 60)}` : ''}]`
       : '';
-    return `  [${i}] id=${n.id} label="${sanitizeForPrompt(d.label, 100)}" category=${d.category} status=${d.status} v${d.version ?? 1}${execInfo}${
+
+    // Staleness root cause
+    let staleInfo = '';
+    if (d.status === 'stale') {
+      const root = findStalenessRoot(n.id);
+      if (root) staleInfo = ` [stale-cause: "${sanitizeForPrompt(root, 80)}"]`;
+    }
+
+    return `  [${topoStr}] id=${n.id} label="${sanitizeForPrompt(d.label, 100)}" category=${d.category} (${catDesc}) status=${d.status} v${d.version ?? 1}${execInfo}${staleInfo}${
       d.description ? ` — ${sanitizeForPrompt(d.description, 300)}` : ''
     }${sections ? `\n${sections}` : ''}`;
   }).join('\n');
 
+  // ─── Serialize edges ──────────────────────────────────────────────────
   const edgeList = edges.map(e => {
-    const srcNode = nodes.find(n => n.id === e.source);
-    const tgtNode = nodes.find(n => n.id === e.target);
+    const srcNode = nodeById.get(e.source);
+    const tgtNode = nodeById.get(e.target);
     return `  ${sanitizeForPrompt(srcNode?.data.label ?? e.source, 100)} —[${e.label || 'connected'}]→ ${sanitizeForPrompt(tgtNode?.data.label ?? e.target, 100)}`;
   }).join('\n');
 
+  // ─── Graph Summary ────────────────────────────────────────────────────
   const staleCount = nodes.filter(n => n.data.status === 'stale').length;
+  const activeCount = nodes.filter(n => n.data.status === 'active').length;
+  const lockedCount = nodes.filter(n => n.data.status === 'locked').length;
   const reviewCount = nodes.filter(n => n.data.status === 'reviewing').length;
   const execSuccess = nodes.filter(n => n.data.executionStatus === 'success').length;
   const execError = nodes.filter(n => n.data.executionStatus === 'error').length;
@@ -481,7 +591,26 @@ function serializeGraph(nodes: Node<NodeData>[], edges: Edge[]): string {
     ? `, executed: ${execSuccess} ok${execError > 0 ? ` / ${execError} failed` : ''}`
     : '';
 
-  return `CURRENT GRAPH (${nodes.length} nodes, ${edges.length} edges${staleCount > 0 ? `, ${staleCount} stale` : ''}${reviewCount > 0 ? `, ${reviewCount} reviewing` : ''}${execSuffix}):
+  // Execution order as labels
+  const topoLabels = order.map(id => {
+    const n = nodeById.get(id);
+    return n ? sanitizeForPrompt(n.data.label, 40) : id;
+  }).join(' → ');
+
+  // Disconnected subgraph info
+  const subgraphInfo = subgraphs.length > 1
+    ? `\nDisconnected subgraphs: ${subgraphs.length} (${subgraphs.map((sg, i) => {
+        const labels = sg.map(id => {
+          const n = nodeById.get(id);
+          return n ? sanitizeForPrompt(n.data.label, 30) : id;
+        }).join(', ');
+        return `group ${i + 1}: [${labels}]`;
+      }).join('; ')})`
+    : '';
+
+  return `CURRENT GRAPH SUMMARY: ${nodes.length} nodes, ${edges.length} edges | active: ${activeCount}, stale: ${staleCount}, locked: ${lockedCount}${reviewCount > 0 ? `, reviewing: ${reviewCount}` : ''}${execSuffix}
+Execution order: ${topoLabels}${subgraphInfo}
+
 NODES:
 ${nodeList}
 EDGES:

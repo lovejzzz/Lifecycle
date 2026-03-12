@@ -230,10 +230,12 @@ function LifecycleNode({ data, id, dragging }: NodeProps) {
             transition={{ duration: 0.8, ease: 'easeOut' }}
           />
         )}
-        {/* Top accent line */}
+        {/* Top accent line — CID-managed nodes get a cyan accent */}
         <div
           className="h-px rounded-t-xl opacity-80"
-          style={{ background: `linear-gradient(90deg, transparent 5%, ${colors.primary}80, transparent 95%)` }}
+          style={{ background: nodeData.artifactContract
+            ? `linear-gradient(90deg, transparent 5%, #06b6d480, transparent 95%)`
+            : `linear-gradient(90deg, transparent 5%, ${colors.primary}80, transparent 95%)` }}
         />
 
         <div className="px-4 py-3">
@@ -273,14 +275,14 @@ function LifecycleNode({ data, id, dragging }: NodeProps) {
                   <Pencil size={9} className="flex-shrink-0 text-white/0 group-hover/label:text-white/30 transition-colors duration-200" />
                 </div>
               )}
-              <div className="text-[9px] text-white/30 uppercase tracking-[0.1em] font-medium mt-0.5">
+              <div className="text-[10px] text-white/50 uppercase tracking-[0.1em] font-medium mt-0.5">
                 {category}
               </div>
             </div>
             <div className="flex items-center gap-1.5 flex-shrink-0">
               {locked && <Lock size={10} className="text-white/30" />}
               <div
-                className="relative flex items-center justify-center w-4 h-4 cursor-pointer hover:scale-125 transition-transform nodrag"
+                className="relative flex items-center justify-center w-4 h-4 rounded-full cursor-pointer hover:scale-125 hover:bg-white/10 transition-all nodrag"
                 role="button"
                 aria-label={`Status: ${status} — click to cycle`}
                 title={`Status: ${status} — click to cycle`}
@@ -300,7 +302,7 @@ function LifecycleNode({ data, id, dragging }: NodeProps) {
                   />
                 )}
                 <span
-                  className="w-[7px] h-[7px] rounded-full relative"
+                  className="w-[9px] h-[9px] rounded-full relative"
                   style={{ backgroundColor: statusInfo.color }}
                 />
               </div>
@@ -316,7 +318,7 @@ function LifecycleNode({ data, id, dragging }: NodeProps) {
 
           {/* Description */}
           {description && (
-            <p className="text-[10.5px] text-white/35 leading-relaxed mb-2 line-clamp-2">
+            <p className="text-[10.5px] text-white/50 leading-relaxed mb-2 line-clamp-2">
               {description}
             </p>
           )}
@@ -342,7 +344,7 @@ function LifecycleNode({ data, id, dragging }: NodeProps) {
               title={serviceName ? `Paste ${serviceName} link` : 'Paste URL'}
             >
               {serviceIcon && <span className="text-[12px] flex-shrink-0">{serviceIcon}</span>}
-              <span className="text-[9px] text-white/25 truncate flex-1">
+              <span className="text-[10px] text-white/40 truncate flex-1">
                 {placeholder || 'Paste link here...'}
               </span>
               <Link size={10} className="text-white/20 flex-shrink-0" />
@@ -374,11 +376,11 @@ function LifecycleNode({ data, id, dragging }: NodeProps) {
               className="mb-2 rounded-lg border border-dashed border-white/[0.12] bg-white/[0.03] px-2.5 py-2 flex flex-col items-center gap-1 cursor-pointer hover:bg-white/[0.06] hover:border-white/[0.2] transition-all nodrag"
               title={`Accepts: ${acceptedFileTypes.join(', ')}`}
             >
-              <Upload size={12} className="text-white/25" />
-              <span className="text-[9px] text-white/30 text-center leading-tight">
+              <Upload size={12} className="text-white/35" />
+              <span className="text-[10px] text-white/40 text-center leading-tight">
                 Drop files here
               </span>
-              <span className="text-[8px] text-white/20 font-mono">
+              <span className="text-[9px] text-white/35 font-mono">
                 {acceptedFileTypes.slice(0, 4).join(' ')}
                 {acceptedFileTypes.length > 4 ? ` +${acceptedFileTypes.length - 4}` : ''}
               </span>
@@ -387,7 +389,7 @@ function LifecycleNode({ data, id, dragging }: NodeProps) {
 
           {/* Content Preview */}
           {nodeData.content && !sections?.length && (
-            <p className="text-[9.5px] text-white/25 leading-relaxed mb-2 line-clamp-2 italic">
+            <p className="text-[10px] text-white/40 leading-relaxed mb-2 line-clamp-2 italic">
               {nodeData.content.slice(0, 120)}
             </p>
           )}
@@ -425,8 +427,8 @@ function LifecycleNode({ data, id, dragging }: NodeProps) {
             return (
               <div className="mb-1.5">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-[8px] text-white/25">{current}/{sections.length} sections</span>
-                  <span className="text-[8px] text-white/25 font-mono">{pct}%</span>
+                  <span className="text-[9px] text-white/40">{current}/{sections.length} sections</span>
+                  <span className="text-[9px] text-white/40 font-mono">{pct}%</span>
                 </div>
                 <div className="h-[3px] rounded-full bg-white/[0.06] overflow-hidden">
                   <div
@@ -458,13 +460,13 @@ function LifecycleNode({ data, id, dragging }: NodeProps) {
                 'text-rose-400/70'
               }`}>
                 {nodeData.executionStatus === 'running' && <Loader2 size={9} className="animate-spin" />}
-                <span className="text-[8px] font-medium uppercase tracking-wider flex-1">
+                <span className="text-[9px] font-medium uppercase tracking-wider flex-1">
                   {nodeData.executionStatus === 'running'
                     ? ({ artifact: 'Generating...', test: 'Testing...', review: 'Reviewing...', action: 'Running action...', policy: 'Evaluating...', input: 'Processing...', trigger: 'Triggering...', output: 'Producing output...', patch: 'Patching...', dependency: 'Resolving...' }[category] ?? 'Executing...')
                     : nodeData.executionStatus === 'success' ? '✓ Executed' : '✗ Failed'}
                 </span>
                 {nodeData.executionResult && nodeData.executionStatus === 'success' && (
-                  <span className="text-[7px] text-emerald-400/40 font-mono">
+                  <span className="text-[8px] text-emerald-400/50 font-mono">
                     {nodeData.executionResult.length > 1000
                       ? `${(nodeData.executionResult.length / 1000).toFixed(1)}k`
                       : `${nodeData.executionResult.length}`} chars
@@ -533,16 +535,35 @@ function LifecycleNode({ data, id, dragging }: NodeProps) {
 
           {/* Footer */}
           <div className="flex items-center justify-between pt-1 border-t border-white/[0.04]">
-            {version !== undefined && (
-              <span className="text-[8px] text-white/30 font-mono tracking-wide">v{version}</span>
-            )}
+            <div className="flex items-center gap-1.5">
+              {version !== undefined && (
+                <span className="text-[9px] text-white/40 font-mono tracking-wide">v{version}</span>
+              )}
+              {nodeData.artifactContract && (
+                <>
+                  <span className={`text-[8px] px-1 py-px rounded font-medium ${
+                    nodeData.artifactContract.syncStatus === 'current' ? 'bg-emerald-500/15 text-emerald-400/70' :
+                    nodeData.artifactContract.syncStatus === 'stale' ? 'bg-amber-500/15 text-amber-400/70' :
+                    nodeData.artifactContract.syncStatus === 'override' ? 'bg-blue-500/15 text-blue-400/70' :
+                    'bg-cyan-500/15 text-cyan-400/70'
+                  }`} title={`CID-managed · ${nodeData.artifactContract.syncStatus}${nodeData.artifactContract.userEdits.length > 0 ? ` · ${nodeData.artifactContract.userEdits.length} override(s)` : ''}${nodeData.artifactContract.lastSyncedAt ? ` · synced ${new Date(nodeData.artifactContract.lastSyncedAt).toLocaleTimeString()}` : ''}`}>
+                    🧠 {nodeData.artifactContract.syncStatus}
+                  </span>
+                  {nodeData.artifactContract.userEdits.length > 0 && (
+                    <span className="text-[7px] px-1 py-px rounded bg-blue-500/10 text-blue-400/60 font-medium" title={`${nodeData.artifactContract.userEdits.length} field(s) manually edited`}>
+                      override
+                    </span>
+                  )}
+                </>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               {nodeData.aiPrompt && (
                 <span className="text-[8px] text-cyan-400/40" title="Has AI prompt">⚡</span>
               )}
               {totalConns > 0 && (
-                <span className={`text-[8px] flex items-center gap-0.5 ${
-                  totalConns >= 4 ? 'text-cyan-400/50' : totalConns >= 2 ? 'text-white/30' : 'text-white/20'
+                <span className={`text-[9px] flex items-center gap-0.5 ${
+                  totalConns >= 4 ? 'text-cyan-400/50' : totalConns >= 2 ? 'text-white/40' : 'text-white/30'
                 }`} title={`${inCount} upstream, ${outCount} downstream${totalConns >= 4 ? ' — hub node' : ''}`}>
                   {inCount > 0 && <span className="text-white/30">{inCount}↓</span>}
                   <Link size={7} className={totalConns >= 4 ? 'text-cyan-400/40' : 'text-white/30'} />
@@ -550,11 +571,11 @@ function LifecycleNode({ data, id, dragging }: NodeProps) {
                   {totalConns >= 4 && <span className="text-[7px] text-cyan-400/40 ml-0.5">hub</span>}
                 </span>
               )}
-              <span className="text-[8px] text-white/30 capitalize tracking-wide">{status}</span>
+              <span className="text-[9px] text-white/40 capitalize tracking-wide">{status}</span>
               {/* Run Branch button — visible on hover when node has upstream deps */}
               {inCount > 0 && (
                 <button
-                  className="opacity-0 group-hover:opacity-100 text-white/20 hover:text-emerald-400/70 transition-all nodrag"
+                  className="opacity-30 group-hover:opacity-100 text-white/20 hover:text-emerald-400/70 transition-all nodrag"
                   onClick={(e) => { e.stopPropagation(); useLifecycleStore.getState().executeBranch(id); }}
                   title="Run this branch only"
                 >
@@ -564,7 +585,7 @@ function LifecycleNode({ data, id, dragging }: NodeProps) {
               {/* Preview button — visible on hover */}
               {(nodeData.content || nodeData.executionResult) && (
                 <button
-                  className="opacity-0 group-hover:opacity-100 text-white/20 hover:text-cyan-400/70 transition-all nodrag"
+                  className="opacity-30 group-hover:opacity-100 text-white/20 hover:text-cyan-400/70 transition-all nodrag"
                   onClick={(e) => { e.stopPropagation(); openArtifactPanel(id); }}
                   title="Open artifact preview"
                 >

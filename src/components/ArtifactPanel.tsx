@@ -697,7 +697,7 @@ export default function ArtifactPanel() {
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: 500, opacity: 0 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      className={`fixed bg-[#0c0c14]/95 backdrop-blur-xl border-l border-white/[0.06] z-40 flex flex-col transition-all duration-200 ${
+      className={`fixed bg-[#0c0c14]/95 backdrop-blur-xl border-l border-white/[0.06] z-[45] flex flex-col transition-all duration-200 ${
         isFullScreen
           ? 'inset-0 w-full border-l-0'
           : 'right-0 top-0 bottom-0 w-[500px]'
@@ -717,7 +717,7 @@ export default function ArtifactPanel() {
               {node.data.label}
             </button>
             {node.data.description && (
-              <div className="text-[9.5px] text-white/30 truncate">{node.data.description}</div>
+              <div className="text-[9.5px] text-white/45 truncate">{node.data.description}</div>
             )}
           </div>
         </div>
@@ -733,7 +733,7 @@ export default function ArtifactPanel() {
               >
                 <ChevronLeft size={12} />
               </button>
-              <span className="text-[9px] text-white/25 tabular-nums min-w-[28px] text-center">
+              <span className="text-[9px] text-white/40 tabular-nums min-w-[28px] text-center">
                 {currentIdx + 1}/{executedNodes.length}
               </span>
               <button

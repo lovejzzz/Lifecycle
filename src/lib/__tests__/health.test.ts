@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { assessWorkflowHealth, issueFingerprint, formatHealthReport } from '../health';
+import { assessWorkflowHealth, issueFingerprint, formatHealthReport, detectBottlenecks } from '../health';
 import type { HealthReport } from '../health';
 import type { Node, Edge } from '@xyflow/react';
 import type { NodeData } from '../types';
@@ -256,5 +256,130 @@ describe('formatHealthReport', () => {
     const result = formatHealthReport(report);
     expect(result).not.toContain('All clear');
     expect(result).not.toContain('mon ami');
+  });
+});
+
+describe('detectBottlenecks', () => {
+  it('returns empty report when no nodes have timing data', () => {
+    const nodes = [
+      makeNode('1', 'Input', 'input'),
+      makeNode('2', 'Action', 'action'),
+    ];
+    const edges = [makeEdge('1', '2')];
+    const report = detectBottlenecks(nodes, edges);
+    expect(report.slowNodes).toHaveLength(0);
+    expect(report.chains).toHaveLength(0);
+    expect(report.medianMs).toBe(0);
+  });
+
+  it('detects nodes exceeding absolute threshold (>5s)', () => {
+    const nodes = [
+      makeNode('1', 'Fast', 'action', { _executionDurationMs: 1000, executionStatus: 'success' }),
+      makeNode('2', 'Slow', 'artifact', { _executionDurationMs: 8000, executionStatus: 'success' }),
+      makeNode('3', 'Medium', 'cid', { _executionDurationMs: 2000, executionStatus: 'success' }),
+    ];
+    const edges = [makeEdge('1', '2'), makeEdge('2', '3')];
+    const report = detectBottlenecks(nodes, edges);
+    expect(report.slowNodes).toHaveLength(1);
+    expect(report.slowNodes[0].nodeId).toBe('2');
+    expect(report.slowNodes[0].reason).toBe('absolute');
+  });
+
+  it('detects nodes exceeding relative threshold (>2x median)', () => {
+    // Median of [500, 600, 700] = 600. 2x = 1200. Node with 1500ms qualifies.
+    const nodes = [
+      makeNode('1', 'A', 'action', { _executionDurationMs: 500, executionStatus: 'success' }),
+      makeNode('2', 'B', 'action', { _executionDurationMs: 600, executionStatus: 'success' }),
+      makeNode('3', 'C', 'action', { _executionDurationMs: 700, executionStatus: 'success' }),
+      makeNode('4', 'Slow', 'action', { _executionDurationMs: 1500, executionStatus: 'success' }),
+    ];
+    const edges = [makeEdge('1', '2'), makeEdge('2', '3'), makeEdge('3', '4')];
+    const report = detectBottlenecks(nodes, edges);
+    expect(report.slowNodes).toHaveLength(1);
+    expect(report.slowNodes[0].nodeId).toBe('4');
+    expect(report.slowNodes[0].reason).toBe('relative');
+    expect(report.medianMs).toBe(650); // (600+700)/2
+  });
+
+  it('ignores nodes with error status', () => {
+    const nodes = [
+      makeNode('1', 'Fast', 'action', { _executionDurationMs: 1000, executionStatus: 'success' }),
+      makeNode('2', 'Errored', 'artifact', { _executionDurationMs: 8000, executionStatus: 'error' }),
+    ];
+    const edges = [makeEdge('1', '2')];
+    const report = detectBottlenecks(nodes, edges);
+    expect(report.slowNodes).toHaveLength(0);
+  });
+
+  it('detects sequential chains of slow nodes', () => {
+    const nodes = [
+      makeNode('1', 'SlowA', 'action', { _executionDurationMs: 6000, executionStatus: 'success' }),
+      makeNode('2', 'SlowB', 'artifact', { _executionDurationMs: 7000, executionStatus: 'success' }),
+      makeNode('3', 'SlowC', 'cid', { _executionDurationMs: 8000, executionStatus: 'success' }),
+    ];
+    const edges = [makeEdge('1', '2'), makeEdge('2', '3')];
+    const report = detectBottlenecks(nodes, edges);
+    expect(report.chains).toHaveLength(1);
+    expect(report.chains[0].nodeIds).toEqual(['1', '2', '3']); // topological order
+    expect(report.chains[0].totalMs).toBe(21000);
+    expect(report.chains[0].parallelizable).toBe(true);
+  });
+
+  it('does not chain slow nodes that are not directly connected', () => {
+    const nodes = [
+      makeNode('1', 'SlowA', 'action', { _executionDurationMs: 6000, executionStatus: 'success' }),
+      makeNode('2', 'Fast', 'action', { _executionDurationMs: 500, executionStatus: 'success' }),
+      makeNode('3', 'SlowB', 'cid', { _executionDurationMs: 7000, executionStatus: 'success' }),
+    ];
+    const edges = [makeEdge('1', '2'), makeEdge('2', '3')];
+    const report = detectBottlenecks(nodes, edges);
+    // Each slow node is isolated (not chained) because the middle one is fast
+    expect(report.chains).toHaveLength(0);
+  });
+
+  it('computes correct median for odd number of nodes', () => {
+    const nodes = [
+      makeNode('1', 'A', 'action', { _executionDurationMs: 100, executionStatus: 'success' }),
+      makeNode('2', 'B', 'action', { _executionDurationMs: 200, executionStatus: 'success' }),
+      makeNode('3', 'C', 'action', { _executionDurationMs: 300, executionStatus: 'success' }),
+    ];
+    const report = detectBottlenecks(nodes, []);
+    expect(report.medianMs).toBe(200);
+  });
+});
+
+describe('assessWorkflowHealth — bottleneck integration', () => {
+  it('adds bottleneck issue for slow nodes', () => {
+    const nodes = [
+      makeNode('1', 'Input', 'input', { _executionDurationMs: 100, executionStatus: 'success' }),
+      makeNode('2', 'Slow AI', 'cid', { _executionDurationMs: 12000, executionStatus: 'success' }),
+      makeNode('3', 'Output', 'output', { _executionDurationMs: 200, executionStatus: 'success' }),
+    ];
+    const edges = [makeEdge('1', '2'), makeEdge('2', '3')];
+    const report = assessWorkflowHealth(nodes, edges);
+    expect(report.issues.some(i => i.id === 'bottleneck-slow-nodes')).toBe(true);
+    expect(report.bottlenecks).toBeDefined();
+    expect(report.bottlenecks!.slowNodes.length).toBeGreaterThan(0);
+    expect(report.score).toBeLessThan(100);
+  });
+
+  it('suggests parallelization for sequential slow chains', () => {
+    const nodes = [
+      makeNode('1', 'SlowA', 'action', { _executionDurationMs: 6000, executionStatus: 'success' }),
+      makeNode('2', 'SlowB', 'artifact', { _executionDurationMs: 7000, executionStatus: 'success' }),
+    ];
+    const edges = [makeEdge('1', '2')];
+    const report = assessWorkflowHealth(nodes, edges);
+    expect(report.suggestions.some(s => s.id === 'parallelize-chain' || s.id === 'optimize-chain')).toBe(true);
+  });
+
+  it('does not include bottleneck report when no slow nodes', () => {
+    const nodes = [
+      makeNode('1', 'Fast', 'action', { _executionDurationMs: 500, executionStatus: 'success' }),
+      makeNode('2', 'AlsoFast', 'artifact', { _executionDurationMs: 600, executionStatus: 'success' }),
+    ];
+    const edges = [makeEdge('1', '2')];
+    const report = assessWorkflowHealth(nodes, edges);
+    expect(report.bottlenecks).toBeUndefined();
   });
 });

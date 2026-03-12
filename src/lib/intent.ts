@@ -68,12 +68,99 @@ export const OUTPUT_FORMATS: OutputFormat[] = [
 
 // ─── Intent Analysis ────────────────────────────────────────────────────────
 
+export interface TransformTarget {
+  keywords: string[];
+  name: string;
+}
+
+export const TRANSFORMATION_TARGETS: TransformTarget[] = [
+  // Education-specific (checked first — more specific than generic matches)
+  { keywords: ['lesson plan', 'lesson syllabus'], name: 'Lesson Plan' },
+  { keywords: ['syllabus', 'curriculum'], name: 'Course Syllabus' },
+  { keywords: ['study guide'], name: 'Study Guide' },
+  { keywords: ['rubric', 'grading criteria', 'marking scheme'], name: 'Rubric' },
+  { keywords: ['discussion prompt', 'discussion question'], name: 'Discussion Prompts' },
+  { keywords: ['lecture note', 'lecture'], name: 'Lecture Notes' },
+  { keywords: ['homework', 'assignment brief'], name: 'Assignment' },
+  { keywords: ['course faq', 'course question'], name: 'Course FAQ' },
+  { keywords: ['course'], name: 'Course Material' },
+  // General
+  { keywords: ['summary', 'summarize'], name: 'Summary' },
+  { keywords: ['outline'], name: 'Outline' },
+  { keywords: ['transcript', 'transcription'], name: 'Transcript' },
+  { keywords: ['translation', 'translate'], name: 'Translation' },
+  { keywords: ['report'], name: 'Report' },
+  { keywords: ['analysis', 'analyze'], name: 'Analysis' },
+  { keywords: ['blog', 'article', 'post'], name: 'Blog Post' },
+  { keywords: ['email', 'newsletter'], name: 'Email Draft' },
+  { keywords: ['presentation'], name: 'Presentation' },
+  { keywords: ['proposal'], name: 'Proposal' },
+  { keywords: ['resume', 'cv'], name: 'Resume' },
+  { keywords: ['quiz', 'test', 'exam', 'assessment'], name: 'Assessment' },
+  { keywords: ['flashcard'], name: 'Flashcards' },
+  { keywords: ['tutorial', 'how-to'], name: 'Tutorial' },
+  { keywords: ['guide'], name: 'Guide' },
+  { keywords: ['documentation', 'docs'], name: 'Documentation' },
+  { keywords: ['spec', 'specification'], name: 'Specification' },
+  { keywords: ['prd'], name: 'PRD' },
+  { keywords: ['pitch deck', 'pitch'], name: 'Pitch Deck' },
+  { keywords: ['marketing plan'], name: 'Marketing Plan' },
+  { keywords: ['budget'], name: 'Budget Plan' },
+  { keywords: ['roadmap', 'timeline'], name: 'Roadmap' },
+  { keywords: ['design brief', 'design'], name: 'Design Brief' },
+];
+
+/**
+ * Detect multiple artifact types from a comma/"and"-separated list in the prompt.
+ * Returns an array of unique transformation target names found.
+ * Example: "create lesson plans, rubrics, and quizzes" → ['Lesson Plan', 'Rubric', 'Assessment']
+ */
+export function detectMultipleTransformations(prompt: string): string[] {
+  const lower = prompt.toLowerCase();
+
+  // Split on commas and " and " to get individual segments
+  // e.g., "lesson plans, rubrics, and quizzes" → ["lesson plans", "rubrics", "quizzes"]
+  const segments = lower
+    .split(/,|\band\b/)
+    .map(s => s.trim())
+    .filter(s => s.length > 0);
+
+  const found: string[] = [];
+  const seen = new Set<string>();
+
+  // For each segment, check if it matches any transformation target
+  for (const segment of segments) {
+    for (const t of TRANSFORMATION_TARGETS) {
+      if (seen.has(t.name)) continue;
+      if (t.keywords.some(kw => segment.includes(kw))) {
+        found.push(t.name);
+        seen.add(t.name);
+        break; // one match per segment
+      }
+    }
+  }
+
+  // Also do a full-prompt scan: if the full prompt matches targets not yet found,
+  // include them (handles cases where targets aren't neatly in separate segments)
+  for (const t of TRANSFORMATION_TARGETS) {
+    if (seen.has(t.name)) continue;
+    if (t.keywords.some(kw => lower.includes(kw))) {
+      found.push(t.name);
+      seen.add(t.name);
+    }
+  }
+
+  return found;
+}
+
 export interface IntentAnalysis {
   inputService: ServiceInfo | null;
   outputService: ServiceInfo | null;
   outputFormat: OutputFormat | null;
   fileInput: FileTypeInfo | null;
   transformation: string | null;
+  /** All detected transformation targets (for multi-artifact prompts) */
+  transformations: string[];
   sourceType: string | null;
 }
 
@@ -118,44 +205,8 @@ export function analyzeIntent(prompt: string): IntentAnalysis {
   }
 
   // 4. Detect transformation target
-  const transformTargets = [
-    // Education-specific (checked first — more specific than generic matches)
-    { keywords: ['lesson plan', 'lesson syllabus'], name: 'Lesson Plan' },
-    { keywords: ['syllabus', 'curriculum'], name: 'Course Syllabus' },
-    { keywords: ['study guide'], name: 'Study Guide' },
-    { keywords: ['rubric', 'grading criteria', 'marking scheme'], name: 'Rubric' },
-    { keywords: ['discussion prompt', 'discussion question'], name: 'Discussion Prompts' },
-    { keywords: ['lecture note', 'lecture'], name: 'Lecture Notes' },
-    { keywords: ['homework', 'assignment brief'], name: 'Assignment' },
-    { keywords: ['course faq', 'course question'], name: 'Course FAQ' },
-    { keywords: ['course'], name: 'Course Material' },
-    // General
-    { keywords: ['summary', 'summarize'], name: 'Summary' },
-    { keywords: ['outline'], name: 'Outline' },
-    { keywords: ['transcript', 'transcription'], name: 'Transcript' },
-    { keywords: ['translation', 'translate'], name: 'Translation' },
-    { keywords: ['report'], name: 'Report' },
-    { keywords: ['analysis', 'analyze'], name: 'Analysis' },
-    { keywords: ['blog', 'article', 'post'], name: 'Blog Post' },
-    { keywords: ['email', 'newsletter'], name: 'Email Draft' },
-    { keywords: ['presentation'], name: 'Presentation' },
-    { keywords: ['proposal'], name: 'Proposal' },
-    { keywords: ['resume', 'cv'], name: 'Resume' },
-    { keywords: ['quiz', 'test', 'exam', 'assessment'], name: 'Assessment' },
-    { keywords: ['flashcard'], name: 'Flashcards' },
-    { keywords: ['tutorial', 'how-to'], name: 'Tutorial' },
-    { keywords: ['guide'], name: 'Guide' },
-    { keywords: ['documentation', 'docs'], name: 'Documentation' },
-    { keywords: ['spec', 'specification'], name: 'Specification' },
-    { keywords: ['prd'], name: 'PRD' },
-    { keywords: ['pitch deck', 'pitch'], name: 'Pitch Deck' },
-    { keywords: ['marketing plan'], name: 'Marketing Plan' },
-    { keywords: ['budget'], name: 'Budget Plan' },
-    { keywords: ['roadmap', 'timeline'], name: 'Roadmap' },
-    { keywords: ['design brief', 'design'], name: 'Design Brief' },
-  ];
   let transformation: string | null = null;
-  for (const t of transformTargets) {
+  for (const t of TRANSFORMATION_TARGETS) {
     if (t.keywords.some(kw => lower.includes(kw))) { transformation = t.name; break; }
   }
 
@@ -206,7 +257,10 @@ export function analyzeIntent(prompt: string): IntentAnalysis {
     }
   }
 
-  return { inputService, outputService, outputFormat, fileInput, transformation, sourceType };
+  // 7. Detect all transformations for multi-artifact support
+  const transformations = detectMultipleTransformations(prompt);
+
+  return { inputService, outputService, outputFormat, fileInput, transformation, transformations, sourceType };
 }
 
 // ─── Node Builder ───────────────────────────────────────────────────────────
@@ -330,9 +384,23 @@ export function buildNodesFromPrompt(
 
   // ── Artifacts ──
   const artifactNames: string[] = [];
-  if (intent.transformation) {
+  const educationTypes = ['Lesson Plan', 'Course Syllabus', 'Course Material', 'Assessment', 'Flashcards', 'Tutorial', 'Rubric', 'Study Guide', 'Discussion Prompts', 'Lecture Notes', 'Assignment', 'Course FAQ'];
+
+  if (intent.transformations.length > 0) {
+    // Use multi-artifact detection: add all detected targets
+    for (const t of intent.transformations) {
+      if (!artifactNames.includes(t)) artifactNames.push(t);
+    }
+    // For education artifacts, add supplementary nodes if not already present
+    const hasEducation = artifactNames.some(n => educationTypes.includes(n));
+    if (hasEducation) {
+      if (!artifactNames.includes('Lesson Plan') && /\blesson\b/.test(lower)) artifactNames.push('Lesson Plan');
+      if (!artifactNames.includes('Learning Objectives')) artifactNames.push('Learning Objectives');
+    }
+  } else if (intent.transformation) {
+    // Fallback: single transformation (backward compat — shouldn't normally reach here
+    // since transformations[] would have it, but guards against edge cases)
     artifactNames.push(intent.transformation);
-    const educationTypes = ['Lesson Plan', 'Course Syllabus', 'Course Material', 'Assessment', 'Flashcards', 'Tutorial', 'Rubric', 'Study Guide', 'Discussion Prompts', 'Lecture Notes', 'Assignment', 'Course FAQ'];
     if (educationTypes.includes(intent.transformation)) {
       if (intent.transformation !== 'Lesson Plan' && /\blesson\b/.test(lower)) artifactNames.push('Lesson Plan');
       if (!artifactNames.includes('Learning Objectives')) artifactNames.push('Learning Objectives');
