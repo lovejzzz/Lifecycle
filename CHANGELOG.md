@@ -1,5 +1,12 @@
 # Changelog
 
+### 2026-03-11 — Integration tests: name ops, undo cascade, full professor flow (v1.0.84)
+
+- **Tests**: 6 new simulation tests (1106 → 1112 vitest tests)
+- Scenario AD: Name-based store operations — connectByName, renameByName, deleteByName, error case
+- Scenario AE: Undo reverses edit cascade — semantic edit + cascade, undo restores all to active
+- Scenario AF: Full professor flow — execute chain → edit lesson plan → verify cascade → re-execute
+
 ### 2026-03-11 — CID intelligence: stale query + natural propagation phrasing (v1.0.83)
 
 - **Routing**: "run everything that's stale" now routes to `propagate` (was `run-workflow`)

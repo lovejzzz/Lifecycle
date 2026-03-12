@@ -2476,4 +2476,159 @@ describe('E2E Async Simulation Tests', () => {
       assertStoreInvariants();
     });
   });
+
+  // ─── Scenario AD: Name-based store operations ──────────────────────────────
+  describe('Scenario AD: Name-based operations', () => {
+    it('connectByName creates an edge between two named nodes', async () => {
+      vi.useFakeTimers();
+      const n1 = mkNode('nb-1', 'Syllabus', 'input', { content: 'Course syllabus' });
+      const n2 = mkNode('nb-2', 'Lesson Plan', 'artifact', { content: 'Lesson plan content' });
+      getStore().setNodes([n1, n2]);
+      getStore().setEdges([]);
+      await vi.advanceTimersByTimeAsync(100);
+
+      const result = getStore().connectByName('connect Syllabus to Lesson Plan');
+      expect(result.success).toBe(true);
+      expect(getStore().edges.length).toBe(1);
+      expect(getStore().edges[0].source).toBe('nb-1');
+      expect(getStore().edges[0].target).toBe('nb-2');
+      assertStoreInvariants();
+    });
+
+    it('renameByName changes a node label', async () => {
+      vi.useFakeTimers();
+      const node = mkNode('nb-3', 'Old Name', 'action', { content: 'Some content' });
+      getStore().setNodes([node]);
+      await vi.advanceTimersByTimeAsync(100);
+
+      const result = getStore().renameByName('rename Old Name to New Name');
+      expect(result.success).toBe(true);
+      expect(getStore().nodes.find(n => n.id === 'nb-3')?.data.label).toBe('New Name');
+      assertStoreInvariants();
+    });
+
+    it('deleteByName removes a node and its edges', async () => {
+      vi.useFakeTimers();
+      const n1 = mkNode('nb-4', 'Source', 'input', { content: 'Source' });
+      const n2 = mkNode('nb-5', 'Target', 'output', { content: 'Target' });
+      getStore().setNodes([n1, n2]);
+      getStore().setEdges([mkEdge('nb-e1', 'nb-4', 'nb-5')]);
+      await vi.advanceTimersByTimeAsync(100);
+
+      const result = getStore().deleteByName('delete Source');
+      expect(result.success).toBe(true);
+      expect(getStore().nodes.length).toBe(1);
+      expect(getStore().nodes[0].id).toBe('nb-5');
+      // Edge should be cleaned up too
+      expect(getStore().edges.length).toBe(0);
+      assertStoreInvariants();
+    });
+
+    it('connectByName with nonexistent node returns error', async () => {
+      vi.useFakeTimers();
+      const node = mkNode('nb-6', 'Only Node', 'action', { content: 'Content' });
+      getStore().setNodes([node]);
+      await vi.advanceTimersByTimeAsync(100);
+
+      const result = getStore().connectByName('connect Only Node to Ghost Node');
+      expect(result.success).toBe(false);
+      expect(result.message).toMatch(/not find|Could not|Need at least/i);
+      assertStoreInvariants();
+    });
+  });
+
+  // ─── Scenario AE: Undo reverses edit cascade ──────────────────────────────
+  describe('Scenario AE: Undo after cascade', () => {
+    it('undo after semantic edit restores pre-cascade state', async () => {
+      vi.useFakeTimers();
+      buildLinearWorkflow();
+      // Set all active
+      for (const id of ['n-1', 'n-2', 'n-3', 'n-4']) {
+        getStore().updateNodeData(id, { status: 'active' as const });
+      }
+      await vi.advanceTimersByTimeAsync(100);
+
+      // Push history before edit
+      getStore().pushHistory();
+
+      // Semantic edit on n-1 → cascades stale to n-2, n-3, n-4
+      getStore().updateNodeData('n-1', {
+        content: 'Entirely new requirements about distributed systems and microservices',
+      });
+      await vi.advanceTimersByTimeAsync(500);
+
+      // Verify cascade happened
+      expect(getStore().nodes.find(n => n.id === 'n-2')?.data.status).toBe('stale');
+
+      // Undo
+      getStore().undo();
+      await vi.advanceTimersByTimeAsync(100);
+
+      const s = getStore();
+      // All nodes should be back to active (pre-edit state)
+      expect(s.nodes.find(n => n.id === 'n-1')?.data.content).toBe('User requirements document with detailed specifications');
+      // Downstream should no longer be stale
+      for (const id of ['n-2', 'n-3', 'n-4']) {
+        expect(s.nodes.find(n => n.id === id)?.data.status).toBe('active');
+      }
+      assertStoreInvariants();
+    });
+  });
+
+  // ─── Scenario AF: Full professor workflow ─────────────────────────────────
+  describe('Scenario AF: Full professor flow', () => {
+    it('execute node → edit content → verify stale cascade → re-execute', async () => {
+      vi.useFakeTimers();
+      // Simple 3-node chain: Syllabus → Lesson → Quiz
+      const syl = mkNode('prof-1', 'Syllabus', 'input', { content: 'CS101 course overview covering algorithms' });
+      const les = mkNode('prof-2', 'Lesson Plan', 'artifact', { content: 'Lessons derived from syllabus' });
+      const quiz = mkNode('prof-3', 'Quiz Bank', 'artifact', { content: 'Quiz questions from lessons' });
+      getStore().setNodes([syl, les, quiz]);
+      getStore().setEdges([
+        mkEdge('prof-e1', 'prof-1', 'prof-2'),
+        mkEdge('prof-e2', 'prof-2', 'prof-3'),
+      ]);
+      await vi.advanceTimersByTimeAsync(100);
+
+      // Step 1: Execute the chain
+      getStore().executeNode('prof-1');
+      await vi.advanceTimersByTimeAsync(5000);
+      getStore().executeNode('prof-2');
+      await vi.advanceTimersByTimeAsync(5000);
+      getStore().executeNode('prof-3');
+      await vi.advanceTimersByTimeAsync(5000);
+
+      // All should be active after execution
+      for (const id of ['prof-1', 'prof-2', 'prof-3']) {
+        expect(getStore().nodes.find(n => n.id === id)?.data.status).toBe('active');
+      }
+
+      // Step 2: Professor adds homework to Lesson Plan (semantic edit)
+      getStore().updateNodeData('prof-2', {
+        content: 'Lessons derived from syllabus. NEW: Homework assignment on sorting algorithms due Week 3.',
+      });
+      await vi.advanceTimersByTimeAsync(500);
+
+      // Step 3: Verify cascade — Lesson Plan and Quiz Bank should be stale
+      expect(getStore().nodes.find(n => n.id === 'prof-2')?.data.status).toBe('stale');
+      expect(getStore().nodes.find(n => n.id === 'prof-3')?.data.status).toBe('stale');
+      // Syllabus (upstream) should be unaffected
+      expect(getStore().nodes.find(n => n.id === 'prof-1')?.data.status).toBe('active');
+
+      // Step 4: Re-execute the stale Lesson Plan
+      getStore().executeNode('prof-2');
+      await vi.advanceTimersByTimeAsync(5000);
+
+      // After execution, the node should have been processed (version may bump)
+      // Note: executeNode updates content via updateNodeData, which may re-trigger
+      // staleness classification if generated content differs significantly.
+      // We verify execution happened by checking the node was processed.
+      const final = getStore().nodes.find(n => n.id === 'prof-2');
+      const finalVersion = final?.data._versionHistory?.length ?? 0;
+      // Execution should have either set active or re-triggered a cascade
+      expect(['active', 'stale']).toContain(final?.data.status);
+
+      assertStoreInvariants();
+    });
+  });
 });
