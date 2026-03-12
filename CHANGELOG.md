@@ -1,5 +1,12 @@
 # Changelog
 
+### 2026-03-12 — Landing page cleanup: remove redundant "describe what you need" section (v1.0.89)
+
+- **UI**: Removed redundant `emptyCanvasDescription` and `emptyCanvasHint` — CID panel already handles this
+- **UI**: Removed "or describe what you need" prompt suggestion pills — duplicate of CID input
+- **UI**: Simplified title to "Lifecycle" with tagline, kept template cards and ⌘K hint
+- **E2E**: Updated 2 Playwright tests for new empty canvas state (218 → 218 total)
+
 ### 2026-03-12 — Integration tests: usage stats, workflow execution, concurrent edits (v1.0.88)
 
 - **Tests**: 3 new simulation tests (1122 → 1125 vitest tests)

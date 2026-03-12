@@ -815,11 +815,8 @@ function CanvasInner() {
                 }
               </div>
               <h2 className="text-xl font-semibold text-white/80 mb-2">
-                {agent.emptyCanvasTitle}
+                Lifecycle
               </h2>
-              <p className="text-[13px] text-white/40 leading-relaxed mb-4">
-                {agent.emptyCanvasDescription}
-              </p>
               <p className="text-[11px] text-white/30 mb-6">Workflows that stay alive after generation</p>
               {!showCIDPanel && (
                 <button
@@ -834,12 +831,6 @@ function CanvasInner() {
                   Open {agent.name}
                   <ArrowRight size={14} />
                 </button>
-              )}
-              {showCIDPanel && (
-                <div className="flex items-center justify-center gap-2 text-[12px] text-white/25">
-                  <ArrowRight size={12} />
-                  <span>{agent.emptyCanvasHint}</span>
-                </div>
               )}
               {/* Template cards */}
               <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-2 pointer-events-auto max-w-xl mx-auto">
@@ -883,44 +874,7 @@ function CanvasInner() {
                   <span className="text-[9px] ml-1.5 opacity-50">{mounted && typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent) ? '\u2318' : 'Ctrl+'}T</span>
                 </button>
               </div>
-              {/* Prompt categories with contextual suggestions */}
-              <div className="mt-5 pointer-events-auto space-y-2">
-                <div className="text-[9px] text-white/25 uppercase tracking-widest mb-1">or describe what you need</div>
-                {[
-                  { icon: '📝', prompts: ['Build a blog content pipeline', 'Create a research paper workflow'] },
-                  { icon: '🚀', prompts: ['Design a CI/CD pipeline for React', 'Make a product launch workflow'] },
-                  { icon: '🎓', prompts: ['Turn a Google Doc into a lesson plan and export to PDF', 'Create an onboarding training system'] },
-                  { icon: '🔍', prompts: ['Build a code review and QA pipeline', 'Design an incident response workflow'] },
-                ].map((group, gi) => (
-                  <div key={gi} className="flex items-center justify-center gap-1.5 flex-wrap">
-                    <span className="text-[10px]">{group.icon}</span>
-                    {group.prompts.map((prompt) => (
-                      <button
-                        key={prompt}
-                        onClick={() => {
-                          if (!showCIDPanel) toggleCIDPanel();
-                          setTimeout(() => {
-                            const cidInput = document.querySelector<HTMLInputElement>('[data-cid-input]');
-                            if (cidInput) {
-                              const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
-                              nativeInputValueSetter?.call(cidInput, prompt);
-                              cidInput.dispatchEvent(new Event('input', { bubbles: true }));
-                              cidInput.focus();
-                            }
-                          }, 150);
-                        }}
-                        className={`px-2.5 py-1 rounded-lg text-[9.5px] border transition-all hover:scale-[1.03] ${
-                          agent.accent === 'amber'
-                            ? 'border-amber-500/10 text-amber-400/50 bg-amber-500/[0.02] hover:bg-amber-500/[0.08] hover:border-amber-500/20'
-                            : 'border-emerald-500/10 text-emerald-400/50 bg-emerald-500/[0.02] hover:bg-emerald-500/[0.08] hover:border-emerald-500/20'
-                        }`}
-                      >
-                        {prompt}
-                      </button>
-                    ))}
-                  </div>
-                ))}
-              </div>
+              {/* Keyboard hint */}
               <div className="mt-4 text-[10px] text-white/30">
                 Press <kbd className="px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] font-mono text-[9px]">⌘K</kbd> to focus CID
               </div>

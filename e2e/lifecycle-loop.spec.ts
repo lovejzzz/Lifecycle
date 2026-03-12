@@ -39,11 +39,11 @@ test.describe('App loads and renders', () => {
     await expect(panel).toContainText('CID online', { timeout: 3000 });
   });
 
-  test('suggestion chips appear on empty canvas', async ({ page }) => {
+  test('empty canvas shows product title and tagline', async ({ page }) => {
     await page.goto('/');
 
-    // "OR DESCRIBE WHAT YOU NEED" section with clickable suggestions
-    await expect(page.getByText('Build a blog content pipeline')).toBeVisible({ timeout: 3000 });
+    await expect(page.getByRole('heading', { name: 'Lifecycle' })).toBeVisible({ timeout: 3000 });
+    await expect(page.getByText('Workflows that stay alive after generation')).toBeVisible({ timeout: 3000 });
   });
 });
 
@@ -543,20 +543,17 @@ test.describe('Multiple template workflows', () => {
   });
 });
 
-test.describe('Suggestion chips on empty canvas', () => {
-  test('clicking a suggestion chip triggers CID processing', async ({ page }) => {
+test.describe('Empty canvas template cards', () => {
+  test('template cards are clickable on empty canvas', async ({ page }) => {
     await page.goto('/');
 
-    // Click one of the suggestion chips
-    await page.getByText('Build a blog content pipeline').click();
+    // Template cards should be visible on empty canvas
+    await expect(page.getByRole('button', { name: /^Course Design/ })).toBeVisible({ timeout: 3000 });
+    await expect(page.getByRole('button', { name: /^Software Development/ })).toBeVisible({ timeout: 3000 });
 
-    // Should either populate input or start processing (input disabled)
-    await page.waitForTimeout(500);
-    const input = page.locator('[data-cid-input]');
-    const isDisabled = await input.isDisabled();
-    const hasValue = (await input.inputValue()).length > 0;
-    // Chip click either fills the input or sends directly (processing)
-    expect(isDisabled || hasValue).toBe(true);
+    // Clicking a template card should load nodes
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
   });
 });
 
