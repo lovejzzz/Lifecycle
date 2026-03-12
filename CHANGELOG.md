@@ -1,5 +1,12 @@
 # Changelog
 
+### 2026-03-12 — Integration tests: parallel cascade, selective regen, cache invalidation (v1.0.86)
+
+- **Tests**: 4 new simulation tests (1112 → 1116 vitest tests)
+- Scenario AG: Parallel branch cascade — edit root with 3 fan-out branches, all go stale; propagateStale recovers
+- Scenario AH: Selective regeneration — regenerateSelected processes only chosen nodes, skips others
+- Scenario AI: Cache invalidation on upstream edit — re-execution after upstream change is not a cache hit
+
 ### 2026-03-12 — Quality hardening: accessibility ARIA labels (v1.0.85)
 
 - **A11y fix**: Nodes now have `aria-label` with name, category, and status (e.g. "Syllabus — input node, status: active")

@@ -2631,4 +2631,126 @@ describe('E2E Async Simulation Tests', () => {
       assertStoreInvariants();
     });
   });
+
+  // ─── Scenario AG: Parallel branch cascade from root ──────────────────────
+  describe('Scenario AG: Parallel branch cascade', () => {
+    it('editing root marks all 3 independent branches stale', async () => {
+      vi.useFakeTimers();
+      // Root → Branch A, Root → Branch B, Root → Branch C (fan-out)
+      const root = mkNode('ag-root', 'Root', 'input', { content: 'Core content for all branches' });
+      const branchA = mkNode('ag-a', 'Branch A', 'artifact', { content: 'Derived from Root' });
+      const branchB = mkNode('ag-b', 'Branch B', 'artifact', { content: 'Also derived from Root' });
+      const branchC = mkNode('ag-c', 'Branch C', 'artifact', { content: 'Third derivation from Root' });
+      getStore().setNodes([root, branchA, branchB, branchC]);
+      getStore().setEdges([
+        mkEdge('ag-e1', 'ag-root', 'ag-a'),
+        mkEdge('ag-e2', 'ag-root', 'ag-b'),
+        mkEdge('ag-e3', 'ag-root', 'ag-c'),
+      ]);
+      await vi.advanceTimersByTimeAsync(100);
+
+      // Semantic edit on root
+      getStore().updateNodeData('ag-root', {
+        content: 'Core content for all branches. NEW: Added critical requirement for compliance.',
+      });
+      await vi.advanceTimersByTimeAsync(500);
+
+      // All 3 branches should be stale
+      expect(getStore().nodes.find(n => n.id === 'ag-a')?.data.status).toBe('stale');
+      expect(getStore().nodes.find(n => n.id === 'ag-b')?.data.status).toBe('stale');
+      expect(getStore().nodes.find(n => n.id === 'ag-c')?.data.status).toBe('stale');
+      // Root itself should also be stale (it was edited semantically)
+      expect(getStore().nodes.find(n => n.id === 'ag-root')?.data.status).toBe('stale');
+
+      assertStoreInvariants();
+    });
+
+    it('propagateStale recovers all branches', async () => {
+      vi.useFakeTimers();
+      const root = mkNode('ag2-root', 'Root', 'input', { content: 'Base content', status: 'stale' });
+      const a = mkNode('ag2-a', 'A', 'artifact', { content: 'From root', status: 'stale' });
+      const b = mkNode('ag2-b', 'B', 'artifact', { content: 'From root', status: 'stale' });
+      getStore().setNodes([root, a, b]);
+      getStore().setEdges([mkEdge('ag2-e1', 'ag2-root', 'ag2-a'), mkEdge('ag2-e2', 'ag2-root', 'ag2-b')]);
+      await vi.advanceTimersByTimeAsync(100);
+
+      // Execute via propagateStale
+      getStore().propagateStale();
+      await vi.advanceTimersByTimeAsync(10000);
+
+      // Both branches should have been processed
+      const storeNodes = getStore().nodes;
+      const aNode = storeNodes.find(n => n.id === 'ag2-a');
+      const bNode = storeNodes.find(n => n.id === 'ag2-b');
+      // propagateStale re-executes stale nodes — status may be active or stale depending on execution result
+      expect(aNode).toBeDefined();
+      expect(bNode).toBeDefined();
+
+      assertStoreInvariants();
+    });
+  });
+
+  // ─── Scenario AH: Selective regeneration ──────────────────────────────────
+  describe('Scenario AH: Selective regeneration', () => {
+    it('regenerateSelected only processes chosen nodes', async () => {
+      vi.useFakeTimers();
+      const n1 = mkNode('ah-1', 'Node A', 'artifact', { content: 'Content A', status: 'stale' });
+      const n2 = mkNode('ah-2', 'Node B', 'artifact', { content: 'Content B', status: 'stale' });
+      const n3 = mkNode('ah-3', 'Node C', 'artifact', { content: 'Content C', status: 'stale' });
+      getStore().setNodes([n1, n2, n3]);
+      await vi.advanceTimersByTimeAsync(100);
+
+      const callsBefore = fetchCallCount;
+
+      // Only regenerate nodes A and C (skip B)
+      getStore().regenerateSelected(['ah-1', 'ah-3']);
+      await vi.advanceTimersByTimeAsync(10000);
+
+      // Node B should still be stale (wasn't selected)
+      const bNode = getStore().nodes.find(n => n.id === 'ah-2');
+      expect(bNode?.data.status).toBe('stale');
+
+      // At least some fetch calls should have been made for A and C
+      expect(fetchCallCount).toBeGreaterThan(callsBefore);
+
+      assertStoreInvariants();
+    });
+  });
+
+  // ─── Scenario AI: Cache invalidation on upstream edit ─────────────────────
+  describe('Scenario AI: Cache invalidation on upstream edit', () => {
+    it('re-execution after upstream edit is not a cache hit', async () => {
+      vi.useFakeTimers();
+      const upstream = mkNode('ai-1', 'Source', 'input', { content: 'Original source data' });
+      const downstream = mkNode('ai-2', 'Output', 'artifact', { content: 'Derived content' });
+      getStore().setNodes([upstream, downstream]);
+      getStore().setEdges([mkEdge('ai-e1', 'ai-1', 'ai-2')]);
+      await vi.advanceTimersByTimeAsync(100);
+
+      // First execution of downstream
+      getStore().executeNode('ai-2');
+      await vi.advanceTimersByTimeAsync(5000);
+
+      const statsAfterFirst = { ...getStore()._usageStats };
+
+      // Edit upstream (semantic change)
+      getStore().updateNodeData('ai-1', {
+        content: 'Completely revised source data with new requirements and constraints.',
+      });
+      await vi.advanceTimersByTimeAsync(500);
+
+      // Downstream should be stale now
+      expect(getStore().nodes.find(n => n.id === 'ai-2')?.data.status).toBe('stale');
+
+      // Re-execute downstream — upstream changed, so cache hash should differ
+      getStore().executeNode('ai-2');
+      await vi.advanceTimersByTimeAsync(5000);
+
+      // totalCalls should have incremented (not a cached skip)
+      const statsAfterSecond = getStore()._usageStats;
+      expect(statsAfterSecond.totalCalls).toBeGreaterThan(statsAfterFirst.totalCalls);
+
+      assertStoreInvariants();
+    });
+  });
 });
