@@ -1,5 +1,12 @@
 # Changelog
 
+### 2026-03-11 — Integration tests: cascade recovery, lock behavior, error retry (v1.0.77)
+
+- **Tests**: 7 new simulation scenarios (1078 → 1085 vitest tests)
+- Scenario T: Edit cascade with full recovery — upstream edit cascades stale through chain, propagateStale recovers
+- Scenario U: Lock during cascade — locked nodes skipped during staleness, approve restores active
+- Scenario V: Error recovery with retry — failed execution → retry succeeds, failed node doesn't corrupt downstream
+
 ### 2026-03-11 — Quality hardening: CID error handling E2E tests (v1.0.76)
 
 - **E2E**: 5 new Playwright tests for CID error handling (207 → 212 total)

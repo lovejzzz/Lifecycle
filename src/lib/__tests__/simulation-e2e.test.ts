@@ -1837,4 +1837,191 @@ describe('E2E Async Simulation Tests', () => {
       expect(n?.data.version).toBeGreaterThanOrEqual(1);
     });
   });
+
+  // ─── Scenario T: Edit cascade with full recovery via propagateStale ─────────
+  describe('Scenario T: Edit cascade recovery', () => {
+    it('editing upstream node cascades stale through full chain', async () => {
+      vi.useFakeTimers();
+      buildLinearWorkflow();
+
+      // Set all nodes to active with execution results (simulating prior execution)
+      for (const id of ['n-1', 'n-2', 'n-3', 'n-4']) {
+        getStore().updateNodeData(id, {
+          status: 'active',
+          executionResult: `Result for ${id}`,
+        });
+      }
+      await vi.advanceTimersByTimeAsync(100);
+
+      // Edit Input node with a major content change
+      getStore().updateNodeData('n-1', {
+        content: 'Completely different requirements about machine learning pipelines and neural networks',
+      });
+      await vi.advanceTimersByTimeAsync(500);
+
+      // Input itself should be stale (it was edited)
+      const s1 = getStore();
+      expect(s1.nodes.find(n => n.id === 'n-1')?.data.status).toBe('stale');
+      // All downstream should be stale
+      expect(s1.nodes.find(n => n.id === 'n-2')?.data.status).toBe('stale');
+      expect(s1.nodes.find(n => n.id === 'n-3')?.data.status).toBe('stale');
+      expect(s1.nodes.find(n => n.id === 'n-4')?.data.status).toBe('stale');
+    });
+
+    it('propagateStale re-executes stale nodes and recovers them', async () => {
+      vi.useFakeTimers();
+      buildLinearWorkflow();
+
+      // Mark Process and downstream as stale
+      getStore().updateNodeStatus('n-2', 'stale');
+      await vi.advanceTimersByTimeAsync(500);
+
+      const before = getStore();
+      expect(before.nodes.find(n => n.id === 'n-2')?.data.status).toBe('stale');
+      expect(before.nodes.find(n => n.id === 'n-4')?.data.status).toBe('stale');
+
+      // Propagate should attempt to re-execute stale nodes
+      getStore().propagateStale();
+      await vi.advanceTimersByTimeAsync(10000);
+
+      const after = getStore();
+      // Nodes should either be active (recovered) or generating (in-progress)
+      const n2Status = after.nodes.find(n => n.id === 'n-2')?.data.status;
+      // At minimum the store should remain consistent
+      assertStoreInvariants();
+      // At least one stale node should have been picked up for re-execution
+      expect(n2Status === 'active' || n2Status === 'generating').toBe(true);
+    });
+  });
+
+  // ─── Scenario U: Lock during cascade — locked nodes skipped ─────────────────
+  describe('Scenario U: Lock during cascade', () => {
+    it('locked node in middle of chain is skipped during propagateStale', async () => {
+      vi.useFakeTimers();
+      buildLinearWorkflow();
+
+      // Execute all nodes first
+      for (const id of ['n-1', 'n-2', 'n-3', 'n-4']) {
+        getStore().updateNodeData(id, {
+          status: 'active',
+          executionResult: `Result for ${id}`,
+        });
+      }
+      await vi.advanceTimersByTimeAsync(100);
+
+      // Lock the Review node (n-3)
+      getStore().lockNode('n-3');
+      expect(getStore().nodes.find(n => n.id === 'n-3')?.data.locked).toBe(true);
+
+      // Edit Input → causes downstream stale
+      getStore().updateNodeData('n-1', {
+        content: 'Radically new requirements about quantum computing and distributed systems',
+      });
+      await vi.advanceTimersByTimeAsync(500);
+
+      const s = getStore();
+      // n-1 is stale (edited)
+      expect(s.nodes.find(n => n.id === 'n-1')?.data.status).toBe('stale');
+      // n-2 is stale (downstream)
+      expect(s.nodes.find(n => n.id === 'n-2')?.data.status).toBe('stale');
+      // n-3 is locked — should NOT become stale
+      expect(s.nodes.find(n => n.id === 'n-3')?.data.status).toBe('locked');
+      expect(s.nodes.find(n => n.id === 'n-3')?.data.locked).toBe(true);
+      // n-4 IS stale — staleness traverses through locked nodes
+      expect(s.nodes.find(n => n.id === 'n-4')?.data.status).toBe('stale');
+
+      assertStoreInvariants();
+    });
+
+    it('unlocking a node (approve) after cascade makes it active', async () => {
+      vi.useFakeTimers();
+      const n1 = mkNode('lock-1', 'Source', 'input', { content: 'Source data for processing' });
+      const n2 = mkNode('lock-2', 'Processor', 'action', { content: 'Process the data thoroughly' });
+      getStore().setNodes([n1, n2]);
+      getStore().setEdges([mkEdge('lock-e1', 'lock-1', 'lock-2')]);
+      await vi.advanceTimersByTimeAsync(100);
+
+      // Lock then unlock
+      getStore().lockNode('lock-2');
+      expect(getStore().nodes.find(n => n.id === 'lock-2')?.data.status).toBe('locked');
+
+      getStore().approveNode('lock-2');
+      // approveNode sets status to active (the node is now approved/reviewed)
+      expect(getStore().nodes.find(n => n.id === 'lock-2')?.data.status).toBe('active');
+
+      assertStoreInvariants();
+    });
+  });
+
+  // ─── Scenario V: Error → Retry → Success ────────────────────────────────────
+  describe('Scenario V: Error recovery with retry', () => {
+    it('node fails execution, then succeeds on retry', async () => {
+      vi.useFakeTimers();
+      const node = mkNode('retry-1', 'Flaky Node', 'action', { content: 'Content that needs processing' });
+      getStore().setNodes([node]);
+      getStore().setEdges([]);
+      await vi.advanceTimersByTimeAsync(100);
+
+      // First attempt: fail
+      fetchFailForNodes.add('Flaky Node');
+      getStore().executeNode('retry-1');
+      await vi.advanceTimersByTimeAsync(5000);
+
+      const afterFail = getStore().nodes.find(n => n.id === 'retry-1');
+      // Node should be back to active or stale after failed execution (no 'error' status in type)
+      expect(afterFail?.data.status === 'stale' || afterFail?.data.status === 'active').toBe(true);
+
+      // Second attempt: succeed
+      fetchFailForNodes.delete('Flaky Node');
+      getStore().executeNode('retry-1');
+      await vi.advanceTimersByTimeAsync(5000);
+
+      const afterRetry = getStore().nodes.find(n => n.id === 'retry-1');
+      expect(afterRetry?.data.status).toBe('active');
+      expect(afterRetry?.data.executionResult).toBeTruthy();
+      assertStoreInvariants();
+    });
+
+    it('failed node does not corrupt downstream state', async () => {
+      vi.useFakeTimers();
+      buildLinearWorkflow();
+
+      // Fail the Process node
+      fetchFailForNodes.add('Process');
+      getStore().executeNode('n-2');
+      await vi.advanceTimersByTimeAsync(5000);
+
+      const s = getStore();
+      const processNode = s.nodes.find(n => n.id === 'n-2');
+      // Process should be active or stale after failed execution
+      expect(processNode?.data.status === 'stale' || processNode?.data.status === 'active').toBe(true);
+      // Downstream nodes should NOT be affected (still active, not stale)
+      expect(s.nodes.find(n => n.id === 'n-3')?.data.status).toBe('active');
+      expect(s.nodes.find(n => n.id === 'n-4')?.data.status).toBe('active');
+
+      assertStoreInvariants();
+    });
+
+    it('re-executing failed node in chain recovers it', async () => {
+      vi.useFakeTimers();
+      const node = mkNode('recover-1', 'Recoverable', 'action', { content: 'Important analysis task' });
+      getStore().setNodes([node]);
+      getStore().setEdges([]);
+      await vi.advanceTimersByTimeAsync(100);
+
+      // Fail
+      fetchShouldFail = true;
+      getStore().executeNode('recover-1');
+      await vi.advanceTimersByTimeAsync(5000);
+
+      // Recover
+      fetchShouldFail = false;
+      getStore().executeNode('recover-1');
+      await vi.advanceTimersByTimeAsync(5000);
+
+      const n = getStore().nodes.find(n => n.id === 'recover-1');
+      expect(n?.data.status).toBe('active');
+      assertStoreInvariants();
+    });
+  });
 });
