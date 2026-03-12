@@ -541,7 +541,7 @@ export default function CIDPanel() {
         const count = batchUpdateStatus('locked', 'active');
         return count > 0 ? `Done. Unlocked ${count} node${count > 1 ? 's' : ''}.` : 'No locked nodes found.';
       });
-    } else if (/^(?:activate\s+all|batch\s+activate)\b/i.test(prompt)) {
+    } else if (/^(?:activate\s+all|batch\s+activate)\b/i.test(prompt) || /^(?:mark|set)\s+(?:all|every\w*)\s+(?:\w+\s+)?(?:as|to)\s+active\s*$/i.test(prompt)) {
       dispatchCommand(prompt, () => {
         const count = batchUpdateStatus('stale', 'active');
         return count > 0 ? `Done. Activated ${count} stale node${count > 1 ? 's' : ''}.` : 'No stale nodes found.';
@@ -695,7 +695,7 @@ export default function CIDPanel() {
       dispatchCommand(prompt, () => validate());
     } else if (/^(?:what\s*if|impact|without)\b/i.test(prompt)) {
       dispatchCommand(prompt, () => whatIf(prompt));
-    } else if (/^(?:pre\s*flight|flight\s*check|dry\s*run|plan\s+run|execution\s+plan)\s*$/i.test(prompt)) {
+    } else if (/^(?:pre\s*flight|flight\s*check|dry\s*run|plan\s+run|execution\s+plan)\s*$/i.test(prompt) || /^(?:which|what)\s+nodes?\s+(?:are|is)\s+(?:ready|able|eligible)\s+(?:to\s+)?(?:run|execute)/i.test(prompt)) {
       dispatchCommand(prompt, () => getPreFlightSummary());
     } else if (/^(?:retry|rerun|re-run)\s+(?:failed|errors?|skipped)\s*$/i.test(prompt)) {
       addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });
@@ -887,7 +887,7 @@ export default function CIDPanel() {
     } else if (/^(?:diff|compare)\s+["']?(.+?)["']?\s*$/i.test(prompt)) {
       const diffMatch = prompt.match(/(?:diff|compare)\s+["']?(.+?)["']?\s*$/i);
       if (diffMatch) dispatchCommand(prompt, () => diffSnapshot(diffMatch[1].trim()));
-    } else if (/^(?:plan|execution\s*plan|steps|order)\s*$/i.test(prompt)) {
+    } else if (/^(?:plan|execution\s*plan|steps|order)\s*$/i.test(prompt) || /^what(?:'s|\s+is)\s+the\s+(?:execution\s+)?order/i.test(prompt)) {
       dispatchCommand(prompt, () => generatePlan());
     } else if (/^(?:search|find|grep)\s+(.+)$/i.test(prompt)) {
       const searchMatch = prompt.match(/(?:search|find|grep)\s+(.+)$/i);

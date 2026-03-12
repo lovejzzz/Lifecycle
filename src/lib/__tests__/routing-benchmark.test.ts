@@ -213,6 +213,14 @@ const BENCHMARK: BenchmarkCase[] = [
   { prompt: "run everything that's stale", expected: 'propagate', context: 'professor wanting to refresh stale nodes', hasWorkflow: true },
   { prompt: 'what nodes are stale right now?', expected: 'show-stale', context: 'professor checking stale status', hasWorkflow: true },
   { prompt: 'how many nodes are stale?', expected: 'show-stale', context: 'professor quick stale check', hasWorkflow: true },
+
+  // Round 16: batch status, preflight readiness, execution order
+  { prompt: 'which nodes are ready to run?', expected: 'preflight', context: 'professor checking before execution', hasWorkflow: true },
+  { prompt: 'what nodes are eligible to execute?', expected: 'preflight', context: 'PM checking readiness', hasWorkflow: true },
+  { prompt: 'mark all nodes as active', expected: 'activate-all', context: 'professor resetting workflow' },
+  { prompt: 'set everything as active', expected: 'activate-all', context: 'PM bulk reset' },
+  { prompt: "what's the execution order?", expected: 'plan', context: 'professor checking run sequence', hasWorkflow: true },
+  { prompt: 'tighten up the rubric criteria', expected: 'llm-fallback', context: 'professor editing rubric', hasWorkflow: true },
 ];
 
 // ─── Benchmark Runner ───────────────────────────────────────────────────────

@@ -120,10 +120,13 @@ export function classifyRoute(prompt: string, hasWorkflow: boolean = false): Com
   // Batch where (MUST come before batch approve/unlock/activate to avoid "batch approve where..." matching approve-all)
   if (/^batch\s+\w+\s+where\s+/i.test(prompt)) return 'batch-where';
 
-  // Batch status changes
+  // Batch status changes (including "mark all as X" phrasing)
   if (/^(?:approve\s+all|batch\s+approve)\b/i.test(prompt)) return 'approve-all';
+  if (/^(?:mark|set)\s+(?:all|every\w*)\s+(?:\w+\s+)?(?:as|to)\s+(?:approved|done)\s*$/i.test(prompt)) return 'approve-all';
   if (/^(?:unlock\s+all|batch\s+unlock)\b/i.test(prompt)) return 'unlock-all';
+  if (/^(?:mark|set)\s+(?:all|every\w*)\s+(?:\w+\s+)?(?:as|to)\s+unlocked\s*$/i.test(prompt)) return 'unlock-all';
   if (/^(?:activate\s+all|batch\s+activate)\b/i.test(prompt)) return 'activate-all';
+  if (/^(?:mark|set)\s+(?:all|every\w*)\s+(?:\w+\s+)?(?:as|to)\s+active\s*$/i.test(prompt)) return 'activate-all';
 
   // Connect / disconnect (MUST come before delete to avoid "remove the connection" matching delete)
   if (/^(?:connect|link|wire|attach)\s+.+\s+(?:to|with|→|->)\s+/i.test(prompt)) return 'connect';
@@ -233,6 +236,7 @@ export function classifyRoute(prompt: string, hasWorkflow: boolean = false): Com
 
   // Preflight
   if (/^(?:pre\s*flight|flight\s*check|dry\s*run|plan\s+run|execution\s+plan)\b/i.test(prompt)) return 'preflight';
+  if (/^(?:which|what)\s+nodes?\s+(?:are|is)\s+(?:ready|able|eligible)\s+(?:to\s+)?(?:run|execute)/i.test(prompt)) return 'preflight';
 
   // Retry failed
   if (/^(?:retry|rerun|re-run)\s+(?:failed|errors?|skipped)\s*$/i.test(prompt)) return 'retry-failed';
@@ -277,6 +281,7 @@ export function classifyRoute(prompt: string, hasWorkflow: boolean = false): Com
 
   // Plan
   if (/^(?:plan|execution\s*plan|steps|order)\s*$/i.test(prompt)) return 'plan';
+  if (/^what(?:'s|\s+is)\s+the\s+(?:execution\s+)?order/i.test(prompt)) return 'plan';
 
   // Search
   if (/^(?:search|find|grep)\s+(.+)$/i.test(prompt)) return 'search';

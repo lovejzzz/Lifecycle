@@ -1,5 +1,13 @@
 # Changelog
 
+### 2026-03-12 — CID intelligence: batch status, preflight readiness, execution order routing (v1.0.87)
+
+- **Routing fix**: "mark all nodes as active" now routes to `activate-all` (was `set-status`)
+- **Routing fix**: "which nodes are ready to run?" now routes to `preflight` (was `llm-fallback`)
+- **Routing fix**: "what's the execution order?" now routes to `plan` (was `llm-fallback`)
+- **CIDPanel**: Synced all 3 new routing patterns into command handler
+- **Benchmark**: 153 → 158 prompts, 100% accuracy
+
 ### 2026-03-12 — Integration tests: parallel cascade, selective regen, cache invalidation (v1.0.86)
 
 - **Tests**: 4 new simulation tests (1112 → 1116 vitest tests)
