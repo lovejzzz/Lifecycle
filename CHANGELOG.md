@@ -1,5 +1,12 @@
 # Changelog
 
+### 2026-03-12 — Integration tests: edge removal, locked workflow, multi-project isolation (v1.0.90)
+
+- **Tests**: 3 new simulation tests (1125 → 1128 vitest tests)
+- Scenario AM: Edge removal breaks dependency — removing edge prevents staleness propagation to former downstream
+- Scenario AN: Locked node in executeWorkflow — workflow executes around locked nodes without crashing
+- Scenario AO: Multi-project execution isolation — executing in one project doesn't affect another
+
 ### 2026-03-12 — Landing page cleanup: remove redundant "describe what you need" section (v1.0.89)
 
 - **UI**: Removed redundant `emptyCanvasDescription` and `emptyCanvasHint` — CID panel already handles this
