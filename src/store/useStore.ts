@@ -2398,6 +2398,26 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         timestamp: Date.now(), nodeId: id,
       });
       cidLog('updateNodeData:propagate', { id, editType: edit.type, reason: edit.reason });
+
+      // Note implicit dependency: when a note is semantically edited, find nodes
+      // that reference the note's label in their content and mark them stale too
+      // (even without explicit edges — notes influence by reference)
+      if (currentNode?.data.category === 'note' && currentNode.data.label) {
+        const noteLabel = currentNode.data.label.toLowerCase();
+        const state = get();
+        const hasEdgeFrom = new Set(state.edges.filter(e => e.source === id).map(e => e.target));
+        const referencingNodes = state.nodes.filter(n =>
+          n.id !== id &&
+          !hasEdgeFrom.has(n.id) && // skip nodes already connected via edge (handled by BFS)
+          !n.data.locked &&
+          n.data.status === 'active' &&
+          n.data.content?.toLowerCase().includes(noteLabel)
+        );
+        for (const refNode of referencingNodes) {
+          get().updateNodeStatus(refNode.id, 'stale');
+          cidLog('updateNodeData:note-implicit', { noteId: id, noteLabel: currentNode.data.label, refNodeId: refNode.id, refLabel: refNode.data.label });
+        }
+      }
     } else if (edit.type === 'local') {
       // Local edits: record but don't propagate
       get().addEvent({

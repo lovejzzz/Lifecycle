@@ -1,5 +1,13 @@
 # Changelog
 
+### 2026-03-11 — Note refinement: implicit dependency propagation (v1.0.78)
+
+- **Feature**: Notes now participate in the lifecycle loop — editing a note semantically marks all nodes that reference its label as stale, even without explicit edges
+- **Smart**: Skips nodes already connected via edges (no double-propagation), respects locked nodes, ignores cosmetic edits
+- **Tests**: 4 new simulation scenarios (Scenario W) — implicit reference, edge dedup, locked immunity, cosmetic safety
+- **Tests**: 1085 → 1089 vitest tests (all passing)
+- **Roadmap**: Phase 1 item 5 (note refinement) complete
+
 ### 2026-03-11 — Integration tests: cascade recovery, lock behavior, error retry (v1.0.77)
 
 - **Tests**: 7 new simulation scenarios (1078 → 1085 vitest tests)

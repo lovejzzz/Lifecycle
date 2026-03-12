@@ -2024,4 +2024,127 @@ describe('E2E Async Simulation Tests', () => {
       assertStoreInvariants();
     });
   });
+
+  // ─── Scenario W: Note implicit dependency propagation ────────────────────
+  describe('Scenario W: Note implicit dependencies', () => {
+    it('editing a note marks nodes that reference its label as stale', async () => {
+      vi.useFakeTimers();
+      const note = mkNode('note-1', 'Grading Policy', 'note', {
+        content: 'All assignments weighted equally at 10% each.',
+      });
+      const rubric = mkNode('rubric-1', 'Rubric', 'review', {
+        content: 'Rubric follows the Grading Policy guidelines for weighting.',
+        status: 'active' as const,
+      });
+      const syllabus = mkNode('syl-1', 'Syllabus', 'artifact', {
+        content: 'Course overview. See Grading Policy for weight details.',
+        status: 'active' as const,
+      });
+      const unrelated = mkNode('unrel-1', 'FAQ', 'output', {
+        content: 'Frequently asked questions about the course.',
+        status: 'active' as const,
+      });
+      getStore().setNodes([note, rubric, syllabus, unrelated]);
+      // No edges from note — implicit dependency only
+      getStore().setEdges([]);
+      await vi.advanceTimersByTimeAsync(100);
+
+      // Semantically edit the note
+      getStore().updateNodeData('note-1', {
+        content: 'Final project worth 40%, midterm 30%, homework 30%. Major policy overhaul.',
+      });
+      await vi.advanceTimersByTimeAsync(500);
+
+      const s = getStore();
+      // Note itself should be stale
+      expect(s.nodes.find(n => n.id === 'note-1')?.data.status).toBe('stale');
+      // Rubric mentions "Grading Policy" → stale
+      expect(s.nodes.find(n => n.id === 'rubric-1')?.data.status).toBe('stale');
+      // Syllabus mentions "Grading Policy" → stale
+      expect(s.nodes.find(n => n.id === 'syl-1')?.data.status).toBe('stale');
+      // FAQ does NOT mention "Grading Policy" → still active
+      expect(s.nodes.find(n => n.id === 'unrel-1')?.data.status).toBe('active');
+
+      assertStoreInvariants();
+    });
+
+    it('note with explicit edges does not double-propagate to edge targets', async () => {
+      vi.useFakeTimers();
+      const note = mkNode('note-2', 'Style Guide', 'note', {
+        content: 'Use APA format for all citations.',
+      });
+      const paper = mkNode('paper-1', 'Research Paper', 'artifact', {
+        content: 'Follow the Style Guide for all references and citations.',
+        status: 'active' as const,
+      });
+      getStore().setNodes([note, paper]);
+      // Explicit edge from note to paper
+      getStore().setEdges([mkEdge('e-note-paper', 'note-2', 'paper-1')]);
+      await vi.advanceTimersByTimeAsync(100);
+
+      // Edit note
+      getStore().updateNodeData('note-2', {
+        content: 'Switch to MLA format for all citations. Complete style overhaul required.',
+      });
+      await vi.advanceTimersByTimeAsync(500);
+
+      const s = getStore();
+      // Paper should be stale (via edge, not implicit)
+      expect(s.nodes.find(n => n.id === 'paper-1')?.data.status).toBe('stale');
+      assertStoreInvariants();
+    });
+
+    it('locked nodes are not affected by note implicit propagation', async () => {
+      vi.useFakeTimers();
+      const note = mkNode('note-3', 'Attendance Rules', 'note', {
+        content: 'Students must attend 80% of classes.',
+      });
+      const locked = mkNode('locked-1', 'Grade Sheet', 'artifact', {
+        content: 'Grade calculations based on Attendance Rules compliance.',
+        status: 'active' as const,
+      });
+      getStore().setNodes([note, locked]);
+      getStore().setEdges([]);
+      await vi.advanceTimersByTimeAsync(100);
+
+      // Lock the grade sheet
+      getStore().lockNode('locked-1');
+
+      // Edit note
+      getStore().updateNodeData('note-3', {
+        content: '90% attendance required. Policy completely revised for stricter enforcement.',
+      });
+      await vi.advanceTimersByTimeAsync(500);
+
+      const s = getStore();
+      // Locked node should NOT become stale even though it references the note
+      expect(s.nodes.find(n => n.id === 'locked-1')?.data.status).toBe('locked');
+      assertStoreInvariants();
+    });
+
+    it('cosmetic note edit does not trigger implicit propagation', async () => {
+      vi.useFakeTimers();
+      const note = mkNode('note-4', 'Deadline Info', 'note', {
+        content: 'All assignments due by 11:59 PM on the posted date.',
+      });
+      const task = mkNode('task-1', 'Assignment 1', 'action', {
+        content: 'Complete the exercises. See Deadline Info for submission timing.',
+        status: 'active' as const,
+      });
+      getStore().setNodes([note, task]);
+      getStore().setEdges([]);
+      await vi.advanceTimersByTimeAsync(100);
+
+      // Cosmetic edit (typo fix)
+      getStore().updateNodeData('note-4', {
+        content: 'All assignments due by 11:59 PM on the posted date.',  // same content
+      });
+      await vi.advanceTimersByTimeAsync(500);
+
+      const s = getStore();
+      // Task should remain active — no change propagated
+      expect(s.nodes.find(n => n.id === 'task-1')?.data.status).toBe('active');
+      assertStoreInvariants();
+    });
+  });
 });
