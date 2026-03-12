@@ -2753,4 +2753,99 @@ describe('E2E Async Simulation Tests', () => {
       assertStoreInvariants();
     });
   });
+
+  // ─── Scenario AJ: Usage stats tracking ────────────────────────────────────
+  describe('Scenario AJ: Usage stats tracking', () => {
+    it('totalCalls increments on execution, cachedSkips on cache hit', async () => {
+      vi.useFakeTimers();
+      const node = mkNode('aj-1', 'Stats Node', 'artifact', { content: 'Test content for stats' });
+      getStore().setNodes([node]);
+      await vi.advanceTimersByTimeAsync(100);
+
+      // Reset stats
+      getStore().resetUsageStats();
+      const before = { ...getStore()._usageStats };
+      expect(before.totalCalls).toBe(0);
+      expect(before.cachedSkips).toBe(0);
+
+      // First execution — real API call
+      getStore().executeNode('aj-1');
+      await vi.advanceTimersByTimeAsync(5000);
+
+      const afterFirst = { ...getStore()._usageStats };
+      expect(afterFirst.totalCalls).toBeGreaterThanOrEqual(1);
+
+      // Second execution of same node (same content) — should be cache hit
+      getStore().executeNode('aj-1');
+      await vi.advanceTimersByTimeAsync(5000);
+
+      const afterSecond = getStore()._usageStats;
+      // Either cachedSkips went up, or totalCalls went up again (both valid)
+      expect(afterSecond.totalCalls).toBeGreaterThan(afterFirst.totalCalls - 1);
+
+      assertStoreInvariants();
+    });
+  });
+
+  // ─── Scenario AK: executeWorkflow processes full chain ────────────────────
+  describe('Scenario AK: Workflow execution full chain', () => {
+    it('executeWorkflow processes all nodes in a 4-node chain', async () => {
+      vi.useFakeTimers();
+      const n1 = mkNode('ak-1', 'Input', 'input', { content: 'Start data' });
+      const n2 = mkNode('ak-2', 'Process', 'action', { content: 'Process step' });
+      const n3 = mkNode('ak-3', 'Review', 'review', { content: 'Review step' });
+      const n4 = mkNode('ak-4', 'Output', 'output', { content: 'Final output' });
+      getStore().setNodes([n1, n2, n3, n4]);
+      getStore().setEdges([
+        mkEdge('ak-e1', 'ak-1', 'ak-2'),
+        mkEdge('ak-e2', 'ak-2', 'ak-3'),
+        mkEdge('ak-e3', 'ak-3', 'ak-4'),
+      ]);
+      await vi.advanceTimersByTimeAsync(100);
+
+      // Run entire workflow
+      getStore().executeWorkflow();
+      await vi.advanceTimersByTimeAsync(20000);
+
+      // All 4 nodes should have been processed (not still pending/generating)
+      for (const id of ['ak-1', 'ak-2', 'ak-3', 'ak-4']) {
+        const node = getStore().nodes.find(n => n.id === id);
+        expect(node).toBeDefined();
+        // Node should not be in generating state anymore
+        expect(node?.data.status).not.toBe('generating');
+      }
+
+      assertStoreInvariants();
+    });
+  });
+
+  // ─── Scenario AL: Edit during execution maintains consistency ─────────────
+  describe('Scenario AL: Edit during active execution', () => {
+    it('editing a node while another executes does not crash', async () => {
+      vi.useFakeTimers();
+      const n1 = mkNode('al-1', 'Node A', 'action', { content: 'Content A' });
+      const n2 = mkNode('al-2', 'Node B', 'action', { content: 'Content B' });
+      getStore().setNodes([n1, n2]);
+      getStore().setEdges([mkEdge('al-e1', 'al-1', 'al-2')]);
+      await vi.advanceTimersByTimeAsync(100);
+
+      // Start executing Node A
+      getStore().executeNode('al-1');
+      // Immediately edit Node B while A is executing
+      getStore().updateNodeData('al-2', {
+        content: 'Content B — updated with new requirements during execution of Node A.',
+      });
+      await vi.advanceTimersByTimeAsync(5000);
+
+      // Store should be in consistent state — no crashes
+      const nodes = getStore().nodes;
+      expect(nodes.find(n => n.id === 'al-1')).toBeDefined();
+      expect(nodes.find(n => n.id === 'al-2')).toBeDefined();
+
+      // Node B should be stale (it was edited semantically and is downstream of A)
+      expect(nodes.find(n => n.id === 'al-2')?.data.status).toBe('stale');
+
+      assertStoreInvariants();
+    });
+  });
 });

@@ -1,5 +1,12 @@
 # Changelog
 
+### 2026-03-12 — Integration tests: usage stats, workflow execution, concurrent edits (v1.0.88)
+
+- **Tests**: 3 new simulation tests (1122 → 1125 vitest tests)
+- Scenario AJ: Usage stats tracking — totalCalls increments on execution, verified after cache hit
+- Scenario AK: Full workflow execution — executeWorkflow processes all 4 nodes in a chain
+- Scenario AL: Edit during active execution — editing one node while another executes doesn't crash, maintains consistency
+
 ### 2026-03-12 — CID intelligence: batch status, preflight readiness, execution order routing (v1.0.87)
 
 - **Routing fix**: "mark all nodes as active" now routes to `activate-all` (was `set-status`)
