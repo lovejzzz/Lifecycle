@@ -39,7 +39,7 @@ function Toasts() {
             >
               <Icon size={14} className={style.color} />
               <span className="text-[12px] text-white/80">{toast.message}</span>
-              <button onClick={() => removeToast(toast.id)} className="text-white/20 hover:text-white/50 ml-1">
+              <button onClick={() => removeToast(toast.id)} aria-label="Dismiss notification" className="text-white/20 hover:text-white/50 ml-1">
                 <X size={12} />
               </button>
             </motion.div>

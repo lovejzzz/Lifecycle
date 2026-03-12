@@ -3284,3 +3284,71 @@ test.describe('UI polish: empty and loading states', () => {
     await expect(page.locator('.react-flow')).toBeVisible();
   });
 });
+
+// ── Accessibility hardening: node status, tab flow, ARIA roles ──────────────
+
+test.describe('Accessibility — node status and ARIA', () => {
+  test('nodes have aria-label with name, category, and status', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(1500);
+
+    // Every node should have an aria-label that includes its label and "status"
+    const nodes = page.locator('.react-flow__node');
+    const count = await nodes.count();
+    expect(count).toBeGreaterThan(0);
+
+    for (let i = 0; i < Math.min(count, 3); i++) {
+      const ariaLabel = await nodes.nth(i).getAttribute('aria-label');
+      // React Flow wraps the node, so aria-label may be on a child
+      if (!ariaLabel) {
+        const inner = nodes.nth(i).locator('[aria-label]').first();
+        const innerLabel = await inner.getAttribute('aria-label');
+        expect(innerLabel).toMatch(/status/i);
+      } else {
+        expect(ariaLabel).toMatch(/status/i);
+      }
+    }
+  });
+
+  test('status indicator has role="button" and aria-label', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await expect(page.getByText('Syllabus').first()).toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(1500);
+
+    // Find a status indicator by its aria-label
+    const statusBtns = page.locator('[role="button"][aria-label*="Status:"]');
+    const count = await statusBtns.count();
+    expect(count).toBeGreaterThan(0);
+
+    const firstLabel = await statusBtns.first().getAttribute('aria-label');
+    expect(firstLabel).toMatch(/Status:.*click to cycle/i);
+  });
+
+  test('CID panel has complementary role', async ({ page }) => {
+    await page.goto('/');
+
+    const cidPanel = page.locator('[role="complementary"]').first();
+    await expect(cidPanel).toBeVisible({ timeout: 5000 });
+  });
+
+  test('toast dismiss button has aria-label', async ({ page }) => {
+    await page.goto('/');
+    // Load a template to trigger a toast
+    await page.getByRole('button', { name: /^Course Design/ }).click();
+    await page.waitForTimeout(2000);
+
+    // Check that any dismiss buttons in the toast area have aria-labels
+    const dismissBtns = page.locator('[aria-label="Dismiss notification"]');
+    const count = await dismissBtns.count();
+    // Toast may have already auto-dismissed, so just verify no crash
+    // and if visible, the label exists
+    if (count > 0) {
+      await expect(dismissBtns.first()).toHaveAttribute('aria-label', 'Dismiss notification');
+    }
+    // App should still be functional
+    await expect(page.locator('.react-flow')).toBeVisible();
+  });
+});

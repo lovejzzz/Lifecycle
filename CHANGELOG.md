@@ -1,5 +1,12 @@
 # Changelog
 
+### 2026-03-12 — Quality hardening: accessibility ARIA labels (v1.0.85)
+
+- **A11y fix**: Nodes now have `aria-label` with name, category, and status (e.g. "Syllabus — input node, status: active")
+- **A11y fix**: Status indicator dot has `role="button"` and `aria-label` for screen readers
+- **A11y fix**: Toast dismiss button has `aria-label="Dismiss notification"`
+- **E2E**: 4 new Playwright accessibility tests (216 → 220 total)
+
 ### 2026-03-11 — Integration tests: name ops, undo cascade, full professor flow (v1.0.84)
 
 - **Tests**: 6 new simulation tests (1106 → 1112 vitest tests)

@@ -173,6 +173,7 @@ function LifecycleNode({ data, id, dragging }: NodeProps) {
     <motion.div
       ref={nodeRef}
       className={`group relative ${dragging ? 'cursor-grabbing' : 'cursor-pointer'}`}
+      aria-label={`${label} — ${category} node, status: ${status}${locked ? ', locked' : ''}`}
       initial={{ scale: 0.7, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={{ type: 'spring', stiffness: 400, damping: 25, duration: 0.3 }}
@@ -280,6 +281,8 @@ function LifecycleNode({ data, id, dragging }: NodeProps) {
               {locked && <Lock size={10} className="text-white/30" />}
               <div
                 className="relative flex items-center justify-center w-4 h-4 cursor-pointer hover:scale-125 transition-transform nodrag"
+                role="button"
+                aria-label={`Status: ${status} — click to cycle`}
                 title={`Status: ${status} — click to cycle`}
                 onClick={(e) => {
                   e.stopPropagation();
