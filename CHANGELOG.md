@@ -1,5 +1,13 @@
 # Changelog
 
+### 2026-03-11 — CID Intelligence: smarter routing + "make" disambiguation (v1.0.73)
+
+- **Routing**: Fix "make X more Y" misclassifying as `generate` — now only "make a/an/me/new" triggers generate, freeform "make" falls through to LLM
+- **Routing**: Add "which nodes need attention" → `suggest` route
+- **Routing**: Add "what's blocking X from running" → `deps` route
+- **CIDPanel**: Sync all 3 new routing patterns into command handler
+- **Benchmark**: 144 → 147 prompts, 100% accuracy
+
 ### 2026-03-11 — E2E Test Coverage: 199 → 207 (v1.0.72)
 
 - **E2E**: 8 new Playwright tests (199 → 207 total), all passing

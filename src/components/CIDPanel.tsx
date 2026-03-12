@@ -470,7 +470,8 @@ export default function CIDPanel() {
 
     // Detect "extend" intent — user wants to add to existing workflow
     const isExtendRequest = nodes.length > 0 && /^(?:add|extend|expand|include|append|insert|also|plus|and also)\b/i.test(prompt);
-    const isGenerateRequest = /^(?:build|create|make|generate|set up|design|start)\b/i.test(prompt);
+    const isMakeGenerate = /^make\s+(?:a|an|me|new|my)\b/i.test(prompt);
+    const isGenerateRequest = /^(?:build|create|generate|set up|design|start)\b/i.test(prompt) || isMakeGenerate;
     if (isExtendRequest) {
       // Route through chatWithCID which already has graph context and handles workflow responses
       // chatWithCID adds its own user message, so we don't add one here
@@ -664,7 +665,7 @@ export default function CIDPanel() {
       dispatchCommand(prompt, () => countNodes());
     } else if (/^(?:merge|combine|fuse)\s+.+\s+(?:and|with|into|&)\s+/i.test(prompt)) {
       dispatchCommand(prompt, () => mergeByName(prompt).message, 400, undefined, true, true);
-    } else if (/^(?:deps|dependencies|depend|upstream|downstream|chain)\s+/i.test(prompt)) {
+    } else if (/^(?:deps|dependencies|depend|upstream|downstream|chain)\s+/i.test(prompt) || /^what(?:'s| is)\s+(?:blocking|preventing|stopping)\s+.+\s+(?:from|to)\s+/i.test(prompt)) {
       dispatchCommand(prompt, () => depsByName(prompt));
     } else if (/^(?:reverse|flip|invert)\s+/i.test(prompt)) {
       dispatchCommand(prompt, () => reverseByName(prompt).message);
@@ -895,7 +896,7 @@ export default function CIDPanel() {
       dispatchCommand(prompt, () => compressWorkflow(), 500);
     } else if (/^(?:bottleneck|bottlenecks|choke|chokepoint|hub|hubs|spof)\s*$/i.test(prompt)) {
       dispatchCommand(prompt, () => findBottlenecks(), 400);
-    } else if (/^(?:suggest|next|what\s*(?:should|can)\s*I\s*do(?:\s+next|\s+now)?|recommendations?)\s*$/i.test(prompt)) {
+    } else if (/^(?:suggest|next|what\s*(?:should|can)\s*I\s*do(?:\s+next|\s+now)?|recommendations?)\s*$/i.test(prompt) || /^(?:which|what)\s+nodes?\s+(?:need|require|want)\s+(?:attention|work|updating|fixing|help)/i.test(prompt)) {
       dispatchCommand(prompt, () => suggestNextSteps(), 400);
     } else if (/^(?:auto[- ]?describe|describe\s+all|fill\s+descriptions?)(?:\s+(?:all\s+)?(?:nodes?|empty)?)?\s*$/i.test(prompt)) {
       addMessage({ id: `msg-${Date.now()}`, role: 'user', content: prompt, timestamp: Date.now() });

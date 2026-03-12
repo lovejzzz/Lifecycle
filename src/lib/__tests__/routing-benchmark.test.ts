@@ -17,7 +17,7 @@ interface BenchmarkCase {
   hasWorkflow?: boolean;
 }
 
-// ─── The Benchmark: 143 real user prompts ────────────────────────────────────
+// ─── The Benchmark: 146 real user prompts ────────────────────────────────────
 
 const BENCHMARK: BenchmarkCase[] = [
   // ── Workflow generation (professor) ──
@@ -198,6 +198,11 @@ const BENCHMARK: BenchmarkCase[] = [
   { prompt: 'should I run the quiz bank next', expected: 'llm-fallback', context: 'professor' },
   { prompt: 'tell me about the quiz bank node', expected: 'llm-fallback' },
   { prompt: 'what changed since last run', expected: 'llm-fallback', context: 'PM' },
+
+  // Round 13: education + workflow management + dependency queries
+  { prompt: 'which nodes need attention', expected: 'suggest', context: 'professor checking workflow' },
+  { prompt: 'make the rubric more detailed', expected: 'llm-fallback', context: 'professor editing rubric', hasWorkflow: true },
+  { prompt: "what's blocking the FAQ from running", expected: 'deps', context: 'professor debugging execution' },
 ];
 
 // ─── Benchmark Runner ───────────────────────────────────────────────────────

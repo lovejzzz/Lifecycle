@@ -91,7 +91,9 @@ export function classifyRoute(prompt: string, hasWorkflow: boolean = false): Com
 
   // Extend vs generate
   const isExtendRequest = hasWorkflow && /^(?:add|extend|expand|include|append|insert|also|plus|and also)\b/i.test(prompt);
-  const isGenerateRequest = /^(?:build|create|make|generate|set up|design|start)\b/i.test(prompt);
+  // "make" only means generate when followed by "a/an/me/new" (not "make X more Y" or "make the X better")
+  const isMakeGenerate = /^make\s+(?:a|an|me|new|my)\b/i.test(prompt);
+  const isGenerateRequest = /^(?:build|create|generate|set up|design|start)\b/i.test(prompt) || isMakeGenerate;
 
   if (isExtendRequest) return 'extend';
   if (isGenerateRequest) return 'generate';
@@ -193,6 +195,7 @@ export function classifyRoute(prompt: string, hasWorkflow: boolean = false): Com
 
   // Deps
   if (/^(?:deps|dependencies|depend|upstream|downstream|chain)\s+/i.test(prompt)) return 'deps';
+  if (/^what(?:'s| is)\s+(?:blocking|preventing|stopping)\s+.+\s+(?:from|to)\s+/i.test(prompt)) return 'deps';
 
   // Reverse
   if (/^(?:reverse|flip|invert)\s+/i.test(prompt)) return 'reverse';
@@ -281,6 +284,7 @@ export function classifyRoute(prompt: string, hasWorkflow: boolean = false): Com
 
   // Suggest
   if (/^(?:suggest|next|what\s*(?:should|can)\s*I\s*do(?:\s+next|\s+now)?|recommendations?)\s*$/i.test(prompt)) return 'suggest';
+  if (/^(?:which|what)\s+nodes?\s+(?:need|require|want)\s+(?:attention|work|updating|fixing|help)/i.test(prompt)) return 'suggest';
 
   // Auto-describe
   if (/^(?:auto[- ]?describe|describe\s+all|fill\s+descriptions?)(?:\s+(?:all\s+)?(?:nodes?|empty)?)?\s*$/i.test(prompt)) return 'auto-describe';
