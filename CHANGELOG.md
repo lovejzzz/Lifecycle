@@ -1,5 +1,12 @@
 # Changelog
 
+### 2026-03-11 — Integration tests: rollback, branch isolation, deleted node safety (v1.0.82)
+
+- **Tests**: 6 new simulation scenarios (1097 → 1103 vitest tests)
+- Scenario AA: Version rollback propagates staleness to downstream, nonexistent version is no-op
+- Scenario AB: Branching edit isolation — editing one branch doesn't affect sibling
+- Scenario AC: Deleted node safety — executeNode, updateNodeData, lockNode on missing nodes don't crash
+
 ### 2026-03-11 — Quality hardening: UI polish E2E tests (v1.0.81)
 
 - **E2E**: 4 new Playwright tests for UI polish (212 → 216 total)

@@ -2318,4 +2318,162 @@ describe('E2E Async Simulation Tests', () => {
       assertStoreInvariants();
     });
   });
+
+  // ─── Scenario AA: Version rollback propagates staleness ────────────────────
+  describe('Scenario AA: Version rollback', () => {
+    it('rolling back a node marks it and downstream stale', async () => {
+      vi.useFakeTimers();
+      const n1 = mkNode('rb-1', 'Lesson Plan', 'artifact', {
+        content: 'Week 1: Introduction to algorithms',
+        version: 1,
+      });
+      const n2 = mkNode('rb-2', 'Quiz Bank', 'artifact', {
+        content: 'Quiz questions based on lesson plans',
+        status: 'active' as const,
+      });
+      getStore().setNodes([n1, n2]);
+      getStore().setEdges([mkEdge('rb-e1', 'rb-1', 'rb-2')]);
+      await vi.advanceTimersByTimeAsync(100);
+
+      // Make a semantic edit (creates version history entry)
+      getStore().updateNodeData('rb-1', {
+        content: 'Week 1: Introduction to machine learning and neural networks',
+      });
+      await vi.advanceTimersByTimeAsync(500);
+
+      const afterEdit = getStore().nodes.find(n => n.id === 'rb-1');
+      expect(afterEdit?.data.version).toBeGreaterThanOrEqual(2);
+      expect((afterEdit?.data._versionHistory || []).length).toBeGreaterThanOrEqual(1);
+
+      // Restore downstream to active to test rollback propagation
+      getStore().updateNodeStatus('rb-2', 'active');
+      await vi.advanceTimersByTimeAsync(100);
+
+      // Rollback to version 1
+      getStore().rollbackNode('rb-1', 1);
+      await vi.advanceTimersByTimeAsync(500);
+
+      const s = getStore();
+      // Node itself should be stale (rollback triggers staleness)
+      expect(s.nodes.find(n => n.id === 'rb-1')?.data.status).toBe('stale');
+      // Downstream should also be stale
+      expect(s.nodes.find(n => n.id === 'rb-2')?.data.status).toBe('stale');
+      // Content should be restored to v1
+      expect(s.nodes.find(n => n.id === 'rb-1')?.data.content).toBe('Week 1: Introduction to algorithms');
+      // Version should have incremented (rollback creates a new version entry)
+      expect(s.nodes.find(n => n.id === 'rb-1')?.data.version).toBeGreaterThanOrEqual(3);
+
+      assertStoreInvariants();
+    });
+
+    it('rollback to nonexistent version is a no-op', async () => {
+      vi.useFakeTimers();
+      const node = mkNode('rb-3', 'Test Node', 'action', {
+        content: 'Original content here',
+        version: 1,
+      });
+      getStore().setNodes([node]);
+      getStore().setEdges([]);
+      await vi.advanceTimersByTimeAsync(100);
+
+      // Try rollback to version 99 (doesn't exist)
+      getStore().rollbackNode('rb-3', 99);
+      await vi.advanceTimersByTimeAsync(500);
+
+      // Content should be unchanged
+      expect(getStore().nodes.find(n => n.id === 'rb-3')?.data.content).toBe('Original content here');
+      expect(getStore().nodes.find(n => n.id === 'rb-3')?.data.version).toBe(1);
+
+      assertStoreInvariants();
+    });
+  });
+
+  // ─── Scenario AB: Branching edit isolation ─────────────────────────────────
+  describe('Scenario AB: Branching edit isolation', () => {
+    it('editing one branch does not affect sibling branch', async () => {
+      vi.useFakeTimers();
+      // Root → BranchA → LeafA
+      // Root → BranchB → LeafB
+      const root = mkNode('iso-root', 'Root Input', 'input', { content: 'Source requirements document' });
+      const brA = mkNode('iso-a', 'Branch A', 'action', { content: 'Process path A analysis', status: 'active' as const });
+      const brB = mkNode('iso-b', 'Branch B', 'action', { content: 'Process path B analysis', status: 'active' as const });
+      const leafA = mkNode('iso-la', 'Leaf A', 'output', { content: 'Output from branch A', status: 'active' as const });
+      const leafB = mkNode('iso-lb', 'Leaf B', 'output', { content: 'Output from branch B', status: 'active' as const });
+      getStore().setNodes([root, brA, brB, leafA, leafB]);
+      getStore().setEdges([
+        mkEdge('iso-e1', 'iso-root', 'iso-a'),
+        mkEdge('iso-e2', 'iso-root', 'iso-b'),
+        mkEdge('iso-e3', 'iso-a', 'iso-la'),
+        mkEdge('iso-e4', 'iso-b', 'iso-lb'),
+      ]);
+      await vi.advanceTimersByTimeAsync(100);
+
+      // Edit Branch A with semantic change
+      getStore().updateNodeData('iso-a', {
+        content: 'Completely rewritten: new statistical analysis methodology using Bayesian inference',
+      });
+      await vi.advanceTimersByTimeAsync(500);
+
+      const s = getStore();
+      // Branch A and its leaf should be stale
+      expect(s.nodes.find(n => n.id === 'iso-a')?.data.status).toBe('stale');
+      expect(s.nodes.find(n => n.id === 'iso-la')?.data.status).toBe('stale');
+      // Branch B and its leaf should be UNAFFECTED
+      expect(s.nodes.find(n => n.id === 'iso-b')?.data.status).toBe('active');
+      expect(s.nodes.find(n => n.id === 'iso-lb')?.data.status).toBe('active');
+      // Root should be unaffected (upstream of edit)
+      expect(s.nodes.find(n => n.id === 'iso-root')?.data.status).toBe('active');
+
+      assertStoreInvariants();
+    });
+  });
+
+  // ─── Scenario AC: Operations on deleted/missing nodes ──────────────────────
+  describe('Scenario AC: Deleted node safety', () => {
+    it('executeNode on nonexistent node does not crash', async () => {
+      vi.useFakeTimers();
+      getStore().setNodes([]);
+      getStore().setEdges([]);
+      await vi.advanceTimersByTimeAsync(100);
+
+      // Should not throw
+      await getStore().executeNode('nonexistent-id');
+      await vi.advanceTimersByTimeAsync(1000);
+
+      assertStoreInvariants();
+    });
+
+    it('updateNodeData on deleted node is a silent no-op', async () => {
+      vi.useFakeTimers();
+      const node = mkNode('del-1', 'To Delete', 'action', { content: 'Will be deleted' });
+      getStore().setNodes([node]);
+      await vi.advanceTimersByTimeAsync(100);
+
+      // Delete the node
+      getStore().deleteNode('del-1');
+      await vi.advanceTimersByTimeAsync(100);
+      expect(getStore().nodes.find(n => n.id === 'del-1')).toBeUndefined();
+
+      // Update should not crash
+      getStore().updateNodeData('del-1', { content: 'Ghost update' });
+      await vi.advanceTimersByTimeAsync(100);
+
+      // Store should be consistent
+      expect(getStore().nodes.length).toBe(0);
+      assertStoreInvariants();
+    });
+
+    it('lockNode on deleted node does not crash', async () => {
+      vi.useFakeTimers();
+      getStore().setNodes([]);
+      getStore().setEdges([]);
+      await vi.advanceTimersByTimeAsync(100);
+
+      // Should not throw
+      getStore().lockNode('ghost-node');
+      await vi.advanceTimersByTimeAsync(100);
+
+      assertStoreInvariants();
+    });
+  });
 });
