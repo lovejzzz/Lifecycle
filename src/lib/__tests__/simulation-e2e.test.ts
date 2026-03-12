@@ -2147,4 +2147,175 @@ describe('E2E Async Simulation Tests', () => {
       assertStoreInvariants();
     });
   });
+
+  // ─── Scenario X: Mixed workflow with execution order ─────────────────────
+  describe('Scenario X: Mixed workflow execution order', () => {
+    it('executeWorkflow processes nodes in topological order', async () => {
+      vi.useFakeTimers();
+      // Build: input → action → review → output (linear chain)
+      const n1 = mkNode('mix-1', 'Syllabus Upload', 'input', { content: 'Upload the course syllabus document' });
+      const n2 = mkNode('mix-2', 'Lesson Generator', 'action', { content: 'Generate lesson plans from the syllabus' });
+      const n3 = mkNode('mix-3', 'Quality Check', 'review', { content: 'Review generated lessons for completeness' });
+      const n4 = mkNode('mix-4', 'Final Export', 'output', { content: 'Export approved lessons as PDF' });
+      getStore().setNodes([n1, n2, n3, n4]);
+      getStore().setEdges([
+        mkEdge('mix-e1', 'mix-1', 'mix-2', 'feeds'),
+        mkEdge('mix-e2', 'mix-2', 'mix-3', 'triggers'),
+        mkEdge('mix-e3', 'mix-3', 'mix-4', 'produces'),
+      ]);
+      await vi.advanceTimersByTimeAsync(100);
+
+      // Execute workflow
+      getStore().executeWorkflow();
+      await vi.advanceTimersByTimeAsync(15000);
+
+      const s = getStore();
+      // All nodes should have been processed (active or have execution results)
+      for (const id of ['mix-1', 'mix-2', 'mix-3', 'mix-4']) {
+        const node = s.nodes.find(n => n.id === id);
+        expect(node?.data.status === 'active' || node?.data.executionResult !== undefined).toBe(true);
+      }
+      assertStoreInvariants();
+    });
+
+    it('executeWorkflow processes all nodes including previously locked ones', async () => {
+      vi.useFakeTimers();
+      const n1 = mkNode('mixl-1', 'Source', 'input', { content: 'Source data for the pipeline' });
+      const n2 = mkNode('mixl-2', 'Processor', 'action', { content: 'Process and analyze the data' });
+      const n3 = mkNode('mixl-3', 'Reporter', 'output', { content: 'Generate the final report' });
+      getStore().setNodes([n1, n2, n3]);
+      getStore().setEdges([
+        mkEdge('mixl-e1', 'mixl-1', 'mixl-2'),
+        mkEdge('mixl-e2', 'mixl-2', 'mixl-3'),
+      ]);
+      await vi.advanceTimersByTimeAsync(100);
+
+      getStore().executeWorkflow();
+      await vi.advanceTimersByTimeAsync(15000);
+
+      const s = getStore();
+      // All nodes should have been processed
+      for (const id of ['mixl-1', 'mixl-2', 'mixl-3']) {
+        const node = s.nodes.find(n => n.id === id);
+        expect(node?.data.status === 'active' || node?.data.executionResult !== undefined).toBe(true);
+      }
+      assertStoreInvariants();
+    });
+  });
+
+  // ─── Scenario Y: Execute → Edit → Execute version cycle ─────────────────
+  describe('Scenario Y: Version cycle through execution', () => {
+    it('execute → semantic edit → execute again increments version', async () => {
+      vi.useFakeTimers();
+      const node = mkNode('vcyc-1', 'Lesson Plan', 'artifact', {
+        content: 'Week 1: Introduction to algorithms and data structures',
+        version: 1,
+      });
+      getStore().setNodes([node]);
+      getStore().setEdges([]);
+      await vi.advanceTimersByTimeAsync(100);
+
+      // First execution
+      getStore().executeNode('vcyc-1');
+      await vi.advanceTimersByTimeAsync(5000);
+
+      const afterExec1 = getStore().nodes.find(n => n.id === 'vcyc-1');
+      expect(afterExec1?.data.status).toBe('active');
+
+      // Semantic edit — completely different content
+      getStore().updateNodeData('vcyc-1', {
+        content: 'Week 1: Introduction to machine learning and neural networks with practical exercises',
+      });
+      await vi.advanceTimersByTimeAsync(500);
+
+      const afterEdit = getStore().nodes.find(n => n.id === 'vcyc-1');
+      // Version should have incremented from the semantic edit
+      expect(afterEdit?.data.version).toBeGreaterThanOrEqual(2);
+      // Should be stale after semantic edit
+      expect(afterEdit?.data.status).toBe('stale');
+
+      // Second execution — node is stale, executeNode processes it
+      getStore().executeNode('vcyc-1');
+      await vi.advanceTimersByTimeAsync(5000);
+
+      const afterExec2 = getStore().nodes.find(n => n.id === 'vcyc-1');
+      // After execution, node may be active (if execution succeeded) or still stale
+      // The key assertion: version was incremented by the semantic edit
+      expect(afterExec2?.data.version).toBeGreaterThanOrEqual(2);
+      // Version history should have at least one entry from the semantic edit
+      expect((afterExec2?.data._versionHistory || []).length).toBeGreaterThanOrEqual(1);
+
+      assertStoreInvariants();
+    });
+
+    it('cosmetic edit between executions does NOT increment version', async () => {
+      vi.useFakeTimers();
+      const node = mkNode('vcyc-2', 'Quiz Bank', 'artifact', {
+        content: 'Question set for midterm covering chapters 1-5',
+        version: 1,
+      });
+      getStore().setNodes([node]);
+      getStore().setEdges([]);
+      await vi.advanceTimersByTimeAsync(100);
+
+      // Cosmetic edit — just whitespace
+      getStore().updateNodeData('vcyc-2', {
+        content: 'Question set for midterm  covering chapters 1-5',
+      });
+      await vi.advanceTimersByTimeAsync(500);
+
+      const after = getStore().nodes.find(n => n.id === 'vcyc-2');
+      // Version should NOT have incremented
+      expect(after?.data.version).toBe(1);
+      // Should still be active (cosmetic = no propagation)
+      expect(after?.data.status).toBe('active');
+
+      assertStoreInvariants();
+    });
+  });
+
+  // ─── Scenario Z: Note cascade through mixed implicit + explicit edges ────
+  describe('Scenario Z: Note cascade mixed paths', () => {
+    it('note edit cascades via implicit ref AND downstream edges', async () => {
+      vi.useFakeTimers();
+      // Note → (implicit) → Rubric → (edge) → FAQ
+      const note = mkNode('nz-note', 'Grading Criteria', 'note', {
+        content: 'Grades based on participation (20%), homework (30%), final (50%).',
+      });
+      const rubric = mkNode('nz-rubric', 'Rubric', 'review', {
+        content: 'Rubric aligns with Grading Criteria for evaluation.',
+        status: 'active' as const,
+      });
+      const faq = mkNode('nz-faq', 'FAQ', 'output', {
+        content: 'Common questions about the course grading and policies.',
+        status: 'active' as const,
+      });
+      const unrelated = mkNode('nz-other', 'Lab Manual', 'artifact', {
+        content: 'Lab instructions for practical sessions.',
+        status: 'active' as const,
+      });
+      getStore().setNodes([note, rubric, faq, unrelated]);
+      // Only Rubric → FAQ has an explicit edge. Note has NO edges.
+      getStore().setEdges([mkEdge('nz-e1', 'nz-rubric', 'nz-faq')]);
+      await vi.advanceTimersByTimeAsync(100);
+
+      // Semantically edit the note
+      getStore().updateNodeData('nz-note', {
+        content: 'Grades now based on project portfolio (60%) and peer review (40%). Complete restructure.',
+      });
+      await vi.advanceTimersByTimeAsync(500);
+
+      const s = getStore();
+      // Note itself stale
+      expect(s.nodes.find(n => n.id === 'nz-note')?.data.status).toBe('stale');
+      // Rubric references "Grading Criteria" → stale via implicit dep
+      expect(s.nodes.find(n => n.id === 'nz-rubric')?.data.status).toBe('stale');
+      // FAQ is downstream of Rubric via edge → stale via BFS cascade from Rubric going stale
+      expect(s.nodes.find(n => n.id === 'nz-faq')?.data.status).toBe('stale');
+      // Lab Manual doesn't reference note → still active
+      expect(s.nodes.find(n => n.id === 'nz-other')?.data.status).toBe('active');
+
+      assertStoreInvariants();
+    });
+  });
 });

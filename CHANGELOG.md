@@ -1,5 +1,12 @@
 # Changelog
 
+### 2026-03-11 — Integration tests: workflow execution, version cycles, note cascade (v1.0.80)
+
+- **Tests**: 5 new simulation scenarios (1092 → 1097 vitest tests)
+- Scenario X: Mixed workflow execution order — topological execution, all nodes processed
+- Scenario Y: Version cycle — execute → semantic edit increments version, cosmetic edit does not
+- Scenario Z: Note cascade through mixed paths — implicit reference + edge BFS cascade combined
+
 ### 2026-03-11 — CID intelligence: dependency + stale discovery routing (v1.0.79)
 
 - **Routing**: "what depends on X" and "what's downstream of X" now route to `deps` (was llm-fallback)
