@@ -1,5 +1,15 @@
 # Changelog
 
+### 2026-03-11 — Edit interpretation: smarter classifyEdit heuristics (v1.0.75)
+
+- **Edits**: Typo detection — edit distance ≤ 2 on normalized text → cosmetic (no propagation)
+- **Edits**: High-impact education term detection — adding/removing objectives, rubric, assessment, deadline → force semantic
+- **Edits**: Example/detail append detection — illustrative additions with preserved old terms → local
+- **Edits**: Numeric change detection — grade weight/percentage changes always propagate
+- **Edits**: Per-pattern index tracking for high-impact terms (both-present no longer triggers false positive)
+- **Tests**: 16 → 29 edit classification tests covering typos, education terms, examples, grade weights, topic reordering
+- **Tests**: 1063 → 1078 total vitest tests (all passing)
+
 ### 2026-03-11 — Integration tests: cache, validation, versioning (v1.0.74)
 
 - **Tests**: 13 new simulation scenarios (1050 → 1063 vitest tests)

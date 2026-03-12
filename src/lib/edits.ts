@@ -143,6 +143,12 @@ export function classifyEdit(
     return { type: 'cosmetic', reason: 'Formatting/whitespace change only', shouldPropagate: false };
   }
 
+  // Cosmetic: typo fix — only 1-2 characters changed in normalized form
+  const normDist = editDistance(oldNorm, newNorm);
+  if (normDist <= 2 && oldNorm.length > 10) {
+    return { type: 'cosmetic', reason: `Typo fix (${normDist} char${normDist > 1 ? 's' : ''} changed)`, shouldPropagate: false };
+  }
+
   // Extract key terms for local vs semantic distinction
   const oldTerms = extractKeyTerms(oldContent);
   const newTerms = extractKeyTerms(newContent);
@@ -153,9 +159,52 @@ export function classifyEdit(
     ? Math.abs(newContent.length - oldContent.length) / oldContent.length
     : (newContent.length > 0 ? 1 : 0);
 
+  // Detect high-impact education keywords added/removed (not just present in both)
+  const HIGH_IMPACT_PATTERNS = [
+    /\b(?:learning\s+)?objectives?\b/i,
+    /\b(?:rubric|criteria|grading)\b/i,
+    /\b(?:assessment|evaluation|exam|quiz|test)\b/i,
+    /\b(?:prerequisite|requirement|outcome)\b/i,
+    /\b(?:deadline|due\s+date|schedule|timeline)\b/i,
+  ];
+  const oldMatchedIdx = new Set(HIGH_IMPACT_PATTERNS.map((p, i) => p.test(oldContent) ? i : -1).filter(i => i >= 0));
+  const newMatchedIdx = new Set(HIGH_IMPACT_PATTERNS.map((p, i) => p.test(newContent) ? i : -1).filter(i => i >= 0));
+  const highImpactAdded = [...newMatchedIdx].some(i => !oldMatchedIdx.has(i));
+  const highImpactRemoved = [...oldMatchedIdx].some(i => !newMatchedIdx.has(i));
+
+  // If high-impact terms were added or removed, force semantic even if overlap is high
+  if (highImpactAdded || highImpactRemoved) {
+    const action = highImpactAdded ? 'added' : 'removed';
+    return { type: 'semantic', reason: `High-impact education terms ${action}`, shouldPropagate: true };
+  }
+
+  // Detect numeric value changes (grade weights, percentages, counts)
+  const oldNumbers = (oldNorm.match(/\d+/g) || []).join(',');
+  const newNumbers = (newNorm.match(/\d+/g) || []).join(',');
+  const numbersChanged = oldNumbers !== newNumbers && oldNumbers.length > 0;
+
   // Local: high term overlap AND small length change — minor rewording
-  if (similarity >= 0.8 && lengthRatio < 0.2) {
+  // But if numbers changed, don't classify as local (could be grade weights, dates, etc.)
+  if (similarity >= 0.7 && lengthRatio < 0.3 && !numbersChanged) {
     return { type: 'local', reason: `Minor rewording (${Math.round(similarity * 100)}% term overlap)`, shouldPropagate: false };
+  }
+
+  // Local: content grew but all old terms preserved (appending examples/details)
+  if (similarity >= 0.4 && newContent.length > oldContent.length && !numbersChanged) {
+    const oldArr = [...oldTerms];
+    const allOldPreserved = oldArr.every(t => newTerms.has(t));
+    if (allOldPreserved && oldTerms.size >= 3) {
+      const newOnlyTerms = [...newTerms].filter(t => !oldTerms.has(t));
+      // Check if addition is illustrative (example/note) or introduces new structural sections
+      const isIllustrative = /\b(?:for example|e\.g\.|for instance|such as|note:|hint:)\b/i.test(newContent);
+      const addedNewSections = /^#{1,6}\s+/m.test(newContent.slice(oldContent.length));
+      // Stricter ratio for short content (small term sets are sensitive to additions)
+      const maxNewRatio = oldTerms.size <= 6 ? 0.3 : 0.5;
+      // Local if: few new terms OR illustrative language, but NOT if it adds new sections
+      if (!addedNewSections && (newOnlyTerms.length <= oldTerms.size * maxNewRatio || isIllustrative)) {
+        return { type: 'local', reason: `Details/examples added (all ${oldTerms.size} key terms preserved)`, shouldPropagate: false };
+      }
+    }
   }
 
   // Semantic: meaningful content change (default)
