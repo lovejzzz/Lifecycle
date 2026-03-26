@@ -716,15 +716,20 @@ function CanvasInner() {
       const tgtConns = edgeNodeCounts.get(e.target) || 0;
       const maxConns = Math.max(srcConns, tgtConns);
       const baseWidth = maxConns >= 5 ? 3.5 : maxConns >= 3 ? 2.5 : 2;
+      const hasCondition = !!(e.data as Record<string, unknown>)?.condition;
       return {
         ...e,
         style: {
           ...e.style,
           stroke: dimmed ? 'rgba(100,100,140,0.15)' : baseColor,
           strokeWidth: isConnected ? 3.5 : (dimmed ? 1.5 : baseWidth),
+          strokeDasharray: hasCondition ? '6 3' : undefined,
           transition: 'stroke 0.3s, stroke-width 0.3s',
         },
         animated: isConnected ? true : (dimmed ? false : e.animated),
+        label: hasCondition && !dimmed
+          ? `${(typeof e.label === 'string' ? e.label : '') || ''} ${((e.data as Record<string, unknown>)?.condition as import('@/lib/types').EdgeCondition)?.negate ? '!' : ''}[${((e.data as Record<string, unknown>)?.condition as import('@/lib/types').EdgeCondition)?.value || '?'}]` as string
+          : e.label,
       };
     }),
   [edges, connectedEdgeIds, edgeNodeCounts]);
@@ -1137,7 +1142,17 @@ function CanvasInner() {
                   <span className="text-[10px] text-white/60 truncate max-w-[80px]">{tgtNode.data.label}</span>
                   <div className="w-2 h-2 rounded-full" style={{ background: tgtColors.primary }} />
                 </div>
-                <div className="text-[9px] text-white/25">Click to change label</div>
+                {(() => {
+                  const cond = (edge.data as Record<string, unknown>)?.condition as import('@/lib/types').EdgeCondition | undefined;
+                  if (!cond) return null;
+                  return (
+                    <div className="text-[9px] text-amber-400/60 mt-1 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400/50" />
+                      {cond.negate ? 'NOT ' : ''}{cond.type}: &quot;{cond.value}&quot;
+                    </div>
+                  );
+                })()}
+                <div className="text-[9px] text-white/25">Click to change label or condition</div>
               </motion.div>
             );
           })()}
@@ -1171,6 +1186,60 @@ function CanvasInner() {
                   </button>
                 ))}
               </div>
+              {/* Condition Editor */}
+              {(() => {
+                const edge = edges.find(e => e.id === edgePicker.edgeId);
+                const condition = edge?.data?.condition as import('@/lib/types').EdgeCondition | undefined;
+                const srcNode = edge ? nodes.find(n => n.id === edge.source) : null;
+                const isFromDecision = srcNode?.data.category === 'decision';
+                return (
+                  <div className="px-3 py-2 border-t border-white/[0.05] space-y-1.5">
+                    <span className="text-[9px] text-white/30 uppercase tracking-wider">Condition</span>
+                    <select
+                      value={condition?.type || ''}
+                      onChange={(e) => {
+                        const type = e.target.value as import('@/lib/types').EdgeCondition['type'] | '';
+                        const updatedEdge = edges.find(ed => ed.id === edgePicker.edgeId);
+                        if (!updatedEdge) return;
+                        if (!type) {
+                          // Remove condition
+                          setEdges(prev => prev.map(ed => ed.id === edgePicker.edgeId ? { ...ed, data: { ...ed.data, condition: undefined } } : ed));
+                        } else {
+                          setEdges(prev => prev.map(ed => ed.id === edgePicker.edgeId ? { ...ed, data: { ...ed.data, condition: { type, value: condition?.value || '', negate: false } } } : ed));
+                        }
+                      }}
+                      className="w-full bg-white/[0.05] border border-white/[0.1] rounded px-2 py-1 text-[10px] text-white/70 outline-none"
+                    >
+                      <option value="">No condition (always execute)</option>
+                      {isFromDecision && <option value="decision-is">Decision is...</option>}
+                      <option value="output-contains">Output contains...</option>
+                      <option value="output-matches">Output matches (regex)...</option>
+                      <option value="status-is">Status is...</option>
+                    </select>
+                    {condition?.type && (
+                      <div className="flex gap-1">
+                        <input
+                          value={condition.value || ''}
+                          onChange={(e) => {
+                            setEdges(prev => prev.map(ed => ed.id === edgePicker.edgeId ? { ...ed, data: { ...ed.data, condition: { ...condition, value: e.target.value } } } : ed));
+                          }}
+                          placeholder={condition.type === 'status-is' ? 'success' : condition.type === 'decision-is' ? 'approved' : 'search text...'}
+                          className="flex-1 bg-white/[0.05] border border-white/[0.1] rounded px-2 py-1 text-[10px] text-white/70 outline-none placeholder:text-white/20"
+                        />
+                        <button
+                          onClick={() => {
+                            setEdges(prev => prev.map(ed => ed.id === edgePicker.edgeId ? { ...ed, data: { ...ed.data, condition: { ...condition, negate: !condition.negate } } } : ed));
+                          }}
+                          className={`px-1.5 py-1 rounded text-[9px] border transition-colors ${condition.negate ? 'bg-rose-500/10 border-rose-500/20 text-rose-400/70' : 'bg-white/[0.04] border-white/[0.1] text-white/30'}`}
+                          title="Negate condition"
+                        >
+                          NOT
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
               <div className="px-3 py-1.5 border-t border-white/[0.05]">
                 <button
                   onClick={() => { deleteEdge(edgePicker.edgeId); setEdgePicker(null); }}
