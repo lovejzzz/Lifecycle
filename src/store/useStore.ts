@@ -1214,48 +1214,147 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       let output = '';
 
       {
-        const systemPrompt = getExecutionSystemPrompt(d.category, d.label, inputContext);
+        const { buildToolPrompt, parseToolCalls, executeTool, formatToolResults } = await import('@/lib/agentTools');
+        const agentConfig = d.agentConfig;
+        const tools = agentConfig?.tools || [];
+        const toolPromptSuffix = buildToolPrompt(tools);
+        const maxIterations = (agentConfig?.enableLooping && agentConfig?.maxLoopIterations) || (tools.length > 0 ? 3 : 1);
+        const maxRetries = agentConfig?.maxRetries || 0;
+        const timeoutMs = agentConfig?.timeoutMs || 120_000;
+
+        // Override abort controller with agent-specific timeout
+        clearTimeout(timeoutId);
+        const agentAbort = new AbortController();
+        const agentTimeoutId = setTimeout(() => agentAbort.abort(), timeoutMs);
+
+        const systemPrompt = getExecutionSystemPrompt(d.category, d.label, inputContext) + toolPromptSuffix;
         const effortLevel = d._effortLevel || inferEffortFromCategory(d.category);
-        const res = await fetch('/api/cid', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            systemPrompt,
-            model: store.cidAIModel,
-            taskType: 'execute',
-            effortLevel,
-            messages: [{ role: 'user', content: `${autoPrompt}\n\n${inputContext}` }],
-          }),
-          signal: abortController.signal,
-        });
+        let messages: Array<{ role: 'user' | 'assistant'; content: string }> = [
+          { role: 'user', content: `${autoPrompt}\n\n${inputContext}` },
+        ];
+        let lastError: string | null = null;
 
-        if (!res.ok) {
-          const errMsg = `CID API error ${res.status}`;
-          store.updateNodeData(nodeId, { executionStatus: 'error', executionError: errMsg, _executionDurationMs: Date.now() - _execStart });
-          store.updateNodeStatus(nodeId, 'active');
-          return;
-        }
-        const result = await res.json();
-        if (result.error) {
-          store.updateNodeData(nodeId, { executionStatus: 'error', executionError: result.error === 'no_api_key' ? 'No API key configured on server.' : result.message, _executionDurationMs: Date.now() - _execStart });
-          store.updateNodeStatus(nodeId, 'active');
-          return;
-        }
-        // The response may be parsed JSON or raw text
-        output = result.result?.content || result.result?.message || (typeof result.result === 'string' ? result.result : JSON.stringify(result.result));
+        // ── Agent loop: iterate with tool calls ──
+        for (let iteration = 0; iteration < maxIterations; iteration++) {
+          let attempt = 0;
+          let res: Response | null = null;
+          let result: Record<string, unknown> | null = null;
 
-        // Track usage stats from API response
-        const usage = result.usage;
-        const inputTok = usage?.prompt_tokens ?? 0;
-        const outputTok = usage?.completion_tokens ?? 0;
-        set((s) => ({
-          _usageStats: {
-            ...s._usageStats,
-            totalCalls: s._usageStats.totalCalls + 1,
-            totalInputTokens: s._usageStats.totalInputTokens + inputTok,
-            totalOutputTokens: s._usageStats.totalOutputTokens + outputTok,
-          },
-        }));
+          // ── Retry loop on failure ──
+          while (attempt <= maxRetries) {
+            try {
+              res = await fetch('/api/cid', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  systemPrompt,
+                  model: store.cidAIModel,
+                  taskType: 'execute',
+                  effortLevel,
+                  messages,
+                }),
+                signal: agentAbort.signal,
+              });
+
+              if (!res.ok) {
+                lastError = `CID API error ${res.status}`;
+                attempt++;
+                if (attempt <= maxRetries) {
+                  cidLog('executeNode:retry', { nodeId, attempt, maxRetries, error: lastError });
+                  await new Promise(r => setTimeout(r, 1000 * attempt));
+                  continue;
+                }
+                break;
+              }
+              result = await res.json();
+              if ((result as Record<string, unknown>).error) {
+                const errResult = result as { error: string; message?: string };
+                lastError = errResult.error === 'no_api_key' ? 'No API key configured on server.' : (errResult.message || errResult.error);
+                attempt++;
+                if (attempt <= maxRetries) {
+                  cidLog('executeNode:retry', { nodeId, attempt, maxRetries, error: lastError });
+                  await new Promise(r => setTimeout(r, 1000 * attempt));
+                  continue;
+                }
+                break;
+              }
+              lastError = null;
+              break;
+            } catch (fetchErr) {
+              lastError = fetchErr instanceof Error ? fetchErr.message : 'Fetch failed';
+              attempt++;
+              if (attempt <= maxRetries) {
+                cidLog('executeNode:retry', { nodeId, attempt, maxRetries, error: lastError });
+                await new Promise(r => setTimeout(r, 1000 * attempt));
+              }
+            }
+          }
+
+          clearTimeout(agentTimeoutId);
+
+          if (lastError || !result) {
+            // Handle fallback strategy
+            if (agentConfig?.fallbackStrategy === 'use-cache' && getCacheEntry(nodeId)) {
+              const cached = getCacheEntry(nodeId)!;
+              output = cached.result;
+              cidLog('executeNode:fallback-cache', { nodeId, label: d.label });
+              break;
+            }
+            if (agentConfig?.fallbackStrategy === 'skip') {
+              store.updateNodeData(nodeId, { executionStatus: 'idle', executionError: `Skipped: ${lastError}`, _executionDurationMs: Date.now() - _execStart });
+              store.updateNodeStatus(nodeId, 'active');
+              get()._unlockNode(nodeId);
+              return;
+            }
+            store.updateNodeData(nodeId, { executionStatus: 'error', executionError: lastError || 'Unknown error', _executionDurationMs: Date.now() - _execStart });
+            store.updateNodeStatus(nodeId, 'active');
+            get()._unlockNode(nodeId);
+            return;
+          }
+
+          // The response may be parsed JSON or raw text
+          const resultData = result as { result?: { content?: string; message?: string }; usage?: { prompt_tokens?: number; completion_tokens?: number } };
+          const rawOutput = resultData.result?.content || resultData.result?.message || (typeof resultData.result === 'string' ? resultData.result : JSON.stringify(resultData.result));
+
+          // Track usage stats
+          const usage = resultData.usage;
+          const inputTok = usage?.prompt_tokens ?? 0;
+          const outputTok = usage?.completion_tokens ?? 0;
+          set((s) => ({
+            _usageStats: {
+              ...s._usageStats,
+              totalCalls: s._usageStats.totalCalls + 1,
+              totalInputTokens: s._usageStats.totalInputTokens + inputTok,
+              totalOutputTokens: s._usageStats.totalOutputTokens + outputTok,
+            },
+          }));
+
+          // Parse tool calls from the output
+          const { cleanText, toolCalls } = parseToolCalls(rawOutput);
+          output = cleanText;
+
+          // If no tool calls or no more iterations, we're done
+          if (toolCalls.length === 0 || iteration >= maxIterations - 1) {
+            if (toolCalls.length > 0) {
+              output += '\n\n*(Tool calls detected but max iterations reached)*';
+            }
+            break;
+          }
+
+          // Execute tool calls and feed results back
+          cidLog('executeNode:tools', { nodeId, label: d.label, iteration, toolCount: toolCalls.length, tools: toolCalls.map(t => t.name) });
+          const toolResults = await Promise.all(
+            toolCalls.map(tc => executeTool(tc))
+          );
+          const toolResultsText = formatToolResults(toolResults);
+
+          // Add assistant response + tool results to conversation for next iteration
+          messages = [
+            ...messages,
+            { role: 'assistant' as const, content: rawOutput },
+            { role: 'user' as const, content: `Tool results:\n\n${toolResultsText}\n\nContinue with your task using these results. If you need more tools, call them. Otherwise, provide your final output.` },
+          ];
+        }
       }
 
       const _execDuration = Date.now() - _execStart;
