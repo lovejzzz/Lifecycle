@@ -760,6 +760,7 @@ function CanvasInner() {
           proOptions={{ hideAttribution: true }}
           colorMode="dark"
           defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
+          onlyRenderVisibleElements
           style={{ width: '100%', height: '100%' }}
         >
           <Background
@@ -777,7 +778,13 @@ function CanvasInner() {
               <MiniMap
                 position="top-right"
                 nodeColor={minimapNodeColor}
-                nodeStrokeWidth={0}
+                nodeStrokeWidth={1}
+                nodeStrokeColor={(node: any) => {
+                  const data = node.data as NodeData;
+                  if (data.status === 'stale') return '#f59e0b';
+                  if (data.executionStatus === 'running') return '#06b6d4';
+                  return 'rgba(255,255,255,0.1)';
+                }}
                 maskColor="rgba(0, 0, 0, 0.75)"
                 style={{ width: 160, height: 100 }}
                 pannable

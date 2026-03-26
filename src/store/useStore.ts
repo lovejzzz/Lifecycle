@@ -43,6 +43,10 @@ import type { Optimization } from '@/lib/optimizer';
 // Store types imported from dedicated file for maintainability
 import type { LifecycleStore, UndoOperation, PoirotContext } from './types';
 export type { LifecycleStore, UndoOperation, PoirotContext } from './types';
+// Extracted slices
+import { createUISlice } from './slices/uiSlice';
+import { createArtifactSlice } from './slices/artifactSlice';
+export { cidLog } from './helpers';
 
 // ── Agent activity logger — visible in browser console for debugging ──
 const cidLog = (action: string, detail?: string | Record<string, unknown>) => {
@@ -857,7 +861,10 @@ function applyRedo(op: UndoOperation, nodes: Node<NodeData>[], edges: Edge[]): {
   return { nodes: newNodes, edges: newEdges };
 }
 
-export const useLifecycleStore = create<LifecycleStore>((set, get) => ({
+export const useLifecycleStore = create<LifecycleStore>((set, get, api) => ({
+  // ── Extracted slices (spread first, inline code can override) ──
+  ...createUISlice(set, get, api),
+  ...createArtifactSlice(set, get, api),
   nodes: (() => {
     const raw = persisted?.nodes ?? [];
     // Deduplicate by ID (keep last occurrence)
@@ -876,14 +883,9 @@ export const useLifecycleStore = create<LifecycleStore>((set, get) => ({
     }
     return [{ id: 'init-1', role: 'cid' as const, content: getAgent(persistedMode).welcome, timestamp: Date.now() }];
   })(),
-  selectedNodeId: null,
-  showCIDPanel: true,
-  showPreviewPanel: false,
+  // selectedNodeId, showCIDPanel, showPreviewPanel — from UISlice
   isProcessing: false,
-
-  // Fit view trigger
-  fitViewCounter: 0,
-  requestFitView: () => set((s) => ({ fitViewCounter: s.fitViewCounter + 1 })),
+  // fitViewCounter, requestFitView — from UISlice
 
   // AI model for CID (persisted)
   cidAIModel: persistedModel,
@@ -977,13 +979,7 @@ export const useLifecycleStore = create<LifecycleStore>((set, get) => ({
   // Named snapshots
   snapshots: new Map(),
 
-  // Pinned messages
-  pinnedMessageIds: new Set<string>(),
-  togglePinMessage: (id) => set(s => {
-    const next = new Set(s.pinnedMessageIds);
-    if (next.has(id)) next.delete(id); else next.add(id);
-    return { pinnedMessageIds: next };
-  }),
+  // pinnedMessageIds, togglePinMessage — from UISlice
 
   cloneWorkflow: () => {
     cidLog('cloneWorkflow');
@@ -1775,8 +1771,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
 
   // Context menu
   contextMenu: null,
-  openContextMenu: (nodeId, x, y) => set({ contextMenu: { nodeId, x, y }, selectedNodeId: nodeId }),
-  closeContextMenu: () => set({ contextMenu: null }),
+  // contextMenu, openContextMenu, closeContextMenu — from UISlice
 
   setNodes: (nodesOrFn) =>
     set((s) => {
@@ -1792,19 +1787,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       return { edges };
     }),
 
-  selectNode: (id) => {
-    set({ selectedNodeId: id, multiSelectedIds: new Set() });
-    if (id) get().addBreadcrumb(id);
-  },
-
-  multiSelectedIds: new Set<string>(),
-  toggleMultiSelect: (id) => set((s) => {
-    const next = new Set(s.multiSelectedIds);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    return { multiSelectedIds: next, selectedNodeId: id };
-  }),
-  clearMultiSelect: () => set({ multiSelectedIds: new Set() }),
+  // selectNode, multiSelectedIds, toggleMultiSelect, clearMultiSelect — from UISlice
   deleteMultiSelected: () => {
     const store = get();
     const ids = store.multiSelectedIds;
@@ -1826,8 +1809,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     return count;
   },
 
-  toggleCIDPanel: () => set((s) => ({ showCIDPanel: !s.showCIDPanel })),
-  togglePreviewPanel: () => set((s) => ({ showPreviewPanel: !s.showPreviewPanel })),
+  // toggleCIDPanel, togglePreviewPanel — from UISlice
 
   addEvent: (event) =>
     set((s) => {
@@ -3291,9 +3273,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
 
   aiEnabled: false, // Set to true once first API call succeeds
 
-  // Search
-  searchQuery: '',
-  setSearchQuery: (q) => set({ searchQuery: q }),
+  // searchQuery, setSearchQuery — from UISlice
 
   // Batch status update — returns count of affected nodes
   batchUpdateStatus: (fromStatus, toStatus) => {
@@ -3340,9 +3320,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     });
   },
 
-  // Edge label picker state
-  pendingEdge: null,
-  setPendingEdge: (pending) => set({ pendingEdge: pending }),
+  // pendingEdge, setPendingEdge — from UISlice
 
   // Ask CID about a specific node — sends node context to chatWithCID
   askCIDAboutNode: (nodeId) => {
@@ -3425,22 +3403,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     });
   },
 
-  // Auto-save indicator
-  lastSavedAt: 0,
-
-  // Toast notifications
-  toasts: [],
-  addToast: (message, type = 'info', autoDismissMs) => {
-    const id = `toast-${Date.now()}`;
-    const dismissMs = autoDismissMs ?? (type === 'error' ? 8000 : 3500);
-    set(s => ({ toasts: [...s.toasts.slice(-4), { id, message, type }] })); // cap at 5 visible
-    if (dismissMs > 0) {
-      setTimeout(() => {
-        set(s => ({ toasts: s.toasts.filter(t => t.id !== id) }));
-      }, dismissMs);
-    }
-  },
-  removeToast: (id) => set(s => ({ toasts: s.toasts.filter(t => t.id !== id) })),
+  // lastSavedAt, toasts, addToast, removeToast — from UISlice
 
   chatWithCID: async (prompt) => {
     const store = get();
@@ -5815,15 +5778,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     return { success: true, message: `Done. Set ${count} node${count > 1 ? 's' : ''} to **${targetStatus}** (matched ${field}=${value}).` };
   },
 
-  // Navigation breadcrumbs
-  breadcrumbs: [],
-  addBreadcrumb: (nodeId: string) => {
-    set(s => {
-      const filtered = s.breadcrumbs.filter(id => id !== nodeId);
-      return { breadcrumbs: [...filtered, nodeId].slice(-8) };
-    });
-  },
-  clearBreadcrumbs: () => set({ breadcrumbs: [] }),
+  // breadcrumbs, addBreadcrumb, clearBreadcrumbs — from UISlice
 
   // Generate topological execution plan
   generatePlan: () => {
@@ -6440,141 +6395,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
   },
 
   // ── Artifact Preview/Edit Panel ──
-  activeArtifactNodeId: null,
-  artifactPanelTab: 'content' as const,
-  artifactPanelMode: 'preview' as const,
-  artifactReadingMode: false,
-  artifactVersions: {},
-
-  openArtifactPanel: (nodeId) => {
-    const node = get().nodes.find(n => n.id === nodeId);
-    if (!node) return;
-    const versions = get().artifactVersions;
-    // Initialize version history if this is the first time opening
-    if (!versions[nodeId]) {
-      versions[nodeId] = [{
-        content: node.data.content || '',
-        result: node.data.executionResult || '',
-        timestamp: Date.now(),
-        label: 'Initial',
-      }];
-    }
-    set({
-      activeArtifactNodeId: nodeId,
-      artifactPanelTab: node.data.executionResult ? 'result' : 'content',
-      artifactPanelMode: 'preview',
-      artifactVersions: { ...versions },
-    });
-    cidLog('artifactPanel', `opened for "${node.data.label}"`);
-  },
-
-  closeArtifactPanel: () => set({ activeArtifactNodeId: null }),
-
-  setArtifactTab: (tab) => set({ artifactPanelTab: tab }),
-  setArtifactMode: (mode) => set({ artifactPanelMode: mode }),
-  setArtifactReadingMode: (on) => set({ artifactReadingMode: on }),
-
-  getExecutedNodesInOrder: () => {
-    const { nodes, edges } = get();
-    const { order } = topoSort(nodes, edges);
-    const nodeById = new Map(nodes.map(n => [n.id, n]));
-    return order
-      .map(id => nodeById.get(id))
-      .filter((n): n is Node<NodeData> => !!n && !!(n.data.executionResult || n.data.content))
-      .map(n => ({ id: n.id, label: n.data.label, category: n.data.category }));
-  },
-
-  saveArtifactVersion: (nodeId) => {
-    const node = get().nodes.find(n => n.id === nodeId);
-    if (!node) return;
-    const versions = { ...get().artifactVersions };
-    const history = versions[nodeId] || [];
-    history.push({
-      content: node.data.content || '',
-      result: node.data.executionResult || '',
-      timestamp: Date.now(),
-      label: `v${history.length}`,
-    });
-    // Cap at 20 versions
-    if (history.length > 20) history.splice(0, history.length - 20);
-    versions[nodeId] = history;
-    set({ artifactVersions: versions });
-    cidLog('artifactVersion', `saved v${history.length - 1} for "${node.data.label}"`);
-  },
-
-  restoreArtifactVersion: (nodeId, versionIndex) => {
-    const versions = get().artifactVersions[nodeId];
-    if (!versions || !versions[versionIndex]) return;
-    const version = versions[versionIndex];
-    const { pushHistory, updateNodeData, addEvent, nodes } = get();
-    const node = nodes.find(n => n.id === nodeId);
-    if (!node) return;
-    pushHistory();
-    const updates: Partial<NodeData> = { content: version.content };
-    if (version.result) updates.executionResult = version.result;
-    updateNodeData(nodeId, updates);
-    addEvent({ id: `ev-${Date.now()}`, type: 'edited', message: `Restored ${version.label} of "${node.data.label}"`, timestamp: Date.now(), nodeId, agent: false });
-    cidLog('artifactRestore', `restored ${version.label} for "${node.data.label}"`);
-  },
-
-  rewriteArtifactSelection: async (nodeId, selectedText, instruction) => {
-    const { cidAIModel, nodes } = get();
-    const node = nodes.find(n => n.id === nodeId);
-    if (!node) return null;
-    const tab = get().artifactPanelTab;
-    const fullText = tab === 'result' ? (node.data.executionResult || '') : (node.data.content || '');
-
-    try {
-      const res = await fetch('/api/cid', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          systemPrompt: 'You are a rewriting assistant. Rewrite ONLY the selected text according to the instruction. Return ONLY the rewritten text — no JSON, no explanation, no wrapping.',
-          messages: [{ role: 'user', content: `SELECTED TEXT:\n"${selectedText}"\n\nINSTRUCTION: ${instruction}\n\nFULL CONTEXT (do not rewrite this, only the selected text):\n${fullText.slice(0, 2000)}` }],
-          model: cidAIModel,
-          taskType: 'analyze',
-        }),
-      });
-      const data = await res.json();
-      const rewritten = data.result?.message || data.result?.content || null;
-      if (!rewritten) return null;
-
-      // Replace the selected text in the full content
-      const newText = fullText.replace(selectedText, rewritten);
-      const { pushHistory, updateNodeData, saveArtifactVersion } = get();
-      pushHistory();
-      saveArtifactVersion(nodeId);
-      if (tab === 'result') {
-        updateNodeData(nodeId, { executionResult: newText });
-      } else {
-        updateNodeData(nodeId, { content: newText });
-      }
-      cidLog('artifactRewrite', `rewrote ${selectedText.length}c → ${rewritten.length}c in "${node.data.label}"`);
-      return rewritten;
-    } catch (err) {
-      console.error('[Artifact] Rewrite failed:', err);
-      return null;
-    }
-  },
-
-  getDownstreamNodes: (nodeId) => {
-    const { nodes, edges } = get();
-    const downstream: Array<{ id: string; label: string; category: string }> = [];
-    const visited = new Set<string>();
-    const queue = [nodeId];
-    while (queue.length > 0) {
-      const current = queue.shift()!;
-      for (const edge of edges) {
-        if (edge.source === current && !visited.has(edge.target)) {
-          visited.add(edge.target);
-          queue.push(edge.target);
-          const n = nodes.find(nd => nd.id === edge.target);
-          if (n) downstream.push({ id: n.id, label: n.data.label, category: n.data.category });
-        }
-      }
-    }
-    return downstream;
-  },
+  // ── Artifact Preview/Edit Panel — from ArtifactSlice ──
 
   // ═══════════════════════════════════════════════════════════════════════════
   // ── Central Brain Architecture ──
