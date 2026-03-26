@@ -1783,15 +1783,17 @@ export default function CIDPanel() {
             className="flex-1 bg-transparent text-[12.5px] text-white/80 placeholder-white/30 outline-none disabled:opacity-40 disabled:cursor-not-allowed"
           />
           {isProcessing ? (
-            <button
+            <motion.button
               onClick={() => { cleanupRef.current?.(); stopProcessing(); }}
               title="Stop"
               className="w-7 h-7 rounded-lg flex items-center justify-center bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 transition-colors"
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.88 }}
             >
               <Square size={11} fill="currentColor" />
-            </button>
+            </motion.button>
           ) : (
-            <button
+            <motion.button
               onClick={handleSend}
               disabled={!input.trim()}
               className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors disabled:opacity-20 ${
@@ -1799,9 +1801,11 @@ export default function CIDPanel() {
                   ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30'
                   : 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
               }`}
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.88, transition: { duration: 0.08 } }}
             >
               <Send size={13} />
-            </button>
+            </motion.button>
           )}
         </div>
         <p className="text-[10px] text-white/40 mt-2 text-center">

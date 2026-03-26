@@ -241,15 +241,18 @@ function LifecycleNode({ data, id, dragging }: NodeProps) {
         <div className="px-4 py-3">
           {/* Header */}
           <div className="flex items-center gap-2.5 mb-2">
-            <div
+            <motion.div
               className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
               style={{
                 background: `linear-gradient(135deg, ${colors.primary}18, ${colors.primary}08)`,
                 border: `1px solid ${colors.primary}20`,
               }}
+              whileHover={{ scale: 1.12 }}
+              whileTap={{ scale: 0.9 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 20 }}
             >
               <CategoryIcon category={category} size={13} style={{ color: colors.primary }} />
-            </div>
+            </motion.div>
             <div className="flex-1 min-w-0">
               {editingLabel ? (
                 <motion.input
@@ -281,11 +284,13 @@ function LifecycleNode({ data, id, dragging }: NodeProps) {
             </div>
             <div className="flex items-center gap-1.5 flex-shrink-0">
               {locked && <Lock size={10} className="text-white/30" />}
-              <div
-                className="relative flex items-center justify-center w-4 h-4 rounded-full cursor-pointer hover:scale-125 hover:bg-white/10 transition-all nodrag"
+              <motion.div
+                className="relative flex items-center justify-center w-4 h-4 rounded-full cursor-pointer hover:bg-white/10 transition-colors nodrag"
                 role="button"
                 aria-label={`Status: ${status} — click to cycle`}
                 title={`Status: ${status} — click to cycle`}
+                whileHover={{ scale: 1.25 }}
+                whileTap={{ scale: 0.75, transition: { duration: 0.08 } }}
                 onClick={(e) => {
                   e.stopPropagation();
                   const cycle: NodeData['status'][] = ['active', 'stale', 'pending', 'reviewing', 'locked'];
@@ -305,7 +310,7 @@ function LifecycleNode({ data, id, dragging }: NodeProps) {
                   className="w-[9px] h-[9px] rounded-full relative"
                   style={{ backgroundColor: statusInfo.color }}
                 />
-              </div>
+              </motion.div>
               {StatusIcon && (
                 <StatusIcon
                   size={11}
@@ -574,23 +579,27 @@ function LifecycleNode({ data, id, dragging }: NodeProps) {
               <span className="text-[9px] text-white/40 capitalize tracking-wide">{status}</span>
               {/* Run Branch button — visible on hover when node has upstream deps */}
               {inCount > 0 && (
-                <button
-                  className="opacity-30 group-hover:opacity-100 text-white/20 hover:text-emerald-400/70 transition-all nodrag"
+                <motion.button
+                  className="opacity-30 group-hover:opacity-100 text-white/20 hover:text-emerald-400/70 transition-colors nodrag"
                   onClick={(e) => { e.stopPropagation(); useLifecycleStore.getState().executeBranch(id); }}
                   title="Run this branch only"
+                  whileHover={{ scale: 1.25, y: -1 }}
+                  whileTap={{ scale: 0.8 }}
                 >
                   <Play size={10} />
-                </button>
+                </motion.button>
               )}
               {/* Preview button — visible on hover */}
               {(nodeData.content || nodeData.executionResult) && (
-                <button
-                  className="opacity-30 group-hover:opacity-100 text-white/20 hover:text-cyan-400/70 transition-all nodrag"
+                <motion.button
+                  className="opacity-30 group-hover:opacity-100 text-white/20 hover:text-cyan-400/70 transition-colors nodrag"
                   onClick={(e) => { e.stopPropagation(); openArtifactPanel(id); }}
                   title="Open artifact preview"
+                  whileHover={{ scale: 1.25, y: -1 }}
+                  whileTap={{ scale: 0.8 }}
                 >
                   <Eye size={10} />
-                </button>
+                </motion.button>
               )}
             </div>
           </div>
