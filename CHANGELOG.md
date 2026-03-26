@@ -1,5 +1,16 @@
 # Changelog
 
+### 2026-03-26 — Agentic workflow engine: conditional edges, decision nodes (v1.0.97)
+
+- **Agentic**: New `decision` node category — evaluates upstream data and routes to specific downstream paths
+- **Agentic**: `EdgeCondition` type — guard conditions on edges (`output-contains`, `output-matches`, `status-is`, `decision-is`)
+- **Agentic**: `WorkflowContext` — shared state across execution (session ID, scratchpad, decisions, skipped tracking)
+- **Agentic**: `AgentConfig` type — per-node role, tools, retries, timeouts, fallback strategy
+- **Engine**: `executeWorkflow` now evaluates conditional edges before each node
+- **Engine**: Decision nodes parse output for `DECISION:` keyword and route only matching branches
+- **Engine**: Cascade skip propagates through entire non-matching subtrees
+- **Backward compatible**: Existing workflows without conditions execute identically
+
 ### 2026-03-26 — Undo helpers + cidLog extraction (v1.0.96)
 
 - **Architecture**: Extract `computeUndoOp`, `applyUndo`, `applyRedo`, `stripExecutionData` to `helpers.ts`
