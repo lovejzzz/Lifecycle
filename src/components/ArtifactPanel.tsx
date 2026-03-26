@@ -7,12 +7,15 @@ import {
   ChevronDown, ChevronRight, Sparkles, GitBranch, Loader2, ArrowRight,
   Maximize2, Minimize2, Search, Replace, Bold, Italic, Code, Heading2,
   List, ListOrdered, Quote, Columns2, Minus,
-  ChevronLeft, BookOpen,
+  ChevronLeft, BookOpen, Download, FileText, FileCode, FileType,
+  GripVertical, GitCompare,
 } from 'lucide-react';
 import { useLifecycleStore } from '@/store/useStore';
 import { getNodeColors, CategoryIcon } from '@/lib/types';
 import type { NodeData } from '@/lib/types';
 import { renderMarkdown } from '@/lib/markdown';
+import { exportAndDownload } from '@/lib/export';
+import DiffView from '@/components/DiffView';
 
 // ─── Selection Toolbar ───────────────────────────────────────────────────────
 
@@ -73,11 +76,14 @@ function SelectionToolbar({
 function VersionHistory({
   versions,
   onRestore,
+  currentContent,
 }: {
   versions: Array<{ content: string; result?: string; timestamp: number; label: string }>;
   onRestore: (index: number) => void;
+  currentContent: string;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [diffIndex, setDiffIndex] = useState<number | null>(null);
 
   if (versions.length <= 1) return null;
 
@@ -104,25 +110,69 @@ function VersionHistory({
               {[...versions].reverse().map((v, i) => {
                 const realIndex = versions.length - 1 - i;
                 const isLatest = realIndex === versions.length - 1;
+                const isDiffing = diffIndex === realIndex;
                 return (
-                  <button
+                  <div
                     key={realIndex}
-                    onClick={() => !isLatest && onRestore(realIndex)}
-                    disabled={isLatest}
                     className={`flex items-center justify-between w-full px-2 py-1 rounded text-[10px] transition-colors ${
-                      isLatest
-                        ? 'bg-white/[0.04] text-white/50'
-                        : 'hover:bg-white/[0.06] text-white/35 hover:text-white/60'
+                      isDiffing
+                        ? 'bg-cyan-500/[0.08] border border-cyan-500/20'
+                        : isLatest
+                          ? 'bg-white/[0.04] text-white/50'
+                          : 'hover:bg-white/[0.06] text-white/35 hover:text-white/60'
                     }`}
                   >
                     <span className="font-mono">{v.label}</span>
-                    <span className="text-white/20">
-                      {new Date(v.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </button>
+                    <div className="flex items-center gap-1">
+                      <span className="text-white/20">
+                        {new Date(v.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      {!isLatest && (
+                        <>
+                          <button
+                            onClick={() => setDiffIndex(isDiffing ? null : realIndex)}
+                            className={`p-0.5 rounded transition-colors ${isDiffing ? 'text-cyan-400/70' : 'text-white/20 hover:text-white/50'}`}
+                            title="Compare with current"
+                          >
+                            <GitCompare size={9} />
+                          </button>
+                          <button
+                            onClick={() => onRestore(realIndex)}
+                            className="p-0.5 rounded text-white/20 hover:text-amber-400/70 transition-colors"
+                            title="Restore this version"
+                          >
+                            <RotateCcw size={9} />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
                 );
               })}
             </div>
+            {/* Inline diff view */}
+            <AnimatePresence>
+              {diffIndex !== null && versions[diffIndex] && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                  className="mt-2 overflow-hidden"
+                >
+                  <div className="text-[9px] text-white/30 mb-1 px-1">
+                    Comparing <span className="text-cyan-400/60">{versions[diffIndex].label}</span> → current
+                  </div>
+                  <DiffView
+                    oldText={versions[diffIndex].content}
+                    newText={currentContent}
+                    onRevert={() => { onRestore(diffIndex); setDiffIndex(null); }}
+                    onAccept={() => setDiffIndex(null)}
+                    compact
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         )}
       </AnimatePresence>
@@ -489,6 +539,67 @@ function ReadingModeContent({
   );
 }
 
+// ─── Export Dropdown ──────────────────────────────────────────────────────────
+
+function ExportDropdown({ label, content }: { label: string; content: string }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as globalThis.Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  if (!content) return null;
+
+  const formats = [
+    { key: 'md' as const, label: 'Markdown', icon: FileText },
+    { key: 'html' as const, label: 'HTML', icon: FileCode },
+    { key: 'txt' as const, label: 'Plain Text', icon: FileType },
+  ];
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(v => !v)}
+        className={`p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors ${open ? 'text-cyan-400/60' : 'text-white/30 hover:text-white/60'}`}
+        title="Export artifact"
+      >
+        <Download size={12} />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -4, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.95 }}
+            transition={{ duration: 0.1 }}
+            className="absolute right-0 top-full mt-1 bg-[#1a1a2e]/95 backdrop-blur-xl border border-white/10 rounded-lg shadow-2xl py-1 z-50 min-w-[140px]"
+          >
+            {formats.map(({ key, label: fmtLabel, icon: Icon }) => (
+              <button
+                key={key}
+                onClick={() => {
+                  exportAndDownload(content, key, label);
+                  setOpen(false);
+                }}
+                className="flex items-center gap-2 w-full px-3 py-1.5 text-[10px] text-white/50 hover:text-white/80 hover:bg-white/[0.06] transition-colors"
+              >
+                <Icon size={11} className="text-white/30" />
+                {fmtLabel}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 // ─── Main Artifact Panel ─────────────────────────────────────────────────────
 
 export default function ArtifactPanel() {
@@ -511,9 +622,13 @@ export default function ArtifactPanel() {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isSplitView, setIsSplitView] = useState(false);
   const [showFindReplace, setShowFindReplace] = useState(false);
+  const [panelWidth, setPanelWidth] = useState(500);
+  const [isDirty, setIsDirty] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isResizingRef = useRef(false);
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Sync edit draft when source content, node, tab, or mode changes
   const currentText = node
@@ -527,6 +642,46 @@ export default function ArtifactPanel() {
       if (editDraft !== currentText) setEditDraft(currentText);
     }
   }, [activeArtifactNodeId, artifactPanelTab, artifactPanelMode, currentText, editDraft]);
+
+  // Track dirty state: draft differs from saved content
+  useEffect(() => {
+    const isEditing = artifactPanelMode === 'edit' || isSplitView;
+    setIsDirty(isEditing && editDraft !== currentText);
+  }, [editDraft, currentText, artifactPanelMode, isSplitView]);
+
+  // Auto-save after 30s of inactivity when dirty
+  useEffect(() => {
+    if (!isDirty) return;
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      saveRef.current?.();
+    }, 30000);
+    return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current); };
+  }, [isDirty, editDraft]);
+
+  // Resize handler
+  const startResize = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isResizingRef.current = true;
+    const startX = e.clientX;
+    const startWidth = panelWidth;
+    const onMove = (me: MouseEvent) => {
+      if (!isResizingRef.current) return;
+      const delta = startX - me.clientX;
+      setPanelWidth(Math.min(Math.max(startWidth + delta, 350), window.innerWidth * 0.8));
+    };
+    const onUp = () => {
+      isResizingRef.current = false;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }, [panelWidth]);
 
   // Ref to allow save shortcut to call handleSave without stale closure
   const saveRef = useRef<(() => void) | null>(null);
@@ -569,6 +724,15 @@ export default function ArtifactPanel() {
         const sel = editDraft.slice(s, end);
         const newText = editDraft.slice(0, s) + '*' + (sel || 'italic') + '*' + editDraft.slice(end);
         setEditDraft(newText);
+      }
+      // Ctrl+]/[: Next/Previous node
+      if ((e.metaKey || e.ctrlKey) && e.key === ']' && isInPanel) {
+        e.preventDefault();
+        navigateRef.current?.('next');
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === '[' && isInPanel) {
+        e.preventDefault();
+        navigateRef.current?.('prev');
       }
     };
     window.addEventListener('keydown', handler);
@@ -644,6 +808,8 @@ export default function ArtifactPanel() {
       nodeId: activeArtifactNodeId,
       agent: false,
     });
+    setIsDirty(false);
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     // In split view, stay in edit mode — both panes are always visible
     if (!isSplitView) setArtifactMode('preview');
     // Note: staleness propagation is handled by updateNodeData via classifyEdit —
@@ -652,6 +818,13 @@ export default function ArtifactPanel() {
 
   // Keep save ref current for keyboard shortcut
   saveRef.current = handleSave; // eslint-disable-line react-hooks/refs
+
+  // Navigate ref for keyboard shortcuts
+  const navigateRef = useRef<((dir: 'prev' | 'next') => void) | null>(null);
+  navigateRef.current = (dir) => {
+    const idx = dir === 'next' ? currentIdx + 1 : currentIdx - 1;
+    if (idx >= 0 && idx < executedNodes.length) navigateTo(idx);
+  };
 
   const handleCopy = () => {
     navigator.clipboard.writeText(activeText);
@@ -697,12 +870,25 @@ export default function ArtifactPanel() {
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: 500, opacity: 0 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      className={`fixed bg-[#0c0c14]/95 backdrop-blur-xl border-l border-white/[0.06] z-[45] flex flex-col transition-all duration-200 ${
+      className={`fixed bg-[#0c0c14]/95 backdrop-blur-xl border-l border-white/[0.06] z-[45] flex flex-col ${
         isFullScreen
           ? 'inset-0 w-full border-l-0'
-          : 'right-0 top-0 bottom-0 w-[500px]'
+          : 'right-0 top-0 bottom-0'
       }`}
+      style={isFullScreen ? undefined : { width: panelWidth }}
     >
+      {/* Resize Handle */}
+      {!isFullScreen && (
+        <div
+          onMouseDown={startResize}
+          className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-cyan-500/20 active:bg-cyan-500/30 transition-colors z-10 group"
+        >
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-white/20">
+            <GripVertical size={10} />
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
         <div className="flex items-center gap-2.5 min-w-0">
@@ -764,6 +950,8 @@ export default function ArtifactPanel() {
               <Columns2 size={12} />
             </button>
           )}
+          {/* Export */}
+          <ExportDropdown label={node.data.label} content={activeText} />
           {/* Copy */}
           <button onClick={handleCopy} className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/30 hover:text-white/60 transition-colors" title="Copy">
             {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
@@ -805,6 +993,13 @@ export default function ArtifactPanel() {
             </button>
           )}
         </div>
+        {/* Dirty indicator */}
+        {isDirty && (
+          <div className="flex items-center gap-1 text-[9px] text-amber-400/60">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400/60 animate-pulse" />
+            Unsaved
+          </div>
+        )}
         {/* Hide mode toggle when in split view — both show simultaneously */}
         {!isSplitView && (
           <div className="flex gap-0.5 bg-white/[0.04] rounded-lg p-0.5">
@@ -969,6 +1164,7 @@ export default function ArtifactPanel() {
         <VersionHistory
           versions={versions}
           onRestore={(idx) => restoreArtifactVersion(activeArtifactNodeId, idx)}
+          currentContent={activeText}
         />
         <DownstreamImpact
           downstream={downstream}

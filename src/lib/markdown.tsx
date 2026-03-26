@@ -39,6 +39,22 @@ export function inlineFormat(
       remaining = boldMatch[3];
       continue;
     }
+    // Italic (single * or _)
+    const italicMatch = remaining.match(/^([\s\S]*?)(?:\*([^*]+)\*|_([^_]+)_)([\s\S]*)/);
+    if (italicMatch) {
+      if (italicMatch[1]) parts.push(<React.Fragment key={key++}>{italicMatch[1]}</React.Fragment>);
+      parts.push(<em key={key++} className="italic text-white/65">{italicMatch[2] || italicMatch[3]}</em>);
+      remaining = italicMatch[4];
+      continue;
+    }
+    // Strikethrough ~~text~~
+    const strikeMatch = remaining.match(/^([\s\S]*?)~~([^~]+)~~([\s\S]*)/);
+    if (strikeMatch) {
+      if (strikeMatch[1]) parts.push(<React.Fragment key={key++}>{strikeMatch[1]}</React.Fragment>);
+      parts.push(<del key={key++} className="line-through text-white/35">{strikeMatch[2]}</del>);
+      remaining = strikeMatch[3];
+      continue;
+    }
     // Check for node name references
     if (nodeNames && onNodeClick) {
       let foundNode = false;
@@ -107,6 +123,27 @@ export function renderMarkdown(
     }
     if (line.startsWith('# ')) {
       elements.push(<div key={i} className="text-[13px] font-bold text-white/90 mt-3 mb-1">{line.slice(2)}</div>);
+      return;
+    }
+
+    // Task list items: - [ ] or - [x]
+    const taskMatch = line.match(/^[-*]\s\[([ xX])\]\s?(.*)/);
+    if (taskMatch) {
+      const checked = taskMatch[1].toLowerCase() === 'x';
+      elements.push(
+        <div key={i} className="flex items-start gap-2 ml-1 group">
+          <span className={`mt-0.5 w-3.5 h-3.5 flex-shrink-0 rounded border flex items-center justify-center text-[9px] ${
+            checked
+              ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'
+              : 'bg-white/[0.04] border-white/[0.15] text-transparent'
+          }`}>
+            {checked && '✓'}
+          </span>
+          <span className={checked ? 'text-white/40 line-through' : ''}>
+            {inlineFormat(taskMatch[2], nodeNames, onNodeClick)}
+          </span>
+        </div>,
+      );
       return;
     }
 
