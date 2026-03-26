@@ -1,5 +1,21 @@
 # Changelog
 
+### 2026-03-26 — Edge condition editor UI (v1.0.99)
+
+- **UI**: Edge picker now includes condition editor — type dropdown, value input, NOT toggle
+- **UI**: Conditional edges render with dashed stroke pattern + inline condition label
+- **UI**: Edge tooltip shows condition details in amber
+
+### 2026-03-26 — Agent tools, loops, retry/fallback (v1.0.98)
+
+- **Agentic**: 5 built-in tools — `web_search`, `http_request`, `extract_json`, `store_context`, `read_context`
+- **Agentic**: Multi-turn agent loops — nodes iterate with tool calls (parse → execute → feed back)
+- **Agentic**: Retry with exponential backoff (`agentConfig.maxRetries`)
+- **Agentic**: Fallback strategies — `fail`, `use-cache`, `skip` (`agentConfig.fallbackStrategy`)
+- **Agentic**: Per-node timeout override (`agentConfig.timeoutMs`)
+- **Engine**: Tool call parsing from LLM output (`\`\`\`tool_call` blocks)
+- **File**: New `src/lib/agentTools.ts` — tool definitions, parsing, execution, formatting
+
 ### 2026-03-26 — Agentic workflow engine: conditional edges, decision nodes (v1.0.97)
 
 - **Agentic**: New `decision` node category — evaluates upstream data and routes to specific downstream paths
