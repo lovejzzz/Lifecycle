@@ -1,5 +1,35 @@
 # Changelog
 
+### 2026-03-26 — Store decomposition: extract types for slice-based architecture (v1.0.94)
+
+- **Architecture**: Extracted `LifecycleStore`, `UndoOperation`, `PoirotContext` interfaces to `src/store/types.ts`
+- **Architecture**: Created `src/store/slices/` directory for future slice extraction
+- **Architecture**: Re-exports maintain backward compatibility — zero consumer changes needed
+
+### 2026-03-26 — Real LLM response streaming via SSE (v1.0.93)
+
+- **Streaming**: Added `stream: true` parameter to `/api/cid` route — returns Server-Sent Events
+- **Streaming**: Supports DeepSeek (OpenAI-compatible) and Anthropic streaming formats
+- **UX**: Chat responses now stream token-by-token in real-time (replaces fake word-by-word animation)
+- **Fallback**: Build/modify requests still use non-streaming path for JSON parsing
+- **Tested**: Live-verified with DeepSeek Reasoner — tokens stream correctly
+
+### 2026-03-26 — Artifact preview overhaul: version diff, export, auto-save, resize (v1.0.92)
+
+- **Artifact Panel**: Version diff comparison — click compare icon on any version to see inline diff vs current
+- **Artifact Panel**: Per-artifact export dropdown — download as Markdown, HTML, or Plain Text
+- **Artifact Panel**: Auto-save with 30s debounce + amber "Unsaved" dirty indicator
+- **Artifact Panel**: Drag-to-resize handle on left edge (350px to 80% viewport)
+- **Keyboard**: `Cmd+]`/`Cmd+[` navigate to next/prev artifact node
+- **Markdown**: Task list checkboxes (`- [ ]`/`- [x]`) render as styled checkboxes
+- **Markdown**: Italic (`*text*`/`_text_`) and strikethrough (`~~text~~`) support added
+
+### 2026-03-12 — CID agent intelligence overhaul (v1.0.91)
+
+- **CID Intelligence**: Confidence routing — agent assesses its own confidence and adjusts response depth
+- **CID Intelligence**: Bottleneck detection — identifies execution choke points and suggests optimizations
+- **CID Intelligence**: Adaptive interviews — Poirot adjusts question count based on complexity
+
 ### 2026-03-12 — Integration tests: edge removal, locked workflow, multi-project isolation (v1.0.90)
 
 - **Tests**: 3 new simulation tests (1125 → 1128 vitest tests)
