@@ -1,5 +1,18 @@
 # Changelog
 
+### 2026-03-26 — Undo helpers + cidLog extraction (v1.0.96)
+
+- **Architecture**: Extract `computeUndoOp`, `applyUndo`, `applyRedo`, `stripExecutionData` to `helpers.ts`
+- **Architecture**: Move `cidLog` to shared helpers (used by artifactSlice + inline code)
+- **Store**: useStore.ts 7,647 → 6,963 lines (684 lines total extracted across types, helpers, slices)
+
+### 2026-03-26 — UI + Artifact slices, React Flow virtualization (v1.0.95)
+
+- **Architecture**: Extract UISlice — selection, panels, toasts, context menu, search, breadcrumbs, fit view, pinned messages
+- **Architecture**: Extract ArtifactSlice — artifact panel, version history, rewrite, downstream nodes
+- **Performance**: Enable `onlyRenderVisibleElements` on React Flow canvas (viewport culling for 30+ nodes)
+- **MiniMap**: Add status-aware stroke colors — stale nodes show amber, running nodes show cyan
+
 ### 2026-03-26 — Store decomposition: extract types for slice-based architecture (v1.0.94)
 
 - **Architecture**: Extracted `LifecycleStore`, `UndoOperation`, `PoirotContext` interfaces to `src/store/types.ts`
