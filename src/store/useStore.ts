@@ -3901,13 +3901,93 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
 
       const chatController = new AbortController();
       const chatTimeout = setTimeout(() => chatController.abort(), chatTimeoutMs);
+
+      // Try streaming for non-build chat requests
+      if (!isBuildOrModify) {
+        try {
+          const streamRes = await fetch('/api/cid', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ systemPrompt, messages, model: get().cidAIModel, taskType: chatTaskType, stream: true }),
+            signal: chatController.signal,
+          });
+          clearTimeout(chatTimeout);
+
+          if (streamRes.ok && streamRes.headers.get('content-type')?.includes('text/event-stream') && streamRes.body) {
+            // Remove thinking message, create streaming message
+            set(s => ({ messages: s.messages.filter(m => m.id !== thinkingId) }));
+            const streamMsgId = uid();
+            const suggestions = getSmartSuggestions(get().nodes, get().edges);
+            store.addMessage({ id: streamMsgId, role: 'cid', content: '', timestamp: Date.now(), suggestions });
+
+            // Read SSE stream
+            const reader = streamRes.body.getReader();
+            const decoder = new TextDecoder();
+            let fullText = '';
+            let sseBuffer = '';
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              sseBuffer += decoder.decode(value, { stream: true });
+              const lines = sseBuffer.split('\n');
+              sseBuffer = lines.pop() || '';
+              for (const line of lines) {
+                if (!line.startsWith('data: ')) continue;
+                const payload = line.slice(6).trim();
+                if (payload === '[DONE]') continue;
+                try {
+                  const parsed = JSON.parse(payload);
+                  if (parsed.token) {
+                    fullText += parsed.token;
+                    store.updateStreamingMessage(streamMsgId, fullText);
+                  }
+                } catch { /* skip */ }
+              }
+            }
+
+            // Check if the streamed text is actually JSON (workflow/modifications)
+            const trimmed = fullText.trim();
+            if (trimmed.startsWith('{') && (trimmed.includes('"workflow"') || trimmed.includes('"modifications"'))) {
+              // It was a build response disguised as chat — reprocess
+              try {
+                const parsed = JSON.parse(trimmed);
+                if (parsed.workflow || parsed.modifications) {
+                  // Remove the streaming message and fall through to non-streaming
+                  set(s => ({ messages: s.messages.filter(m => m.id !== streamMsgId) }));
+                  // We can't easily re-fetch, so just display the message part
+                  if (parsed.message) {
+                    store.updateStreamingMessage(streamMsgId, parsed.message);
+                    // Re-add the message since we removed it
+                    store.addMessage({ id: streamMsgId, role: 'cid', content: parsed.message, timestamp: Date.now(), suggestions });
+                  }
+                }
+              } catch { /* keep as-is */ }
+            }
+
+            // Layer 4+5: Update generation state
+            const curMode = store.cidMode;
+            sessionGeneration[curMode].interactionCount++;
+            sessionGeneration[curMode].successStreak++;
+            runReflection(curMode, prompt, fullText);
+            set({ isProcessing: false });
+            return;
+          }
+        } catch {
+          // Streaming failed, fall through to non-streaming
+          clearTimeout(chatTimeout);
+        }
+      }
+
+      // Non-streaming path (for build/modify or streaming fallback)
+      const nsController = new AbortController();
+      const nsTimeout = setTimeout(() => nsController.abort(), chatTimeoutMs);
       const res = await fetch('/api/cid', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ systemPrompt, messages, model: get().cidAIModel, taskType: chatTaskType }),
-        signal: chatController.signal,
+        signal: nsController.signal,
       });
-      clearTimeout(chatTimeout);
+      clearTimeout(nsTimeout);
 
       const data = await res.json();
 

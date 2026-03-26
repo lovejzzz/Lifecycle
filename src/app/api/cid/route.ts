@@ -159,13 +159,14 @@ export async function POST(req: NextRequest) {
     if (authError) return authError;
 
     const body = await req.json();
-    const { systemPrompt, messages, model: requestedModel, taskType, _retryCount, effortLevel: rawEffort } = body as {
+    const { systemPrompt, messages, model: requestedModel, taskType, _retryCount, effortLevel: rawEffort, stream: requestStream } = body as {
       systemPrompt: string;
       messages: Array<{ role: 'user' | 'assistant'; content: string }>;
       model?: string;
       taskType?: 'generate' | 'execute' | 'analyze' | 'sync' | 'understand' | 'interpret-override';
       _retryCount?: number;
       effortLevel?: 'low' | 'medium' | 'high' | 'max';
+      stream?: boolean;
     };
     const effortLevel = rawEffort || 'medium';
 
@@ -286,6 +287,94 @@ export async function POST(req: NextRequest) {
         }),
       };
     };
+
+    // ── Streaming mode ──────────────────────────────────────────────────────
+    // For chat/analyze tasks, stream tokens directly to the client via SSE.
+    // Generate/execute/sync tasks still use the non-streaming path for JSON parsing.
+    if (requestStream && (!taskType || taskType === 'analyze')) {
+      const streamReqConfig = buildPayloadAndHeaders();
+      // Add stream flag to the upstream request body
+      const streamBody = JSON.parse(streamReqConfig.body);
+      if (provider === 'anthropic') {
+        streamBody.stream = true;
+      } else {
+        streamBody.stream = true;
+      }
+      streamReqConfig.body = JSON.stringify(streamBody);
+
+      const streamResponse = await fetch(endpoint, {
+        method: 'POST',
+        headers: streamReqConfig.headers,
+        body: streamReqConfig.body,
+        signal: AbortSignal.timeout(120000),
+      });
+
+      if (!streamResponse.ok || !streamResponse.body) {
+        const errorText = await streamResponse.text();
+        return NextResponse.json(
+          { error: 'api_error', message: `${streamResponse.status}: ${errorText}` },
+          { status: 500 },
+        );
+      }
+
+      // Transform upstream SSE into our own SSE stream
+      const encoder = new TextEncoder();
+      const decoder = new TextDecoder();
+      const readable = new ReadableStream({
+        async start(controller) {
+          const reader = streamResponse.body!.getReader();
+          let buffer = '';
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split('\n');
+              buffer = lines.pop() || '';
+              for (const line of lines) {
+                if (!line.startsWith('data: ')) continue;
+                const data = line.slice(6).trim();
+                if (data === '[DONE]') {
+                  controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+                  continue;
+                }
+                try {
+                  const parsed = JSON.parse(data);
+                  let token = '';
+                  if (provider === 'anthropic') {
+                    // Anthropic SSE: event type "content_block_delta" has delta.text
+                    if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
+                      token = parsed.delta.text;
+                    }
+                  } else {
+                    // OpenAI-compatible (DeepSeek/OpenRouter): choices[0].delta.content
+                    token = parsed.choices?.[0]?.delta?.content || '';
+                  }
+                  if (token) {
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ token })}\n\n`));
+                  }
+                } catch {
+                  // Skip unparseable lines
+                }
+              }
+            }
+          } catch (err) {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: err instanceof Error ? err.message : 'Stream error' })}\n\n`));
+          } finally {
+            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+            controller.close();
+          }
+        },
+      });
+
+      return new Response(readable, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+        },
+      });
+    }
 
     // Retry up to 3 times on rate limit (429) with exponential backoff
     // Generate/execute tasks need more time — LLMs produce larger payloads
