@@ -16,7 +16,7 @@ export type NodeCategory = string;
 // but users see and pick from the simplified set.
 
 export const SIMPLIFIED_CATEGORIES: NodeCategory[] = [
-  'input', 'process', 'deliverable', 'review', 'note',
+  'input', 'process', 'deliverable', 'review', 'note', 'decision',
 ];
 
 /** Map legacy 13-category names to simplified 5-category names */
@@ -44,7 +44,7 @@ export function getSimplifiedCategory(category: string): string {
 // The full list includes both simplified and legacy names for backward compatibility
 export const BUILT_IN_CATEGORIES: NodeCategory[] = [
   'input', 'trigger', 'state', 'artifact', 'note', 'cid', 'action', 'review', 'test', 'policy', 'patch', 'dependency', 'output',
-  'process', 'deliverable', // new simplified names
+  'process', 'deliverable', 'decision', // new simplified names + decision
 ];
 
 export interface LifecycleEvent {
@@ -340,6 +340,59 @@ export interface CIDMessage {
   _ephemeral?: boolean; // ephemeral messages are not persisted to localStorage
 }
 
+// ── Agentic Workflow Types ─────────────────────────────────────────────────
+
+/** Condition on an edge that controls whether downstream nodes execute */
+export interface EdgeCondition {
+  /** What to evaluate */
+  type: 'output-contains' | 'output-matches' | 'status-is' | 'decision-is';
+  /** Value to compare against (string for contains/matches, regex string for matches) */
+  value: string;
+  /** Negate the condition */
+  negate?: boolean;
+}
+
+/** Tool definition for agent nodes */
+export interface AgentTool {
+  name: string;
+  description: string;
+  config?: Record<string, unknown>;
+}
+
+/** Agent configuration for agentic nodes */
+export interface AgentConfig {
+  /** Role identity for this agent node */
+  role?: string;
+  /** What this agent is responsible for */
+  responsibilities?: string[];
+  /** Tools this agent can use during execution */
+  tools?: AgentTool[];
+  /** Max retries on failure */
+  maxRetries?: number;
+  /** Timeout in ms */
+  timeoutMs?: number;
+  /** What to do on failure */
+  fallbackStrategy?: 'fail' | 'use-cache' | 'skip';
+  /** Enable multi-turn reasoning within this node */
+  enableLooping?: boolean;
+  /** Max loop iterations (default: 3) */
+  maxLoopIterations?: number;
+}
+
+/** Shared context that persists across all nodes during a workflow execution */
+export interface WorkflowContext {
+  /** Unique execution session ID */
+  sessionId: string;
+  /** When this execution started */
+  startedAt: number;
+  /** Key-value store accessible by all nodes */
+  shared: Record<string, unknown>;
+  /** Decisions made by decision nodes — maps nodeId to chosen path */
+  decisions: Record<string, string>;
+  /** Nodes that were skipped due to conditional routing */
+  skippedNodeIds: Set<string>;
+}
+
 export interface NodeData extends Record<string, unknown> {
   label: string;
   category: NodeCategory;
@@ -388,6 +441,14 @@ export interface NodeData extends Record<string, unknown> {
 
   // Central Brain: artifact contract (CID-managed nodes only)
   artifactContract?: ArtifactContract;
+
+  // ── Agentic Workflow Fields ──
+  /** Agent configuration for this node */
+  agentConfig?: AgentConfig;
+  /** For decision nodes: the options/branches this node can route to */
+  decisionOptions?: string[];
+  /** The decision result after execution (which branch was chosen) */
+  decisionResult?: string;
 }
 
 export interface NodeColorSet {
@@ -490,6 +551,12 @@ const BUILT_IN_COLORS: Record<string, NodeColorSet> = {
     border: 'rgba(139, 92, 246, 0.3)',
     glow: 'rgba(139, 92, 246, 0.15)',
   },
+  decision: {
+    primary: '#f59e0b',
+    bg: 'rgba(245, 158, 11, 0.08)',
+    border: 'rgba(245, 158, 11, 0.3)',
+    glow: 'rgba(245, 158, 11, 0.15)',
+  },
 };
 
 // Runtime registry for custom categories added by CID
@@ -575,7 +642,7 @@ export function getNodeColors(category: string): NodeColorSet {
 import {
   Database, FileText, StickyNote, Bot, CheckCircle2, Shield,
   GitBranch, Link, LogIn, LogOut, Zap, FlaskConical, Play,
-  Waypoints, ShieldCheck, Flame, Radar, Puzzle,
+  Waypoints, ShieldCheck, Flame, Radar, Puzzle, GitFork,
 } from 'lucide-react';
 
 export const CATEGORY_ICONS: Record<string, React.ElementType> = {
@@ -595,6 +662,7 @@ export const CATEGORY_ICONS: Record<string, React.ElementType> = {
   // Simplified categories
   process: Play,
   deliverable: FileText,
+  decision: GitFork,
   // CID-created custom types
   connector: Waypoints,
   validator: ShieldCheck,

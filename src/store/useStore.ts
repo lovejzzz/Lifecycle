@@ -930,6 +930,58 @@ export const useLifecycleStore = create<LifecycleStore>((set, get, api) => ({
       return;
     }
 
+    // Decision nodes get a special execution prompt that forces a routing decision
+    if (d.category === 'decision') {
+      const inEdges = store.edges.filter(e => e.target === nodeId);
+      const upstreamData = inEdges.map(e => {
+        const src = store.nodes.find(n => n.id === e.source);
+        return src ? `[${src.data.label}]: ${(src.data.executionResult || src.data.content || '').slice(0, 1000)}` : '';
+      }).filter(Boolean).join('\n\n');
+
+      const outEdges = store.edges.filter(e => e.source === nodeId);
+      const options = d.decisionOptions || outEdges.map(e => {
+        const cond = e.data?.condition as import('@/lib/types').EdgeCondition | undefined;
+        if (cond?.type === 'decision-is') return cond.value;
+        const tgt = store.nodes.find(n => n.id === e.target);
+        return tgt?.data.label || 'unknown';
+      });
+
+      const decisionPrompt = d.aiPrompt || d.content || `Evaluate the upstream data and decide which path to take.`;
+      const systemPrompt = `You are a decision-making agent. Analyze the input and choose ONE of the available options.\n\nAvailable options: ${options.join(', ')}\n\nIMPORTANT: Your response MUST start with "DECISION: <chosen option>" on the first line. Then explain your reasoning below.`;
+
+      try {
+        store.updateNodeData(nodeId, { executionStatus: 'running', _executionStartedAt: _execStart });
+        const res = await fetch('/api/cid', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            systemPrompt,
+            messages: [{ role: 'user', content: `${decisionPrompt}\n\n--- UPSTREAM DATA ---\n${upstreamData}` }],
+            model: store.cidAIModel,
+            taskType: 'analyze',
+          }),
+          signal: AbortSignal.timeout(60000),
+        });
+        const data = await res.json();
+        const output = data.result?.message || data.result?.content || '';
+        const _execDuration = Date.now() - _execStart;
+        store.updateNodeData(nodeId, {
+          executionResult: output,
+          executionStatus: 'success',
+          _executionDurationMs: _execDuration,
+        });
+        cidLog('executeNode:decision', { nodeId, label: d.label, output: output.slice(0, 100) });
+      } catch (err) {
+        store.updateNodeData(nodeId, {
+          executionStatus: 'error',
+          executionError: err instanceof Error ? err.message : 'Decision node execution failed',
+          _executionDurationMs: Date.now() - _execStart,
+        });
+      }
+      get()._unlockNode(nodeId);
+      return;
+    }
+
     // For non-AI nodes (artifact, state, review, output, etc.), aggregate upstream results
     const incomingEdges = store.edges.filter(e => e.target === nodeId);
 
@@ -1268,6 +1320,15 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     if (nodes.length === 0) return;
     const mode = get().cidMode;
 
+    // ── Initialize workflow context for agentic routing ──
+    const workflowContext: import('@/lib/types').WorkflowContext = {
+      sessionId: `wf-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      startedAt: Date.now(),
+      shared: {},
+      decisions: {},
+      skippedNodeIds: new Set<string>(),
+    };
+
     // Save current results as snapshot for diff
     const snapshot = new Map<string, string>();
     nodes.forEach(n => {
@@ -1359,7 +1420,19 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
           succeeded: successCount, failed: errorCount, skipped: skippedCount,
         } });
 
-        // Skip if any upstream dependency failed (cascade skip)
+        // ── Agentic routing: check if this node should be skipped ──
+
+        // 1. Skip if already marked as skipped by decision routing
+        if (workflowContext.skippedNodeIds.has(nodeId)) {
+          skippedCount++;
+          skippedNames.push(nodeLabel);
+          store.updateNodeData(nodeId, { executionStatus: 'idle', executionError: 'Skipped: conditional routing' });
+          cidLog('executeWorkflow:skip', { nodeId, label: nodeLabel, reason: 'conditional routing' });
+          completed++;
+          return;
+        }
+
+        // 2. Skip if any upstream dependency failed (cascade skip)
         const upstreamEdges = edges.filter(e => e.target === nodeId);
         const hasFailedUpstream = upstreamEdges.some(e => {
           const src = get().nodes.find(n => n.id === e.source);
@@ -1374,6 +1447,54 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
           return;
         }
 
+        // 3. Check conditional edges — all incoming conditions must be satisfied
+        const conditionalEdges = upstreamEdges.filter(e => e.data?.condition);
+        if (conditionalEdges.length > 0) {
+          const allConditionsMet = conditionalEdges.every(e => {
+            const cond = e.data?.condition as import('@/lib/types').EdgeCondition | undefined;
+            if (!cond) return true;
+            const srcNode = get().nodes.find(n => n.id === e.source);
+            if (!srcNode) return false;
+            const output = srcNode.data.executionResult || '';
+            const status = srcNode.data.executionStatus || 'idle';
+            let result = false;
+            switch (cond.type) {
+              case 'output-contains':
+                result = output.toLowerCase().includes(cond.value.toLowerCase());
+                break;
+              case 'output-matches':
+                try { result = new RegExp(cond.value, 'i').test(output); } catch { result = false; }
+                break;
+              case 'status-is':
+                result = status === cond.value;
+                break;
+              case 'decision-is':
+                result = (srcNode.data.decisionResult || '').toLowerCase() === cond.value.toLowerCase();
+                break;
+            }
+            return cond.negate ? !result : result;
+          });
+          if (!allConditionsMet) {
+            skippedCount++;
+            skippedNames.push(nodeLabel);
+            workflowContext.skippedNodeIds.add(nodeId);
+            store.updateNodeData(nodeId, { executionStatus: 'idle', executionError: 'Skipped: edge condition not met' });
+            cidLog('executeWorkflow:skip', { nodeId, label: nodeLabel, reason: 'condition not met' });
+            // Cascade skip to all downstream nodes
+            const markDownstreamSkipped = (fromId: string) => {
+              for (const e of edges) {
+                if (e.source === fromId && !workflowContext.skippedNodeIds.has(e.target)) {
+                  workflowContext.skippedNodeIds.add(e.target);
+                  markDownstreamSkipped(e.target);
+                }
+              }
+            };
+            markDownstreamSkipped(nodeId);
+            completed++;
+            return;
+          }
+        }
+
         await store.executeNode(nodeId);
         completed++;
         const updated = get().nodes.find(n => n.id === nodeId);
@@ -1382,6 +1503,41 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
           failedNames.push(nodeLabel);
         } else {
           successCount++;
+
+          // ── Decision node routing ──
+          // After a decision node executes, parse its output to determine which path
+          if (updated?.data.category === 'decision') {
+            const output = (updated.data.executionResult || '').trim();
+            // Extract decision: look for a line starting with "DECISION:" or the first word
+            const decisionMatch = output.match(/(?:DECISION|CHOICE|ROUTE|PATH):\s*(.+)/i);
+            const decision = decisionMatch ? decisionMatch[1].trim() : output.split('\n')[0].trim();
+            store.updateNodeData(nodeId, { decisionResult: decision });
+            workflowContext.decisions[nodeId] = decision;
+            cidLog('executeWorkflow:decision', { nodeId, label: nodeLabel, decision });
+
+            // Find outgoing edges and skip paths that don't match the decision
+            const outgoing = edges.filter(e => e.source === nodeId);
+            for (const edge of outgoing) {
+              const cond = edge.data?.condition as import('@/lib/types').EdgeCondition | undefined;
+              if (cond && cond.type === 'decision-is') {
+                const matches = decision.toLowerCase().includes(cond.value.toLowerCase());
+                const shouldSkip = cond.negate ? matches : !matches;
+                if (shouldSkip) {
+                  workflowContext.skippedNodeIds.add(edge.target);
+                  // Cascade skip downstream
+                  const cascadeSkip = (fromId: string) => {
+                    for (const e of edges) {
+                      if (e.source === fromId && !workflowContext.skippedNodeIds.has(e.target)) {
+                        workflowContext.skippedNodeIds.add(e.target);
+                        cascadeSkip(e.target);
+                      }
+                    }
+                  };
+                  cascadeSkip(edge.target);
+                }
+              }
+            }
+          }
         }
       });
 
