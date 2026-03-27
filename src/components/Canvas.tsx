@@ -251,7 +251,7 @@ function CanvasInner() {
     pendingEdge, setPendingEdge, updateEdgeLabel,
     addNode, addEvent, breadcrumbs, clearBreadcrumbs,
     duplicateNode, updateNodeStatus, askCIDAboutNode,
-    activeArtifactNodeId,
+    activeArtifactNodeId, messages,
   } = useLifecycleStore();
   const fitViewCounter = useLifecycleStore((s) => s.fitViewCounter);
   const executionProgress = useLifecycleStore((s) => s.executionProgress);
@@ -273,6 +273,15 @@ function CanvasInner() {
   useEffect(() => { setMounted(true); }, []);
   const isEmpty = !mounted || nodes.length === 0;
   const agent = getAgent(cidMode);
+
+  // Track unread messages for floating CID button badge
+  const lastSeenCountCanvas = useRef(0);
+  useEffect(() => {
+    if (showCIDPanel) lastSeenCountCanvas.current = messages.length;
+  }, [showCIDPanel, messages.length]);
+  // eslint-disable-next-line react-hooks/refs -- lastSeenCountCanvas is effect-synchronized, safe to read
+  const hasUnread = !showCIDPanel && messages.length > lastSeenCountCanvas.current;
+
   const { fitView, setCenter, getZoom, screenToFlowPosition } = useReactFlow();
   const viewport = useViewport();
 
@@ -815,17 +824,27 @@ function CanvasInner() {
         {/* Empty state */}
         {isEmpty && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-            <div className="text-center max-w-md px-8">
-              <div className={`w-16 h-16 rounded-2xl border flex items-center justify-center mx-auto mb-6 ${
-                agent.accent === 'amber'
-                  ? 'bg-gradient-to-br from-amber-500/15 to-orange-500/15 border-amber-500/20'
-                  : 'bg-gradient-to-br from-emerald-500/15 to-cyan-500/15 border-emerald-500/20'
-              }`}>
+            <motion.div
+              className="text-center max-w-md px-8"
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, ease: 'easeOut' }}
+            >
+              <motion.div
+                className={`w-16 h-16 rounded-2xl border flex items-center justify-center mx-auto mb-6 ${
+                  agent.accent === 'amber'
+                    ? 'bg-gradient-to-br from-amber-500/15 to-orange-500/15 border-amber-500/20'
+                    : 'bg-gradient-to-br from-emerald-500/15 to-cyan-500/15 border-emerald-500/20'
+                }`}
+                initial={{ scale: 0.6, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: 'spring', stiffness: 280, damping: 20, delay: 0.1 }}
+              >
                 {agent.accent === 'amber'
                   ? <Search size={28} className="text-amber-400" />
                   : <Sparkles size={28} className="text-emerald-400" />
                 }
-              </div>
+              </motion.div>
               <h2 className="text-xl font-semibold text-white/80 mb-2">
                 Lifecycle
               </h2>
@@ -845,7 +864,12 @@ function CanvasInner() {
                 </button>
               )}
               {/* Template cards */}
-              <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-2 pointer-events-auto max-w-xl mx-auto">
+              <motion.div
+                className="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-2 pointer-events-auto max-w-xl mx-auto"
+                initial="hidden"
+                animate="visible"
+                variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.055, delayChildren: 0.28 } } }}
+              >
                 {([
                   { label: 'Software Development', icon: Code2, desc: '7 nodes — requirements to deploy', iconClass: 'text-cyan-400/70 group-hover:text-cyan-400' },
                   { label: 'Content Pipeline', icon: FileText, desc: '6 nodes — research to publish', iconClass: 'text-violet-400/70 group-hover:text-violet-400' },
@@ -856,8 +880,10 @@ function CanvasInner() {
                   { label: 'Lesson Planning', icon: BookOpen, desc: '6 nodes — topic to reflection', iconClass: 'text-amber-400/70 group-hover:text-amber-400' },
                   { label: 'Assignment Design', icon: ClipboardList, desc: '5 nodes — brief to guide', iconClass: 'text-pink-400/70 group-hover:text-pink-400' },
                 ] as const).map(({ label, icon: Icon, desc, iconClass }) => (
-                  <button
+                  <motion.button
                     key={label}
+                    variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
+                    transition={{ duration: 0.25 }}
                     onClick={() => {
                       useLifecycleStore.getState().loadTemplate(label);
                     }}
@@ -872,9 +898,11 @@ function CanvasInner() {
                       <span className="text-[11px] font-medium text-white/70 group-hover:text-white/90 transition-colors">{label}</span>
                     </div>
                     <p className="text-[10px] text-white/45 group-hover:text-white/60 transition-colors leading-relaxed">{desc}</p>
-                  </button>
+                  </motion.button>
                 ))}
-                <button
+                <motion.button
+                  variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
+                  transition={{ duration: 0.25 }}
                   onClick={() => setShowTemplateBrowser(true)}
                   className={`col-span-2 sm:col-span-3 text-center py-2 rounded-xl border border-solid transition-all duration-200 hover:scale-[1.01] ${
                     agent.accent === 'amber'
@@ -884,33 +912,54 @@ function CanvasInner() {
                 >
                   <span className="text-[11px] font-medium">Browse All Templates</span>
                   <span className="text-[9px] ml-1.5 opacity-50">{mounted && typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent) ? '\u2318' : 'Ctrl+'}T</span>
-                </button>
-              </div>
+                </motion.button>
+              </motion.div>
               {/* Keyboard hint */}
-              <div className="mt-4 text-[10px] text-white/40">
+              <motion.div
+                className="mt-4 text-[10px] text-white/40"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.75, duration: 0.3 }}
+              >
                 Press <kbd className="px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] font-mono text-[9px]">⌘K</kbd> to focus CID
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           </div>
         )}
 
         {/* Floating CID button when panel is closed */}
-        {!showCIDPanel && !isEmpty && (
-          <button
-            onClick={toggleCIDPanel}
-            className={`absolute bottom-6 right-6 z-20 w-12 h-12 rounded-xl flex items-center justify-center shadow-2xl border transition-all hover:scale-110 ${
-              agent.accent === 'amber'
-                ? 'bg-amber-500/15 border-amber-500/25 hover:bg-amber-500/25'
-                : 'bg-emerald-500/15 border-emerald-500/25 hover:bg-emerald-500/25'
-            }`}
-            title={`Open ${agent.name} (⌘K)`}
-          >
-            {agent.accent === 'amber'
-              ? <Search size={20} className="text-amber-400" />
-              : <Bot size={20} className="text-emerald-400" />
-            }
-          </button>
-        )}
+        <AnimatePresence>
+          {!showCIDPanel && !isEmpty && (
+            <motion.div
+              className="absolute bottom-6 right-6 z-20"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ type: 'spring', stiffness: 360, damping: 24 }}
+            >
+              <button
+                onClick={toggleCIDPanel}
+                className={`relative w-12 h-12 rounded-xl flex items-center justify-center shadow-2xl border transition-all hover:scale-110 ${
+                  agent.accent === 'amber'
+                    ? 'bg-amber-500/15 border-amber-500/25 hover:bg-amber-500/25'
+                    : 'bg-emerald-500/15 border-emerald-500/25 hover:bg-emerald-500/25'
+                }`}
+                title={`Open ${agent.name} (⌘K)`}
+              >
+                {hasUnread && (
+                  <>
+                    <span className={`absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full animate-ping opacity-75 ${agent.accent === 'amber' ? 'bg-amber-400' : 'bg-emerald-400'}`} />
+                    <span className={`absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full ${agent.accent === 'amber' ? 'bg-amber-400' : 'bg-emerald-400'}`} />
+                  </>
+                )}
+                {agent.accent === 'amber'
+                  ? <Search size={20} className="text-amber-400" />
+                  : <Bot size={20} className="text-emerald-400" />
+                }
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Search Bar */}
         <AnimatePresence>
