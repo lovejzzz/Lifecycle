@@ -449,6 +449,8 @@ export interface NodeData extends Record<string, unknown> {
   decisionOptions?: string[];
   /** The decision result after execution (which branch was chosen) */
   decisionResult?: string;
+  /** Confidence score for the decision (0.0–1.0), extracted from LLM output */
+  decisionConfidence?: number;
 }
 
 export interface NodeColorSet {

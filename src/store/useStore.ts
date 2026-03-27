@@ -947,7 +947,8 @@ export const useLifecycleStore = create<LifecycleStore>((set, get, api) => ({
       });
 
       const decisionPrompt = d.aiPrompt || d.content || `Evaluate the upstream data and decide which path to take.`;
-      const systemPrompt = `You are a decision-making agent. Analyze the input and choose ONE of the available options.\n\nAvailable options: ${options.join(', ')}\n\nIMPORTANT: Your response MUST start with "DECISION: <chosen option>" on the first line. Then explain your reasoning below.`;
+      const optionsList = options.map((o, i) => `  ${i + 1}. ${o}`).join('\n');
+      const systemPrompt = `You are a decision-making agent. Analyze the input carefully and choose the BEST option from the available choices.\n\nAvailable options:\n${optionsList}\n\nYou MUST respond using this exact format (no deviations):\n\nDECISION: <chosen option>\nCONFIDENCE: <0.0–1.0>\nREASONING: <one concise sentence explaining why>\n\nRules:\n- <chosen option> MUST exactly match one of the available options above (case-insensitive).\n- CONFIDENCE must be a decimal between 0.0 (total uncertainty) and 1.0 (complete certainty).\n- If confidence is below 0.5, briefly note what additional information would improve certainty.\n- Do NOT add any text before "DECISION:" on the first line.`;
 
       try {
         store.updateNodeData(nodeId, { executionStatus: 'running', _executionStartedAt: _execStart });
@@ -1607,19 +1608,42 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
           // After a decision node executes, parse its output to determine which path
           if (updated?.data.category === 'decision') {
             const output = (updated.data.executionResult || '').trim();
-            // Extract decision: look for a line starting with "DECISION:" or the first word
-            const decisionMatch = output.match(/(?:DECISION|CHOICE|ROUTE|PATH):\s*(.+)/i);
-            const decision = decisionMatch ? decisionMatch[1].trim() : output.split('\n')[0].trim();
-            store.updateNodeData(nodeId, { decisionResult: decision });
+
+            // Extract DECISION line
+            const decisionMatch = output.match(/^DECISION:\s*(.+)/im);
+            // Strip trailing confidence annotation if LLM included it inline (e.g. "approve (confidence: 0.9)")
+            const rawDecision = decisionMatch
+              ? decisionMatch[1].replace(/\s*\(confidence[^)]*\)/i, '').trim()
+              : output.split('\n')[0].replace(/^(?:DECISION|CHOICE|ROUTE|PATH):\s*/i, '').trim();
+            const decision = rawDecision;
+
+            // Extract CONFIDENCE line (0.0–1.0 or percentage)
+            const confMatch = output.match(/^CONFIDENCE:\s*([\d.]+)\s*%?/im);
+            let confidence: number | undefined;
+            if (confMatch) {
+              const raw = parseFloat(confMatch[1]);
+              // Support both 0–1 and 0–100 formats
+              confidence = raw > 1 ? raw / 100 : raw;
+              // Clamp to valid range
+              confidence = Math.max(0, Math.min(1, confidence));
+            }
+
+            store.updateNodeData(nodeId, {
+              decisionResult: decision,
+              ...(confidence !== undefined ? { decisionConfidence: confidence } : {}),
+            });
             workflowContext.decisions[nodeId] = decision;
-            cidLog('executeWorkflow:decision', { nodeId, label: nodeLabel, decision });
+            cidLog('executeWorkflow:decision', { nodeId, label: nodeLabel, decision, confidence });
 
             // Find outgoing edges and skip paths that don't match the decision
             const outgoing = edges.filter(e => e.source === nodeId);
             for (const edge of outgoing) {
               const cond = edge.data?.condition as import('@/lib/types').EdgeCondition | undefined;
               if (cond && cond.type === 'decision-is') {
-                const matches = decision.toLowerCase().includes(cond.value.toLowerCase());
+                const d_ = decision.toLowerCase().trim();
+                const v_ = cond.value.toLowerCase().trim();
+                // Prefer exact match; fall back to substring for legacy conditions
+                const matches = d_ === v_ || d_.includes(v_);
                 const shouldSkip = cond.negate ? matches : !matches;
                 if (shouldSkip) {
                   workflowContext.skippedNodeIds.add(edge.target);
