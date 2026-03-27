@@ -26,6 +26,7 @@ import {
   detectCycle, validateGraphInvariants,
 } from '@/lib/graph';
 import { buildNodesFromPrompt } from '@/lib/intent';
+import { getDecisionSystemPrompt, parseDecisionOutput, decisionMatchesCondition } from '@/lib/decision';
 import { assessWorkflowHealth, formatHealthReport, issueFingerprint } from '@/lib/health';
 import { generateProactiveSuggestions, formatSuggestionsMessage } from '@/lib/suggestions';
 import type { ProactiveSuggestion } from '@/lib/suggestions';
@@ -947,8 +948,7 @@ export const useLifecycleStore = create<LifecycleStore>((set, get, api) => ({
       });
 
       const decisionPrompt = d.aiPrompt || d.content || `Evaluate the upstream data and decide which path to take.`;
-      const optionsList = options.map((o, i) => `  ${i + 1}. ${o}`).join('\n');
-      const systemPrompt = `You are a decision-making agent. Analyze the input carefully and choose the BEST option from the available choices.\n\nAvailable options:\n${optionsList}\n\nYou MUST respond using this exact format (no deviations):\n\nDECISION: <chosen option>\nCONFIDENCE: <0.0–1.0>\nREASONING: <one concise sentence explaining why>\n\nRules:\n- <chosen option> MUST exactly match one of the available options above (case-insensitive).\n- CONFIDENCE must be a decimal between 0.0 (total uncertainty) and 1.0 (complete certainty).\n- If confidence is below 0.5, briefly note what additional information would improve certainty.\n- Do NOT add any text before "DECISION:" on the first line.`;
+      const systemPrompt = getDecisionSystemPrompt(options);
 
       try {
         store.updateNodeData(nodeId, { executionStatus: 'running', _executionStartedAt: _execStart });
@@ -966,12 +966,16 @@ export const useLifecycleStore = create<LifecycleStore>((set, get, api) => ({
         const data = await res.json();
         const output = data.result?.message || data.result?.content || '';
         const _execDuration = Date.now() - _execStart;
+        // Parse structured output immediately so fields are available in executeNode context
+        const parsed = parseDecisionOutput(output);
         store.updateNodeData(nodeId, {
           executionResult: output,
           executionStatus: 'success',
           _executionDurationMs: _execDuration,
+          ...(parsed.reasoning ? { decisionExplanation: parsed.reasoning } : {}),
+          ...(parsed.alternatives?.length ? { decisionAlternatives: parsed.alternatives } : {}),
         });
-        cidLog('executeNode:decision', { nodeId, label: d.label, output: output.slice(0, 100) });
+        cidLog('executeNode:decision', { nodeId, label: d.label, decision: parsed.decision, confidence: parsed.confidence });
       } catch (err) {
         store.updateNodeData(nodeId, {
           executionStatus: 'error',
@@ -1609,41 +1613,26 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
           if (updated?.data.category === 'decision') {
             const output = (updated.data.executionResult || '').trim();
 
-            // Extract DECISION line
-            const decisionMatch = output.match(/^DECISION:\s*(.+)/im);
-            // Strip trailing confidence annotation if LLM included it inline (e.g. "approve (confidence: 0.9)")
-            const rawDecision = decisionMatch
-              ? decisionMatch[1].replace(/\s*\(confidence[^)]*\)/i, '').trim()
-              : output.split('\n')[0].replace(/^(?:DECISION|CHOICE|ROUTE|PATH):\s*/i, '').trim();
-            const decision = rawDecision;
-
-            // Extract CONFIDENCE line (0.0–1.0 or percentage)
-            const confMatch = output.match(/^CONFIDENCE:\s*([\d.]+)\s*%?/im);
-            let confidence: number | undefined;
-            if (confMatch) {
-              const raw = parseFloat(confMatch[1]);
-              // Support both 0–1 and 0–100 formats
-              confidence = raw > 1 ? raw / 100 : raw;
-              // Clamp to valid range
-              confidence = Math.max(0, Math.min(1, confidence));
-            }
+            // Use shared parsing utility (handles DECISION/CONFIDENCE/REASONING/ALTERNATIVES)
+            const parsed = parseDecisionOutput(output);
+            const { decision, confidence, reasoning, alternatives } = parsed;
 
             store.updateNodeData(nodeId, {
               decisionResult: decision,
               ...(confidence !== undefined ? { decisionConfidence: confidence } : {}),
+              ...(reasoning ? { decisionExplanation: reasoning } : {}),
+              ...(alternatives?.length ? { decisionAlternatives: alternatives } : {}),
             });
             workflowContext.decisions[nodeId] = decision;
-            cidLog('executeWorkflow:decision', { nodeId, label: nodeLabel, decision, confidence });
+            cidLog('executeWorkflow:decision', { nodeId, label: nodeLabel, decision, confidence, reasoning });
 
             // Find outgoing edges and skip paths that don't match the decision
             const outgoing = edges.filter(e => e.source === nodeId);
             for (const edge of outgoing) {
               const cond = edge.data?.condition as import('@/lib/types').EdgeCondition | undefined;
               if (cond && cond.type === 'decision-is') {
-                const d_ = decision.toLowerCase().trim();
-                const v_ = cond.value.toLowerCase().trim();
-                // Prefer exact match; fall back to substring for legacy conditions
-                const matches = d_ === v_ || d_.includes(v_);
+                // Use fuzzy matching from decision module (handles LLM paraphrasing)
+                const matches = decisionMatchesCondition(decision, cond.value);
                 const shouldSkip = cond.negate ? matches : !matches;
                 if (shouldSkip) {
                   workflowContext.skippedNodeIds.add(edge.target);

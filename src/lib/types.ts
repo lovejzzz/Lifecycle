@@ -451,6 +451,10 @@ export interface NodeData extends Record<string, unknown> {
   decisionResult?: string;
   /** Confidence score for the decision (0.0–1.0), extracted from LLM output */
   decisionConfidence?: number;
+  /** One-sentence reasoning from the decision LLM, extracted from REASONING: line */
+  decisionExplanation?: string;
+  /** Alternative viable options identified by the decision LLM (N-way branching) */
+  decisionAlternatives?: string[];
 }
 
 export interface NodeColorSet {
