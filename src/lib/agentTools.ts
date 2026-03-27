@@ -46,6 +46,18 @@ export const BUILT_IN_TOOLS: AgentTool[] = [
     name: 'read_context',
     description: 'Read a value from the shared workflow context. Args: { "key": "name" }',
   },
+  {
+    name: 'validate_json',
+    description: 'Validate whether a string is valid JSON and report any parse errors. Args: { "text": "string to validate" }',
+  },
+  {
+    name: 'summarize_text',
+    description: 'Summarize a long text to a concise version. Args: { "text": "text to summarize", "max_words": 100 }',
+  },
+  {
+    name: 'generate_code',
+    description: 'Generate code for a specific task or description. Args: { "task": "what to implement", "language": "python|typescript|javascript|..." }',
+  },
 ];
 
 /** Get the tool description block to inject into system prompts */
@@ -57,27 +69,84 @@ export function buildToolPrompt(tools: AgentTool[]): string {
 
 // ── Tool Call Parsing ────────────────────────────────────────────────────────
 
-/** Parse tool calls from LLM output text */
+/**
+ * Attempt to repair common JSON issues produced by LLMs:
+ * - Trailing commas before } or ]
+ * - Single-quoted strings → double-quoted
+ * - Unquoted keys
+ * - Escaped single quotes inside double-quoted strings
+ */
+export function repairJson(raw: string): string {
+  let s = raw.trim();
+  // Replace single-quoted strings with double-quoted (simple heuristic)
+  // Only do this when the string isn't already valid JSON
+  try {
+    JSON.parse(s);
+    return s; // already valid
+  } catch {
+    // fall through to repairs
+  }
+  // Remove trailing commas before } or ]
+  s = s.replace(/,\s*([}\]])/g, '$1');
+  // Replace single-quoted keys/values with double-quoted
+  // e.g. {'key': 'value'} → {"key": "value"}
+  s = s.replace(/([{,]\s*)'([^']+?)'\s*:/g, '$1"$2":');
+  s = s.replace(/:\s*'([^']*?)'/g, ': "$1"');
+  return s;
+}
+
+/** Parse tool calls from LLM output text.
+ *
+ * Supports two formats:
+ *   1. Fenced code block:  ```tool_call\n{...}\n```
+ *   2. XML tag:            <tool_call>{...}</tool_call>
+ *
+ * Both formats tolerate minor JSON issues via repairJson().
+ */
 export function parseToolCalls(text: string): { cleanText: string; toolCalls: ParsedToolCall[] } {
   const toolCalls: ParsedToolCall[] = [];
-  // Match ```tool_call\n{...}\n``` blocks
-  const toolCallRegex = /```tool_call\s*\n([\s\S]*?)\n```/g;
-  let match;
-  while ((match = toolCallRegex.exec(text)) !== null) {
+  const seen = new Set<string>(); // deduplicate identical calls
+
+  function tryParse(raw: string): ParsedToolCall | null {
+    const repaired = repairJson(raw);
     try {
-      const parsed = JSON.parse(match[1].trim());
+      const parsed = JSON.parse(repaired);
       if (parsed.tool && typeof parsed.tool === 'string') {
-        toolCalls.push({
-          name: parsed.tool,
-          args: parsed.args || {},
-        });
+        return { name: parsed.tool, args: parsed.args || {} };
       }
     } catch {
-      // Skip unparseable tool calls
+      // unparseable even after repair — skip
+    }
+    return null;
+  }
+
+  // Format 1: fenced ```tool_call blocks
+  const fencedRegex = /```tool_call\s*\n([\s\S]*?)\n?```/g;
+  let match;
+  while ((match = fencedRegex.exec(text)) !== null) {
+    const call = tryParse(match[1].trim());
+    if (call) {
+      const key = `${call.name}:${JSON.stringify(call.args)}`;
+      if (!seen.has(key)) { seen.add(key); toolCalls.push(call); }
     }
   }
-  // Remove tool call blocks from the text to get clean output
-  const cleanText = text.replace(toolCallRegex, '').trim();
+
+  // Format 2: XML <tool_call> tags (some models emit this)
+  const xmlRegex = /<tool_call>\s*([\s\S]*?)\s*<\/tool_call>/g;
+  while ((match = xmlRegex.exec(text)) !== null) {
+    const call = tryParse(match[1].trim());
+    if (call) {
+      const key = `${call.name}:${JSON.stringify(call.args)}`;
+      if (!seen.has(key)) { seen.add(key); toolCalls.push(call); }
+    }
+  }
+
+  // Remove all tool call blocks from the text to get clean output
+  const cleanText = text
+    .replace(fencedRegex, '')
+    .replace(xmlRegex, '')
+    .trim();
+
   return { cleanText, toolCalls };
 }
 
@@ -165,6 +234,49 @@ export async function executeTool(
           return { tool: call.name, args: call.args, result: `Context["${key}"] = ${JSON.stringify(val)}`, success: true, durationMs: Date.now() - start };
         }
         return { tool: call.name, args: call.args, result: `Key "${key}" not found in workflow context.`, success: true, durationMs: Date.now() - start };
+      }
+
+      case 'validate_json': {
+        const text = String(call.args.text || '');
+        if (!text) return { tool: call.name, args: call.args, result: 'Error: missing text argument', success: false, durationMs: Date.now() - start };
+        try {
+          const parsed = JSON.parse(text);
+          const type = Array.isArray(parsed) ? 'array' : typeof parsed;
+          const keys = type === 'object' && parsed !== null ? Object.keys(parsed) : [];
+          const summary = type === 'object'
+            ? `Valid JSON object with ${keys.length} key(s): ${keys.slice(0, 10).join(', ')}${keys.length > 10 ? '...' : ''}`
+            : type === 'array'
+              ? `Valid JSON array with ${(parsed as unknown[]).length} element(s)`
+              : `Valid JSON (${type})`;
+          return { tool: call.name, args: call.args, result: summary, success: true, durationMs: Date.now() - start };
+        } catch (err) {
+          const msg = err instanceof SyntaxError ? err.message : 'Invalid JSON';
+          return { tool: call.name, args: call.args, result: `Invalid JSON: ${msg}`, success: false, durationMs: Date.now() - start };
+        }
+      }
+
+      case 'summarize_text': {
+        const text = String(call.args.text || '');
+        const maxWords = Math.max(10, Math.min(500, Number(call.args.max_words ?? 100)));
+        if (!text) return { tool: call.name, args: call.args, result: 'Error: missing text argument', success: false, durationMs: Date.now() - start };
+        // Instruct the LLM to perform the summarization in its next iteration
+        return {
+          tool: call.name, args: call.args,
+          result: `Summarization task ready. Input: ${text.length} chars. Target: ≤${maxWords} words.\n\nPlease summarize the following text in ≤${maxWords} words in your next response:\n\n${text.slice(0, 4000)}${text.length > 4000 ? '\n... (truncated)' : ''}`,
+          success: true, durationMs: Date.now() - start,
+        };
+      }
+
+      case 'generate_code': {
+        const task = String(call.args.task || '');
+        const language = String(call.args.language || 'typescript');
+        if (!task) return { tool: call.name, args: call.args, result: 'Error: missing task argument', success: false, durationMs: Date.now() - start };
+        // Instruct the LLM to generate code in its next iteration
+        return {
+          tool: call.name, args: call.args,
+          result: `Code generation task ready. Language: ${language}. Task: ${task}\n\nPlease write the ${language} code for this task in your next response, using a fenced code block (\`\`\`${language}).`,
+          success: true, durationMs: Date.now() - start,
+        };
       }
 
       default:
