@@ -1,5 +1,28 @@
 # Changelog
 
+### 2026-03-28 — Round 68: Routing Intelligence (Semantic Confidence + Agentic Routes)
+
+**Improvement 1 — Semantic Confidence Scoring (routing.ts):**
+- Replaced position-based confidence with explicit per-pattern `ConfidenceLevel`
+- Fixed real bugs: `explain`, `help`, `compress`, `bottlenecks`, `undo`, `count`, `merge` were getting 'low' confidence by array position and incorrectly triggering "did you mean...?" clarification prompts
+- Each `addPattern()` call now carries its own semantic confidence: `'high'` = exact/tightly-scoped, `'medium'` = variable-content, `'low'` = LLM fallback only
+- Removed the `computeConfidence(index, total)` positional formula entirely
+
+**Improvement 2 — 4 New Agentic Route Intents (routing.ts):**
+- `add-tool`: "add web_search tool to Research", "attach a tool to Node X"
+- `show-tools`: "show tools", "list tools", "tools"
+- `set-condition`: "set condition on edge from X to Y", "add condition for connection"
+- `configure-retry`: "configure retry for Lesson Plan", "set up retries on Node X"
+- All 4 routes use `'high'` confidence; inserted before conflicting patterns (extend/set-status/list/focus)
+- `CommandRoute` type union grows from 88 → 92 intent types
+
+**Improvement 3 — Routing Benchmark Expansion:**
+- 168/168 benchmark cases pass (was 158/158); 10 new agentic route test cases added
+- `highConfidenceCases` now explicitly covers explain, help, undo, count, compress, bottlenecks, merge, retry-failed + 4 agentic routes
+- `mediumConfidenceCases` updated to reflect semantically medium patterns (variable node names, broad queries)
+
+**Test Results:** Build passes. 1259/1260 tests pass (1 pre-existing simulation timing flake, unrelated).
+
 ### 2026-03-26 — Edge condition editor UI (v1.0.99)
 
 - **UI**: Edge picker now includes condition editor — type dropdown, value input, NOT toggle
