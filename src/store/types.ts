@@ -275,6 +275,11 @@ export interface LifecycleStore {
   _usageStats: UsageStats;
   resetUsageStats: () => void;
 
+  // Shared key-value context accessible by agent tools (store_context / read_context)
+  // Persists across individual executeNode calls so nodes can share data within a session
+  _sharedNodeContext: Record<string, unknown>;
+  clearSharedNodeContext: () => void;
+
   // CID learned rules
   cidRules: string[];
   addCIDRule: (rule: string) => string;

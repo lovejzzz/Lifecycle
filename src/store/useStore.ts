@@ -717,6 +717,10 @@ export const useLifecycleStore = create<LifecycleStore>((set, get, api) => ({
   _usageStats: createEmptyUsageStats(),
   resetUsageStats: () => set({ _usageStats: createEmptyUsageStats() }),
 
+  // Shared context for agent tools (store_context / read_context) across node executions
+  _sharedNodeContext: {},
+  clearSharedNodeContext: () => set({ _sharedNodeContext: {} }),
+
   // Agent mode
   cidMode: persistedMode,
   setCIDMode: (mode) => set((s) => {
@@ -1347,10 +1351,14 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
           }
 
           // Execute tool calls and feed results back
+          // Pass _sharedNodeContext so store_context/read_context work across nodes
+          const sharedCtx = get()._sharedNodeContext;
           cidLog('executeNode:tools', { nodeId, label: d.label, iteration, toolCount: toolCalls.length, tools: toolCalls.map(t => t.name) });
           const toolResults = await Promise.all(
-            toolCalls.map(tc => executeTool(tc))
+            toolCalls.map(tc => executeTool(tc, sharedCtx))
           );
+          // Persist any mutations from store_context back to store (context is mutated in-place)
+          set({ _sharedNodeContext: { ...sharedCtx } });
           const toolResultsText = formatToolResults(toolResults);
 
           // Add assistant response + tool results to conversation for next iteration
@@ -1425,6 +1433,8 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     const mode = get().cidMode;
 
     // ── Initialize workflow context for agentic routing ──
+    // Reset shared node context so each workflow run starts with a clean slate
+    set({ _sharedNodeContext: {} });
     const workflowContext: import('@/lib/types').WorkflowContext = {
       sessionId: `wf-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       startedAt: Date.now(),

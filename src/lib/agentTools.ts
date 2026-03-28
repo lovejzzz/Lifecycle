@@ -17,6 +17,50 @@ export interface ToolCallResult {
   durationMs: number;
 }
 
+// ── Tool Analytics ───────────────────────────────────────────────────────────
+
+export interface ToolAnalyticEntry {
+  calls: number;
+  successes: number;
+  totalDurationMs: number;
+}
+
+/** Module-level analytics store — persists for the session lifetime */
+const _toolAnalytics: Record<string, ToolAnalyticEntry> = {};
+
+/** Record the outcome of a tool call into the analytics store */
+function recordToolCall(result: ToolCallResult): void {
+  const entry = _toolAnalytics[result.tool] ?? { calls: 0, successes: 0, totalDurationMs: 0 };
+  entry.calls += 1;
+  if (result.success) entry.successes += 1;
+  entry.totalDurationMs += result.durationMs;
+  _toolAnalytics[result.tool] = entry;
+}
+
+/** Return a snapshot of tool usage analytics */
+export function getToolAnalytics(): Record<string, ToolAnalyticEntry & { avgDurationMs: number; successRate: number }> {
+  const out: Record<string, ToolAnalyticEntry & { avgDurationMs: number; successRate: number }> = {};
+  for (const [name, e] of Object.entries(_toolAnalytics)) {
+    out[name] = {
+      ...e,
+      avgDurationMs: e.calls > 0 ? Math.round(e.totalDurationMs / e.calls) : 0,
+      successRate: e.calls > 0 ? Math.round((e.successes / e.calls) * 100) : 0,
+    };
+  }
+  return out;
+}
+
+/** Format analytics as a readable string for the UI */
+export function formatToolAnalytics(): string {
+  const data = getToolAnalytics();
+  const entries = Object.entries(data);
+  if (entries.length === 0) return 'No tool calls recorded yet.';
+  const rows = entries
+    .sort((a, b) => b[1].calls - a[1].calls)
+    .map(([name, s]) => `- **${name}**: ${s.calls} call${s.calls !== 1 ? 's' : ''}, ${s.successRate}% success, avg ${s.avgDurationMs}ms`);
+  return `**Tool Usage Analytics**\n${rows.join('\n')}`;
+}
+
 /** Parsed tool call from LLM output */
 export interface ParsedToolCall {
   name: string;
@@ -57,6 +101,10 @@ export const BUILT_IN_TOOLS: AgentTool[] = [
   {
     name: 'generate_code',
     description: 'Generate code for a specific task or description. Args: { "task": "what to implement", "language": "python|typescript|javascript|..." }',
+  },
+  {
+    name: 'compare_texts',
+    description: 'Compare two texts and return a structured diff summary — additions, removals, and key differences. Args: { "text_a": "...", "text_b": "...", "label_a": "Version A", "label_b": "Version B" }',
   },
 ];
 
@@ -163,12 +211,23 @@ export function parseToolCalls(text: string): { cleanText: string; toolCalls: Pa
 
 // ── Tool Execution ──────────────────────────────────────────────────────────
 
-/** Execute a single tool call and return the result */
+/** Execute a single tool call and return the result (records analytics) */
 export async function executeTool(
   call: ParsedToolCall,
   sharedContext?: Record<string, unknown>,
 ): Promise<ToolCallResult> {
+  const result = await _executeToolImpl(call, sharedContext);
+  recordToolCall(result);
+  return result;
+}
+
+async function _executeToolImpl(
+  call: ParsedToolCall,
+  sharedContext?: Record<string, unknown>,
+): Promise<ToolCallResult> {
   const start = Date.now();
+  // Helper: shorthand for returning inline results (kept for readability)
+  const rec = (r: ToolCallResult) => r;
   try {
     switch (call.name) {
       case 'web_search': {
@@ -281,20 +340,56 @@ export async function executeTool(
       case 'generate_code': {
         const task = String(call.args.task || '');
         const language = String(call.args.language || 'typescript');
-        if (!task) return { tool: call.name, args: call.args, result: 'Error: missing task argument', success: false, durationMs: Date.now() - start };
+        if (!task) return rec({ tool: call.name, args: call.args, result: 'Error: missing task argument', success: false, durationMs: Date.now() - start });
         // Instruct the LLM to generate code in its next iteration
-        return {
+        return rec({
           tool: call.name, args: call.args,
           result: `Code generation task ready. Language: ${language}. Task: ${task}\n\nPlease write the ${language} code for this task in your next response, using a fenced code block (\`\`\`${language}).`,
           success: true, durationMs: Date.now() - start,
-        };
+        });
+      }
+
+      case 'compare_texts': {
+        const textA = String(call.args.text_a || '');
+        const textB = String(call.args.text_b || '');
+        const labelA = String(call.args.label_a || 'Text A');
+        const labelB = String(call.args.label_b || 'Text B');
+        if (!textA || !textB) return rec({ tool: call.name, args: call.args, result: 'Error: both text_a and text_b are required', success: false, durationMs: Date.now() - start });
+
+        // Compute line-level diff summary
+        const linesA = textA.split('\n');
+        const linesB = textB.split('\n');
+        const setA = new Set(linesA.map(l => l.trim()).filter(Boolean));
+        const setB = new Set(linesB.map(l => l.trim()).filter(Boolean));
+
+        const onlyInA = [...setA].filter(l => !setB.has(l));
+        const onlyInB = [...setB].filter(l => !setA.has(l));
+        const common = [...setA].filter(l => setB.has(l));
+
+        const wordCountA = textA.split(/\s+/).filter(Boolean).length;
+        const wordCountB = textB.split(/\s+/).filter(Boolean).length;
+        const wordDelta = wordCountB - wordCountA;
+        const wordDeltaStr = wordDelta >= 0 ? `+${wordDelta}` : `${wordDelta}`;
+
+        const summary = [
+          `## Comparison: ${labelA} vs ${labelB}`,
+          `- **${labelA}**: ${linesA.length} lines, ${wordCountA} words`,
+          `- **${labelB}**: ${linesB.length} lines, ${wordCountB} words (${wordDeltaStr} words)`,
+          `- **Common lines**: ${common.length}`,
+          `- **Only in ${labelA}** (${onlyInA.length}): ${onlyInA.slice(0, 3).map(l => `"${l.slice(0, 60)}"`).join(', ')}${onlyInA.length > 3 ? ` … +${onlyInA.length - 3} more` : ''}`,
+          `- **Only in ${labelB}** (${onlyInB.length}): ${onlyInB.slice(0, 3).map(l => `"${l.slice(0, 60)}"`).join(', ')}${onlyInB.length > 3 ? ` … +${onlyInB.length - 3} more` : ''}`,
+          '',
+          'Please provide a narrative summary of the key differences in your next response.',
+        ].join('\n');
+
+        return rec({ tool: call.name, args: call.args, result: summary, success: true, durationMs: Date.now() - start });
       }
 
       default:
-        return { tool: call.name, args: call.args, result: `Unknown tool: ${call.name}`, success: false, durationMs: Date.now() - start };
+        return rec({ tool: call.name, args: call.args, result: `Unknown tool: ${call.name}`, success: false, durationMs: Date.now() - start });
     }
   } catch (err) {
-    return { tool: call.name, args: call.args, result: `Tool execution error: ${err instanceof Error ? err.message : 'unknown'}`, success: false, durationMs: Date.now() - start };
+    return rec({ tool: call.name, args: call.args, result: `Tool execution error: ${err instanceof Error ? err.message : 'unknown'}`, success: false, durationMs: Date.now() - start });
   }
 }
 
