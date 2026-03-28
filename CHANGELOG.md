@@ -1,5 +1,34 @@
 # Changelog
 
+### 2026-03-28 — Round 69: Tool Intelligence — compare_texts, Analytics, sharedContext Fix
+
+**Improvement 1 — New `compare_texts` Tool (agentTools.ts):**
+- Computes a structured diff between two texts: line counts, word delta, unique/common lines with previews
+- Prompts LLM to follow up with a narrative summary of key differences
+- Useful for review nodes comparing drafts, A/B test results, or version diffs
+- Args: `{ text_a, text_b, label_a, label_b }`
+
+**Improvement 2 — Tool Usage Analytics (agentTools.ts):**
+- Module-level `ToolAnalyticEntry` tracks `calls`, `successes`, `totalDurationMs` per tool name
+- New exports: `getToolAnalytics()` returns snapshot with `avgDurationMs` and `successRate %`
+- `formatToolAnalytics()` produces a markdown report for display in the UI
+- `executeTool()` now wraps `_executeToolImpl()` — analytics recorded transparently on every call
+
+**Improvement 3 — Critical Bug Fix: sharedContext Never Passed to Tools (useStore.ts):**
+- `executeTool()` was called without `sharedContext` in `executeNode`, so `store_context` always
+  reported "no workflow context available" and `read_context` always returned key-not-found
+- Fix: introduced `_sharedNodeContext: Record<string, unknown>` as persistent store state
+- `executeNode` now passes `get()._sharedNodeContext` to every `executeTool()` call
+- After each tool iteration, mutations are persisted back: `set({ _sharedNodeContext: { ...sharedCtx } })`
+- `executeWorkflow` resets `_sharedNodeContext` to `{}` at the start of each run for a clean slate
+- `store_context` / `read_context` tools now work correctly across nodes in a workflow
+
+**Files changed:** `src/lib/agentTools.ts`, `src/store/types.ts`, `src/store/useStore.ts`
+
+**Test Results:** Build passes. All 1277 tests pass (23 test files).
+
+---
+
 ### 2026-03-28 — Round 68: Routing Intelligence (Semantic Confidence + Agentic Routes)
 
 **Improvement 1 — Semantic Confidence Scoring (routing.ts):**
