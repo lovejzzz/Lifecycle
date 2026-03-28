@@ -454,6 +454,94 @@ describe('getExecutionSystemPrompt — context injection', () => {
     expect(result).toContain('step-by-step');
     expect(result).toContain('reasoning engine');
   });
+
+  it('includes chain-of-thought steps for action category', () => {
+    const result = getExecutionSystemPrompt('action', 'Deploy', '');
+    expect(result).toContain('step-by-step');
+    expect(result).toContain('task executor');
+  });
+
+  it('includes chain-of-thought steps for artifact category', () => {
+    const result = getExecutionSystemPrompt('artifact', 'PRD', '');
+    expect(result).toContain('step-by-step');
+    expect(result).toContain('document author');
+  });
+
+  it('includes chain-of-thought steps for state category', () => {
+    const result = getExecutionSystemPrompt('state', 'Build State', '');
+    expect(result).toContain('step-by-step');
+    expect(result).toContain('state tracker');
+    expect(result).toContain('STATUS:');
+  });
+
+  it('includes chain-of-thought steps for dependency category', () => {
+    const result = getExecutionSystemPrompt('dependency', 'Node Deps', '');
+    expect(result).toContain('step-by-step');
+    expect(result).toContain('dependency resolver');
+    expect(result).toContain('BLOCKERS:');
+  });
+
+  it('includes chain-of-thought steps for deliverable category', () => {
+    const result = getExecutionSystemPrompt('deliverable', 'Final Report', '');
+    expect(result).toContain('step-by-step');
+    expect(result).toContain('document author');
+  });
+});
+
+// ─── getExecutionSystemPrompt — downstream format hints ──────────────────────
+
+describe('getExecutionSystemPrompt — downstream format hints', () => {
+  it('includes OUTPUT CONTRACT when downstream categories provided', () => {
+    const result = getExecutionSystemPrompt('cid', 'Analyzer', '', ['review']);
+    expect(result).toContain('OUTPUT CONTRACT');
+    expect(result).toContain('review');
+  });
+
+  it('omits OUTPUT CONTRACT when no downstream categories', () => {
+    const result = getExecutionSystemPrompt('cid', 'Analyzer', '');
+    expect(result).not.toContain('OUTPUT CONTRACT');
+  });
+
+  it('omits OUTPUT CONTRACT when empty downstream categories array', () => {
+    const result = getExecutionSystemPrompt('cid', 'Analyzer', '', []);
+    expect(result).not.toContain('OUTPUT CONTRACT');
+  });
+
+  it('adds reviewability hint for review downstream', () => {
+    const result = getExecutionSystemPrompt('artifact', 'PRD', '', ['review']);
+    expect(result).toContain('reviewability');
+  });
+
+  it('adds testable criteria hint for test downstream', () => {
+    const result = getExecutionSystemPrompt('cid', 'Analyzer', '', ['test']);
+    expect(result).toContain('testable success criteria');
+  });
+
+  it('adds structured state hint for state downstream', () => {
+    const result = getExecutionSystemPrompt('action', 'Deploy', '', ['state']);
+    expect(result).toContain('structured state values');
+  });
+
+  it('adds executable steps hint for action downstream', () => {
+    const result = getExecutionSystemPrompt('cid', 'Planner', '', ['action']);
+    expect(result).toContain('executable steps');
+  });
+
+  it('adds document hint for artifact downstream', () => {
+    const result = getExecutionSystemPrompt('cid', 'Writer', '', ['artifact']);
+    expect(result).toContain('standalone content');
+  });
+
+  it('adds document hint for deliverable downstream', () => {
+    const result = getExecutionSystemPrompt('cid', 'Writer', '', ['deliverable']);
+    expect(result).toContain('standalone content');
+  });
+
+  it('combines hints for multiple downstream categories', () => {
+    const result = getExecutionSystemPrompt('cid', 'Analyzer', '', ['review', 'test']);
+    expect(result).toContain('reviewability');
+    expect(result).toContain('testable success criteria');
+  });
 });
 
 // ─── smartTruncate ───────────────────────────────────────────────────────

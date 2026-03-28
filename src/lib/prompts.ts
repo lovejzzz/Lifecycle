@@ -382,25 +382,59 @@ const CATEGORY_SYSTEM_PROMPTS: Record<string, string> = {
   test: 'You are a QA engineer. Think step-by-step: 1) Identify the criteria or requirements to validate from the input. 2) Evaluate each criterion against the provided content. 3) Document evidence for each finding. Generate structured test results using a table: | Criterion | Status | Evidence |. Statuses: PASS, FAIL, or SKIP. End with a summary verdict line: "VERDICT: PASS (N/N criteria met)" or "VERDICT: FAIL (N/N criteria met)".',
   policy: 'You are a policy engine. Think step-by-step: 1) Identify the risk, requirement, or domain this policy governs. 2) Derive enforceable rules that address it. 3) Define how each rule is monitored or enforced. Output numbered rules where each rule has: CONDITION (when it applies), ACTION (what must happen), and ENFORCEMENT (how it is checked). Rules must be precise and measurable — avoid vague language.',
   review: 'You are a content reviewer. Think step-by-step: 1) Clarify what is being reviewed and its intended purpose. 2) Evaluate each quality dimension (accuracy, completeness, clarity, risk). 3) Synthesize your findings. Produce a checklist: ✅ Approved / ⚠️ Concern / ❌ Blocked for each dimension reviewed. End with a verdict on its own line: APPROVE, REQUEST_CHANGES, or BLOCK — followed by a one-sentence justification.',
-  action: 'You are a task executor. Perform the requested action and report: what was done, what changed, and any side effects or errors. Be specific and concrete. Use numbered steps for multi-step actions.',
+  action: 'You are a task executor. Think step-by-step: 1) Understand precisely what action is required and what inputs are available. 2) Execute the action by describing each step with concrete commands, tools, or operations. 3) Report the outcome: what changed, what succeeded, and any errors or side effects. Be specific — use numbered steps for multi-step operations.',
   cid: 'You are an AI reasoning engine. Think step-by-step: 1) Understand exactly what is being asked. 2) Break down the problem into sub-problems if needed. 3) Work through each sub-problem systematically. 4) Synthesize a clear conclusion or deliverable. Cite your reasoning at key decision points. Produce a clear, actionable result.',
-  artifact: 'You are a document author. Produce a well-structured document with headers, sections, and professional formatting. Write real, substantive content — not placeholders. Every section must contain actionable detail.',
+  artifact: 'You are a document author. Think step-by-step: 1) Determine the document\'s purpose, audience, and required sections from the input. 2) Write each section with real, substantive content — no placeholders. 3) Ensure professional formatting with markdown headers and coherent structure. Every section must contain actionable, specific detail.',
   patch: 'You are a code patcher. Think step-by-step: 1) Identify the root cause of the issue. 2) Design the minimal correct fix. 3) Output exact changes. Use diff format or replacement code blocks with before/after context. Explain each change with a one-line comment.',
-  state: 'You are a state tracker. Report the current state as structured key-value pairs. Highlight what changed from the previous state and flag any anomalies or transitions that require attention.',
-  dependency: 'You are a dependency resolver. List resolved dependencies with name, version, status (resolved/missing/conflict), and any warnings. Group by status. Summarize any blockers.',
+  state: 'You are a state tracker. Think step-by-step: 1) Identify all relevant state variables from the input. 2) Report the current value of each as structured key-value pairs. 3) Highlight what changed from prior state and flag anomalies or required transitions. End with a STATUS: line indicating the overall system state.',
+  dependency: 'You are a dependency resolver. Think step-by-step: 1) Identify all dependencies referenced in the input. 2) Assess each dependency\'s status: resolved, missing, or conflicting. 3) List them grouped by status with name, version, and resolution notes. End with a BLOCKERS: section (or "BLOCKERS: none") summarizing anything preventing progress.',
   note: 'You are a research assistant. Think step-by-step: 1) Extract the key insights from the input. 2) Identify patterns or contradictions. 3) Organize findings into logical sections with clear headers. Prioritize actionable takeaways.',
   // Simplified categories
   process: 'You are a workflow executor. Think step-by-step: 1) Understand the transformation or process required. 2) Execute it systematically, noting each decision. 3) Report what was done, key decisions made, and outputs produced. Be thorough and structured.',
-  deliverable: 'You are a document author. Produce a well-structured, professional deliverable with headers, sections, and substantive content. Write real content — not placeholders. Use markdown formatting. Every section must have meaningful, actionable content.',
+  deliverable: 'You are a document author. Think step-by-step: 1) Determine the deliverable\'s purpose, audience, and required sections. 2) Write each section with professional, substantive content — no placeholders. 3) Format with clear markdown headers and coherent structure. Every section must have meaningful, actionable content targeted at the intended audience.',
 };
 
+/**
+ * Build an output format hint based on what downstream nodes will consume.
+ * Helps the LLM structure its output to be maximally useful to the next step.
+ */
+function buildDownstreamFormatHint(categories: string[]): string {
+  const hints: string[] = [];
+  if (categories.some(c => c === 'review')) {
+    hints.push('Structure your output for reviewability — use clear sections and include a brief summary of key decisions at the end.');
+  }
+  if (categories.some(c => c === 'test')) {
+    hints.push('Include explicit testable success criteria and expected outcomes that can be validated programmatically.');
+  }
+  if (categories.some(c => c === 'state')) {
+    hints.push('Include structured state values and transitions (key: value format) that can be tracked downstream.');
+  }
+  if (categories.some(c => c === 'action')) {
+    hints.push('Include specific, executable steps with concrete commands or operations that downstream actions can reference directly.');
+  }
+  if (categories.some(c => c === 'artifact' || c === 'deliverable')) {
+    hints.push('Produce comprehensive, standalone content with all sections complete — it will be delivered as a document.');
+  }
+  if (hints.length === 0) return '';
+  return `\n\nOUTPUT CONTRACT (downstream: ${categories.join(', ')}): ${hints.join(' ')}`;
+}
+
 /** Get a category-aware system prompt for node execution. */
-export function getExecutionSystemPrompt(category: string, label: string, upstreamContext: string): string {
+export function getExecutionSystemPrompt(
+  category: string,
+  label: string,
+  upstreamContext: string,
+  /** Optional: categories of downstream nodes — used to tailor output format */
+  downstreamCategories?: string[],
+): string {
   const categoryPrompt = CATEGORY_SYSTEM_PROMPTS[category] || 'You are a professional content generator. Write detailed, well-structured content.';
   const contextHint = upstreamContext.trim()
     ? '\n\nUpstream workflow data is provided in the user message under "Direct inputs" and "Background context". Use it as your primary source material — do not ignore it.'
     : '';
-  return `${categoryPrompt}\n\nYou are working on a workflow node called "${sanitizeForPrompt(label, 100)}" (category: ${category}).${contextHint} Return ONLY the content as markdown text. Do not wrap in JSON or code blocks.`;
+  const downstreamHint = downstreamCategories && downstreamCategories.length > 0
+    ? buildDownstreamFormatHint(downstreamCategories)
+    : '';
+  return `${categoryPrompt}\n\nYou are working on a workflow node called "${sanitizeForPrompt(label, 100)}" (category: ${category}).${contextHint}${downstreamHint} Return ONLY the content as markdown text. Do not wrap in JSON or code blocks.`;
 }
 
 /**

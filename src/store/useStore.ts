@@ -5,7 +5,7 @@ import type { Node, Edge, Connection } from '@xyflow/react';
 import type { NodeData, LifecycleEvent, CIDMessage, NodeCategory, CIDMode, AgentPersonalityLayers, HabitLayer, GenerationLayer, ReflectionLayer, DrivingForceLayer, CentralContext, ArtifactContract, SurgicalDiff, Override } from '@/lib/types';
 import { registerCustomCategory, EDGE_LABEL_COLORS, BUILT_IN_CATEGORIES } from '@/lib/types';
 import { getAgent, getInterviewQuestions, buildEnrichedPrompt, getAdaptiveInterview, shouldSkipRemainingQuestions } from '@/lib/agents';
-import { buildSystemPrompt, buildMessages, getExecutionSystemPrompt, inferEffortFromCategory, buildNoteRefinementPrompt } from '@/lib/prompts';
+import { buildSystemPrompt, buildMessages, getExecutionSystemPrompt, inferEffortFromCategory, buildNoteRefinementPrompt, smartTruncate } from '@/lib/prompts';
 import type { NoteRefinementResult } from '@/lib/prompts';
 import { classifyEdit } from '@/lib/edits';
 import { buildCacheKey, sha256, getCacheEntry, setCacheEntry, createEmptyUsageStats } from '@/lib/cache';
@@ -1159,7 +1159,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         const src = store.nodes.find(n => n.id === e.source);
         if (src && !grandparents.has(src.id)) {
           const result = src.data.executionResult || src.data.content || '';
-          grandparents.set(src.id, { label: src.data.label, result: result.slice(0, 200) + (result.length > 200 ? '...' : '') });
+          grandparents.set(src.id, { label: src.data.label, result: smartTruncate(result, 300) });
         }
       }
       const gpIds = new Set(grandparents.keys());
@@ -1236,7 +1236,10 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         const agentAbort = new AbortController();
         const agentTimeoutId = setTimeout(() => agentAbort.abort(), timeoutMs);
 
-        const systemPrompt = getExecutionSystemPrompt(d.category, d.label, inputContext) + toolPromptSuffix;
+        const downstreamCategories = outgoingEdges
+          .map(e => store.nodes.find(n => n.id === e.target)?.data.category)
+          .filter((c): c is string => Boolean(c));
+        const systemPrompt = getExecutionSystemPrompt(d.category, d.label, inputContext, downstreamCategories) + toolPromptSuffix;
         const effortLevel = d._effortLevel || inferEffortFromCategory(d.category);
         let messages: Array<{ role: 'user' | 'assistant'; content: string }> = [
           { role: 'user', content: `${autoPrompt}\n\n${inputContext}` },
