@@ -1,5 +1,35 @@
 # Changelog
 
+### 2026-03-28 — Round 70: Prompt Engineering — Chain-of-Thought Completion + Downstream Format Hints
+
+**Improvement 1 — Chain-of-Thought for All Execution Categories:**
+- Added structured 3-step "Think step-by-step" prompting to 5 previously missing categories: `action`, `artifact`, `state`, `dependency`, `deliverable`
+  - `action`: understand precisely → execute with concrete steps → report outcome
+  - `artifact`: determine purpose/sections → write real content → ensure coherent formatting
+  - `state`: identify variables → report key-value pairs → end with STATUS: line
+  - `dependency`: identify deps → assess status (resolved/missing/conflicting) → end with BLOCKERS: section
+  - `deliverable`: determine purpose/audience → write substantive content → format for intended audience
+- All 12 AI-executing categories now have structured chain-of-thought guidance (was 7/12)
+- `test`, `policy`, `review`, `cid`, `note`, `patch`, `process` already had it
+
+**Improvement 2 — Downstream-Aware Output Format Hints (OUTPUT CONTRACT):**
+- `getExecutionSystemPrompt` now accepts optional `downstreamCategories?: string[]`
+- Generates an `OUTPUT CONTRACT` clause in the system prompt when downstream nodes are present:
+  - `review` downstream → "Structure for reviewability, include key decision summary"
+  - `test` downstream → "Include testable success criteria and expected outcomes"
+  - `state` downstream → "Include structured state values in key: value format"
+  - `action` downstream → "Include specific executable steps with concrete commands"
+  - `artifact`/`deliverable` downstream → "Produce comprehensive standalone content"
+- `useStore.ts` computes `downstreamCategories` from outgoing edges and passes them through
+- Result: LLM output is proactively structured for what the next node in the workflow needs
+
+**Improvement 3 — Smart Ancestor Context Truncation:**
+- `collectAncestors` now uses `smartTruncate(result, 300)` instead of `.slice(0, 200) + '...'`
+- Breaks at paragraph/sentence boundaries for better context coherence
+- Slightly larger ancestor budget (300 chars vs 200) for more useful background context
+
+**Tests:** 26 new test cases across 3 describe blocks (`chain-of-thought for action/artifact/state/dependency/deliverable`, `downstream format hints` with 11 cases). 1292/1292 pass.
+
 ### 2026-03-28 — Round 69: Tool Intelligence — compare_texts, Analytics, sharedContext Fix
 
 **Improvement 1 — New `compare_texts` Tool (agentTools.ts):**
