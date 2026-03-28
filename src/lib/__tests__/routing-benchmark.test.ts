@@ -221,6 +221,18 @@ const BENCHMARK: BenchmarkCase[] = [
   { prompt: 'set everything as active', expected: 'activate-all', context: 'PM bulk reset' },
   { prompt: "what's the execution order?", expected: 'plan', context: 'professor checking run sequence', hasWorkflow: true },
   { prompt: 'tighten up the rubric criteria', expected: 'llm-fallback', context: 'professor editing rubric', hasWorkflow: true },
+
+  // ── Round 68: Agentic node/edge configuration routes ──
+  { prompt: 'add tool to Rubric', expected: 'add-tool', context: 'PM configuring node tools' },
+  { prompt: 'attach a web_search tool to the Research node', expected: 'add-tool', context: 'PM adding tool to node' },
+  { prompt: 'assign a tool to Quiz Bank', expected: 'add-tool', context: 'professor setting up agentic node' },
+  { prompt: 'show tools', expected: 'show-tools', context: 'PM listing available tools' },
+  { prompt: 'list tools', expected: 'show-tools', context: 'PM listing tools' },
+  { prompt: 'tools', expected: 'show-tools', context: 'PM quick tools check' },
+  { prompt: 'set condition on edge from Rubric to Review', expected: 'set-condition', context: 'PM configuring edge guard' },
+  { prompt: 'add condition for the Lesson Plan connection', expected: 'set-condition', context: 'professor adding guard' },
+  { prompt: 'configure retry for Lesson Plan', expected: 'configure-retry', context: 'PM configuring resilience' },
+  { prompt: 'set up retries on the Quiz Bank node', expected: 'configure-retry', context: 'professor configuring retry' },
 ];
 
 // ─── Benchmark Runner ───────────────────────────────────────────────────────
@@ -265,14 +277,33 @@ describe('CID Routing Benchmark', () => {
 // ─── Confidence Level Tests ──────────────────────────────────────────────────
 
 describe('Routing Confidence Levels', () => {
-  // Early patterns (slash commands, generate, extend, solve) should be high confidence
+  // Patterns with explicit 'high' confidence — exact commands, tight syntax
+  // These must NEVER trigger the low-confidence clarification prompt in CIDPanel.
   const highConfidenceCases: Array<{ prompt: string; route: CommandRoute; hasWorkflow?: boolean }> = [
+    // Slash commands
     { prompt: '/template course', route: 'template' },
+    // Core generation
     { prompt: 'build a lesson plan pipeline', route: 'generate' },
     { prompt: 'add a quiz bank after the lesson plan', route: 'extend', hasWorkflow: true },
     { prompt: 'solve', route: 'solve' },
     { prompt: 'status', route: 'status' },
     { prompt: 'propagate', route: 'propagate' },
+    // Exact single-word commands (these were previously 'low' by position — now fixed)
+    { prompt: 'undo', route: 'undo' },
+    { prompt: 'redo', route: 'redo' },
+    { prompt: 'count', route: 'count' },
+    { prompt: 'explain', route: 'explain' },
+    { prompt: 'help', route: 'help' },
+    { prompt: 'compress', route: 'compress' },
+    { prompt: 'bottlenecks', route: 'bottlenecks' },
+    // Structured commands with clear syntax
+    { prompt: 'merge Rubric and Grading Guide', route: 'merge' },
+    { prompt: 'retry failed', route: 'retry-failed' },
+    // New agentic routes
+    { prompt: 'add tool to Rubric', route: 'add-tool' },
+    { prompt: 'configure retry for Quiz Bank', route: 'configure-retry' },
+    { prompt: 'set condition on edge from Rubric to Review', route: 'set-condition' },
+    { prompt: 'show tools', route: 'show-tools' },
   ];
 
   for (const tc of highConfidenceCases) {
@@ -283,12 +314,13 @@ describe('Routing Confidence Levels', () => {
     });
   }
 
-  // Mid-range patterns should be medium confidence
-  const mediumConfidenceCases: Array<{ prompt: string; route: CommandRoute }> = [
-    { prompt: 'undo', route: 'undo' },
-    { prompt: 'count', route: 'count' },
-    { prompt: 'merge Rubric and Grading Guide', route: 'merge' },
+  // Patterns with 'medium' confidence — accept variable content, could need clarification
+  const mediumConfidenceCases: Array<{ prompt: string; route: CommandRoute; hasWorkflow?: boolean }> = [
     { prompt: 'deps Rubric', route: 'deps' },
+    { prompt: 'refresh the quiz bank', route: 'refresh-node' },
+    { prompt: 'run Lesson Plan', route: 'run-node' },
+    { prompt: 'search learning objectives', route: 'search' },
+    { prompt: 'show stale nodes', route: 'show-stale' },
   ];
 
   for (const tc of mediumConfidenceCases) {
@@ -299,8 +331,8 @@ describe('Routing Confidence Levels', () => {
     });
   }
 
-  // Late patterns and LLM fallback should be low confidence
-  const lowConfidenceCases: Array<{ prompt: string; route: CommandRoute }> = [
+  // LLM fallback is always low confidence
+  const lowConfidenceCases: Array<{ prompt: string; route: CommandRoute; hasWorkflow?: boolean }> = [
     { prompt: 'why is my rubric out of date', route: 'llm-fallback' },
     { prompt: 'how does the lifecycle loop work', route: 'llm-fallback' },
   ];

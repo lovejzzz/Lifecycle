@@ -1,12 +1,17 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
+import localFont from 'next/font/local';
 import Providers from '@/components/Providers';
 import './globals.css';
 
-const inter = Inter({
-  subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
+// Use LiberationSans (bundled with pdfjs-dist, metrically compatible with Inter/Arial)
+// Falls back gracefully to system-ui when files aren't present
+const inter = localFont({
+  src: [
+    { path: '../../node_modules/pdfjs-dist/standard_fonts/LiberationSans-Regular.ttf', weight: '400' },
+    { path: '../../node_modules/pdfjs-dist/standard_fonts/LiberationSans-Bold.ttf', weight: '700' },
+  ],
   display: 'swap',
+  fallback: ['system-ui', 'sans-serif'],
 });
 
 export const viewport: Viewport = {
