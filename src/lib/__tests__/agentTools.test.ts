@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { parseToolCalls, repairJson, executeTool } from '../agentTools';
+import { parseToolCalls, repairJson, executeTool, buildToolPrompt } from '../agentTools';
+import type { AgentTool } from '../types';
 
 // ── repairJson ───────────────────────────────────────────────────────────────
 
@@ -181,5 +182,45 @@ describe('executeTool — context tools', () => {
     const result = await executeTool({ name: 'read_context', args: { key: 'missing' } }, ctx);
     expect(result.success).toBe(true);
     expect(result.result).toContain('not found');
+  });
+});
+
+// ── buildToolPrompt ──────────────────────────────────────────────────────────
+
+describe('buildToolPrompt', () => {
+  const tools: AgentTool[] = [
+    { name: 'web_search', description: 'Search the web. Args: { "query": "..." }' },
+    { name: 'store_context', description: 'Store a value. Args: { "key": "name", "value": "data" }' },
+  ];
+
+  it('returns empty string for empty tool list', () => {
+    expect(buildToolPrompt([])).toBe('');
+  });
+
+  it('includes tool names and descriptions', () => {
+    const prompt = buildToolPrompt(tools);
+    expect(prompt).toContain('web_search');
+    expect(prompt).toContain('store_context');
+    expect(prompt).toContain('Search the web');
+  });
+
+  it('includes tool_call format instruction', () => {
+    const prompt = buildToolPrompt(tools);
+    expect(prompt).toContain('tool_call');
+    expect(prompt).toContain('"tool"');
+    expect(prompt).toContain('"args"');
+  });
+
+  it('includes a few-shot example with web_search and store_context', () => {
+    const prompt = buildToolPrompt(tools);
+    expect(prompt).toContain('Example');
+    expect(prompt).toContain('web_search');
+    expect(prompt).toContain('store_context');
+  });
+
+  it('includes the IMPORTANT usage guidance', () => {
+    const prompt = buildToolPrompt(tools);
+    expect(prompt).toContain('IMPORTANT');
+    expect(prompt).toContain('genuinely needed');
   });
 });

@@ -379,25 +379,68 @@ export function sanitizeForPrompt(text: string, maxLen: number = 200): string {
 // ─── Category-Aware Execution Prompts ──────────────────────────────────────
 
 const CATEGORY_SYSTEM_PROMPTS: Record<string, string> = {
-  test: 'You are a QA engineer. Generate structured test results with PASS/FAIL for each criterion. Use a table format: | Criterion | Status | Evidence |. End with a summary verdict.',
-  policy: 'You are a policy engine. Output numbered rules (1., 2., 3...) that are precise, enforceable, and measurable. Each rule must have a CONDITION and an ACTION.',
-  review: 'You are a content reviewer. Produce a checklist: ✅ Approved / ⚠️ Concern / ❌ Blocked for each review dimension. End with a verdict: APPROVE, REQUEST_CHANGES, or BLOCK.',
-  action: 'You are a task executor. Perform the requested action and report: what was done, what changed, and any side effects. Be specific and concrete.',
-  cid: 'You are an AI reasoning engine. Think through the problem step-by-step, cite your reasoning, and produce a clear conclusion or deliverable.',
-  artifact: 'You are a document author. Produce a well-structured document with headers, sections, and professional formatting. Write real, substantive content — not placeholders.',
-  patch: 'You are a code patcher. Output the exact changes in diff format or as replacement code blocks. Include before/after context and explain each change.',
-  state: 'You are a state tracker. Report the current state as structured key-value pairs. Highlight what changed from the previous state.',
-  dependency: 'You are a dependency resolver. List resolved dependencies with version, status, and any conflicts or warnings.',
-  note: 'You are a research assistant. Summarize and organize information clearly, extracting key insights and organizing them into logical sections.',
+  test: 'You are a QA engineer. Think step-by-step: 1) Identify the criteria or requirements to validate from the input. 2) Evaluate each criterion against the provided content. 3) Document evidence for each finding. Generate structured test results using a table: | Criterion | Status | Evidence |. Statuses: PASS, FAIL, or SKIP. End with a summary verdict line: "VERDICT: PASS (N/N criteria met)" or "VERDICT: FAIL (N/N criteria met)".',
+  policy: 'You are a policy engine. Think step-by-step: 1) Identify the risk, requirement, or domain this policy governs. 2) Derive enforceable rules that address it. 3) Define how each rule is monitored or enforced. Output numbered rules where each rule has: CONDITION (when it applies), ACTION (what must happen), and ENFORCEMENT (how it is checked). Rules must be precise and measurable — avoid vague language.',
+  review: 'You are a content reviewer. Think step-by-step: 1) Clarify what is being reviewed and its intended purpose. 2) Evaluate each quality dimension (accuracy, completeness, clarity, risk). 3) Synthesize your findings. Produce a checklist: ✅ Approved / ⚠️ Concern / ❌ Blocked for each dimension reviewed. End with a verdict on its own line: APPROVE, REQUEST_CHANGES, or BLOCK — followed by a one-sentence justification.',
+  action: 'You are a task executor. Perform the requested action and report: what was done, what changed, and any side effects or errors. Be specific and concrete. Use numbered steps for multi-step actions.',
+  cid: 'You are an AI reasoning engine. Think step-by-step: 1) Understand exactly what is being asked. 2) Break down the problem into sub-problems if needed. 3) Work through each sub-problem systematically. 4) Synthesize a clear conclusion or deliverable. Cite your reasoning at key decision points. Produce a clear, actionable result.',
+  artifact: 'You are a document author. Produce a well-structured document with headers, sections, and professional formatting. Write real, substantive content — not placeholders. Every section must contain actionable detail.',
+  patch: 'You are a code patcher. Think step-by-step: 1) Identify the root cause of the issue. 2) Design the minimal correct fix. 3) Output exact changes. Use diff format or replacement code blocks with before/after context. Explain each change with a one-line comment.',
+  state: 'You are a state tracker. Report the current state as structured key-value pairs. Highlight what changed from the previous state and flag any anomalies or transitions that require attention.',
+  dependency: 'You are a dependency resolver. List resolved dependencies with name, version, status (resolved/missing/conflict), and any warnings. Group by status. Summarize any blockers.',
+  note: 'You are a research assistant. Think step-by-step: 1) Extract the key insights from the input. 2) Identify patterns or contradictions. 3) Organize findings into logical sections with clear headers. Prioritize actionable takeaways.',
   // Simplified categories
-  process: 'You are a workflow executor. Process and transform the input systematically. Report what was done, key decisions made, and outputs produced. Be thorough and structured.',
-  deliverable: 'You are a document author. Produce a well-structured, professional deliverable with headers, sections, and substantive content. Write real content — not placeholders. Use markdown formatting.',
+  process: 'You are a workflow executor. Think step-by-step: 1) Understand the transformation or process required. 2) Execute it systematically, noting each decision. 3) Report what was done, key decisions made, and outputs produced. Be thorough and structured.',
+  deliverable: 'You are a document author. Produce a well-structured, professional deliverable with headers, sections, and substantive content. Write real content — not placeholders. Use markdown formatting. Every section must have meaningful, actionable content.',
 };
 
 /** Get a category-aware system prompt for node execution. */
 export function getExecutionSystemPrompt(category: string, label: string, upstreamContext: string): string {
   const categoryPrompt = CATEGORY_SYSTEM_PROMPTS[category] || 'You are a professional content generator. Write detailed, well-structured content.';
-  return `${categoryPrompt}\n\nYou are working on a workflow node called "${sanitizeForPrompt(label, 100)}" (category: ${category}). Return ONLY the content as markdown text. Do not wrap in JSON or code blocks.`;
+  const contextHint = upstreamContext.trim()
+    ? '\n\nUpstream workflow data is provided in the user message under "Direct inputs" and "Background context". Use it as your primary source material — do not ignore it.'
+    : '';
+  return `${categoryPrompt}\n\nYou are working on a workflow node called "${sanitizeForPrompt(label, 100)}" (category: ${category}).${contextHint} Return ONLY the content as markdown text. Do not wrap in JSON or code blocks.`;
+}
+
+/**
+ * Truncate text intelligently, preferring to break at paragraph or sentence
+ * boundaries rather than mid-word. Adds a truncation marker when content is cut.
+ *
+ * Boundary preference order: paragraph (double newline) → single newline → sentence end → hard cut.
+ */
+export function smartTruncate(text: string, maxChars: number): string {
+  if (text.length <= maxChars) return text;
+
+  const slice = text.slice(0, maxChars);
+  const targetMin = Math.floor(maxChars * 0.75);
+
+  // Prefer paragraph boundary (double newline)
+  const lastPara = slice.lastIndexOf('\n\n');
+  if (lastPara >= targetMin) {
+    return slice.slice(0, lastPara) + '\n\n… *(truncated)*';
+  }
+
+  // Fall back to single newline
+  const lastLine = slice.lastIndexOf('\n');
+  if (lastLine >= targetMin) {
+    return slice.slice(0, lastLine) + '\n… *(truncated)*';
+  }
+
+  // Fall back to sentence boundary (. ! ?) followed by whitespace
+  const sentenceRe = new RegExp(`^([\\s\\S]{${targetMin},}?[.!?])\\s`);
+  const sentenceMatch = slice.match(sentenceRe);
+  if (sentenceMatch) {
+    return sentenceMatch[1] + ' … *(truncated)*';
+  }
+
+  // Hard cut at word boundary
+  const lastSpace = slice.lastIndexOf(' ');
+  if (lastSpace >= targetMin) {
+    return slice.slice(0, lastSpace) + ' … *(truncated)*';
+  }
+
+  return slice + '… *(truncated)*';
 }
 
 /** Infer effort level from node category for adaptive thinking. */

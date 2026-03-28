@@ -1573,7 +1573,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
                 result = status === cond.value;
                 break;
               case 'decision-is':
-                result = (srcNode.data.decisionResult || '').toLowerCase() === cond.value.toLowerCase();
+                result = decisionMatchesCondition(srcNode.data.decisionResult || '', cond.value);
                 break;
             }
             return cond.negate ? !result : result;

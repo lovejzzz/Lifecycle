@@ -64,7 +64,18 @@ export const BUILT_IN_TOOLS: AgentTool[] = [
 export function buildToolPrompt(tools: AgentTool[]): string {
   if (tools.length === 0) return '';
   const toolDescs = tools.map(t => `- **${t.name}**: ${t.description}`).join('\n');
-  return `\n\n## Available Tools\nYou can call tools by including a JSON block in your response:\n\`\`\`tool_call\n{"tool": "tool_name", "args": {"key": "value"}}\n\`\`\`\n\nAvailable tools:\n${toolDescs}\n\nYou may call multiple tools. After each tool call block, continue your response. Tool results will be provided in a follow-up message if the node supports looping.\n\nIMPORTANT: Only use tools when genuinely needed. Most tasks can be completed with your own knowledge.`;
+  const example = `
+
+### Example — search for data, then store the finding:
+\`\`\`tool_call
+{"tool": "web_search", "args": {"query": "Node.js 22 release highlights"}}
+\`\`\`
+After the tool result arrives, store the key finding for downstream nodes:
+\`\`\`tool_call
+{"tool": "store_context", "args": {"key": "nodejs_release", "value": "Node.js 22 highlights: native test runner improvements, V8 12.4..."}}
+\`\`\`
+You can then continue your response using both the tool result and your own knowledge.`;
+  return `\n\n## Available Tools\nYou can call tools by including a JSON block in your response:\n\`\`\`tool_call\n{"tool": "tool_name", "args": {"key": "value"}}\n\`\`\`\n\nAvailable tools:\n${toolDescs}${example}\n\nYou may call multiple tools. After each tool call block, continue your response. Tool results will be provided in a follow-up message if the node supports looping.\n\nIMPORTANT: Only use tools when genuinely needed. Most tasks can be completed with your own knowledge.`;
 }
 
 // ── Tool Call Parsing ────────────────────────────────────────────────────────

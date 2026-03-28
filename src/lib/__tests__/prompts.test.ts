@@ -7,6 +7,7 @@ import {
   buildSystemPrompt,
   buildMessages,
   compilePersonalityPrompt,
+  smartTruncate,
 } from '../prompts';
 import { getAgent } from '../agents';
 import { createDefaultHabits, createDefaultGeneration, createDefaultReflection } from '../reflection';
@@ -406,5 +407,92 @@ describe('buildMessages', () => {
     }
     const result = buildMessages(history, 'next');
     expect(result[0].content).toContain('fixed issues');
+  });
+});
+
+// ─── getExecutionSystemPrompt — upstream context injection ───────────────
+
+describe('getExecutionSystemPrompt — context injection', () => {
+  it('includes context hint when upstreamContext is provided', () => {
+    const result = getExecutionSystemPrompt('cid', 'Analyzer', 'Some upstream data here');
+    expect(result).toContain('Upstream workflow data');
+    expect(result).toContain('Direct inputs');
+  });
+
+  it('omits context hint when upstreamContext is empty', () => {
+    const result = getExecutionSystemPrompt('cid', 'Analyzer', '');
+    expect(result).not.toContain('Direct inputs');
+    expect(result).not.toContain('upstream workflow data');
+  });
+
+  it('omits context hint when upstreamContext is whitespace only', () => {
+    const result = getExecutionSystemPrompt('test', 'Unit Tests', '   ');
+    expect(result).not.toContain('upstream workflow data');
+  });
+
+  it('includes chain-of-thought steps for test category', () => {
+    const result = getExecutionSystemPrompt('test', 'My Tests', '');
+    expect(result).toContain('step-by-step');
+    expect(result).toContain('VERDICT');
+  });
+
+  it('includes chain-of-thought steps for review category', () => {
+    const result = getExecutionSystemPrompt('review', 'Code Review', '');
+    expect(result).toContain('step-by-step');
+    expect(result).toContain('APPROVE');
+  });
+
+  it('includes chain-of-thought steps for policy category', () => {
+    const result = getExecutionSystemPrompt('policy', 'Security Policy', '');
+    expect(result).toContain('step-by-step');
+    expect(result).toContain('CONDITION');
+    expect(result).toContain('ENFORCEMENT');
+  });
+
+  it('includes chain-of-thought steps for cid category', () => {
+    const result = getExecutionSystemPrompt('cid', 'Analyzer', '');
+    expect(result).toContain('step-by-step');
+    expect(result).toContain('reasoning engine');
+  });
+});
+
+// ─── smartTruncate ───────────────────────────────────────────────────────
+
+describe('smartTruncate', () => {
+  it('returns text unchanged when within limit', () => {
+    const text = 'Short text';
+    expect(smartTruncate(text, 100)).toBe(text);
+  });
+
+  it('truncates at paragraph boundary when available', () => {
+    const para1 = 'First paragraph with enough content to be meaningful.';
+    const para2 = 'Second paragraph that should be cut off from the result.';
+    const text = para1 + '\n\n' + para2;
+    const result = smartTruncate(text, para1.length + 10);
+    expect(result).toContain(para1);
+    expect(result).not.toContain(para2);
+    expect(result).toContain('truncated');
+  });
+
+  it('truncates at line boundary when no paragraph boundary available', () => {
+    const line1 = 'First line that is fairly long and has content.';
+    const line2 = 'Second line that should be truncated away entirely.';
+    const text = line1 + '\n' + line2;
+    const result = smartTruncate(text, line1.length + 5);
+    expect(result).toContain(line1);
+    expect(result).toContain('truncated');
+    expect(result).not.toContain(line2);
+  });
+
+  it('adds truncation marker when hard-cutting', () => {
+    const longWord = 'x'.repeat(200);
+    const result = smartTruncate(longWord, 50);
+    expect(result).toContain('truncated');
+    expect(result.length).toBeLessThan(longWord.length);
+  });
+
+  it('returns exact text when length equals maxChars', () => {
+    const text = 'exactly fifty characters long plus some more here!';
+    expect(smartTruncate(text, text.length)).toBe(text);
   });
 });
