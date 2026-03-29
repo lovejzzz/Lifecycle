@@ -213,3 +213,41 @@ export function validateOutput(
 
   return warnings;
 }
+
+// ─── Refinement Prompt ───────────────────────────────────────────────────────
+
+/**
+ * Build a targeted refinement instruction from actionable validation warnings.
+ *
+ * Each warning code maps to a concrete instruction that tells the LLM exactly
+ * what to fix — rather than vague "improve your response" language.
+ *
+ * Only 'warning' severity issues (not 'info') should be passed here.
+ */
+export function buildRefinementPrompt(warnings: ValidationWarning[]): string {
+  const instructions = warnings.map(w => {
+    switch (w.code) {
+      case 'too-short':
+        return 'Your response is too brief. Expand it with more specific detail, concrete steps, real examples, and complete coverage of the topic.';
+      case 'placeholder':
+        return `Replace all placeholder text (${w.message.match(/"([^"]+)"/)?.[1] ?? 'e.g. [insert ...]'}) with real, specific, actionable content.`;
+      case 'low-relevance':
+        return 'Your response drifts from the task. Rewrite it to stay tightly focused on the specific topic and objectives described in the prompt.';
+      case 'missing-evaluation':
+        return 'Add explicit evaluation verdicts (PASS / FAIL / APPROVE / REJECT) with supporting evidence for each criterion you assessed.';
+      case 'missing-conditions':
+        return 'Frame each rule as a condition: IF <condition> THEN <action> (MUST / SHALL / REQUIRE). Include how each rule is enforced.';
+      case 'missing-code':
+        return 'Include actual code — show the exact before/after diff or complete replacement code blocks. Prose descriptions alone are not sufficient for a patch node.';
+      default:
+        return w.message;
+    }
+  });
+
+  return (
+    'Your previous response has quality issues that need to be fixed:\n\n' +
+    instructions.map(i => `- ${i}`).join('\n') +
+    '\n\nRewrite your response to fully address these issues. ' +
+    'Return ONLY the improved content — no preamble, no meta-commentary about what changed.'
+  );
+}

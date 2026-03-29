@@ -9,7 +9,7 @@ import { buildSystemPrompt, buildMessages, getExecutionSystemPrompt, inferEffort
 import type { NoteRefinementResult } from '@/lib/prompts';
 import { classifyEdit } from '@/lib/edits';
 import { buildCacheKey, sha256, getCacheEntry, setCacheEntry, createEmptyUsageStats } from '@/lib/cache';
-import { validateOutput, extractKeywords } from '@/lib/validate';
+import { validateOutput, extractKeywords, buildRefinementPrompt } from '@/lib/validate';
 import type { UsageStats } from '@/lib/cache';
 import {
   createDefaultHabits, createDefaultGeneration, createDefaultReflection,
@@ -1370,6 +1370,54 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
             { role: 'assistant' as const, content: rawOutput },
             { role: 'user' as const, content: `Tool results:\n\n${toolResultsText}\n\nContinue with your task using these results. If you need more tools, call them. Otherwise, provide your final output.` },
           ];
+        }
+
+        // ── Self-validation refinement: fix actionable quality issues ──
+        // After the main agent loop, run advisory validation on the raw output.
+        // If 'warning' severity issues are found (placeholder, too-short, low-relevance,
+        // missing structural elements), send ONE targeted refinement turn to the LLM.
+        // The refined output is only accepted if it has strictly fewer warnings than the original.
+        if (output.length > 0) {
+          const earlyWarnings = validateOutput(output, d.category, d.label, extractKeywords(autoPrompt));
+          const fixableWarnings = earlyWarnings.filter(w => w.severity === 'warning' && w.code !== 'empty-output');
+          if (fixableWarnings.length > 0) {
+            cidLog('executeNode:refining', { nodeId, label: d.label, warnings: fixableWarnings.map(w => w.code) });
+            try {
+              const refinementRes = await fetch('/api/cid', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  systemPrompt,
+                  model: store.cidAIModel,
+                  taskType: 'analyze',
+                  effortLevel: 'medium',
+                  messages: [
+                    messages[0], // original user message for context
+                    { role: 'assistant' as const, content: output },
+                    { role: 'user' as const, content: buildRefinementPrompt(fixableWarnings) },
+                  ],
+                }),
+                signal: AbortSignal.timeout(60_000),
+              });
+              if (refinementRes.ok) {
+                const refinementData = await refinementRes.json();
+                const refinedRaw = refinementData.result?.content || refinementData.result?.message || '';
+                if (refinedRaw && refinedRaw.length >= output.length * 0.5) {
+                  const { cleanText: refinedClean } = parseToolCalls(refinedRaw);
+                  const refined = refinedClean || refinedRaw;
+                  // Only accept the refinement if it genuinely improves quality
+                  const refinedWarnings = validateOutput(refined, d.category, d.label, extractKeywords(autoPrompt))
+                    .filter(w => w.severity === 'warning' && w.code !== 'empty-output');
+                  if (refinedWarnings.length < fixableWarnings.length) {
+                    cidLog('executeNode:refined', { nodeId, label: d.label, originalLen: output.length, refinedLen: refined.length, issuesFixed: fixableWarnings.length - refinedWarnings.length });
+                    output = refined;
+                  }
+                }
+              }
+            } catch {
+              // Silently keep original output if refinement fails
+            }
+          }
         }
       }
 

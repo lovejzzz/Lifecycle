@@ -6,7 +6,9 @@ import {
   extractKeywords,
   overlapScore,
   validateOutput,
+  buildRefinementPrompt,
 } from '../validate';
+import type { ValidationWarning } from '../validate';
 
 // ─── extractKeywords ─────────────────────────────────────────────────────────
 
@@ -156,5 +158,75 @@ describe('validateOutput', () => {
     const goodOutput = 'x'.repeat(250) + ' The analysis shows pass results with correct validation. Code review approved.';
     const w = validateOutput(goodOutput, 'review', 'QA', ['analysis', 'review', 'validation']);
     expect(w.filter(w => w.severity === 'warning')).toHaveLength(0);
+  });
+});
+
+// ─── buildRefinementPrompt ───────────────────────────────────────────────────
+
+describe('buildRefinementPrompt', () => {
+  it('returns a non-empty string for any warning', () => {
+    const w: ValidationWarning[] = [{ code: 'too-short', message: 'Output is short', severity: 'warning' }];
+    const prompt = buildRefinementPrompt(w);
+    expect(typeof prompt).toBe('string');
+    expect(prompt.length).toBeGreaterThan(20);
+  });
+
+  it('includes expansion instruction for too-short', () => {
+    const w: ValidationWarning[] = [{ code: 'too-short', message: 'Output is short', severity: 'warning' }];
+    const prompt = buildRefinementPrompt(w);
+    expect(prompt.toLowerCase()).toMatch(/expand|brief|detail/);
+  });
+
+  it('includes placeholder instruction with matched text', () => {
+    const w: ValidationWarning[] = [{ code: 'placeholder', message: 'Contains placeholder text: "[insert name]"', severity: 'warning' }];
+    const prompt = buildRefinementPrompt(w);
+    expect(prompt).toMatch(/\[insert name\]/);
+  });
+
+  it('includes relevance instruction for low-relevance', () => {
+    const w: ValidationWarning[] = [{ code: 'low-relevance', message: 'Low keyword overlap', severity: 'warning' }];
+    const prompt = buildRefinementPrompt(w);
+    expect(prompt.toLowerCase()).toMatch(/focus|drift|tightly/);
+  });
+
+  it('includes evaluation instruction for missing-evaluation', () => {
+    const w: ValidationWarning[] = [{ code: 'missing-evaluation', message: 'Lacks evaluation language', severity: 'warning' }];
+    const prompt = buildRefinementPrompt(w);
+    expect(prompt.toUpperCase()).toMatch(/PASS|FAIL|APPROVE|REJECT/);
+  });
+
+  it('includes condition instruction for missing-conditions', () => {
+    const w: ValidationWarning[] = [{ code: 'missing-conditions', message: 'Lacks conditional language', severity: 'warning' }];
+    const prompt = buildRefinementPrompt(w);
+    expect(prompt.toUpperCase()).toMatch(/IF|MUST|SHALL|REQUIRE/);
+  });
+
+  it('includes code instruction for missing-code', () => {
+    const w: ValidationWarning[] = [{ code: 'missing-code', message: 'Lacks code patterns', severity: 'warning' }];
+    const prompt = buildRefinementPrompt(w);
+    expect(prompt.toLowerCase()).toMatch(/code|diff|block/);
+  });
+
+  it('handles multiple warnings in one prompt', () => {
+    const warnings: ValidationWarning[] = [
+      { code: 'too-short', message: 'Output is short', severity: 'warning' },
+      { code: 'placeholder', message: 'Contains placeholder text: "[TODO]"', severity: 'warning' },
+    ];
+    const prompt = buildRefinementPrompt(warnings);
+    // Both issues should be reflected
+    expect(prompt.toLowerCase()).toMatch(/brief|expand/);
+    expect(prompt).toMatch(/\[TODO\]/);
+  });
+
+  it('ends with instruction to return only improved content', () => {
+    const w: ValidationWarning[] = [{ code: 'too-short', message: 'Output is short', severity: 'warning' }];
+    const prompt = buildRefinementPrompt(w);
+    expect(prompt.toLowerCase()).toMatch(/return only|no preamble|no meta/);
+  });
+
+  it('falls back to raw message for unknown warning codes', () => {
+    const w: ValidationWarning[] = [{ code: 'unknown-code', message: 'Some unknown issue', severity: 'warning' }];
+    const prompt = buildRefinementPrompt(w);
+    expect(prompt).toContain('Some unknown issue');
   });
 });
