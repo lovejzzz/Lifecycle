@@ -4,6 +4,7 @@ import type { Node, Edge } from '@xyflow/react';
 import type { AgentPersonality } from './agents';
 import { resolveDriverTensions, computeExpressionModifiers, generateSpontaneousDirectives } from './reflection';
 import { topoSort } from './graph';
+import { extractKeywords } from './validate';
 
 // ─── System Prompt Builders ─────────────────────────────────────────────────
 // 5-Layer Architecture: Temperament → Driving Force → Habit → Generation → Reflection
@@ -475,6 +476,80 @@ export function smartTruncate(text: string, maxChars: number): string {
   }
 
   return slice + '… *(truncated)*';
+}
+
+// ─── Relevance-Weighted Context Building ─────────────────────────────────────
+
+/** A single upstream context piece for relevance-weighted assembly */
+export interface ContextInput {
+  label: string;
+  relationship: string;
+  content: string;
+}
+
+/**
+ * Build a context block from multiple upstream inputs, allocating a total
+ * character budget proportionally to each input's keyword relevance to the
+ * current node's task prompt.
+ *
+ * **Why this matters**: In deep or fan-in workflows, a node can receive large
+ * outputs from many upstream parents. Naively concatenating all of them creates
+ * bloated prompts full of low-signal content. This function:
+ *   1. Scores each input by keyword overlap with the task prompt (0–1 scale).
+ *   2. Allocates `totalBudget` chars proportionally — high-relevance sources
+ *      get more room; low-relevance ones are trimmed more aggressively.
+ *   3. Guarantees a minimum per-source allocation so no upstream is silenced.
+ *
+ * Single-input case: no scoring needed — full budget goes to the one source.
+ *
+ * @param inputs       Upstream context pieces (label, relationship, content)
+ * @param taskPrompt   The current node's task description (used for scoring)
+ * @param totalBudget  Max total chars across all inputs (default: 8000)
+ */
+export function buildRelevanceWeightedContext(
+  inputs: ContextInput[],
+  taskPrompt: string,
+  totalBudget = 8000,
+): string {
+  if (inputs.length === 0) return '';
+
+  // Single input: skip scoring overhead, apply full budget directly
+  if (inputs.length === 1) {
+    const { label, relationship, content } = inputs[0];
+    return `## From "${label}" (${relationship})\n${smartTruncate(content, totalBudget)}`;
+  }
+
+  // Score each input by keyword overlap with the task prompt
+  const taskKws = new Set(extractKeywords(taskPrompt));
+
+  const scores = inputs.map(inp => {
+    if (!inp.content || taskKws.size === 0) return 0.5; // neutral when no task signal
+    const inputKws = extractKeywords(inp.content);
+    const overlap = inputKws.filter(w => taskKws.has(w)).length;
+    // Normalize: what fraction of task keywords appear in this input?
+    return overlap / taskKws.size;
+  });
+
+  // Guarantee a minimum score so no source is completely starved
+  const MIN_SCORE = 0.1;
+  const adjusted = scores.map(s => Math.max(s, MIN_SCORE));
+  const totalScore = adjusted.reduce((a, b) => a + b, 0);
+
+  // Reserve a minimum allocation per input, distribute remainder by relevance
+  const MIN_ALLOC = 200;
+  const reserved = inputs.length * MIN_ALLOC;
+  const distributable = Math.max(0, totalBudget - reserved);
+
+  const allocations = adjusted.map(s =>
+    MIN_ALLOC + Math.floor((s / totalScore) * distributable),
+  );
+
+  return inputs
+    .map(({ label, relationship, content }, i) => {
+      const truncated = smartTruncate(content, allocations[i]);
+      return `## From "${label}" (${relationship})\n${truncated}`;
+    })
+    .join('\n\n---\n\n');
 }
 
 /** Infer effort level from node category for adaptive thinking. */

@@ -5,7 +5,7 @@ import type { Node, Edge, Connection } from '@xyflow/react';
 import type { NodeData, LifecycleEvent, CIDMessage, NodeCategory, CIDMode, AgentPersonalityLayers, HabitLayer, GenerationLayer, ReflectionLayer, DrivingForceLayer, CentralContext, ArtifactContract, SurgicalDiff, Override } from '@/lib/types';
 import { registerCustomCategory, EDGE_LABEL_COLORS, BUILT_IN_CATEGORIES } from '@/lib/types';
 import { getAgent, getInterviewQuestions, buildEnrichedPrompt, getAdaptiveInterview, shouldSkipRemainingQuestions } from '@/lib/agents';
-import { buildSystemPrompt, buildMessages, getExecutionSystemPrompt, inferEffortFromCategory, buildNoteRefinementPrompt, smartTruncate, buildWorkflowExecutionSummary } from '@/lib/prompts';
+import { buildSystemPrompt, buildMessages, getExecutionSystemPrompt, inferEffortFromCategory, buildNoteRefinementPrompt, smartTruncate, buildWorkflowExecutionSummary, buildRelevanceWeightedContext } from '@/lib/prompts';
 import type { NoteRefinementResult } from '@/lib/prompts';
 import { classifyEdit } from '@/lib/edits';
 import { buildCacheKey, sha256, getCacheEntry, setCacheEntry, createEmptyUsageStats } from '@/lib/cache';
@@ -1166,12 +1166,20 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       return [...grandparents.values(), ...collectAncestors(gpIds, depth - 1)];
     };
 
-    const directContext = incomingEdges.map(e => {
-      const src = store.nodes.find(n => n.id === e.source);
-      const edgeLabel = (typeof e.label === 'string' ? e.label : e.data?.label as string) || 'connects';
-      const srcResult = src?.data.executionResult || src?.data.content || '';
-      return srcResult ? `## From "${src?.data.label}" (${edgeLabel})\n${srcResult}` : '';
-    }).filter(Boolean).join('\n\n---\n\n');
+    // Build relevance-weighted direct context: scores each upstream input against the
+    // node's own task prompt so high-signal sources get more of the char budget.
+    const directContextInputs = incomingEdges
+      .map(e => {
+        const src = store.nodes.find(n => n.id === e.source);
+        const edgeLabel = (typeof e.label === 'string' ? e.label : e.data?.label as string) || 'connects';
+        const srcResult = src?.data.executionResult || src?.data.content || '';
+        return srcResult
+          ? { label: src?.data.label || 'Unknown', relationship: edgeLabel, content: srcResult }
+          : null;
+      })
+      .filter((x): x is { label: string; relationship: string; content: string } => x !== null);
+
+    const directContext = buildRelevanceWeightedContext(directContextInputs, autoPrompt || d.label);
 
     const ancestors = collectAncestors(directParentIds, 2);
     const ancestorSummary = ancestors.length > 0

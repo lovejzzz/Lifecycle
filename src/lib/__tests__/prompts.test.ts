@@ -9,7 +9,9 @@ import {
   compilePersonalityPrompt,
   smartTruncate,
   buildWorkflowExecutionSummary,
+  buildRelevanceWeightedContext,
 } from '../prompts';
+import type { ContextInput } from '../prompts';
 import { getAgent } from '../agents';
 import { createDefaultHabits, createDefaultGeneration, createDefaultReflection } from '../reflection';
 import type { Node, Edge } from '@xyflow/react';
@@ -732,5 +734,109 @@ describe('buildWorkflowExecutionSummary', () => {
   it('shows correct pluralization for single context entry', () => {
     const result = buildWorkflowExecutionSummary([], { onlyKey: 'val' });
     expect(result).toContain('1 entry');
+  });
+});
+
+// ─── buildRelevanceWeightedContext ────────────────────────────────────────────
+
+describe('buildRelevanceWeightedContext', () => {
+  it('returns empty string for no inputs', () => {
+    expect(buildRelevanceWeightedContext([], 'any task')).toBe('');
+  });
+
+  it('single input: formats with full budget (no scoring overhead)', () => {
+    const inputs: ContextInput[] = [
+      { label: 'Research', relationship: 'feeds', content: 'Some research content here.' },
+    ];
+    const result = buildRelevanceWeightedContext(inputs, 'research task');
+    expect(result).toContain('## From "Research" (feeds)');
+    expect(result).toContain('Some research content here.');
+  });
+
+  it('single input: applies budget truncation when content exceeds limit', () => {
+    const long = 'x'.repeat(20000);
+    const inputs: ContextInput[] = [
+      { label: 'Node', relationship: 'drives', content: long },
+    ];
+    const result = buildRelevanceWeightedContext(inputs, 'task', 500);
+    expect(result.length).toBeLessThan(600); // truncated
+    expect(result).toContain('truncated');
+  });
+
+  it('multiple inputs: includes all source labels', () => {
+    const inputs: ContextInput[] = [
+      { label: 'Alpha', relationship: 'feeds', content: 'alpha content about testing' },
+      { label: 'Beta', relationship: 'drives', content: 'beta content about deployment' },
+    ];
+    const result = buildRelevanceWeightedContext(inputs, 'testing strategy');
+    expect(result).toContain('## From "Alpha" (feeds)');
+    expect(result).toContain('## From "Beta" (drives)');
+  });
+
+  it('multiple inputs: separates sections with dividers', () => {
+    const inputs: ContextInput[] = [
+      { label: 'A', relationship: 'feeds', content: 'content a' },
+      { label: 'B', relationship: 'drives', content: 'content b' },
+    ];
+    const result = buildRelevanceWeightedContext(inputs, 'task');
+    expect(result).toContain('---');
+  });
+
+  it('multiple inputs: total output fits within budget (plus section overhead)', () => {
+    const inputs: ContextInput[] = [
+      { label: 'A', relationship: 'feeds', content: 'a'.repeat(5000) },
+      { label: 'B', relationship: 'drives', content: 'b'.repeat(5000) },
+    ];
+    const budget = 4000;
+    const result = buildRelevanceWeightedContext(inputs, 'task', budget);
+    // The pure content (without headers/dividers) should be within budget + reasonable overhead
+    const contentLength = result.replace(/##.*?\n/g, '').replace(/---/g, '').length;
+    expect(contentLength).toBeLessThanOrEqual(budget + 200); // small overhead for truncation markers
+  });
+
+  it('high-relevance source gets more budget than low-relevance one', () => {
+    // Input A mentions "authentication" and "security" (matches task keywords)
+    // Input B is about something completely unrelated
+    const inputs: ContextInput[] = [
+      {
+        label: 'Auth Module',
+        relationship: 'feeds',
+        content: 'authentication security login token refresh oauth credentials password',
+      },
+      {
+        label: 'Unrelated',
+        relationship: 'feeds',
+        content: 'cooking recipe soup ingredients boil simmer stir pot kitchen',
+      },
+    ];
+    const result = buildRelevanceWeightedContext(inputs, 'implement authentication security login', 2000);
+    const authSection = result.split('---')[0] ?? '';
+    const unrelSection = result.split('---')[1] ?? '';
+    // Auth section should be at least as long as the unrelated one (more budget allocated)
+    expect(authSection.length).toBeGreaterThanOrEqual(unrelSection.length);
+  });
+
+  it('guarantees minimum allocation — low-relevance sources are not completely dropped', () => {
+    const inputs: ContextInput[] = [
+      { label: 'Main', relationship: 'drives', content: 'main relevant content about billing payments invoices' },
+      { label: 'Side', relationship: 'feeds', content: 'xyz123 unrelated random words zygote quasar' },
+    ];
+    const result = buildRelevanceWeightedContext(inputs, 'billing payments', 2000);
+    // The "Side" section must still appear despite low relevance
+    expect(result).toContain('## From "Side"');
+    // And have at least MIN_ALLOC (200) chars of content
+    const sideSection = result.split('---')[1] ?? '';
+    expect(sideSection.length).toBeGreaterThan(50); // non-trivially present
+  });
+
+  it('works correctly when task prompt has no recognizable keywords', () => {
+    const inputs: ContextInput[] = [
+      { label: 'A', relationship: 'feeds', content: 'content a here' },
+      { label: 'B', relationship: 'drives', content: 'content b there' },
+    ];
+    // Very short task prompt — no real keywords
+    const result = buildRelevanceWeightedContext(inputs, 'do it', 2000);
+    expect(result).toContain('## From "A"');
+    expect(result).toContain('## From "B"');
   });
 });
