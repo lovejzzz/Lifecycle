@@ -1,5 +1,28 @@
 # Changelog
 
+### 2026-03-29 — Round 72: Agent Execution — Self-Validation Refinement Loop
+
+**Improvement — Self-Validation Refinement Loop in executeNode (Area 3: Agent Execution):**
+
+After the main agent tool loop produces output, `executeNode` now runs an automatic quality check. If `validateOutput()` finds actionable `warning`-severity issues, it sends ONE targeted refinement turn to the LLM using `buildRefinementPrompt()` — a new function in `validate.ts` that translates each warning code into a precise, concrete instruction:
+
+- `too-short` → "Expand with more specific detail, concrete steps, real examples…"
+- `placeholder` → "Replace all placeholder text ([insert …]) with real, specific content"
+- `low-relevance` → "Rewrite to stay tightly focused on the topic and objectives"
+- `missing-evaluation` → "Add PASS / FAIL / APPROVE / REJECT verdicts with evidence"
+- `missing-conditions` → "Frame each rule as IF <condition> THEN <action> with enforcement"
+- `missing-code` → "Include actual code — show the before/after diff or replacement blocks"
+
+**Safety guardrail:** The refined output is only accepted if it has **strictly fewer warnings** than the original — preventing regressions where the LLM produces a different kind of bad output. The original is kept on any failure.
+
+**Zero overhead on good outputs:** Nodes that produce quality output on the first try (no `warning` severity issues) skip the refinement step entirely — no extra latency.
+
+**Files changed:** `validate.ts` (new `buildRefinementPrompt`), `useStore.ts` (import + refinement block inside `executeNode`), `validate.test.ts` (+10 tests for `buildRefinementPrompt`)
+
+**Test Results:** Build passes. 1313/1313 tests pass.
+
+---
+
 ### 2026-03-29 — Round 71: Agent Personality — Tool Preferences & Style Per Agent
 
 **Improvement — Agent-Specific Tool Preferences (Area 6: Agent Personality & Memory):**
