@@ -1,5 +1,22 @@
 # Changelog
 
+### 2026-03-29 — Round 71: Agent Personality — Tool Preferences & Style Per Agent
+
+**Improvement — Agent-Specific Tool Preferences (Area 6: Agent Personality & Memory):**
+- Added `AGENT_TOOL_PREFERENCES` in `agentTools.ts` — ordered lists defining each agent's go-to tools:
+  - **Rowan** (speed-first): `web_search → http_request → generate_code → store_context → validate_json …`
+  - **Poirot** (thoroughness-first): `read_context → extract_json → compare_texts → validate_json → summarize_text …`
+- Added `AGENT_TOOL_STYLE` personality hints per agent injected into the `## Available Tools` block:
+  - Rowan: "Use tools decisively and minimally — only when they deliver information faster than your existing knowledge."
+  - Poirot: "Use tools methodically and thoroughly. Begin with `read_context` before fetching anything new."
+- Added `getPreferredTools(agentName, tools)` — reorders available tools by agent preference, appending unlisted tools at end; case-insensitive.
+- Updated `buildToolPrompt(tools, agentName?)` to accept optional agent name and inject ordered tools + style hint.
+- Wired `store.cidMode` into the `buildToolPrompt` call in `executeNode` so the active agent's preferences shape every agentic node execution.
+
+**Effect**: When Rowan executes an agentic node it sees search/HTTP tools first and is primed to act fast; when Poirot executes the same node it sees analytical tools first and is primed to investigate thoroughly. The personality difference now extends from chat responses all the way into workflow execution.
+
+**Test Results:** Build passes. 40/40 agentTools tests pass (16 new). 1301/1303 total (2 pre-existing LLM soft fails in simulation-e2e).
+
 ### 2026-03-28 — Round 70: Prompt Engineering — Chain-of-Thought Completion + Downstream Format Hints
 
 **Improvement 1 — Chain-of-Thought for All Execution Categories:**
