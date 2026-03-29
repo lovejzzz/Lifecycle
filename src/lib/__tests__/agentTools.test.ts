@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseToolCalls, repairJson, executeTool, buildToolPrompt } from '../agentTools';
+import { parseToolCalls, repairJson, executeTool, buildToolPrompt, getPreferredTools } from '../agentTools';
 import type { AgentTool } from '../types';
 
 // ── repairJson ───────────────────────────────────────────────────────────────
@@ -222,5 +222,86 @@ describe('buildToolPrompt', () => {
     const prompt = buildToolPrompt(tools);
     expect(prompt).toContain('IMPORTANT');
     expect(prompt).toContain('genuinely needed');
+  });
+
+  it('injects rowan style hint when agentName is rowan', () => {
+    const prompt = buildToolPrompt(tools, 'rowan');
+    expect(prompt).toContain('decisively');
+  });
+
+  it('injects poirot style hint when agentName is poirot', () => {
+    const prompt = buildToolPrompt(tools, 'poirot');
+    expect(prompt).toContain('methodically');
+  });
+
+  it('produces no style hint for unknown agent names', () => {
+    const prompt = buildToolPrompt(tools, 'unknown_agent');
+    // Should still include tools but no custom style
+    expect(prompt).toContain('web_search');
+    expect(prompt).not.toContain('decisively');
+    expect(prompt).not.toContain('methodically');
+  });
+});
+
+// ── getPreferredTools ────────────────────────────────────────────────────────
+
+describe('getPreferredTools', () => {
+  const allTools: AgentTool[] = [
+    { name: 'compare_texts', description: 'Compare two texts.' },
+    { name: 'web_search', description: 'Search the web.' },
+    { name: 'store_context', description: 'Store a value.' },
+    { name: 'generate_code', description: 'Generate code.' },
+    { name: 'read_context', description: 'Read a value.' },
+  ];
+
+  it('returns all tools unchanged for unknown agent', () => {
+    const result = getPreferredTools('unknown', allTools);
+    expect(result.map(t => t.name)).toEqual(allTools.map(t => t.name));
+  });
+
+  it('rowan puts web_search first', () => {
+    const result = getPreferredTools('rowan', allTools);
+    expect(result[0].name).toBe('web_search');
+  });
+
+  it('rowan puts generate_code before compare_texts', () => {
+    const result = getPreferredTools('rowan', allTools);
+    const genIdx = result.findIndex(t => t.name === 'generate_code');
+    const cmpIdx = result.findIndex(t => t.name === 'compare_texts');
+    expect(genIdx).toBeLessThan(cmpIdx);
+  });
+
+  it('poirot puts read_context first', () => {
+    const result = getPreferredTools('poirot', allTools);
+    expect(result[0].name).toBe('read_context');
+  });
+
+  it('poirot puts compare_texts before web_search', () => {
+    const result = getPreferredTools('poirot', allTools);
+    const cmpIdx = result.findIndex(t => t.name === 'compare_texts');
+    const searchIdx = result.findIndex(t => t.name === 'web_search');
+    expect(cmpIdx).toBeLessThan(searchIdx);
+  });
+
+  it('preserves all tools (no tools lost)', () => {
+    const rowan = getPreferredTools('rowan', allTools);
+    const poirot = getPreferredTools('poirot', allTools);
+    expect(rowan).toHaveLength(allTools.length);
+    expect(poirot).toHaveLength(allTools.length);
+  });
+
+  it('is case-insensitive for agent name', () => {
+    const lower = getPreferredTools('rowan', allTools).map(t => t.name);
+    const upper = getPreferredTools('Rowan', allTools).map(t => t.name);
+    expect(lower).toEqual(upper);
+  });
+
+  it('appends tools not in preference list at the end', () => {
+    const withExtra: AgentTool[] = [
+      ...allTools,
+      { name: 'custom_tool', description: 'A custom tool.' },
+    ];
+    const result = getPreferredTools('rowan', withExtra);
+    expect(result[result.length - 1].name).toBe('custom_tool');
   });
 });

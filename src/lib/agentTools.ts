@@ -108,10 +108,92 @@ export const BUILT_IN_TOOLS: AgentTool[] = [
   },
 ];
 
+// ── Agent-Specific Tool Preferences ─────────────────────────────────────────
+
+/**
+ * Ordered tool preference lists per agent.
+ * Tools at the front of the list are shown first and treated as the agent's
+ * "go-to" instruments. Tools not in the list are appended in their original order.
+ */
+const AGENT_TOOL_PREFERENCES: Record<string, string[]> = {
+  rowan: [
+    // Speed-first: direct retrieval → code generation → persistence → validation
+    'web_search',     // fast external intel
+    'http_request',   // direct API calls
+    'generate_code',  // produce actionable artifacts
+    'store_context',  // persist mission-critical data for downstream
+    'validate_json',  // quick structural check
+    'read_context',   // retrieve cached context
+    'extract_json',   // structured extraction
+    'summarize_text', // compress bulky input
+    'compare_texts',  // diff (lower priority — thorough work)
+  ],
+  poirot: [
+    // Thoroughness-first: examine existing evidence → extract → verify → synthesize
+    'read_context',   // examine what is already known
+    'extract_json',   // extract structured clues from raw data
+    'compare_texts',  // compare versions, spot discrepancies
+    'validate_json',  // verify data integrity rigorously
+    'summarize_text', // synthesize findings concisely
+    'web_search',     // research external evidence when needed
+    'store_context',  // document deductions for downstream nodes
+    'http_request',   // fetch external data as supporting evidence
+    'generate_code',  // generate only as a last step
+  ],
+};
+
+/**
+ * Personality-appropriate tool usage guidance injected after the tool list.
+ * Shapes HOW the agent decides to use tools, not just WHICH ones exist.
+ */
+const AGENT_TOOL_STYLE: Record<string, string> = {
+  rowan:
+    'Use tools decisively and minimally — only when they deliver information faster than your existing knowledge. ' +
+    'Prefer `store_context` to preserve mission-critical intel for downstream nodes. ' +
+    'One tool call per objective. Report the result and move on.',
+  poirot:
+    'Use tools methodically and thoroughly. Begin with `read_context` to examine what is already known before fetching anything new. ' +
+    'Use `compare_texts` and `extract_json` to ensure no clue is missed. ' +
+    'Document every key deduction with `store_context` so downstream nodes inherit your findings. ' +
+    'Quality of reasoning matters more than speed.',
+};
+
+/**
+ * Return the tool list reordered by agent preference.
+ * Tools not in the preference list are appended in their original order.
+ *
+ * @param agentName  'rowan' | 'poirot' (case-insensitive)
+ * @param tools      The available tools to reorder
+ */
+export function getPreferredTools(agentName: string, tools: AgentTool[]): AgentTool[] {
+  const prefs = AGENT_TOOL_PREFERENCES[agentName.toLowerCase()];
+  if (!prefs || prefs.length === 0) return tools;
+
+  const toolMap = new Map(tools.map(t => [t.name, t]));
+  const ordered: AgentTool[] = [];
+
+  // First: add tools in preference order (skip ones not in the available set)
+  for (const name of prefs) {
+    const t = toolMap.get(name);
+    if (t) { ordered.push(t); toolMap.delete(name); }
+  }
+  // Then: append any remaining tools not covered by the preference list
+  for (const t of toolMap.values()) ordered.push(t);
+
+  return ordered;
+}
+
 /** Get the tool description block to inject into system prompts */
-export function buildToolPrompt(tools: AgentTool[]): string {
+export function buildToolPrompt(tools: AgentTool[], agentName?: string): string {
   if (tools.length === 0) return '';
-  const toolDescs = tools.map(t => `- **${t.name}**: ${t.description}`).join('\n');
+
+  const orderedTools = agentName ? getPreferredTools(agentName, tools) : tools;
+  const toolDescs = orderedTools.map(t => `- **${t.name}**: ${t.description}`).join('\n');
+
+  const styleHint = agentName && AGENT_TOOL_STYLE[agentName.toLowerCase()]
+    ? `\n\n**Your tool usage style**: ${AGENT_TOOL_STYLE[agentName.toLowerCase()]}`
+    : '';
+
   const example = `
 
 ### Example — search for data, then store the finding:
@@ -123,7 +205,8 @@ After the tool result arrives, store the key finding for downstream nodes:
 {"tool": "store_context", "args": {"key": "nodejs_release", "value": "Node.js 22 highlights: native test runner improvements, V8 12.4..."}}
 \`\`\`
 You can then continue your response using both the tool result and your own knowledge.`;
-  return `\n\n## Available Tools\nYou can call tools by including a JSON block in your response:\n\`\`\`tool_call\n{"tool": "tool_name", "args": {"key": "value"}}\n\`\`\`\n\nAvailable tools:\n${toolDescs}${example}\n\nYou may call multiple tools. After each tool call block, continue your response. Tool results will be provided in a follow-up message if the node supports looping.\n\nIMPORTANT: Only use tools when genuinely needed. Most tasks can be completed with your own knowledge.`;
+
+  return `\n\n## Available Tools\nYou can call tools by including a JSON block in your response:\n\`\`\`tool_call\n{"tool": "tool_name", "args": {"key": "value"}}\n\`\`\`\n\nAvailable tools:\n${toolDescs}${styleHint}${example}\n\nYou may call multiple tools. After each tool call block, continue your response. Tool results will be provided in a follow-up message if the node supports looping.\n\nIMPORTANT: Only use tools when genuinely needed. Most tasks can be completed with your own knowledge.`;
 }
 
 // ── Tool Call Parsing ────────────────────────────────────────────────────────

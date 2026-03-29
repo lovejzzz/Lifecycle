@@ -1226,7 +1226,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         const { buildToolPrompt, parseToolCalls, executeTool, formatToolResults } = await import('@/lib/agentTools');
         const agentConfig = d.agentConfig;
         const tools = agentConfig?.tools || [];
-        const toolPromptSuffix = buildToolPrompt(tools);
+        const toolPromptSuffix = buildToolPrompt(tools, store.cidMode);
         const maxIterations = (agentConfig?.enableLooping && agentConfig?.maxLoopIterations) || (tools.length > 0 ? 3 : 1);
         const maxRetries = agentConfig?.maxRetries || 0;
         const timeoutMs = agentConfig?.timeoutMs || 120_000;
