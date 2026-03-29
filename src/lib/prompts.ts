@@ -879,3 +879,68 @@ Please analyze this document and suggest a workflow that turns it into a living 
 
   return { systemPrompt, userMessage };
 }
+
+// ─── Workflow Execution Context (for CID chat awareness) ────────────────────
+
+/**
+ * Build a compact summary of workflow execution results and shared context
+ * to inject into CID's chat system prompt.
+ *
+ * This lets CID answer questions like "what did the analysis find?" or
+ * "what was stored in shared context?" without the user having to repeat
+ * information that already exists in the workflow.
+ *
+ * @param nodes         Current workflow nodes (with executionResult fields)
+ * @param sharedContext Key-value pairs stored via the store_context tool
+ * @returns             A suffix block for the system prompt, or '' if nothing to show
+ */
+export function buildWorkflowExecutionSummary(
+  nodes: Node<NodeData>[],
+  sharedContext: Record<string, unknown>,
+): string {
+  const parts: string[] = [];
+
+  // ── Execution results for AI-processing nodes ──
+  // Skip passthrough categories (input/trigger/dependency) — they don't produce
+  // meaningful AI output. Focus on nodes that actually ran LLM generation.
+  const PASSTHROUGH = new Set(['input', 'trigger', 'dependency']);
+  const executedNodes = nodes
+    .filter(n =>
+      n.data.executionStatus === 'success' &&
+      n.data.executionResult &&
+      !PASSTHROUGH.has(n.data.category),
+    )
+    // Most recently executed first, then by label for stable ordering
+    .sort((a, b) => {
+      const timeDiff = (b.data._executionStartedAt ?? 0) - (a.data._executionStartedAt ?? 0);
+      return timeDiff !== 0 ? timeDiff : a.data.label.localeCompare(b.data.label);
+    })
+    .slice(0, 6); // Limit to 6 most recent to keep prompt size bounded
+
+  if (executedNodes.length > 0) {
+    const resultLines = executedNodes.map(n => {
+      const preview = smartTruncate(n.data.executionResult!, 200);
+      return `- **${sanitizeForPrompt(n.data.label, 60)}** [${n.data.category}]: ${preview}`;
+    });
+    parts.push(
+      `WORKFLOW EXECUTION RESULTS (${executedNodes.length} node${executedNodes.length !== 1 ? 's' : ''} ran):\n${resultLines.join('\n')}`,
+    );
+  }
+
+  // ── Shared workflow context (stored by store_context tool calls) ──
+  const ctxEntries = Object.entries(sharedContext);
+  if (ctxEntries.length > 0) {
+    const ctxLines = ctxEntries.slice(0, 8).map(([k, v]) => {
+      const raw = typeof v === 'string' ? v : JSON.stringify(v);
+      const truncated = raw.length > 120 ? raw.slice(0, 117) + '...' : raw;
+      return `- **${sanitizeForPrompt(k, 40)}**: ${truncated}`;
+    });
+    const moreNote = ctxEntries.length > 8 ? `\n  _(${ctxEntries.length - 8} more entries omitted)_` : '';
+    parts.push(
+      `SHARED WORKFLOW CONTEXT (${ctxEntries.length} entr${ctxEntries.length !== 1 ? 'ies' : 'y'} stored via tool calls):\n${ctxLines.join('\n')}${moreNote}`,
+    );
+  }
+
+  if (parts.length === 0) return '';
+  return `\n\n${parts.join('\n\n')}`;
+}

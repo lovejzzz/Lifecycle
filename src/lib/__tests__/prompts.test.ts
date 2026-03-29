@@ -8,6 +8,7 @@ import {
   buildMessages,
   compilePersonalityPrompt,
   smartTruncate,
+  buildWorkflowExecutionSummary,
 } from '../prompts';
 import { getAgent } from '../agents';
 import { createDefaultHabits, createDefaultGeneration, createDefaultReflection } from '../reflection';
@@ -582,5 +583,154 @@ describe('smartTruncate', () => {
   it('returns exact text when length equals maxChars', () => {
     const text = 'exactly fifty characters long plus some more here!';
     expect(smartTruncate(text, text.length)).toBe(text);
+  });
+});
+
+// ─── buildWorkflowExecutionSummary ──────────────────────────────────────────
+
+function makeNode(
+  id: string,
+  label: string,
+  category: string,
+  executionResult?: string,
+  executionStatus?: string,
+  executionStartedAt?: number,
+): Node<NodeData> {
+  return {
+    id,
+    type: 'custom',
+    position: { x: 0, y: 0 },
+    data: {
+      label,
+      category,
+      status: 'active',
+      version: 1,
+      executionResult,
+      executionStatus: (executionStatus as NodeData['executionStatus']) ?? 'idle',
+      _executionStartedAt: executionStartedAt,
+    } as NodeData,
+  };
+}
+
+describe('buildWorkflowExecutionSummary', () => {
+  it('returns empty string when no executed nodes and empty shared context', () => {
+    expect(buildWorkflowExecutionSummary([], {})).toBe('');
+  });
+
+  it('returns empty string when nodes exist but none have been executed', () => {
+    const nodes = [makeNode('1', 'Research', 'cid')];
+    expect(buildWorkflowExecutionSummary(nodes, {})).toBe('');
+  });
+
+  it('includes execution results for AI-processing nodes', () => {
+    const nodes = [
+      makeNode('1', 'Analysis', 'cid', 'The analysis found X, Y, Z.', 'success', 1000),
+    ];
+    const result = buildWorkflowExecutionSummary(nodes, {});
+    expect(result).toContain('WORKFLOW EXECUTION RESULTS');
+    expect(result).toContain('Analysis');
+    expect(result).toContain('The analysis found X, Y, Z.');
+  });
+
+  it('skips passthrough categories (input, trigger, dependency)', () => {
+    const nodes = [
+      makeNode('1', 'My Input', 'input', 'raw input data', 'success', 1000),
+      makeNode('2', 'My Trigger', 'trigger', 'webhook fired', 'success', 2000),
+      makeNode('3', 'My Dep', 'dependency', 'npm package', 'success', 3000),
+      makeNode('4', 'Analysis', 'cid', 'AI result here', 'success', 4000),
+    ];
+    const result = buildWorkflowExecutionSummary(nodes, {});
+    expect(result).toContain('Analysis');
+    expect(result).not.toContain('My Input');
+    expect(result).not.toContain('My Trigger');
+    expect(result).not.toContain('My Dep');
+  });
+
+  it('skips nodes with executionStatus other than success', () => {
+    const nodes = [
+      makeNode('1', 'Failed Node', 'cid', 'partial output', 'error', 1000),
+      makeNode('2', 'Running Node', 'cid', 'in progress', 'running', 2000),
+      makeNode('3', 'Done Node', 'cid', 'complete output', 'success', 3000),
+    ];
+    const result = buildWorkflowExecutionSummary(nodes, {});
+    expect(result).toContain('Done Node');
+    expect(result).not.toContain('Failed Node');
+    expect(result).not.toContain('Running Node');
+  });
+
+  it('limits to 6 most recently executed nodes', () => {
+    const nodes = Array.from({ length: 10 }, (_, i) =>
+      makeNode(`${i}`, `Node ${i}`, 'cid', `result ${i}`, 'success', i * 1000),
+    );
+    const result = buildWorkflowExecutionSummary(nodes, {});
+    // Should contain at most 6 node labels
+    const matches = (result.match(/\*\*Node \d+\*\*/g) ?? []);
+    expect(matches.length).toBeLessThanOrEqual(6);
+  });
+
+  it('orders by most recently executed first', () => {
+    const nodes = [
+      makeNode('1', 'Older Node', 'cid', 'old result', 'success', 1000),
+      makeNode('2', 'Newer Node', 'cid', 'new result', 'success', 9000),
+    ];
+    const result = buildWorkflowExecutionSummary(nodes, {});
+    const newerPos = result.indexOf('Newer Node');
+    const olderPos = result.indexOf('Older Node');
+    expect(newerPos).toBeLessThan(olderPos); // newer appears before older
+  });
+
+  it('includes shared context entries', () => {
+    const result = buildWorkflowExecutionSummary([], { key1: 'value1', key2: 'value2' });
+    expect(result).toContain('SHARED WORKFLOW CONTEXT');
+    expect(result).toContain('key1');
+    expect(result).toContain('value1');
+    expect(result).toContain('key2');
+  });
+
+  it('serializes non-string context values to JSON', () => {
+    const result = buildWorkflowExecutionSummary([], { count: 42, flag: true });
+    expect(result).toContain('42');
+    expect(result).toContain('true');
+  });
+
+  it('truncates long context values to 120 chars', () => {
+    const longValue = 'x'.repeat(300);
+    const result = buildWorkflowExecutionSummary([], { longKey: longValue });
+    expect(result).toContain('...');
+    // The truncated value section should not contain the full 300-char string
+    const valueSection = result.split('longKey')[1] ?? '';
+    expect(valueSection.length).toBeLessThan(300);
+  });
+
+  it('limits to 8 context entries with a "more entries" note', () => {
+    const ctx: Record<string, string> = {};
+    for (let i = 0; i < 12; i++) ctx[`key${i}`] = `val${i}`;
+    const result = buildWorkflowExecutionSummary([], ctx);
+    // 8 entries shown
+    const keyMatches = (result.match(/\*\*key\d+\*\*/g) ?? []);
+    expect(keyMatches.length).toBe(8);
+    // "more entries omitted" note present
+    expect(result).toContain('more entries omitted');
+  });
+
+  it('includes both execution results and shared context sections together', () => {
+    const nodes = [makeNode('1', 'Analysis', 'artifact', 'Final document', 'success', 1000)];
+    const ctx = { tone: 'formal' };
+    const result = buildWorkflowExecutionSummary(nodes, ctx);
+    expect(result).toContain('WORKFLOW EXECUTION RESULTS');
+    expect(result).toContain('SHARED WORKFLOW CONTEXT');
+    expect(result).toContain('Analysis');
+    expect(result).toContain('tone');
+  });
+
+  it('shows correct pluralization for single node', () => {
+    const nodes = [makeNode('1', 'Solo', 'cid', 'output', 'success', 1000)];
+    const result = buildWorkflowExecutionSummary(nodes, {});
+    expect(result).toContain('1 node ran');
+  });
+
+  it('shows correct pluralization for single context entry', () => {
+    const result = buildWorkflowExecutionSummary([], { onlyKey: 'val' });
+    expect(result).toContain('1 entry');
   });
 });

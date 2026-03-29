@@ -5,7 +5,7 @@ import type { Node, Edge, Connection } from '@xyflow/react';
 import type { NodeData, LifecycleEvent, CIDMessage, NodeCategory, CIDMode, AgentPersonalityLayers, HabitLayer, GenerationLayer, ReflectionLayer, DrivingForceLayer, CentralContext, ArtifactContract, SurgicalDiff, Override } from '@/lib/types';
 import { registerCustomCategory, EDGE_LABEL_COLORS, BUILT_IN_CATEGORIES } from '@/lib/types';
 import { getAgent, getInterviewQuestions, buildEnrichedPrompt, getAdaptiveInterview, shouldSkipRemainingQuestions } from '@/lib/agents';
-import { buildSystemPrompt, buildMessages, getExecutionSystemPrompt, inferEffortFromCategory, buildNoteRefinementPrompt, smartTruncate } from '@/lib/prompts';
+import { buildSystemPrompt, buildMessages, getExecutionSystemPrompt, inferEffortFromCategory, buildNoteRefinementPrompt, smartTruncate, buildWorkflowExecutionSummary } from '@/lib/prompts';
 import type { NoteRefinementResult } from '@/lib/prompts';
 import { classifyEdit } from '@/lib/edits';
 import { buildCacheKey, sha256, getCacheEntry, setCacheEntry, createEmptyUsageStats } from '@/lib/cache';
@@ -3599,7 +3599,8 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
 
       const agent = getAgent(store.cidMode);
       const layers = getAgentLayers(store.cidMode);
-      const systemPrompt = buildSystemPrompt(store.cidMode, store.nodes, store.edges, store.cidRules, agent, layers) + getBuildContext();
+      const executionContext = buildWorkflowExecutionSummary(store.nodes, store._sharedNodeContext);
+      const systemPrompt = buildSystemPrompt(store.cidMode, store.nodes, store.edges, store.cidRules, agent, layers) + getBuildContext() + executionContext;
       const chatHistory = store.messages
         .filter(m => m.content && !m.action)
         .map(m => ({ role: m.role as 'user' | 'cid', content: m.content }));
