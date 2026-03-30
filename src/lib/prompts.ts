@@ -1053,6 +1053,90 @@ Please analyze this document and suggest a workflow that turns it into a living 
   return { systemPrompt, userMessage };
 }
 
+// ── Cross-run Execution Memory ────────────────────────────────────────────────
+// Records a structured summary after each workflow execution so agents can
+// reference recent run outcomes ("last run had 2 failures", "decision chose X
+// with 87% confidence") without the user having to repeat themselves.
+
+/** Structured record of a completed workflow execution. */
+export interface ExecutionRunSummary {
+  /** Unique session ID assigned at start of executeWorkflow */
+  sessionId: string;
+  /** Unix timestamp when the run completed */
+  timestamp: number;
+  /** Total node count in the workflow */
+  totalNodes: number;
+  /** Number of nodes that succeeded */
+  succeeded: number;
+  /** Number of nodes that failed */
+  failed: number;
+  /** Number of nodes that were skipped (conditional routing) */
+  skipped: number;
+  /** Wall-clock duration in milliseconds */
+  durationMs: number;
+  /** Decision nodes and their chosen outcomes */
+  decisions: Array<{ label: string; decision: string; confidence?: number; reasoning?: string }>;
+  /** Labels of nodes that failed */
+  failedNodeLabels: string[];
+  /** Total tool calls across all nodes in this run */
+  toolCallCount: number;
+  /** Keys stored in shared context during this run */
+  contextKeysStored: string[];
+}
+
+const MAX_EXECUTION_HISTORY = 5;
+/** Module-level ring buffer of recent execution summaries */
+const _executionHistory: ExecutionRunSummary[] = [];
+
+/** Prepend a completed run summary to the in-memory history ring. */
+export function recordExecutionRun(summary: ExecutionRunSummary): void {
+  _executionHistory.unshift(summary);
+  if (_executionHistory.length > MAX_EXECUTION_HISTORY) {
+    _executionHistory.splice(MAX_EXECUTION_HISTORY);
+  }
+}
+
+/**
+ * Format recent execution history as a compact block for injection into
+ * the CID chat system prompt. Returns '' if no runs have been recorded.
+ *
+ * Agents use this to answer "what happened in the last run?" or "why did
+ * that decision go that way?" without requiring user repetition.
+ */
+export function getExecutionHistory(): string {
+  if (_executionHistory.length === 0) return '';
+  const recent = _executionHistory.slice(0, 3);
+  const lines = recent.map((run, i) => {
+    const ago = Math.round((Date.now() - run.timestamp) / 60000);
+    const agoStr = ago < 2 ? 'just now' : `${ago}m ago`;
+    const dur = run.durationMs < 1000 ? `${run.durationMs}ms` : `${(run.durationMs / 1000).toFixed(1)}s`;
+    const statusStr = run.failed > 0
+      ? `${run.succeeded}✓ ${run.failed}✗${run.skipped > 0 ? ` ${run.skipped}○` : ''}`
+      : `${run.succeeded}✓ all clear`;
+    const parts: string[] = [`${i + 1}. [${agoStr}] ${run.totalNodes} nodes — ${statusStr} in ${dur}`];
+    if (run.decisions.length > 0) {
+      const dstr = run.decisions.map(d => {
+        const conf = d.confidence !== undefined ? ` (${Math.round(d.confidence * 100)}% conf)` : '';
+        const reason = d.reasoning ? ` — "${d.reasoning.slice(0, 60)}${d.reasoning.length > 60 ? '…' : ''}"` : '';
+        return `${d.label}→"${d.decision}"${conf}${reason}`;
+      }).join('; ');
+      parts.push(`   Decisions: ${dstr}`);
+    }
+    if (run.failedNodeLabels.length > 0) {
+      parts.push(`   Failed: ${run.failedNodeLabels.join(', ')}`);
+    }
+    if (run.toolCallCount > 0) {
+      parts.push(`   Tool calls: ${run.toolCallCount}`);
+    }
+    if (run.contextKeysStored.length > 0) {
+      parts.push(`   Context stored: ${run.contextKeysStored.join(', ')}`);
+    }
+    return parts.join('\n');
+  });
+  const plural = _executionHistory.length !== 1 ? 's' : '';
+  return `\n\nEXECUTION HISTORY (${_executionHistory.length} recent run${plural}):\n${lines.join('\n')}`;
+}
+
 // ─── Workflow Execution Context (for CID chat awareness) ────────────────────
 
 /**
@@ -1098,6 +1182,35 @@ export function buildWorkflowExecutionSummary(
     parts.push(
       `WORKFLOW EXECUTION RESULTS (${executedNodes.length} node${executedNodes.length !== 1 ? 's' : ''} ran):\n${resultLines.join('\n')}`,
     );
+  }
+
+  // ── Decision node outcomes ──
+  // Surface any decision results with confidence so CID can reference them
+  const decisionNodes = nodes.filter(n => n.data.category === 'decision' && n.data.decisionResult);
+  if (decisionNodes.length > 0) {
+    const decLines = decisionNodes.map(n => {
+      const conf = n.data.decisionConfidence !== undefined
+        ? ` (${Math.round(n.data.decisionConfidence * 100)}% confidence)`
+        : '';
+      const reasoning = n.data.decisionExplanation
+        ? ` — "${smartTruncate(n.data.decisionExplanation, 80)}"`
+        : '';
+      const alts = n.data.decisionAlternatives?.length
+        ? ` [alternatives: ${n.data.decisionAlternatives.join(', ')}]`
+        : '';
+      return `- **${sanitizeForPrompt(n.data.label, 60)}** chose: "${n.data.decisionResult}"${conf}${reasoning}${alts}`;
+    });
+    parts.push(`DECISION OUTCOMES:\n${decLines.join('\n')}`);
+  }
+
+  // ── Failed nodes ──
+  // Show errors so CID can proactively suggest fixes
+  const failedNodes = nodes.filter(n => n.data.executionStatus === 'error' && n.data.executionError);
+  if (failedNodes.length > 0) {
+    const errLines = failedNodes.map(n =>
+      `- **${sanitizeForPrompt(n.data.label, 60)}**: ${smartTruncate(n.data.executionError!, 100)}`
+    );
+    parts.push(`FAILED NODES (${failedNodes.length}):\n${errLines.join('\n')}`);
   }
 
   // ── Shared workflow context (stored by store_context tool calls) ──

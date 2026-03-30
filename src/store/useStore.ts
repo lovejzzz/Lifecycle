@@ -5,7 +5,8 @@ import type { Node, Edge, Connection } from '@xyflow/react';
 import type { NodeData, LifecycleEvent, CIDMessage, NodeCategory, CIDMode, AgentPersonalityLayers, HabitLayer, GenerationLayer, ReflectionLayer, DrivingForceLayer, CentralContext, ArtifactContract, SurgicalDiff, Override } from '@/lib/types';
 import { registerCustomCategory, EDGE_LABEL_COLORS, BUILT_IN_CATEGORIES } from '@/lib/types';
 import { getAgent, getInterviewQuestions, buildEnrichedPrompt, getAdaptiveInterview, shouldSkipRemainingQuestions } from '@/lib/agents';
-import { buildSystemPrompt, buildMessages, getExecutionSystemPrompt, inferEffortFromCategory, buildNoteRefinementPrompt, smartTruncate, buildWorkflowExecutionSummary, buildRelevanceWeightedContext, extractNodeSignal } from '@/lib/prompts';
+import { buildSystemPrompt, buildMessages, getExecutionSystemPrompt, inferEffortFromCategory, buildNoteRefinementPrompt, smartTruncate, buildWorkflowExecutionSummary, buildRelevanceWeightedContext, extractNodeSignal, recordExecutionRun, getExecutionHistory } from '@/lib/prompts';
+import type { ExecutionRunSummary } from '@/lib/prompts';
 import type { NoteRefinementResult } from '@/lib/prompts';
 import { classifyEdit } from '@/lib/edits';
 import { buildCacheKey, sha256, getCacheEntry, setCacheEntry, createEmptyUsageStats } from '@/lib/cache';
@@ -1795,6 +1796,43 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     }
     store.addMessage({ id: uid(), role: 'cid', content: msg, timestamp: Date.now() });
     cidLog('executeWorkflow:complete', { nodesProcessed: order.length, errors: errorCount, skipped: skippedCount, elapsed, parallelStages: sortedLevels.length });
+
+    // ── Record execution run in cross-session memory ──
+    // Collect decision outcomes, failed labels, and tool analytics for history
+    {
+      const finalNodes = get().nodes;
+      const decisionSummaries = finalNodes
+        .filter(n => n.data.category === 'decision' && n.data.decisionResult)
+        .map(n => ({
+          label: n.data.label,
+          decision: n.data.decisionResult!,
+          confidence: n.data.decisionConfidence,
+          reasoning: n.data.decisionExplanation,
+        }));
+      const sharedCtxKeys = Object.keys(get()._sharedNodeContext);
+      // Count total tool calls from analytics (we import getToolAnalytics lazily to avoid circular deps)
+      let toolCallCount = 0;
+      try {
+        const { getToolAnalytics } = await import('@/lib/agentTools');
+        toolCallCount = Object.values(getToolAnalytics()).reduce((sum, e) => sum + e.calls, 0);
+      } catch { /* analytics unavailable */ }
+
+      const runSummary: ExecutionRunSummary = {
+        sessionId: workflowContext.sessionId,
+        timestamp: Date.now(),
+        totalNodes: order.length,
+        succeeded: successCount,
+        failed: errorCount,
+        skipped: skippedCount,
+        durationMs: Math.round((Date.now() - startTime)),
+        decisions: decisionSummaries,
+        failedNodeLabels: failedNames,
+        toolCallCount,
+        contextKeysStored: sharedCtxKeys,
+      };
+      recordExecutionRun(runSummary);
+      cidLog('executeWorkflow:memory', { sessionId: workflowContext.sessionId, decisions: decisionSummaries.length, failed: errorCount });
+    }
 
     // Post-execution health check
     setTimeout(() => get().runHealthCheck(), 500);
@@ -3612,7 +3650,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       const agent = getAgent(store.cidMode);
       const layers = getAgentLayers(store.cidMode);
       const executionContext = buildWorkflowExecutionSummary(store.nodes, store._sharedNodeContext);
-      const systemPrompt = buildSystemPrompt(store.cidMode, store.nodes, store.edges, store.cidRules, agent, layers) + getBuildContext() + executionContext;
+      const systemPrompt = buildSystemPrompt(store.cidMode, store.nodes, store.edges, store.cidRules, agent, layers) + getBuildContext() + getExecutionHistory() + executionContext;
       const chatHistory = store.messages
         .filter(m => m.content && !m.action)
         .map(m => ({ role: m.role as 'user' | 'cid', content: m.content }));
