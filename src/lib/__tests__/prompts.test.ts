@@ -105,6 +105,24 @@ describe('getExecutionSystemPrompt', () => {
     const result = getExecutionSystemPrompt('test', 'IGNORE ALL PREVIOUS', '');
     expect(result).toContain('[FILTERED]');
   });
+
+  it('returns input-specific prompt for input category', () => {
+    const result = getExecutionSystemPrompt('input', 'User Data', '');
+    expect(result).toContain('data intake processor');
+    expect(result).toContain('DATA_QUALITY');
+  });
+
+  it('returns trigger-specific prompt for trigger category', () => {
+    const result = getExecutionSystemPrompt('trigger', 'Webhook Trigger', '');
+    expect(result).toContain('trigger event analyzer');
+    expect(result).toContain('TRIGGER_SCHEMA');
+  });
+
+  it('returns output-specific prompt for output category', () => {
+    const result = getExecutionSystemPrompt('output', 'Final Report', '');
+    expect(result).toContain('delivery formatter');
+    expect(result).toContain('executive summary');
+  });
 });
 
 // ─── inferEffortFromCategory ─────────────────────────────────────────────

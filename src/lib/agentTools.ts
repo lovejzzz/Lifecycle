@@ -183,6 +183,72 @@ export function getPreferredTools(agentName: string, tools: AgentTool[]): AgentT
   return ordered;
 }
 
+// ── Agent-Differentiated Few-Shot Examples ───────────────────────────────────
+
+/**
+ * Agent-specific few-shot examples injected into the tool prompt.
+ * Rowan gets speed-focused single-objective patterns.
+ * Poirot gets thorough multi-step investigation patterns.
+ */
+const AGENT_TOOL_EXAMPLES: Record<string, string> = {
+  rowan: `
+
+### Example — Rowan: direct intel pipeline (search → store → done):
+\`\`\`tool_call
+{"tool": "web_search", "args": {"query": "kubernetes HPA max replicas default 2024"}}
+\`\`\`
+*(Result arrives)* — store the mission-critical fact immediately and move on:
+\`\`\`tool_call
+{"tool": "store_context", "args": {"key": "hpa_limits", "value": "HPA max replicas default 100; override with --max-replicas flag"}}
+\`\`\`
+One tool per objective. Retrieve → Store → Proceed.`,
+
+  poirot: `
+
+### Example — Poirot: thorough investigation (read → extract → compare → store):
+Start by reading what is already known before fetching anything new:
+\`\`\`tool_call
+{"tool": "read_context", "args": {"key": "prior_analysis"}}
+\`\`\`
+*(Examine existing evidence)* — extract structured clues from the incoming data:
+\`\`\`tool_call
+{"tool": "extract_json", "args": {"text": "<upstream data>", "schema": "issues, severity: critical|warning|info, owner"}}
+\`\`\`
+*(Spot discrepancies against prior state):*
+\`\`\`tool_call
+{"tool": "compare_texts", "args": {"text_a": "<prior findings>", "text_b": "<new findings>", "label_a": "Prior Run", "label_b": "Current Run"}}
+\`\`\`
+*(Document the deduction for downstream nodes):*
+\`\`\`tool_call
+{"tool": "store_context", "args": {"key": "investigation_result", "value": "<key finding>"}}
+\`\`\``,
+};
+
+/**
+ * Default few-shot examples used when no agent-specific examples are defined.
+ * Shows two common tool-chaining patterns.
+ */
+const DEFAULT_TOOL_EXAMPLES = `
+
+### Example — search for data, then store the finding:
+\`\`\`tool_call
+{"tool": "web_search", "args": {"query": "Node.js 22 release highlights"}}
+\`\`\`
+After the tool result arrives, store the key finding for downstream nodes:
+\`\`\`tool_call
+{"tool": "store_context", "args": {"key": "nodejs_release", "value": "Node.js 22 highlights: native test runner improvements, V8 12.4..."}}
+\`\`\`
+You can then continue your response using both the tool result and your own knowledge.
+
+### Example — validate JSON input, then extract structured fields:
+\`\`\`tool_call
+{"tool": "validate_json", "args": {"text": "<the raw JSON string to check>"}}
+\`\`\`
+If valid, extract the important fields for downstream analysis:
+\`\`\`tool_call
+{"tool": "extract_json", "args": {"text": "<the raw JSON string>", "schema": "status, error code, message"}}
+\`\`\``;
+
 /** Get the tool description block to inject into system prompts */
 export function buildToolPrompt(tools: AgentTool[], agentName?: string): string {
   if (tools.length === 0) return '';
@@ -194,19 +260,10 @@ export function buildToolPrompt(tools: AgentTool[], agentName?: string): string 
     ? `\n\n**Your tool usage style**: ${AGENT_TOOL_STYLE[agentName.toLowerCase()]}`
     : '';
 
-  const example = `
+  const agentKey = agentName?.toLowerCase();
+  const exampleBlock = (agentKey && AGENT_TOOL_EXAMPLES[agentKey]) || DEFAULT_TOOL_EXAMPLES;
 
-### Example — search for data, then store the finding:
-\`\`\`tool_call
-{"tool": "web_search", "args": {"query": "Node.js 22 release highlights"}}
-\`\`\`
-After the tool result arrives, store the key finding for downstream nodes:
-\`\`\`tool_call
-{"tool": "store_context", "args": {"key": "nodejs_release", "value": "Node.js 22 highlights: native test runner improvements, V8 12.4..."}}
-\`\`\`
-You can then continue your response using both the tool result and your own knowledge.`;
-
-  return `\n\n## Available Tools\nYou can call tools by including a JSON block in your response:\n\`\`\`tool_call\n{"tool": "tool_name", "args": {"key": "value"}}\n\`\`\`\n\nAvailable tools:\n${toolDescs}${styleHint}${example}\n\nYou may call multiple tools. After each tool call block, continue your response. Tool results will be provided in a follow-up message if the node supports looping.\n\nIMPORTANT: Only use tools when genuinely needed. Most tasks can be completed with your own knowledge.`;
+  return `\n\n## Available Tools\nYou can call tools by including a JSON block in your response:\n\`\`\`tool_call\n{"tool": "tool_name", "args": {"key": "value"}}\n\`\`\`\n\nAvailable tools:\n${toolDescs}${styleHint}${exampleBlock}\n\nYou may call multiple tools. After each tool call block, continue your response. Tool results will be provided in a follow-up message if the node supports looping.\n\nIMPORTANT: Only use tools when genuinely needed. Most tasks can be completed with your own knowledge.`;
 }
 
 // ── Tool Call Parsing ────────────────────────────────────────────────────────

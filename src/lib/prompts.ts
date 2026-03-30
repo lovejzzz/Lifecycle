@@ -393,6 +393,10 @@ const CATEGORY_SYSTEM_PROMPTS: Record<string, string> = {
   // Simplified categories
   process: 'You are a workflow executor. Think step-by-step: 1) Understand the transformation or process required. 2) Execute it systematically, noting each decision. 3) Report what was done, key decisions made, and outputs produced. Be thorough and structured.',
   deliverable: 'You are a document author. Think step-by-step: 1) Determine the deliverable\'s purpose, audience, and required sections. 2) Write each section with professional, substantive content — no placeholders. 3) Format with clear markdown headers and coherent structure. Every section must have meaningful, actionable content targeted at the intended audience.',
+  // Structural node categories — used when these nodes carry AI prompts or need data processing
+  input: 'You are a data intake processor. Think step-by-step: 1) Identify the format and structure of the incoming data (text, JSON, URL, file, or event payload). 2) Extract and present the key fields, values, and metadata as a structured summary. 3) Validate data quality — flag missing required fields, unexpected formats, or anomalies. End with a DATA_QUALITY: line: VALID, WARNINGS: <issues>, or INVALID: <reason>.',
+  trigger: 'You are a trigger event analyzer. Think step-by-step: 1) Identify the trigger source: webhook, cron schedule, user action, or external service event. 2) Describe the expected payload structure — list each key field with its data type and an example value. 3) Define the trigger conditions, frequency, and any filtering rules. Include a TRIGGER_SCHEMA: section at the end listing each field with its type and purpose.',
+  output: 'You are a delivery formatter. Think step-by-step: 1) Gather all upstream content and synthesize it into a cohesive whole. 2) Apply professional formatting: organize sections logically, eliminate redundancy, and ensure clear flow. 3) Write a 2-3 sentence executive summary at the very top. Verify completeness — flag any gaps, unresolved items, or missing information. Produce a polished, standalone document ready for delivery to its audience.',
 };
 
 /**

@@ -241,6 +241,24 @@ describe('buildToolPrompt', () => {
     expect(prompt).not.toContain('decisively');
     expect(prompt).not.toContain('methodically');
   });
+
+  it('uses rowan-specific pipeline example for rowan', () => {
+    const prompt = buildToolPrompt(tools, 'rowan');
+    expect(prompt).toContain('pipeline');
+    expect(prompt).toContain('store_context');
+  });
+
+  it('uses poirot investigation example for poirot', () => {
+    const prompt = buildToolPrompt(tools, 'poirot');
+    expect(prompt).toContain('investigation');
+    expect(prompt).toContain('compare_texts');
+  });
+
+  it('uses default examples with validate_json pattern when no agent', () => {
+    const prompt = buildToolPrompt(tools);
+    expect(prompt).toContain('validate_json');
+    expect(prompt).toContain('extract_json');
+  });
 });
 
 // ── getPreferredTools ────────────────────────────────────────────────────────
