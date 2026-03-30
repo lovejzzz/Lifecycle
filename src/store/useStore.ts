@@ -5,7 +5,7 @@ import type { Node, Edge, Connection } from '@xyflow/react';
 import type { NodeData, LifecycleEvent, CIDMessage, NodeCategory, CIDMode, AgentPersonalityLayers, HabitLayer, GenerationLayer, ReflectionLayer, DrivingForceLayer, CentralContext, ArtifactContract, SurgicalDiff, Override } from '@/lib/types';
 import { registerCustomCategory, EDGE_LABEL_COLORS, BUILT_IN_CATEGORIES } from '@/lib/types';
 import { getAgent, getInterviewQuestions, buildEnrichedPrompt, getAdaptiveInterview, shouldSkipRemainingQuestions } from '@/lib/agents';
-import { buildSystemPrompt, buildMessages, getExecutionSystemPrompt, inferEffortFromCategory, buildNoteRefinementPrompt, smartTruncate, buildWorkflowExecutionSummary, buildRelevanceWeightedContext } from '@/lib/prompts';
+import { buildSystemPrompt, buildMessages, getExecutionSystemPrompt, inferEffortFromCategory, buildNoteRefinementPrompt, smartTruncate, buildWorkflowExecutionSummary, buildRelevanceWeightedContext, extractNodeSignal } from '@/lib/prompts';
 import type { NoteRefinementResult } from '@/lib/prompts';
 import { classifyEdit } from '@/lib/edits';
 import { buildCacheKey, sha256, getCacheEntry, setCacheEntry, createEmptyUsageStats } from '@/lib/cache';
@@ -940,7 +940,11 @@ export const useLifecycleStore = create<LifecycleStore>((set, get, api) => ({
       const inEdges = store.edges.filter(e => e.target === nodeId);
       const upstreamData = inEdges.map(e => {
         const src = store.nodes.find(n => n.id === e.source);
-        return src ? `[${src.data.label}]: ${(src.data.executionResult || src.data.content || '').slice(0, 1000)}` : '';
+        if (!src) return '';
+        const content = (src.data.executionResult || src.data.content || '').slice(0, 1000);
+        const signal = extractNodeSignal(content, src.data.category || '');
+        const prefix = signal ? `[${src.data.label}] ${signal}` : `[${src.data.label}]`;
+        return `${prefix}:\n${content}`;
       }).filter(Boolean).join('\n\n');
 
       const outEdges = store.edges.filter(e => e.source === nodeId);
@@ -1174,10 +1178,10 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         const edgeLabel = (typeof e.label === 'string' ? e.label : e.data?.label as string) || 'connects';
         const srcResult = src?.data.executionResult || src?.data.content || '';
         return srcResult
-          ? { label: src?.data.label || 'Unknown', relationship: edgeLabel, content: srcResult }
+          ? { label: src?.data.label || 'Unknown', relationship: edgeLabel, content: srcResult, category: src?.data.category }
           : null;
       })
-      .filter((x): x is { label: string; relationship: string; content: string } => x !== null);
+      .filter((x): x is { label: string; relationship: string; content: string; category: string } => x !== null);
 
     const directContext = buildRelevanceWeightedContext(directContextInputs, autoPrompt || d.label);
 

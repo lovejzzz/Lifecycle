@@ -478,6 +478,94 @@ export function smartTruncate(text: string, maxChars: number): string {
   return slice + '… *(truncated)*';
 }
 
+// ─── Node Signal Extraction ───────────────────────────────────────────────────
+
+/**
+ * Extract the actionable "signal" from a node's execution output, based on its
+ * category. Signals surface the key verdict, status, or decision so downstream
+ * nodes can immediately understand the upstream outcome without parsing raw text.
+ *
+ * Examples:
+ *   review  → "[VERDICT: APPROVE]"
+ *   decision → "[DECISION: reject]"
+ *   test    → "[TEST: FAIL]"
+ *   state   → "[STATUS: error]"
+ *   dependency → "[BLOCKERS: none]"
+ *   policy  → "[RULES: 4 defined]"
+ *
+ * Returns null when no structured signal is detectable.
+ */
+export function extractNodeSignal(output: string, category: string): string | null {
+  if (!output || !output.trim()) return null;
+  const text = output.trim();
+
+  switch (category) {
+    case 'review': {
+      // Look for explicit verdict on its own line (end of review output)
+      if (/\bBLOCK\b/i.test(text)) return '[VERDICT: BLOCK]';
+      if (/\bREQUEST_CHANGES\b/i.test(text)) return '[VERDICT: REQUEST_CHANGES]';
+      if (/\bREJECT\b/i.test(text)) return '[VERDICT: REJECT]';
+      if (/\bAPPROVE\b/i.test(text)) return '[VERDICT: APPROVE]';
+      return null;
+    }
+
+    case 'decision': {
+      const m = text.match(/^DECISION:\s*(.+)/im);
+      if (m) {
+        // Strip confidence annotation if present: "approve (confidence: 0.9)"
+        const val = m[1].replace(/\s*\(confidence[^)]*\)/i, '').trim().slice(0, 60);
+        return `[DECISION: ${val}]`;
+      }
+      return null;
+    }
+
+    case 'test': {
+      // Check for explicit PASS/FAIL markers
+      if (/\bFAIL(ED)?\b/i.test(text)) return '[TEST: FAIL]';
+      if (/\bPASS(ED)?\b/i.test(text)) return '[TEST: PASS]';
+      // Check for ✅/❌ pass/fail indicators
+      if (text.includes('❌') && !text.includes('✅')) return '[TEST: FAIL]';
+      if (text.includes('✅') && !text.includes('❌')) return '[TEST: PASS]';
+      return null;
+    }
+
+    case 'dependency': {
+      const m = text.match(/^BLOCKERS?:\s*(.+)/im);
+      if (m) {
+        const val = m[1].trim().slice(0, 80);
+        return `[BLOCKERS: ${val}]`;
+      }
+      return null;
+    }
+
+    case 'state': {
+      const m = text.match(/^STATUS:\s*(.+)/im);
+      if (m) {
+        const val = m[1].trim().slice(0, 60);
+        return `[STATUS: ${val}]`;
+      }
+      return null;
+    }
+
+    case 'policy': {
+      // Count numbered rules (lines starting with a digit followed by .)
+      const ruleMatches = text.match(/^\s*\d+\.\s+/gm);
+      const count = ruleMatches ? ruleMatches.length : 0;
+      if (count > 0) return `[RULES: ${count} defined]`;
+      return null;
+    }
+
+    case 'patch': {
+      if (/\b(?:applied|patched|fixed|resolved|success(?:ful(?:ly)?)?)\b/i.test(text)) return '[PATCH: applied]';
+      if (/\b(?:failed|error|could\s+not|unable)\b/i.test(text)) return '[PATCH: failed]';
+      return null;
+    }
+
+    default:
+      return null;
+  }
+}
+
 // ─── Relevance-Weighted Context Building ─────────────────────────────────────
 
 /** A single upstream context piece for relevance-weighted assembly */
@@ -485,6 +573,8 @@ export interface ContextInput {
   label: string;
   relationship: string;
   content: string;
+  /** Optional node category — used to extract a structured signal badge */
+  category?: string;
 }
 
 /**
@@ -515,8 +605,10 @@ export function buildRelevanceWeightedContext(
 
   // Single input: skip scoring overhead, apply full budget directly
   if (inputs.length === 1) {
-    const { label, relationship, content } = inputs[0];
-    return `## From "${label}" (${relationship})\n${smartTruncate(content, totalBudget)}`;
+    const { label, relationship, content, category } = inputs[0];
+    const signal = category ? extractNodeSignal(content, category) : null;
+    const header = signal ? `## From "${label}" (${relationship}) ${signal}` : `## From "${label}" (${relationship})`;
+    return `${header}\n${smartTruncate(content, totalBudget)}`;
   }
 
   // Score each input by keyword overlap with the task prompt
@@ -545,9 +637,11 @@ export function buildRelevanceWeightedContext(
   );
 
   return inputs
-    .map(({ label, relationship, content }, i) => {
+    .map(({ label, relationship, content, category }, i) => {
       const truncated = smartTruncate(content, allocations[i]);
-      return `## From "${label}" (${relationship})\n${truncated}`;
+      const signal = category ? extractNodeSignal(content, category) : null;
+      const header = signal ? `## From "${label}" (${relationship}) ${signal}` : `## From "${label}" (${relationship})`;
+      return `${header}\n${truncated}`;
     })
     .join('\n\n---\n\n');
 }

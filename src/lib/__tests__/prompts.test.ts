@@ -10,6 +10,7 @@ import {
   smartTruncate,
   buildWorkflowExecutionSummary,
   buildRelevanceWeightedContext,
+  extractNodeSignal,
 } from '../prompts';
 import type { ContextInput } from '../prompts';
 import { getAgent } from '../agents';
@@ -838,5 +839,128 @@ describe('buildRelevanceWeightedContext', () => {
     const result = buildRelevanceWeightedContext(inputs, 'do it', 2000);
     expect(result).toContain('## From "A"');
     expect(result).toContain('## From "B"');
+  });
+
+  it('includes signal badge in header when category is provided', () => {
+    const inputs: ContextInput[] = [
+      { label: 'Code Review', relationship: 'validates', content: 'All checks pass.\n\nAPPROVE', category: 'review' },
+    ];
+    const result = buildRelevanceWeightedContext(inputs, 'deploy to production', 2000);
+    expect(result).toContain('[VERDICT: APPROVE]');
+    expect(result).toContain('## From "Code Review"');
+  });
+
+  it('no badge when category is absent or unknown', () => {
+    const inputs: ContextInput[] = [
+      { label: 'Research', relationship: 'feeds', content: 'Some research notes.' },
+    ];
+    const result = buildRelevanceWeightedContext(inputs, 'write article', 2000);
+    expect(result).not.toContain('[VERDICT');
+    expect(result).not.toContain('[DECISION');
+  });
+});
+
+// ─── extractNodeSignal ────────────────────────────────────────────────────────
+
+describe('extractNodeSignal', () => {
+  // ── review ──
+  it('returns APPROVE verdict for review node', () => {
+    expect(extractNodeSignal('The content looks good.\n\nAPPROVE', 'review')).toBe('[VERDICT: APPROVE]');
+  });
+
+  it('returns BLOCK verdict when BLOCK appears', () => {
+    expect(extractNodeSignal('Critical issues found.\n\nBLOCK', 'review')).toBe('[VERDICT: BLOCK]');
+  });
+
+  it('returns REQUEST_CHANGES verdict', () => {
+    expect(extractNodeSignal('Minor issues. REQUEST_CHANGES', 'review')).toBe('[VERDICT: REQUEST_CHANGES]');
+  });
+
+  it('prefers BLOCK over APPROVE when both present', () => {
+    // BLOCK check comes first in implementation
+    expect(extractNodeSignal('Could APPROVE after fixing. BLOCK for now.', 'review')).toBe('[VERDICT: BLOCK]');
+  });
+
+  it('returns null when no verdict found in review', () => {
+    expect(extractNodeSignal('This is just a summary with no verdict.', 'review')).toBeNull();
+  });
+
+  // ── decision ──
+  it('extracts decision value from DECISION: line', () => {
+    expect(extractNodeSignal('DECISION: approve\nCONFIDENCE: 0.9\nREASONING: Looks good', 'decision')).toBe('[DECISION: approve]');
+  });
+
+  it('strips confidence annotation from decision', () => {
+    expect(extractNodeSignal('DECISION: reject (confidence: 0.85)\nREASONING: Not ready', 'decision')).toBe('[DECISION: reject]');
+  });
+
+  it('returns null when no DECISION: line found', () => {
+    expect(extractNodeSignal('The chosen path is to approve the request.', 'decision')).toBeNull();
+  });
+
+  // ── test ──
+  it('returns FAIL for test node with FAILED keyword', () => {
+    expect(extractNodeSignal('3 tests FAILED: auth.test.ts line 45', 'test')).toBe('[TEST: FAIL]');
+  });
+
+  it('returns PASS for test node with PASSED', () => {
+    expect(extractNodeSignal('All 12 tests PASSED in 340ms', 'test')).toBe('[TEST: PASS]');
+  });
+
+  it('returns FAIL when only ❌ present', () => {
+    expect(extractNodeSignal('❌ Integration test failed', 'test')).toBe('[TEST: FAIL]');
+  });
+
+  it('returns null when no clear pass/fail signal in test output', () => {
+    expect(extractNodeSignal('Running tests...', 'test')).toBeNull();
+  });
+
+  // ── dependency ──
+  it('extracts blockers from BLOCKERS: line', () => {
+    const signal = extractNodeSignal('Dependencies resolved.\n\nBLOCKERS: none', 'dependency');
+    expect(signal).toBe('[BLOCKERS: none]');
+  });
+
+  it('extracts actual blockers', () => {
+    const signal = extractNodeSignal('BLOCKERS: missing lodash@4.x, conflicting react versions', 'dependency');
+    expect(signal).toContain('[BLOCKERS:');
+    expect(signal).toContain('missing lodash');
+  });
+
+  // ── state ──
+  it('extracts STATUS line', () => {
+    expect(extractNodeSignal('System metrics:\nCPU: 45%\n\nSTATUS: healthy', 'state')).toBe('[STATUS: healthy]');
+  });
+
+  // ── policy ──
+  it('counts numbered rules in policy output', () => {
+    const output = '1. All users must authenticate.\n2. Passwords must be 12+ chars.\n3. MFA required for admin.';
+    expect(extractNodeSignal(output, 'policy')).toBe('[RULES: 3 defined]');
+  });
+
+  it('returns null for policy with no numbered rules', () => {
+    expect(extractNodeSignal('No specific rules yet.', 'policy')).toBeNull();
+  });
+
+  // ── patch ──
+  it('returns applied for patch with "fixed"', () => {
+    expect(extractNodeSignal('Bug fixed: null pointer in auth.ts line 42', 'patch')).toBe('[PATCH: applied]');
+  });
+
+  it('returns failed for patch with "error"', () => {
+    expect(extractNodeSignal('Error: unable to apply diff due to conflict', 'patch')).toBe('[PATCH: failed]');
+  });
+
+  // ── unknown / edge cases ──
+  it('returns null for unknown category', () => {
+    expect(extractNodeSignal('Some output text', 'artifact')).toBeNull();
+  });
+
+  it('returns null for empty output', () => {
+    expect(extractNodeSignal('', 'review')).toBeNull();
+  });
+
+  it('returns null for whitespace-only output', () => {
+    expect(extractNodeSignal('   \n\t  ', 'test')).toBeNull();
   });
 });
