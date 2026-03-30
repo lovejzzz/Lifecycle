@@ -1,5 +1,22 @@
 # Changelog
 
+### 2026-03-30 — Round 74: Prompt Engineering — Missing Category Prompts + Agent-Differentiated Tool Examples
+
+**Improvement 1 — 3 New Category Execution Prompts (Area 5: Prompt Engineering):**
+- `input`: data intake processor with step-by-step field extraction and DATA_QUALITY verdict line (VALID/WARNINGS/INVALID)
+- `trigger`: trigger event analyzer with payload structure description and TRIGGER_SCHEMA section
+- `output`: delivery formatter with executive summary generation and completeness audit
+- Previously all three fell back to the generic "professional content generator" prompt, which produced unfocused output for these structural node types
+
+**Improvement 2 — Agent-Differentiated Few-Shot Tool Examples (Area 5: Prompt Engineering):**
+- `buildToolPrompt` now selects examples based on agent personality rather than using one generic example
+- **Rowan** gets: direct "intel pipeline" pattern (search → store → done) — matches speed-first tool style
+- **Poirot** gets: thorough "investigation" chain (read_context → extract_json → compare_texts → store_context) — matches evidence-first style
+- **Default** (no agent): two chained examples — web_search/store_context AND validate_json/extract_json — showing common tool composition patterns
+- Examples directly reinforce each agent's declared tool usage style (AGENT_TOOL_STYLE), creating coherent guidance
+
+**Test Results:** Build passes. 1366/1366 tests pass (23 test files). 6 new tests added.
+
 ### 2026-03-30 — Round 73: Agent Execution — Structured Node Signal Extraction
 
 **Improvement — Structured I/O Context Passing via Node Signal Extraction (Area 3: Agent Execution):**
