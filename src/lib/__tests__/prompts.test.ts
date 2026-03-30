@@ -95,6 +95,32 @@ describe('getExecutionSystemPrompt', () => {
     expect(result).toContain('code patcher');
   });
 
+  it('returns output-specific prompt for output category', () => {
+    const result = getExecutionSystemPrompt('output', 'Final Report', '');
+    expect(result).toContain('delivery synthesizer');
+    expect(result).toContain('terminal node');
+  });
+
+  it('returns trigger-specific prompt for trigger category', () => {
+    const result = getExecutionSystemPrompt('trigger', 'Webhook', '');
+    expect(result).toContain('trigger engineer');
+    expect(result).toContain('payload schema');
+  });
+
+  it('returns input-specific prompt for input category', () => {
+    const result = getExecutionSystemPrompt('input', 'Data Source', '');
+    expect(result).toContain('data intake designer');
+    expect(result).toContain('schema');
+  });
+
+  it('returns decision-specific prompt for decision category', () => {
+    const result = getExecutionSystemPrompt('decision', 'Route Decision', '');
+    expect(result).toContain('decision-making agent');
+    expect(result).toContain('DECISION:');
+    expect(result).toContain('CONFIDENCE:');
+    expect(result).toContain('REASONING:');
+  });
+
   it('returns fallback prompt for unknown category', () => {
     const result = getExecutionSystemPrompt('custom', 'Custom Node', '');
     expect(result).toContain('professional content generator');
@@ -458,6 +484,17 @@ describe('getExecutionSystemPrompt — context injection', () => {
     expect(result).toContain('reasoning engine');
   });
 
+  it('includes restate understanding step in cid prompt', () => {
+    const result = getExecutionSystemPrompt('cid', 'Analyzer', '');
+    expect(result).toContain('Restate');
+  });
+
+  it('includes key insight and next steps in note prompt', () => {
+    const result = getExecutionSystemPrompt('note', 'Research Notes', '');
+    expect(result).toContain('Key Insight');
+    expect(result).toContain('Next Steps');
+  });
+
   it('includes chain-of-thought steps for action category', () => {
     const result = getExecutionSystemPrompt('action', 'Deploy', '');
     expect(result).toContain('step-by-step');
@@ -538,6 +575,16 @@ describe('getExecutionSystemPrompt — downstream format hints', () => {
   it('adds document hint for deliverable downstream', () => {
     const result = getExecutionSystemPrompt('cid', 'Writer', '', ['deliverable']);
     expect(result).toContain('standalone content');
+  });
+
+  it('adds delivery hint for output downstream', () => {
+    const result = getExecutionSystemPrompt('cid', 'Summarizer', '', ['output']);
+    expect(result).toContain('final deliverable');
+  });
+
+  it('adds evaluable criteria hint for decision downstream', () => {
+    const result = getExecutionSystemPrompt('cid', 'Evaluator', '', ['decision']);
+    expect(result).toContain('unambiguous signals');
   });
 
   it('combines hints for multiple downstream categories', () => {
