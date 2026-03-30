@@ -1,5 +1,22 @@
 # Changelog
 
+### 2026-03-30 — Round 73: Agent Execution — Structured Node Signal Extraction
+
+**Improvement — Structured I/O Context Passing via Node Signal Extraction (Area 3: Agent Execution):**
+
+- Added `extractNodeSignal(output, category)` to `prompts.ts` — extracts the most actionable verdict/status from a node's execution output based on its category:
+  - `review` → `[VERDICT: APPROVE]` / `[VERDICT: REQUEST_CHANGES]` / `[VERDICT: BLOCK]`
+  - `decision` → `[DECISION: <chosen path>]`
+  - `test` → `[TEST: PASS]` / `[TEST: FAIL]` (handles ✅/❌ too)
+  - `dependency` → `[BLOCKERS: <value>]`
+  - `state` → `[STATUS: <value>]`
+  - `policy` → `[RULES: N defined]`
+  - `patch` → `[PATCH: applied]` / `[PATCH: failed]`
+- `ContextInput` interface gains optional `category?: string` field
+- `buildRelevanceWeightedContext()` now prepends signal badges to section headers — e.g. `## From "Code Review" (validates) [VERDICT: APPROVE]` — so downstream nodes instantly see the upstream verdict without parsing raw output
+- `useStore.ts`: `directContextInputs` now passes `category` from each source node; decision node upstream data builder uses `extractNodeSignal()` for structured context formatting
+- 27 new tests, 1360 total pass. Build clean.
+
 ### 2026-03-29 — Round 72: Agent Execution — Self-Validation Refinement Loop
 
 **Improvement — Self-Validation Refinement Loop in executeNode (Area 3: Agent Execution):**
