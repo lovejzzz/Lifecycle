@@ -1,5 +1,21 @@
 # Changelog
 
+### 2026-03-31 — Round 69: Structured I/O Contracts — Shared Workflow Context in Execution Prompts
+
+**Improvement — Workflow Context Awareness in Node Execution (Agent Execution Improvements):**
+- Added `buildSharedContextHint()` in `prompts.ts` — formats accumulated key-value pairs and decision outcomes into a compact "Workflow Run Context" section injected into node system prompts.
+- Extended `getExecutionSystemPrompt()` with optional `sharedContext` parameter. When non-empty, the LLM immediately sees what prior nodes have stored (via `store_context` tool) and which paths decision nodes chose — without needing an extra `read_context` tool call iteration.
+- In `executeNode` (`useStore.ts`): snapshots `_sharedNodeContext` at execution time and passes it to `getExecutionSystemPrompt`. Zero extra API calls.
+- In `executeWorkflow` (`useStore.ts`): persists each decision node's outcome into `_sharedNodeContext` under key `decision:<nodeName>` (e.g., `"decision:Quality Gate" → "approve (confidence: 0.92)"`) so all subsequent nodes in the run can reference it in their system prompt.
+- Decision entries and data entries are rendered in separate sub-sections for clarity.
+- Long values are truncated at 200 chars; total entries capped at 10 to prevent prompt bloat.
+
+**Why this matters**: Previously, a node storing `api_key=xyz` via `store_context` was invisible to the next node's LLM call — it had to call `read_context` first, consuming an iteration. Now the stored values appear in the system prompt before the first call. Decision outcomes ("Quality Gate chose approve") are also visible, letting downstream nodes tailor their output to the chosen path without any extra tool call.
+
+**Files changed:** `src/lib/prompts.ts`, `src/store/useStore.ts`, `src/lib/__tests__/prompts.test.ts`
+
+**Test Results:** Build passes. 1395/1395 tests pass (17 new tests for buildSharedContextHint and shared context injection).
+
 ### 2026-03-30 — Round 74: Prompt Engineering — Missing Category Prompts + Agent-Differentiated Tool Examples
 
 **Improvement 1 — 3 New Category Execution Prompts (Area 5: Prompt Engineering):**
