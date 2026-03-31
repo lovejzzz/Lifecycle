@@ -3261,3 +3261,17 @@ Tested and refined the codebase — 5/5 API tests passing. Fixed bugs, removed d
 **Test Results:** Build passes.
 
 **Both agents** benefit from all 5 improvements — smarter context, better communication, richer rendering, and safer exports.
+
+### 2026-03-31 — Round 68: Agent-Aware Node Execution
+
+**Improvement — Agent Personality in Node Execution (Agent Intelligence):**
+- `getExecutionSystemPrompt()` now accepts an optional `agentName` parameter ('rowan' | 'poirot')
+- Rowan gets **ROWAN EXECUTION STYLE**: direct, decisive, lead-with-verdict, structured lists, skip preamble
+- Poirot gets **POIROT EXECUTION STYLE**: evidence-first, methodical investigation, note anomalies, build the case before concluding
+- `useStore.ts` updated to pass `store.cidMode` so every node execution is personality-aware
+- Previously both agents produced identically-prompted node output — now execution style matches agent identity end-to-end
+- Hint is positioned before the final `Return ONLY` instruction and is fully compatible with upstream/downstream context hints
+
+**Files changed:** `src/lib/prompts.ts`, `src/store/useStore.ts`, `src/lib/__tests__/prompts.test.ts`
+
+**Test Results:** Build passes. 1378/1378 tests pass (12 new tests for agent-aware execution).
