@@ -450,6 +450,57 @@ const AGENT_EXECUTION_HINTS: Record<string, string> = {
     'Verdicts and decisions come last, fully justified.',
 };
 
+// ── Shared Workflow Context Hint ─────────────────────────────────────────────
+
+/**
+ * Build a compact context block from the shared workflow state accumulated
+ * during a run. Injected into node execution prompts so the LLM immediately
+ * sees what prior nodes have stored — without needing a `read_context` tool call.
+ *
+ * Key format convention:
+ *   - Keys prefixed "decision:" are routing decisions made by decision nodes.
+ *     e.g. "decision:Quality Gate" → "approve (confidence: 0.95)"
+ *   - All other keys are arbitrary data stored via the `store_context` tool.
+ *
+ * Returns an empty string when the context is empty.
+ *
+ * @param sharedContext  The store's _sharedNodeContext map
+ * @param maxEntries     Cap total entries to prevent prompt bloat (default: 10)
+ */
+export function buildSharedContextHint(
+  sharedContext: Record<string, unknown>,
+  maxEntries = 10,
+): string {
+  const entries = Object.entries(sharedContext);
+  if (entries.length === 0) return '';
+
+  const decisionLines: string[] = [];
+  const dataLines: string[] = [];
+
+  for (const [key, value] of entries.slice(0, maxEntries)) {
+    const valStr = typeof value === 'string' ? value : JSON.stringify(value);
+    if (key.startsWith('decision:')) {
+      const nodeName = key.slice('decision:'.length);
+      decisionLines.push(`- **${nodeName}** → ${valStr}`);
+    } else {
+      // Truncate long values so they don't bloat the prompt
+      const truncated = valStr.length > 200 ? valStr.slice(0, 200) + '…' : valStr;
+      dataLines.push(`- **${key}**: ${truncated}`);
+    }
+  }
+
+  const parts: string[] = [];
+  if (decisionLines.length > 0) {
+    parts.push(`### Decisions made in this run:\n${decisionLines.join('\n')}`);
+  }
+  if (dataLines.length > 0) {
+    parts.push(`### Data stored by prior nodes:\n${dataLines.join('\n')}`);
+  }
+
+  if (parts.length === 0) return '';
+  return `\n\n## Workflow Run Context (available to you)\n${parts.join('\n\n')}\nYou may reference this context in your output without calling read_context.`;
+}
+
 /** Get a category-aware system prompt for node execution. */
 export function getExecutionSystemPrompt(
   category: string,
@@ -459,6 +510,8 @@ export function getExecutionSystemPrompt(
   downstreamCategories?: string[],
   /** Optional: active agent name ('rowan' | 'poirot') — adds execution style hints */
   agentName?: string,
+  /** Optional: shared workflow context (stored values + decision outcomes from prior nodes) */
+  sharedContext?: Record<string, unknown>,
 ): string {
   const categoryPrompt = CATEGORY_SYSTEM_PROMPTS[category] || 'You are a professional content generator. Write detailed, well-structured content.';
   const contextHint = upstreamContext.trim()
@@ -467,8 +520,11 @@ export function getExecutionSystemPrompt(
   const downstreamHint = downstreamCategories && downstreamCategories.length > 0
     ? buildDownstreamFormatHint(downstreamCategories)
     : '';
+  const sharedContextHint = sharedContext && Object.keys(sharedContext).length > 0
+    ? buildSharedContextHint(sharedContext)
+    : '';
   const agentHint = agentName ? (AGENT_EXECUTION_HINTS[agentName.toLowerCase()] ?? '') : '';
-  return `${categoryPrompt}\n\nYou are working on a workflow node called "${sanitizeForPrompt(label, 100)}" (category: ${category}).${contextHint}${downstreamHint}${agentHint} Return ONLY the content as markdown text. Do not wrap in JSON or code blocks.`;
+  return `${categoryPrompt}\n\nYou are working on a workflow node called "${sanitizeForPrompt(label, 100)}" (category: ${category}).${contextHint}${downstreamHint}${sharedContextHint}${agentHint} Return ONLY the content as markdown text. Do not wrap in JSON or code blocks.`;
 }
 
 /**

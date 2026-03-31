@@ -11,6 +11,7 @@ import {
   buildWorkflowExecutionSummary,
   buildRelevanceWeightedContext,
   extractNodeSignal,
+  buildSharedContextHint,
 } from '../prompts';
 import type { ContextInput } from '../prompts';
 import { getAgent } from '../agents';
@@ -1054,5 +1055,134 @@ describe('extractNodeSignal', () => {
 
   it('returns null for whitespace-only output', () => {
     expect(extractNodeSignal('   \n\t  ', 'test')).toBeNull();
+  });
+});
+
+// ─── buildSharedContextHint ───────────────────────────────────────────────────
+
+describe('buildSharedContextHint', () => {
+  it('returns empty string for empty context', () => {
+    expect(buildSharedContextHint({})).toBe('');
+  });
+
+  it('includes data entries for regular keys', () => {
+    const result = buildSharedContextHint({ api_key: 'abc123', target_env: 'production' });
+    expect(result).toContain('Data stored by prior nodes');
+    expect(result).toContain('**api_key**');
+    expect(result).toContain('abc123');
+    expect(result).toContain('**target_env**');
+    expect(result).toContain('production');
+  });
+
+  it('separates decision keys from data entries', () => {
+    const result = buildSharedContextHint({
+      'decision:Quality Gate': 'approve (confidence: 0.92)',
+      report_url: 'https://example.com/report',
+    });
+    expect(result).toContain('Decisions made in this run');
+    expect(result).toContain('**Quality Gate**');
+    expect(result).toContain('approve (confidence: 0.92)');
+    expect(result).toContain('Data stored by prior nodes');
+    expect(result).toContain('**report_url**');
+  });
+
+  it('only shows decision section when only decisions present', () => {
+    const result = buildSharedContextHint({ 'decision:Auth Check': 'pass' });
+    expect(result).toContain('Decisions made in this run');
+    expect(result).not.toContain('Data stored by prior nodes');
+  });
+
+  it('only shows data section when no decisions present', () => {
+    const result = buildSharedContextHint({ score: 42, label: 'test' });
+    expect(result).not.toContain('Decisions made in this run');
+    expect(result).toContain('Data stored by prior nodes');
+  });
+
+  it('truncates very long values at 200 chars', () => {
+    const longValue = 'x'.repeat(300);
+    const result = buildSharedContextHint({ long_key: longValue });
+    expect(result).toContain('…');
+    // The truncated portion must appear, but not the full 300-char value
+    const match = result.match(/\*\*long_key\*\*: ([\s\S]+)/);
+    expect(match).toBeTruthy();
+    const captured = match![1].split('\n')[0];
+    expect(captured.length).toBeLessThan(220); // 200 + '…' + some tolerance
+  });
+
+  it('respects maxEntries cap', () => {
+    const ctx: Record<string, unknown> = {};
+    for (let i = 0; i < 20; i++) ctx[`key_${i}`] = `value_${i}`;
+    const result = buildSharedContextHint(ctx, 5);
+    // Only 5 entries should be rendered
+    const matches = (result.match(/\*\*key_/g) || []).length;
+    expect(matches).toBe(5);
+  });
+
+  it('serializes non-string values to JSON', () => {
+    const result = buildSharedContextHint({ counts: { pass: 3, fail: 1 } });
+    expect(result).toContain('{"pass":3,"fail":1}');
+  });
+
+  it('includes reference hint to avoid extra tool calls', () => {
+    const result = buildSharedContextHint({ x: 'y' });
+    expect(result).toContain('read_context');
+  });
+
+  it('includes Workflow Run Context header', () => {
+    const result = buildSharedContextHint({ a: 'b' });
+    expect(result).toContain('Workflow Run Context');
+  });
+});
+
+// ─── getExecutionSystemPrompt — shared context injection ─────────────────────
+
+describe('getExecutionSystemPrompt — shared context injection', () => {
+  it('injects shared context when provided', () => {
+    const result = getExecutionSystemPrompt('cid', 'Analyzer', '', undefined, undefined, { deployment_env: 'staging' });
+    expect(result).toContain('Workflow Run Context');
+    expect(result).toContain('deployment_env');
+    expect(result).toContain('staging');
+  });
+
+  it('omits context section when sharedContext is empty', () => {
+    const result = getExecutionSystemPrompt('cid', 'Analyzer', '', undefined, undefined, {});
+    expect(result).not.toContain('Workflow Run Context');
+  });
+
+  it('omits context section when sharedContext is undefined', () => {
+    const result = getExecutionSystemPrompt('cid', 'Analyzer', '');
+    expect(result).not.toContain('Workflow Run Context');
+  });
+
+  it('decision keys appear under Decisions section in the prompt', () => {
+    const result = getExecutionSystemPrompt('action', 'Deploy', '', undefined, undefined, {
+      'decision:Risk Assessment': 'approve (confidence: 0.88)',
+    });
+    expect(result).toContain('Decisions made in this run');
+    expect(result).toContain('Risk Assessment');
+    expect(result).toContain('approve (confidence: 0.88)');
+  });
+
+  it('places shared context hint before the Return ONLY instruction', () => {
+    const result = getExecutionSystemPrompt('test', 'My Tests', '', undefined, undefined, { key: 'val' });
+    const ctxIdx = result.indexOf('Workflow Run Context');
+    const returnIdx = result.indexOf('Return ONLY');
+    expect(ctxIdx).toBeGreaterThan(-1);
+    expect(returnIdx).toBeGreaterThan(-1);
+    expect(ctxIdx).toBeLessThan(returnIdx);
+  });
+
+  it('works alongside agent style hints', () => {
+    const result = getExecutionSystemPrompt('review', 'Code Review', '', undefined, 'rowan', { verdict: 'pending' });
+    expect(result).toContain('Workflow Run Context');
+    expect(result).toContain('ROWAN EXECUTION STYLE');
+    expect(result).toContain('verdict');
+  });
+
+  it('works with downstream hints and shared context together', () => {
+    const result = getExecutionSystemPrompt('cid', 'Planner', '', ['review', 'test'], undefined, { plan_id: 'p42' });
+    expect(result).toContain('Workflow Run Context');
+    expect(result).toContain('plan_id');
+    expect(result).toContain('OUTPUT CONTRACT');
   });
 });

@@ -1252,7 +1252,10 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         const downstreamCategories = outgoingEdges
           .map(e => store.nodes.find(n => n.id === e.target)?.data.category)
           .filter((c): c is string => Boolean(c));
-        const systemPrompt = getExecutionSystemPrompt(d.category, d.label, inputContext, downstreamCategories, store.cidMode) + toolPromptSuffix;
+        // Snapshot shared context at execution time — inject into system prompt so the LLM
+        // immediately sees what prior nodes stored without needing a read_context tool call.
+        const sharedCtxSnapshot = get()._sharedNodeContext;
+        const systemPrompt = getExecutionSystemPrompt(d.category, d.label, inputContext, downstreamCategories, store.cidMode, Object.keys(sharedCtxSnapshot).length > 0 ? sharedCtxSnapshot : undefined) + toolPromptSuffix;
         const effortLevel = d._effortLevel || inferEffortFromCategory(d.category);
         let messages: Array<{ role: 'user' | 'assistant'; content: string }> = [
           { role: 'user', content: `${autoPrompt}\n\n${inputContext}` },
@@ -1698,6 +1701,13 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
               ...(alternatives?.length ? { decisionAlternatives: alternatives } : {}),
             });
             workflowContext.decisions[nodeId] = decision;
+            // Persist decision to shared context so downstream node execution prompts
+            // can reference it without an extra read_context tool call.
+            const decisionContextKey = `decision:${nodeLabel}`;
+            const decisionContextValue = confidence !== undefined
+              ? `${decision} (confidence: ${confidence.toFixed(2)})`
+              : decision;
+            set(s => ({ _sharedNodeContext: { ...s._sharedNodeContext, [decisionContextKey]: decisionContextValue } }));
             cidLog('executeWorkflow:decision', { nodeId, label: nodeLabel, decision, confidence, reasoning });
 
             // Find outgoing edges and skip paths that don't match the decision
