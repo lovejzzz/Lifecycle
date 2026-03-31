@@ -1,5 +1,21 @@
 # Changelog
 
+### 2026-03-31 — Round 70: Tool Intelligence — list_context_keys, JSON Repair, Format 3 Parsing
+
+**Improvement — Tool Intelligence (Area 1):**
+
+1. **New tool: `list_context_keys`** — lists all keys currently stored in the shared workflow context, with value previews (up to 60 chars). Lets agents survey what data is available before calling `read_context`, avoiding blind key guesses across multi-node workflows. Poirot's tool order and style hint updated to start with `list_context_keys` (survey the scene before reading evidence).
+
+2. **Improved `repairJson`** — now handles unquoted identifier keys (e.g. `{tool: "web_search", args: {}}` → valid JSON). Joins existing repairs for trailing commas and single-quoted strings. Practical for LLMs that omit quotes on identifier-safe key names.
+
+3. **Format 3 in `parseToolCalls`** — detects ` ```json ` fenced blocks containing a `"tool"` field. Some models emit generic ` ```json ` instead of ` ```tool_call `. Deduplication works across all three formats (fenced, XML, json-fenced).
+
+4. **Updated agent wiring** — `list_context_keys` added to Poirot's preference list (position 1), Poirot's style hint, and Poirot's few-shot investigation example (survey → read → extract → compare → store).
+
+**Files changed:** `src/lib/agentTools.ts`, `src/lib/__tests__/agentTools.test.ts`
+
+**Test Results:** Build passes. 1407/1407 tests pass (29 new tests).
+
 ### 2026-03-31 — Round 69: Structured I/O Contracts — Shared Workflow Context in Execution Prompts
 
 **Improvement — Workflow Context Awareness in Node Execution (Agent Execution Improvements):**
