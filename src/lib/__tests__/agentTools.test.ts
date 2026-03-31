@@ -33,6 +33,26 @@ describe('repairJson', () => {
     const result = JSON.parse(repairJson(raw));
     expect(result.tool).toBe('extract_json');
   });
+
+  it('quotes unquoted identifier keys', () => {
+    const raw = '{tool: "web_search", args: {query: "hello"}}';
+    const result = JSON.parse(repairJson(raw));
+    expect(result.tool).toBe('web_search');
+    expect(result.args.query).toBe('hello');
+  });
+
+  it('does not double-quote already-quoted keys', () => {
+    const raw = '{"tool": "store_context", "args": {"key": "k", "value": 42}}';
+    const result = JSON.parse(repairJson(raw));
+    expect(result.tool).toBe('store_context');
+    expect(result.args.key).toBe('k');
+  });
+
+  it('handles mixed: unquoted key with single-quoted value', () => {
+    const raw = "{tool: 'validate_json', args: {text: '{}'}}";
+    const result = JSON.parse(repairJson(raw));
+    expect(result.tool).toBe('validate_json');
+  });
 });
 
 // ── parseToolCalls ───────────────────────────────────────────────────────────
@@ -92,6 +112,35 @@ describe('parseToolCalls', () => {
     const text = '```tool_call\n{"not_a_tool":"foo"}\n```';
     const { toolCalls } = parseToolCalls(text);
     expect(toolCalls).toHaveLength(0);
+  });
+
+  it('parses a ```json fenced block containing a tool field', () => {
+    const text = 'Here is the call:\n```json\n{"tool":"web_search","args":{"query":"test"}}\n```\nDone.';
+    const { toolCalls, cleanText } = parseToolCalls(text);
+    expect(toolCalls).toHaveLength(1);
+    expect(toolCalls[0].name).toBe('web_search');
+    expect(toolCalls[0].args.query).toBe('test');
+    expect(cleanText).not.toContain('```json');
+  });
+
+  it('ignores ```json blocks without a tool field', () => {
+    const text = '```json\n{"key":"value","items":[1,2,3]}\n```';
+    const { toolCalls } = parseToolCalls(text);
+    expect(toolCalls).toHaveLength(0);
+  });
+
+  it('deduplicates across format 1 and format 3', () => {
+    const call = '{"tool":"validate_json","args":{"text":"{}"}}';
+    const text = `\`\`\`tool_call\n${call}\n\`\`\`\n\`\`\`json\n${call}\n\`\`\``;
+    const { toolCalls } = parseToolCalls(text);
+    expect(toolCalls).toHaveLength(1);
+  });
+
+  it('parses unquoted-key tool call after repair', () => {
+    const text = '```tool_call\n{tool: "store_context", args: {key: "k", value: "v"}}\n```';
+    const { toolCalls } = parseToolCalls(text);
+    expect(toolCalls).toHaveLength(1);
+    expect(toolCalls[0].name).toBe('store_context');
   });
 });
 
@@ -185,6 +234,40 @@ describe('executeTool — context tools', () => {
   });
 });
 
+// ── executeTool — list_context_keys ──────────────────────────────────────────
+
+describe('executeTool — list_context_keys', () => {
+  it('reports empty context', async () => {
+    const ctx: Record<string, unknown> = {};
+    const result = await executeTool({ name: 'list_context_keys', args: {} }, ctx);
+    expect(result.success).toBe(true);
+    expect(result.result).toMatch(/empty/i);
+  });
+
+  it('lists keys with value previews', async () => {
+    const ctx: Record<string, unknown> = { foo: 'bar', count: 42 };
+    const result = await executeTool({ name: 'list_context_keys', args: {} }, ctx);
+    expect(result.success).toBe(true);
+    expect(result.result).toContain('"foo"');
+    expect(result.result).toContain('"count"');
+    expect(result.result).toContain('2 key');
+  });
+
+  it('truncates long string values in preview', async () => {
+    const longVal = 'x'.repeat(100);
+    const ctx: Record<string, unknown> = { bigKey: longVal };
+    const result = await executeTool({ name: 'list_context_keys', args: {} }, ctx);
+    expect(result.result).toContain('…');
+    expect(result.result.length).toBeLessThan(500);
+  });
+
+  it('reports no context when sharedContext is undefined', async () => {
+    const result = await executeTool({ name: 'list_context_keys', args: {} });
+    expect(result.success).toBe(true);
+    expect(result.result).toMatch(/no workflow context|empty/i);
+  });
+});
+
 // ── buildToolPrompt ──────────────────────────────────────────────────────────
 
 describe('buildToolPrompt', () => {
@@ -232,6 +315,11 @@ describe('buildToolPrompt', () => {
   it('injects poirot style hint when agentName is poirot', () => {
     const prompt = buildToolPrompt(tools, 'poirot');
     expect(prompt).toContain('methodically');
+  });
+
+  it('includes list_context_keys in poirot style hint', () => {
+    const prompt = buildToolPrompt(tools, 'poirot');
+    expect(prompt).toContain('list_context_keys');
   });
 
   it('produces no style hint for unknown agent names', () => {
@@ -289,7 +377,7 @@ describe('getPreferredTools', () => {
     expect(genIdx).toBeLessThan(cmpIdx);
   });
 
-  it('poirot puts read_context first', () => {
+  it('poirot puts read_context first (without list_context_keys in set)', () => {
     const result = getPreferredTools('poirot', allTools);
     expect(result[0].name).toBe('read_context');
   });

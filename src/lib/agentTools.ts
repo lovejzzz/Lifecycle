@@ -106,6 +106,10 @@ export const BUILT_IN_TOOLS: AgentTool[] = [
     name: 'compare_texts',
     description: 'Compare two texts and return a structured diff summary — additions, removals, and key differences. Args: { "text_a": "...", "text_b": "...", "label_a": "Version A", "label_b": "Version B" }',
   },
+  {
+    name: 'list_context_keys',
+    description: 'List all keys currently stored in the shared workflow context. Useful before calling read_context to discover what data is available. Args: {} (no arguments required)',
+  },
 ];
 
 // ── Agent-Specific Tool Preferences ─────────────────────────────────────────
@@ -129,16 +133,17 @@ const AGENT_TOOL_PREFERENCES: Record<string, string[]> = {
     'compare_texts',  // diff (lower priority — thorough work)
   ],
   poirot: [
-    // Thoroughness-first: examine existing evidence → extract → verify → synthesize
-    'read_context',   // examine what is already known
-    'extract_json',   // extract structured clues from raw data
-    'compare_texts',  // compare versions, spot discrepancies
-    'validate_json',  // verify data integrity rigorously
-    'summarize_text', // synthesize findings concisely
-    'web_search',     // research external evidence when needed
-    'store_context',  // document deductions for downstream nodes
-    'http_request',   // fetch external data as supporting evidence
-    'generate_code',  // generate only as a last step
+    // Thoroughness-first: survey the scene → examine evidence → extract → verify → synthesize
+    'list_context_keys', // survey what is already known before reading anything
+    'read_context',      // examine what is already known
+    'extract_json',      // extract structured clues from raw data
+    'compare_texts',     // compare versions, spot discrepancies
+    'validate_json',     // verify data integrity rigorously
+    'summarize_text',    // synthesize findings concisely
+    'web_search',        // research external evidence when needed
+    'store_context',     // document deductions for downstream nodes
+    'http_request',      // fetch external data as supporting evidence
+    'generate_code',     // generate only as a last step
   ],
 };
 
@@ -152,7 +157,7 @@ const AGENT_TOOL_STYLE: Record<string, string> = {
     'Prefer `store_context` to preserve mission-critical intel for downstream nodes. ' +
     'One tool call per objective. Report the result and move on.',
   poirot:
-    'Use tools methodically and thoroughly. Begin with `read_context` to examine what is already known before fetching anything new. ' +
+    'Use tools methodically and thoroughly. Begin with `list_context_keys` to survey the scene, then `read_context` for relevant keys before fetching anything new. ' +
     'Use `compare_texts` and `extract_json` to ensure no clue is missed. ' +
     'Document every key deduction with `store_context` so downstream nodes inherit your findings. ' +
     'Quality of reasoning matters more than speed.',
@@ -205,8 +210,12 @@ One tool per objective. Retrieve → Store → Proceed.`,
 
   poirot: `
 
-### Example — Poirot: thorough investigation (read → extract → compare → store):
-Start by reading what is already known before fetching anything new:
+### Example — Poirot: thorough investigation (survey → read → extract → compare → store):
+First survey the scene — discover what the workflow has already deposited:
+\`\`\`tool_call
+{"tool": "list_context_keys", "args": {}}
+\`\`\`
+*(Keys revealed)* — now read what is relevant before fetching anything new:
 \`\`\`tool_call
 {"tool": "read_context", "args": {"key": "prior_analysis"}}
 \`\`\`
@@ -291,6 +300,9 @@ export function repairJson(raw: string): string {
   // e.g. {'key': 'value'} → {"key": "value"}
   s = s.replace(/([{,]\s*)'([^']+?)'\s*:/g, '$1"$2":');
   s = s.replace(/:\s*'([^']*?)'/g, ': "$1"');
+  // Quote unquoted identifier keys: { tool: "foo" } → { "tool": "foo" }
+  // Only applies when the key is a bare identifier (letters/digits/_/$) not already quoted
+  s = s.replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g, '$1"$2":');
   return s;
 }
 
@@ -340,10 +352,26 @@ export function parseToolCalls(text: string): { cleanText: string; toolCalls: Pa
     }
   }
 
+  // Format 3: ```json fenced blocks containing a "tool" field
+  // Some models emit generic ```json rather than ```tool_call
+  const jsonFenceRegex = /```json\s*\n([\s\S]*?)\n?```/g;
+  while ((match = jsonFenceRegex.exec(text)) !== null) {
+    const raw = match[1].trim();
+    // Only treat as a tool call if the JSON contains a "tool" field
+    if (/["']?tool["']?\s*:/.test(raw)) {
+      const call = tryParse(raw);
+      if (call) {
+        const key = `${call.name}:${JSON.stringify(call.args)}`;
+        if (!seen.has(key)) { seen.add(key); toolCalls.push(call); }
+      }
+    }
+  }
+
   // Remove all tool call blocks from the text to get clean output
   const cleanText = text
     .replace(fencedRegex, '')
     .replace(xmlRegex, '')
+    .replace(jsonFenceRegex, '')
     .trim();
 
   return { cleanText, toolCalls };
@@ -487,6 +515,28 @@ async function _executeToolImpl(
           result: `Code generation task ready. Language: ${language}. Task: ${task}\n\nPlease write the ${language} code for this task in your next response, using a fenced code block (\`\`\`${language}).`,
           success: true, durationMs: Date.now() - start,
         });
+      }
+
+      case 'list_context_keys': {
+        if (!sharedContext) {
+          return { tool: call.name, args: call.args, result: 'No workflow context available. Context is empty.', success: true, durationMs: Date.now() - start };
+        }
+        const keys = Object.keys(sharedContext);
+        if (keys.length === 0) {
+          return { tool: call.name, args: call.args, result: 'Workflow context is empty — no keys stored yet.', success: true, durationMs: Date.now() - start };
+        }
+        const keyList = keys.map(k => {
+          const val = sharedContext[k];
+          const preview = typeof val === 'string'
+            ? (val.length > 60 ? `"${val.slice(0, 60)}…"` : `"${val}"`)
+            : JSON.stringify(val)?.slice(0, 60) ?? 'null';
+          return `- "${k}": ${preview}`;
+        }).join('\n');
+        return {
+          tool: call.name, args: call.args,
+          result: `Workflow context has ${keys.length} key(s):\n${keyList}`,
+          success: true, durationMs: Date.now() - start,
+        };
       }
 
       case 'compare_texts': {
