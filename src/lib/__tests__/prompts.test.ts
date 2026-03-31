@@ -566,6 +566,80 @@ describe('getExecutionSystemPrompt — downstream format hints', () => {
   });
 });
 
+// ─── getExecutionSystemPrompt — agent-aware execution style ─────────────────
+
+describe('getExecutionSystemPrompt — agent-aware execution', () => {
+  it('injects ROWAN EXECUTION STYLE for rowan agent', () => {
+    const result = getExecutionSystemPrompt('cid', 'Analyzer', '', [], 'rowan');
+    expect(result).toContain('ROWAN EXECUTION STYLE');
+  });
+
+  it('rowan hint emphasises directness and decisive output', () => {
+    const result = getExecutionSystemPrompt('cid', 'Analyzer', '', [], 'rowan');
+    expect(result).toContain('direct');
+    expect(result).toContain('decisive');
+  });
+
+  it('injects POIROT EXECUTION STYLE for poirot agent', () => {
+    const result = getExecutionSystemPrompt('cid', 'Analyzer', '', [], 'poirot');
+    expect(result).toContain('POIROT EXECUTION STYLE');
+  });
+
+  it('poirot hint emphasises thorough investigation', () => {
+    const result = getExecutionSystemPrompt('cid', 'Analyzer', '', [], 'poirot');
+    expect(result).toContain('investigation');
+    expect(result).toContain('methodically');
+  });
+
+  it('omits agent hint when no agentName provided', () => {
+    const result = getExecutionSystemPrompt('cid', 'Analyzer', '');
+    expect(result).not.toContain('EXECUTION STYLE');
+  });
+
+  it('omits agent hint for unknown agent names', () => {
+    const result = getExecutionSystemPrompt('cid', 'Analyzer', '', [], 'zephyr');
+    expect(result).not.toContain('EXECUTION STYLE');
+  });
+
+  it('is case-insensitive: ROWAN and rowan produce the same prompt', () => {
+    const lower = getExecutionSystemPrompt('test', 'Tests', '', [], 'rowan');
+    const upper = getExecutionSystemPrompt('test', 'Tests', '', [], 'ROWAN');
+    expect(lower).toBe(upper);
+  });
+
+  it('is case-insensitive: POIROT and poirot produce the same prompt', () => {
+    const lower = getExecutionSystemPrompt('review', 'Review', '', [], 'poirot');
+    const upper = getExecutionSystemPrompt('review', 'Review', '', [], 'POIROT');
+    expect(lower).toBe(upper);
+  });
+
+  it('agent hint comes before the final Return ONLY instruction', () => {
+    const result = getExecutionSystemPrompt('cid', 'Analyzer', '', [], 'rowan');
+    const hintIdx = result.indexOf('ROWAN EXECUTION STYLE');
+    const returnIdx = result.indexOf('Return ONLY');
+    expect(hintIdx).toBeGreaterThan(-1);
+    expect(returnIdx).toBeGreaterThan(hintIdx);
+  });
+
+  it('agent hint is compatible with downstream format hints', () => {
+    const result = getExecutionSystemPrompt('cid', 'Analyzer', '', ['review'], 'poirot');
+    expect(result).toContain('POIROT EXECUTION STYLE');
+    expect(result).toContain('OUTPUT CONTRACT');
+  });
+
+  it('agent hint is compatible with upstream context hint', () => {
+    const result = getExecutionSystemPrompt('artifact', 'PRD', 'Some upstream data', [], 'rowan');
+    expect(result).toContain('ROWAN EXECUTION STYLE');
+    expect(result).toContain('Upstream workflow data');
+  });
+
+  it('rowan and poirot produce different prompts for the same node', () => {
+    const rowan = getExecutionSystemPrompt('test', 'QA Suite', '', [], 'rowan');
+    const poirot = getExecutionSystemPrompt('test', 'QA Suite', '', [], 'poirot');
+    expect(rowan).not.toBe(poirot);
+  });
+});
+
 // ─── smartTruncate ───────────────────────────────────────────────────────
 
 describe('smartTruncate', () => {

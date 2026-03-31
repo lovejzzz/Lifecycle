@@ -1252,7 +1252,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         const downstreamCategories = outgoingEdges
           .map(e => store.nodes.find(n => n.id === e.target)?.data.category)
           .filter((c): c is string => Boolean(c));
-        const systemPrompt = getExecutionSystemPrompt(d.category, d.label, inputContext, downstreamCategories) + toolPromptSuffix;
+        const systemPrompt = getExecutionSystemPrompt(d.category, d.label, inputContext, downstreamCategories, store.cidMode) + toolPromptSuffix;
         const effortLevel = d._effortLevel || inferEffortFromCategory(d.category);
         let messages: Array<{ role: 'user' | 'assistant'; content: string }> = [
           { role: 'user', content: `${autoPrompt}\n\n${inputContext}` },

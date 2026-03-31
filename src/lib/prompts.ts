@@ -424,6 +424,32 @@ function buildDownstreamFormatHint(categories: string[]): string {
   return `\n\nOUTPUT CONTRACT (downstream: ${categories.join(', ')}): ${hints.join(' ')}`;
 }
 
+// ── Agent-Aware Execution Style Hints ────────────────────────────────────────
+
+/**
+ * Agent-specific execution style hints injected into node system prompts.
+ *
+ * These differentiate Rowan (direct/decisive) from Poirot (thorough/investigative)
+ * during node execution — not just in chat. The hints shape HOW the agent completes
+ * the task: formatting preferences, verdict-placement, analysis depth, etc.
+ *
+ * Placement: appended just before the final "Return ONLY..." instruction so the
+ * output format rule always comes last.
+ */
+const AGENT_EXECUTION_HINTS: Record<string, string> = {
+  rowan:
+    '\n\nROWAN EXECUTION STYLE: Be direct and decisive. Lead with your result or verdict. ' +
+    'Use numbered steps and bullet points for structure. State PASS / FAIL / APPROVE / BLOCK decisions ' +
+    'immediately at the top, followed by concise supporting evidence. ' +
+    'Skip lengthy preamble — the output is the mission.',
+  poirot:
+    '\n\nPOIROT EXECUTION STYLE: Approach this as a thorough investigation. ' +
+    'Examine every piece of input evidence before drawing a conclusion. ' +
+    'Work through each dimension methodically — note anomalies, edge cases, and inconsistencies. ' +
+    'Build your case step by step so your conclusion feels inevitable from the evidence. ' +
+    'Verdicts and decisions come last, fully justified.',
+};
+
 /** Get a category-aware system prompt for node execution. */
 export function getExecutionSystemPrompt(
   category: string,
@@ -431,6 +457,8 @@ export function getExecutionSystemPrompt(
   upstreamContext: string,
   /** Optional: categories of downstream nodes — used to tailor output format */
   downstreamCategories?: string[],
+  /** Optional: active agent name ('rowan' | 'poirot') — adds execution style hints */
+  agentName?: string,
 ): string {
   const categoryPrompt = CATEGORY_SYSTEM_PROMPTS[category] || 'You are a professional content generator. Write detailed, well-structured content.';
   const contextHint = upstreamContext.trim()
@@ -439,7 +467,8 @@ export function getExecutionSystemPrompt(
   const downstreamHint = downstreamCategories && downstreamCategories.length > 0
     ? buildDownstreamFormatHint(downstreamCategories)
     : '';
-  return `${categoryPrompt}\n\nYou are working on a workflow node called "${sanitizeForPrompt(label, 100)}" (category: ${category}).${contextHint}${downstreamHint} Return ONLY the content as markdown text. Do not wrap in JSON or code blocks.`;
+  const agentHint = agentName ? (AGENT_EXECUTION_HINTS[agentName.toLowerCase()] ?? '') : '';
+  return `${categoryPrompt}\n\nYou are working on a workflow node called "${sanitizeForPrompt(label, 100)}" (category: ${category}).${contextHint}${downstreamHint}${agentHint} Return ONLY the content as markdown text. Do not wrap in JSON or code blocks.`;
 }
 
 /**
