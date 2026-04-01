@@ -25,7 +25,6 @@ export interface CIDRequest {
 }
 
 export interface CIDResponse {
-   
   result: any;
   provider?: string;
   model?: string;
@@ -108,7 +107,11 @@ const FALLBACK_MODELS = ['deepseek-reasoner', 'deepseek-chat'];
 const RETRY_DELAYS = [1000, 2000, 4000];
 const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
 
-async function callCIDOnce(req: CIDRequest): Promise<CIDResponse> {
+/**
+ * Single-shot CID call without retry/circuit-breaker/dedup.
+ * Use when the caller already has its own retry loop (e.g. executeNode agent loop).
+ */
+export async function callCIDOnce(req: CIDRequest): Promise<CIDResponse> {
   const timeoutMs = req.timeout ?? 45000;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);

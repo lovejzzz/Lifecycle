@@ -4,7 +4,6 @@ import { create } from 'zustand';
 import type { Node, Edge } from '@xyflow/react';
 import type {
   NodeData,
-  LifecycleEvent,
   CIDMessage,
   NodeCategory,
   CIDMode,
@@ -15,8 +14,6 @@ import type {
   DrivingForceLayer,
   CentralContext,
   ArtifactContract,
-  SurgicalDiff,
-  Override,
 } from '@/lib/types';
 import { registerCustomCategory, EDGE_LABEL_COLORS, BUILT_IN_CATEGORIES } from '@/lib/types';
 import {
@@ -51,6 +48,7 @@ import {
   MODEL_PRICING,
 } from '@/lib/cache';
 import { validateOutput, extractKeywords, buildRefinementPrompt } from '@/lib/validate';
+import { callCID, callCIDOnce } from '@/lib/cidClient';
 // UsageStats type used by createEmptyUsageStats return type
 import {
   createDefaultHabits,
@@ -96,30 +94,35 @@ import { compileDocument, exportAndDownload } from '@/lib/export';
 import type { ExportFormat } from '@/lib/export';
 import {
   listProjects as listStorageProjects,
-  loadProject,
   saveProject as saveStorageProject,
-  deleteProject as deleteStorageProject,
-  createProject as createStorageProject,
-  renameProject as renameStorageProject,
   migrateLegacyProject,
 } from '@/lib/storage';
 
 // Store types imported from dedicated file for maintainability
-import type { LifecycleStore, UndoOperation } from './types';
+import type { LifecycleStore } from './types';
 export type { LifecycleStore, UndoOperation, PoirotContext } from './types';
 // Extracted slices
 import { createUISlice } from './slices/uiSlice';
 import { createArtifactSlice } from './slices/artifactSlice';
+import { createProjectSlice } from './slices/projectSlice';
+import { createCentralBrainSlice } from './slices/centralBrainSlice';
 export { cidLog } from './helpers';
+
+// Module-level helpers exported for use by slices (circular import is safe —
+// slices only call these inside functions, which run after all modules are initialised).
+export { saveToStorage, flushSave };
 import { cidLog, MAX_HISTORY, computeUndoOp, applyUndo, applyRedo } from './helpers';
 
 // cidLog imported from ./helpers
 
 let nodeCounter = 100;
-const uid = () => `node-${++nodeCounter}`;
+export const uid = () => `node-${++nodeCounter}`;
+export function resetNodeCounter(value: number) {
+  nodeCounter = value;
+}
 
 // Initialize nodeCounter from persisted data to avoid duplicate keys
-function initNodeCounter(items: { id: string }[][]) {
+export function initNodeCounter(items: { id: string }[][]) {
   let max = 100;
   for (const list of items) {
     for (const n of list) {
@@ -132,11 +135,11 @@ function initNodeCounter(items: { id: string }[][]) {
 
 // Track animation timeouts to cancel on new workflow generation
 const animationTimers = new Set<ReturnType<typeof setTimeout>>();
-function clearAnimationTimers() {
+export function clearAnimationTimers() {
   animationTimers.forEach((t) => clearTimeout(t));
   animationTimers.clear();
 }
-function trackTimeout(fn: () => void, ms: number) {
+export function trackTimeout(fn: () => void, ms: number) {
   const id = setTimeout(() => {
     animationTimers.delete(id);
     fn();
@@ -910,6 +913,8 @@ export const useLifecycleStore = create<LifecycleStore>((set, get, api) => ({
   // ── Extracted slices (spread first, inline code can override) ──
   ...createUISlice(set, get, api),
   ...createArtifactSlice(set, get, api),
+  ...createProjectSlice(set, get, api),
+  ...createCentralBrainSlice(set, get, api),
   nodes: (() => {
     const raw = persisted?.nodes ?? [];
     // Deduplicate by ID (keep last occurrence)
@@ -1311,23 +1316,20 @@ export const useLifecycleStore = create<LifecycleStore>((set, get, api) => ({
           executionStatus: 'running',
           _executionStartedAt: _execStart,
         });
-        const res = await fetch('/api/cid', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            systemPrompt,
-            messages: [
-              {
-                role: 'user',
-                content: `${decisionPrompt}\n\n--- UPSTREAM DATA ---\n${upstreamData}`,
-              },
-            ],
-            model: store.cidAIModel,
-            taskType: 'analyze',
-          }),
-          signal: AbortSignal.timeout(60000),
+        const data = await callCID({
+          systemPrompt,
+          messages: [
+            {
+              role: 'user',
+              content: `${decisionPrompt}\n\n--- UPSTREAM DATA ---\n${upstreamData}`,
+            },
+          ],
+          model: store.cidAIModel,
+          taskType: 'analyze',
+          timeout: 60000,
         });
-        const data = await res.json();
+        if (data.usage)
+          store.trackCost(data.usage.prompt_tokens, data.usage.completion_tokens, store.cidAIModel);
         const output = data.result?.message || data.result?.content || '';
         const _execDuration = Date.now() - _execStart;
         // Parse structured output immediately so fields are available in executeNode context
@@ -1733,7 +1735,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
             Object.keys(sharedCtxSnapshot).length > 0 ? sharedCtxSnapshot : undefined,
             directContextInputs.length,
           ) + toolPromptSuffix;
-        const effortLevel = d._effortLevel || inferEffortFromCategory(d.category);
+        const _effortLevel = d._effortLevel || inferEffortFromCategory(d.category);
         let messages: Array<{ role: 'user' | 'assistant'; content: string }> = [
           { role: 'user', content: `${autoPrompt}\n\n${inputContext}` },
         ];
@@ -1742,42 +1744,25 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         // ── Agent loop: iterate with tool calls ──
         for (let iteration = 0; iteration < maxIterations; iteration++) {
           let attempt = 0;
-          let res: Response | null = null;
           let result: Record<string, unknown> | null = null;
 
-          // ── Retry loop on failure ──
+          // ── Retry loop on failure (node-specific retry semantics from agentConfig) ──
           while (attempt <= maxRetries) {
             try {
-              res = await fetch('/api/cid', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  systemPrompt,
-                  model: store.cidAIModel,
-                  taskType: 'execute',
-                  effortLevel,
-                  messages,
-                }),
+              // Use callCIDOnce (no internal retry) — outer loop owns retry semantics
+              const cidData = await callCIDOnce({
+                systemPrompt,
+                model: store.cidAIModel,
+                taskType: 'execute',
+                messages,
                 signal: agentAbort.signal,
               });
 
-              if (!res.ok) {
-                lastError = `CID API error ${res.status}`;
-                attempt++;
-                if (attempt <= maxRetries) {
-                  cidLog('executeNode:retry', { nodeId, attempt, maxRetries, error: lastError });
-                  await new Promise((r) => setTimeout(r, 1000 * attempt));
-                  continue;
-                }
-                break;
-              }
-              result = await res.json();
-              if ((result as Record<string, unknown>).error) {
-                const errResult = result as { error: string; message?: string };
+              if (cidData.error) {
                 lastError =
-                  errResult.error === 'no_api_key'
+                  cidData.error === 'no_api_key'
                     ? 'No API key configured on server.'
-                    : errResult.message || errResult.error;
+                    : cidData.message || cidData.error;
                 attempt++;
                 if (attempt <= maxRetries) {
                   cidLog('executeNode:retry', { nodeId, attempt, maxRetries, error: lastError });
@@ -1786,6 +1771,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
                 }
                 break;
               }
+              result = cidData as unknown as Record<string, unknown>;
               lastError = null;
               break;
             } catch (fetchErr) {
@@ -1914,24 +1900,24 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
               warnings: fixableWarnings.map((w) => w.code),
             });
             try {
-              const refinementRes = await fetch('/api/cid', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  systemPrompt,
-                  model: store.cidAIModel,
-                  taskType: 'analyze',
-                  effortLevel: 'medium',
-                  messages: [
-                    messages[0], // original user message for context
-                    { role: 'assistant' as const, content: output },
-                    { role: 'user' as const, content: buildRefinementPrompt(fixableWarnings) },
-                  ],
-                }),
-                signal: AbortSignal.timeout(60_000),
+              const refinementData = await callCID({
+                systemPrompt,
+                model: store.cidAIModel,
+                taskType: 'analyze',
+                timeout: 60_000,
+                messages: [
+                  messages[0], // original user message for context
+                  { role: 'assistant' as const, content: output },
+                  { role: 'user' as const, content: buildRefinementPrompt(fixableWarnings) },
+                ],
               });
-              if (refinementRes.ok) {
-                const refinementData = await refinementRes.json();
+              if (refinementData.usage)
+                store.trackCost(
+                  refinementData.usage.prompt_tokens,
+                  refinementData.usage.completion_tokens,
+                  store.cidAIModel,
+                );
+              if (!refinementData.error) {
                 const refinedRaw =
                   refinementData.result?.content || refinementData.result?.message || '';
                 if (refinedRaw && refinedRaw.length >= output.length * 0.5) {
@@ -3854,29 +3840,29 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     });
 
     try {
-      const res = await fetch('/api/cid', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          systemPrompt: system,
-          model: store.cidAIModel,
-          taskType: 'execute',
-          effortLevel: 'medium',
-          messages: [{ role: 'user', content: user }],
-        }),
+      const result = await callCID({
+        systemPrompt: system,
+        model: store.cidAIModel,
+        taskType: 'execute',
+        messages: [{ role: 'user', content: user }],
       });
+      if (result.usage)
+        store.trackCost(
+          result.usage.prompt_tokens,
+          result.usage.completion_tokens,
+          store.cidAIModel,
+        );
 
-      if (!res.ok) {
+      if (result.error) {
         store.addMessage({
           id: uid(),
           role: 'cid',
-          content: `Refinement failed (API ${res.status}).`,
+          content: `Refinement failed (${result.message || result.error}).`,
           timestamp: Date.now(),
         });
         return;
       }
 
-      const result = await res.json();
       const raw =
         result.result?.content ||
         result.result?.message ||
@@ -4690,22 +4676,15 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       const systemPrompt = `You are a content generator. Write detailed, professional content for a workflow node. Return ONLY a JSON object: {"content": "the markdown content", "description": "one-line summary"}. No other text.`;
       const userPrompt = `Generate detailed content for a "${d.category}" node called "${d.label}"${d.description ? ` (${d.description})` : ''}${connections ? `. Connected to: ${connections}` : ''}. Write real, substantive content — not placeholders. Use markdown formatting. Content should be 150-400 words.`;
 
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 30000);
-      const res = await fetch('/api/cid', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          systemPrompt,
-          messages: [{ role: 'user', content: userPrompt }],
-          model: get().cidAIModel,
-          taskType: 'analyze',
-        }),
-        signal: controller.signal,
+      const data = await callCID({
+        systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }],
+        model: get().cidAIModel,
+        taskType: 'analyze',
+        timeout: 30000,
       });
-      clearTimeout(timeout);
-
-      const data = await res.json();
+      if (data.usage)
+        store.trackCost(data.usage.prompt_tokens, data.usage.completion_tokens, get().cidAIModel);
       if (!data.error && data.result) {
         const result = data.result as { content?: string; description?: string; message?: string };
         const content = result.content || result.message || '';
@@ -4818,6 +4797,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       const chatTimeout = setTimeout(() => chatController.abort(), chatTimeoutMs);
 
       // Try streaming for non-build chat requests
+      // Streaming call — bypasses callCID (SSE requires direct fetch)
       if (!isBuildOrModify) {
         try {
           const streamRes = await fetch('/api/cid', {
@@ -4923,22 +4903,15 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       }
 
       // Non-streaming path (for build/modify or streaming fallback)
-      const nsController = new AbortController();
-      const nsTimeout = setTimeout(() => nsController.abort(), chatTimeoutMs);
-      const res = await fetch('/api/cid', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          systemPrompt,
-          messages,
-          model: get().cidAIModel,
-          taskType: chatTaskType,
-        }),
-        signal: nsController.signal,
+      const data = await callCID({
+        systemPrompt,
+        messages,
+        model: get().cidAIModel,
+        taskType: chatTaskType as 'generate' | 'execute' | 'analyze',
+        timeout: chatTimeoutMs,
       });
-      clearTimeout(nsTimeout);
-
-      const data = await res.json();
+      if (data.usage)
+        store.trackCost(data.usage.prompt_tokens, data.usage.completion_tokens, get().cidAIModel);
 
       // Remove thinking message
       set((s) => ({ messages: s.messages.filter((m) => m.id !== thinkingId) }));
@@ -5627,22 +5600,15 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
           .map((m) => ({ role: m.role as 'user' | 'cid', content: m.content }));
         const messages = buildMessages(chatHistory, `Build a workflow for: ${prompt}`);
 
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 45000);
-        const res = await fetch('/api/cid', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            systemPrompt,
-            messages,
-            model: get().cidAIModel,
-            taskType: 'generate',
-          }),
-          signal: controller.signal,
+        const data = await callCID({
+          systemPrompt,
+          messages,
+          model: get().cidAIModel,
+          taskType: 'generate',
+          timeout: 45000,
         });
-        clearTimeout(timeout);
-
-        const data = await res.json();
+        if (data.usage)
+          store.trackCost(data.usage.prompt_tokens, data.usage.completion_tokens, get().cidAIModel);
         if (data.error) return false;
 
         const result = data.result as {
@@ -5998,645 +5964,10 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     });
   },
 
-  // ── Projects ──
+  // ── Projects — from ProjectSlice ──
+  // Override slice defaults with persisted initial values
   currentProjectId: initialProjectId,
   currentProjectName: initialProjectName,
-
-  newProject: () => {
-    const store = get();
-    const agent = getAgent(store.cidMode);
-
-    // Save current project before creating new one
-    if (store.currentProjectId) {
-      flushSave();
-    }
-
-    // Reset nodeCounter for fresh project to avoid ID collisions
-    nodeCounter = 100;
-
-    // Create new project in storage
-    const projectName = `Project ${listStorageProjects().length + 1}`;
-    const newId = createStorageProject(projectName);
-
-    const fresh = {
-      nodes: [] as Node<NodeData>[],
-      edges: [] as Edge[],
-      events: [] as LifecycleEvent[],
-      messages: [
-        {
-          id: `msg-${Date.now()}`,
-          role: 'cid' as const,
-          content: agent.welcome,
-          timestamp: Date.now(),
-        },
-      ],
-      selectedNodeId: null,
-      isProcessing: false,
-      history: [] as UndoOperation[],
-      future: [] as UndoOperation[],
-      poirotContext: { phase: 'idle' as const, originalPrompt: '', answers: {}, questionIndex: 0 },
-      currentProjectId: newId,
-      currentProjectName: projectName,
-      centralContext: null as CentralContext | null,
-    };
-    set(fresh);
-    saveToStorage({
-      nodes: fresh.nodes,
-      edges: fresh.edges,
-      events: fresh.events,
-      messages: fresh.messages,
-    });
-  },
-
-  switchProject: (id: string) => {
-    const store = get();
-    // Save current project first
-    if (store.currentProjectId) {
-      flushSave();
-    }
-
-    // Load target project
-    const data = loadProject(id);
-    if (!data) {
-      store.addToast('Project not found', 'error');
-      return;
-    }
-
-    const projects = listStorageProjects();
-    const meta = projects.find((p) => p.id === id);
-
-    // Restore nodeCounter from loaded nodes+messages (always reset to match this project)
-    const loadedNodes = (data.nodes || []) as Node<NodeData>[];
-    initNodeCounter([
-      loadedNodes,
-      (data.messages || []) as { id: string }[],
-      (data.events || []) as { id: string }[],
-    ]);
-
-    set({
-      nodes: loadedNodes,
-      edges: (data.edges || []) as Edge[],
-      events: (data.events || []) as LifecycleEvent[],
-      messages: (data.messages || []) as CIDMessage[],
-      selectedNodeId: null,
-      activeArtifactNodeId: null,
-      contextMenu: null,
-      history: [] as UndoOperation[],
-      future: [] as UndoOperation[],
-      isProcessing: false,
-      currentProjectId: id,
-      currentProjectName: meta?.name || 'Untitled',
-    });
-
-    // Update legacy key too
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    cidLog('switchProject', `Loaded project "${meta?.name}" (${loadedNodes.length} nodes)`);
-  },
-
-  renameCurrentProject: (name: string) => {
-    const { currentProjectId } = get();
-    if (!currentProjectId) return;
-    flushSave();
-    renameStorageProject(currentProjectId, name);
-    set({ currentProjectName: name });
-  },
-
-  deleteCurrentProject: () => {
-    const store = get();
-    if (!store.currentProjectId) return;
-
-    const projects = listStorageProjects();
-    if (projects.length <= 1) {
-      store.addToast('Cannot delete the only project', 'warning');
-      return;
-    }
-
-    deleteStorageProject(store.currentProjectId);
-
-    // Switch to another project
-    const remaining = listStorageProjects();
-    if (remaining.length > 0) {
-      store.switchProject(remaining[0].id);
-    }
-  },
-
-  listProjects: () => listStorageProjects(),
-
-  loadTemplate: (templateName) => {
-    const store = get();
-    const templates: Record<
-      string,
-      {
-        nodes: Array<{
-          label: string;
-          category: NodeCategory;
-          description: string;
-          inputType?: 'text' | 'url' | 'file';
-          acceptedFileTypes?: string[];
-        }>;
-        edges: Array<{ from: number; to: number; label: string }>;
-      }
-    > = {
-      'Software Development': {
-        nodes: [
-          {
-            label: 'Requirements',
-            category: 'input',
-            description: 'User stories, feature specs, and acceptance criteria from stakeholders',
-            inputType: 'file',
-            acceptedFileTypes: ['.pdf', '.docx', '.txt', '.md'],
-          },
-          {
-            label: 'Design',
-            category: 'deliverable',
-            description:
-              'Create architecture diagrams, API contracts, and UI wireframes based on the requirements. Output a concise design document.',
-          },
-          {
-            label: 'Development',
-            category: 'process',
-            description:
-              'Implement the code based on the design document. List the key modules built and their status.',
-          },
-          {
-            label: 'Code Review',
-            category: 'review',
-            description:
-              'Review the implementation for correctness, style, security issues, and adherence to the design. Approve or request changes.',
-          },
-          {
-            label: 'Testing',
-            category: 'review',
-            description:
-              'Run unit tests, integration tests, and manual QA against the acceptance criteria. Report pass/fail results.',
-          },
-          {
-            label: 'Deployment',
-            category: 'deliverable',
-            description: 'Deploy to production and confirm the release is live.',
-          },
-          {
-            label: 'Monitoring',
-            category: 'process',
-            description:
-              'Track error rates, latency, and user metrics post-deployment. Report any anomalies.',
-          },
-        ],
-        edges: [
-          { from: 0, to: 1, label: 'drives' },
-          { from: 1, to: 2, label: 'feeds' },
-          { from: 2, to: 3, label: 'triggers' },
-          { from: 3, to: 4, label: 'validates' },
-          { from: 4, to: 5, label: 'approves' },
-          { from: 5, to: 6, label: 'triggers' },
-        ],
-      },
-      'Content Pipeline': {
-        nodes: [
-          {
-            label: 'Research',
-            category: 'input',
-            description: 'Topic research, audience analysis, and competitive landscape',
-            inputType: 'file',
-            acceptedFileTypes: ['.pdf', '.docx', '.txt', '.md', '.csv'],
-          },
-          {
-            label: 'Brief',
-            category: 'deliverable',
-            description:
-              'Write a content brief with target audience, key messages, SEO keywords, and outline structure.',
-          },
-          {
-            label: 'Writing',
-            category: 'process',
-            description:
-              'Draft the full article or content piece based on the brief. Write in a clear, engaging style with proper markdown formatting.',
-          },
-          {
-            label: 'Editorial Review',
-            category: 'review',
-            description:
-              'Review the draft for clarity, accuracy, tone, grammar, and alignment with the brief. Note specific improvements needed.',
-          },
-          {
-            label: 'SEO & Format',
-            category: 'review',
-            description:
-              'Check SEO: title tag, meta description, heading hierarchy, keyword density, internal links. Verify formatting meets publishing standards.',
-          },
-          {
-            label: 'Published Article',
-            category: 'deliverable',
-            description: 'Final published content ready for distribution.',
-          },
-        ],
-        edges: [
-          { from: 0, to: 1, label: 'drives' },
-          { from: 1, to: 2, label: 'feeds' },
-          { from: 2, to: 3, label: 'triggers' },
-          { from: 3, to: 4, label: 'validates' },
-          { from: 4, to: 5, label: 'outputs' },
-        ],
-      },
-      'Incident Response': {
-        nodes: [
-          {
-            label: 'Incident Alert',
-            category: 'input',
-            description:
-              'Incoming incident report: what happened, when, affected systems, severity',
-          },
-          {
-            label: 'Triage',
-            category: 'process',
-            description:
-              'Assess severity (P1-P4), identify affected services, assign incident commander, and set up communication channel.',
-          },
-          {
-            label: 'Investigation',
-            category: 'process',
-            description:
-              'Analyze logs, metrics, and traces to identify root cause. Document the timeline of events and contributing factors.',
-          },
-          {
-            label: 'Resolution',
-            category: 'process',
-            description:
-              'Apply the fix: rollback, hotfix, config change, or scaling action. Verify the fix resolves the issue.',
-          },
-          {
-            label: 'Incident Review',
-            category: 'review',
-            description:
-              'Review the response: Was triage fast enough? Was communication clear? Were the right people involved? Note what went well and what to improve.',
-          },
-          {
-            label: 'Postmortem',
-            category: 'deliverable',
-            description:
-              'Write a blameless postmortem with timeline, root cause, impact, action items, and lessons learned.',
-          },
-        ],
-        edges: [
-          { from: 0, to: 1, label: 'triggers' },
-          { from: 1, to: 2, label: 'drives' },
-          { from: 2, to: 3, label: 'feeds' },
-          { from: 3, to: 4, label: 'triggers' },
-          { from: 4, to: 5, label: 'approves' },
-        ],
-      },
-      'Product Launch': {
-        nodes: [
-          {
-            label: 'Market Research',
-            category: 'input',
-            description:
-              'Competitive analysis, user interviews, market sizing, and user needs assessment',
-            inputType: 'file',
-            acceptedFileTypes: ['.pdf', '.docx', '.txt', '.csv', '.xlsx'],
-          },
-          {
-            label: 'PRD',
-            category: 'deliverable',
-            description:
-              'Write a product requirements document: problem statement, target users, key features, success metrics, and constraints.',
-          },
-          {
-            label: 'Design & Build',
-            category: 'process',
-            description:
-              'Design the solution architecture and implement the core features. List key decisions, tradeoffs, and technical approach.',
-          },
-          {
-            label: 'Beta Testing',
-            category: 'review',
-            description:
-              'Run beta with target users. Collect feedback on usability, bugs, and feature gaps. Summarize findings and recommend go/no-go.',
-          },
-          {
-            label: 'Marketing Plan',
-            category: 'deliverable',
-            description:
-              'Create go-to-market strategy: positioning, channels, launch timeline, budget, and success KPIs.',
-          },
-          {
-            label: 'Launch',
-            category: 'deliverable',
-            description:
-              'Execute the launch: deploy to production, publish marketing materials, and announce to users.',
-          },
-          {
-            label: 'Post-Launch Metrics',
-            category: 'process',
-            description:
-              'Track adoption, activation, retention, and revenue KPIs for the first 30 days. Flag any metrics below target.',
-          },
-        ],
-        edges: [
-          { from: 0, to: 1, label: 'drives' },
-          { from: 1, to: 2, label: 'feeds' },
-          { from: 0, to: 4, label: 'drives' },
-          { from: 2, to: 3, label: 'triggers' },
-          { from: 3, to: 5, label: 'approves' },
-          { from: 4, to: 5, label: 'feeds' },
-          { from: 5, to: 6, label: 'triggers' },
-        ],
-      },
-      Chatbot: {
-        nodes: [
-          {
-            label: 'User Message',
-            category: 'input',
-            description: 'Incoming user query or command',
-          },
-          {
-            label: 'Intent Detection',
-            category: 'process',
-            description:
-              'Classify the user message into one of: greeting, question, command, feedback, escalation. Return ONLY the classified intent and a one-line summary.',
-          },
-          {
-            label: 'Context & Knowledge',
-            category: 'process',
-            description:
-              'Organize the conversation context. Summarize what the user wants based on the detected intent and any prior context. List key topics mentioned.',
-          },
-          {
-            label: 'Response Generation',
-            category: 'process',
-            description:
-              'Generate a helpful, friendly chatbot response to the user based on the intent classification and context summary. Be conversational and concise. Respond directly to what the user said.',
-          },
-          {
-            label: 'Safety Check',
-            category: 'review',
-            description:
-              'Review the generated response. Check for: harmful content, PII exposure, hallucinated facts, off-topic drift. If the response is safe, pass it through unchanged. If not, flag the issue.',
-          },
-          {
-            label: 'Fallback Handler',
-            category: 'process',
-            description:
-              'If the safety check flagged issues or the intent was unclear, generate a safe fallback response asking for clarification. Otherwise pass through the approved response unchanged.',
-          },
-          {
-            label: 'Bot Reply',
-            category: 'deliverable',
-            description:
-              'Format and deliver the final chatbot response to the user. Pass through the response content from upstream as the final output.',
-          },
-        ],
-        edges: [
-          { from: 0, to: 1, label: 'triggers' },
-          { from: 1, to: 2, label: 'drives' },
-          { from: 2, to: 3, label: 'feeds' },
-          { from: 3, to: 4, label: 'validates' },
-          { from: 4, to: 5, label: 'feeds' },
-          { from: 5, to: 6, label: 'outputs' },
-        ],
-      },
-      'Course Design': {
-        nodes: [
-          {
-            label: 'Syllabus',
-            category: 'input',
-            description:
-              'The uploaded or authored course syllabus: title, description, schedule, policies, and high-level topic sequence.',
-            inputType: 'file',
-            acceptedFileTypes: ['.pdf', '.docx', '.txt', '.md'],
-          },
-          {
-            label: 'Learning Objectives',
-            category: 'process',
-            description:
-              "Extract and organize the course-level learning objectives from the syllabus. Use Bloom's taxonomy verbs. Map each objective to the weeks/modules it spans.",
-          },
-          {
-            label: 'Lesson Plans',
-            category: 'deliverable',
-            description:
-              'Generate a lesson plan for each module/week. Include topics, activities, timing, and which learning objectives each lesson addresses.',
-          },
-          {
-            label: 'Assignments',
-            category: 'deliverable',
-            description:
-              'Design assignments aligned to the lesson plans. Each assignment should reference specific learning objectives and lesson topics. Include format, length, and submission guidelines.',
-          },
-          {
-            label: 'Rubrics',
-            category: 'deliverable',
-            description:
-              'Create grading rubrics for each assignment. Define criteria, performance levels, and point allocations that map directly to the assignment requirements.',
-          },
-          {
-            label: 'Quiz Bank',
-            category: 'deliverable',
-            description:
-              'Generate a bank of quiz and exam questions organized by lesson/module. Include multiple question types (MCQ, short answer, essay prompts) covering key concepts from the lesson plans.',
-          },
-          {
-            label: 'Study Guide',
-            category: 'deliverable',
-            description:
-              'Compile a student-facing study guide summarizing key concepts, vocabulary, and review questions for each module. Cross-reference lesson plans and quiz bank topics.',
-          },
-          {
-            label: 'Course FAQ',
-            category: 'deliverable',
-            description:
-              'Generate a comprehensive course FAQ answering common student questions about assignments, grading policies, schedule, and study strategies based on all upstream artifacts.',
-          },
-        ],
-        edges: [
-          // Core chain: Syllabus → Objectives → Lesson Plans
-          { from: 0, to: 1, label: 'derives' },
-          { from: 1, to: 2, label: 'structures' },
-          // Lesson Plans produce downstream deliverables
-          { from: 2, to: 3, label: 'produces' },
-          { from: 2, to: 5, label: 'tests' },
-          { from: 2, to: 6, label: 'guides' },
-          // Assignments connect to everything they affect
-          { from: 3, to: 4, label: 'validates' },
-          { from: 3, to: 5, label: 'feeds' },
-          { from: 3, to: 6, label: 'feeds' },
-          // Quiz Bank and Rubrics feed into Study Guide
-          { from: 5, to: 6, label: 'feeds' },
-          { from: 4, to: 7, label: 'feeds' },
-          // Study Guide + Assignments feed FAQ
-          { from: 6, to: 7, label: 'answers' },
-          { from: 3, to: 7, label: 'feeds' },
-        ],
-      },
-      'Lesson Planning': {
-        nodes: [
-          {
-            label: 'Topic',
-            category: 'input',
-            description:
-              'The lesson topic or theme, including any prerequisites, target audience, and time constraints.',
-          },
-          {
-            label: 'Learning Goals',
-            category: 'process',
-            description:
-              "Define specific, measurable learning goals for this lesson using Bloom's taxonomy. State what students should know or be able to do by the end.",
-          },
-          {
-            label: 'Activities',
-            category: 'process',
-            description:
-              'Design a sequence of learning activities (lecture segments, discussions, group work, practice problems) with timing. Each activity should map to at least one learning goal.',
-          },
-          {
-            label: 'Materials',
-            category: 'deliverable',
-            description:
-              'List and create supporting materials: slide outlines, handouts, readings, media links, and any scaffolding resources needed for the activities.',
-          },
-          {
-            label: 'Assessment',
-            category: 'deliverable',
-            description:
-              'Create formative and/or summative assessments to measure whether learning goals were met. Include exit tickets, quiz questions, or short assignments with answer keys.',
-          },
-          {
-            label: 'Reflection',
-            category: 'review',
-            description:
-              "Post-lesson reflection template: What worked? What didn't? Were learning goals met? Student engagement observations and adjustments for next time.",
-          },
-        ],
-        edges: [
-          { from: 0, to: 1, label: 'defines' },
-          { from: 1, to: 2, label: 'guides' },
-          { from: 2, to: 3, label: 'supports' },
-          { from: 2, to: 4, label: 'evaluates' },
-          { from: 4, to: 5, label: 'refines' },
-        ],
-      },
-      'Assignment Design': {
-        nodes: [
-          {
-            label: 'Brief',
-            category: 'input',
-            description:
-              'The assignment brief: what students should produce, the learning objectives it assesses, target skill level, and any constraints (length, format, tools allowed).',
-            inputType: 'file',
-            acceptedFileTypes: ['.pdf', '.docx', '.txt', '.md'],
-          },
-          {
-            label: 'Requirements',
-            category: 'process',
-            description:
-              'Break the brief into detailed, actionable requirements. List deliverables, evaluation criteria, academic integrity expectations, and submission format.',
-          },
-          {
-            label: 'Rubric',
-            category: 'deliverable',
-            description:
-              'Build a detailed grading rubric with criteria derived from the requirements. Define performance levels (excellent, proficient, developing, beginning) with point allocations and descriptors.',
-          },
-          {
-            label: 'Sample Solution',
-            category: 'deliverable',
-            description:
-              'Produce an exemplary sample solution or annotated example that meets all rubric criteria at the highest level. Include inline notes explaining why each element earns full marks.',
-          },
-          {
-            label: 'Student Guide',
-            category: 'deliverable',
-            description:
-              'Write a student-facing guide that explains the assignment expectations, tips for success, common pitfalls to avoid, and how the rubric will be applied. Reference the requirements without revealing the sample solution.',
-          },
-        ],
-        edges: [
-          { from: 0, to: 1, label: 'specifies' },
-          { from: 1, to: 2, label: 'validates' },
-          { from: 2, to: 3, label: 'demonstrates' },
-          { from: 2, to: 4, label: 'guides' },
-        ],
-      },
-    };
-
-    const template = templates[templateName];
-    if (!template) {
-      store.addToast(`Template "${templateName}" not found`, 'warning');
-      return;
-    }
-
-    store.pushHistory();
-    clearAnimationTimers();
-
-    const newNodes: Node<NodeData>[] = template.nodes.map((n, i) => ({
-      id: uid(),
-      type: 'lifecycleNode',
-      position: { x: i * (NODE_W + 80), y: 80 + (i % 2) * 30 },
-      data: {
-        label: n.label,
-        category: n.category,
-        status: 'generating' as const,
-        description: n.description,
-        version: 1,
-        lastUpdated: Date.now(),
-        ...(n.inputType && { inputType: n.inputType }),
-        ...(n.acceptedFileTypes && { acceptedFileTypes: n.acceptedFileTypes }),
-      },
-    }));
-
-    const newEdges: Edge[] = template.edges.map((e) =>
-      createStyledEdge(newNodes[e.from].id, newNodes[e.to].id, e.label),
-    );
-
-    set({ nodes: [], edges: [] });
-    newNodes.forEach((node, i) => {
-      trackTimeout(
-        () => {
-          set((s) => ({ nodes: [...s.nodes, node] }));
-          get().requestFitView();
-        },
-        100 + i * 200,
-      );
-    });
-    const eStart = 100 + newNodes.length * 200 + 150;
-    newEdges.forEach((edge, i) => {
-      trackTimeout(
-        () => {
-          set((s) => ({ edges: [...s.edges, edge] }));
-          if (i === newEdges.length - 1) get().requestFitView();
-        },
-        eStart + i * 80,
-      );
-    });
-    trackTimeout(
-      () => {
-        set((s) => {
-          const nodes = s.nodes.map((n) => ({
-            ...n,
-            data: {
-              ...n.data,
-              status: n.data.status === 'generating' ? ('active' as const) : n.data.status,
-            },
-          }));
-          saveToStorage({ nodes, edges: s.edges, events: s.events, messages: s.messages });
-          return { nodes };
-        });
-        trackTimeout(() => {
-          if (get().nodes.length > 2) get().optimizeLayout();
-        }, 300);
-      },
-      eStart + newEdges.length * 80 + 200,
-    );
-
-    const agent = getAgent(get().cidMode);
-    store.addMessage({
-      id: uid(),
-      role: 'cid',
-      content: `Loaded **${templateName}** template — ${newNodes.length} nodes, ${newEdges.length} connections. ${agent.name === 'Rowan' ? 'Ready to customize.' : 'Voilà! A foundation for your investigation.'}`,
-      timestamp: Date.now(),
-    });
-    store.addToast(`Template "${templateName}" loaded`, 'success');
-  },
 
   connectByName: (prompt) => {
     cidLog('connectByName', prompt);
@@ -8388,20 +7719,17 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         descAgent,
         descLayers,
       );
-      const res = await fetch('/api/cid', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          systemPrompt,
-          messages: [{ role: 'user', content: prompt }],
-          model: store.cidAIModel,
-          taskType: 'execute',
-        }),
+      const data = await callCID({
+        systemPrompt,
+        messages: [{ role: 'user', content: prompt }],
+        model: store.cidAIModel,
+        taskType: 'execute',
       });
-      if (!res.ok) throw new Error('API error');
-      const data = await res.json();
+      if (data.usage)
+        store.trackCost(data.usage.prompt_tokens, data.usage.completion_tokens, store.cidAIModel);
+      if (data.error) throw new Error(data.message || data.error);
       // API returns { result: { message, workflow } } — text in result.message
-      const rawText = data.result?.message || data.response || '';
+      const rawText = data.result?.message || '';
       const cleaned = rawText
         .replace(/^```(?:json)?\s*\n?/i, '')
         .replace(/\n?```\s*$/i, '')
@@ -8985,902 +8313,5 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
   // ── Artifact Preview/Edit Panel ──
   // ── Artifact Preview/Edit Panel — from ArtifactSlice ──
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // ── Central Brain Architecture ──
-  // CID IS the product. The canvas is CID's visual workspace.
-  // ═══════════════════════════════════════════════════════════════════════════
-
-  hasContext: () => !!get().centralContext,
-
-  getUnderstanding: () => get().centralContext?.understanding ?? null,
-
-  getArtifactContracts: () => get().centralContext?.artifacts ?? {},
-
-  ingestSource: async (input, contentType, title) => {
-    const store = get();
-    cidLog('ingestSource', { contentType, length: input.length, title });
-    store.setProcessing(true);
-
-    const thinkingId = uid();
-    store.addMessage({
-      id: thinkingId,
-      role: 'cid',
-      content: '',
-      timestamp: Date.now(),
-      action: 'analyzing',
-    });
-
-    try {
-      const _agent = getAgent(store.cidMode);
-      const _layers = getAgentLayers(store.cidMode);
-      const systemPrompt = `You are CID, an AI agent analyzing source material for a content lifecycle system.
-
-Analyze the following source material and return a JSON object with this exact structure:
-{
-  "summary": "2-3 sentence summary of the content",
-  "keyEntities": ["entity1", "entity2"],
-  "tone": "professional|casual|technical|academic|playful",
-  "audience": "who this content is for",
-  "intent": "what the author is trying to achieve",
-  "constraints": ["things to preserve or respect"],
-  "suggestedArtifacts": ["blog-post", "email", "social-thread", "ad-copy", "press-release", "landing-page", "newsletter", "product-description"]
-}
-
-Only suggest artifact types that make sense for this content. Be specific about tone, audience, and intent.
-Return ONLY valid JSON, no other text.`;
-
-      const ingestController = new AbortController();
-      const ingestTimeout = setTimeout(() => ingestController.abort(), 90000);
-      const res = await fetch('/api/cid', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          systemPrompt,
-          messages: [
-            { role: 'user', content: `Analyze this source material:\n\n${input.slice(0, 8000)}` },
-          ],
-          model: store.cidAIModel,
-          taskType: 'generate',
-        }),
-        signal: ingestController.signal,
-      });
-      clearTimeout(ingestTimeout);
-
-      const data = await res.json();
-      set((s) => ({ messages: s.messages.filter((m) => m.id !== thinkingId) }));
-
-      let understanding;
-      if (data.result) {
-        const raw =
-          typeof data.result === 'string'
-            ? data.result
-            : data.result.message || JSON.stringify(data.result);
-        try {
-          // Extract JSON from response (handle markdown code blocks)
-          const jsonMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, raw];
-          understanding = JSON.parse(jsonMatch[1]!.trim());
-        } catch {
-          // Fallback: basic understanding without AI
-          understanding = {
-            summary: input.slice(0, 200) + '...',
-            keyEntities: [],
-            tone: 'professional',
-            audience: 'general',
-            intent: 'content creation',
-            constraints: [],
-            suggestedArtifacts: ['blog-post', 'email', 'social-thread'],
-          };
-        }
-      } else {
-        understanding = {
-          summary: input.slice(0, 200) + '...',
-          keyEntities: [],
-          tone: 'professional',
-          audience: 'general',
-          intent: 'content creation',
-          constraints: [],
-          suggestedArtifacts: ['blog-post', 'email', 'social-thread'],
-        };
-      }
-
-      // Simple hash of source content for change detection
-      const _sourceHash = btoa(input.slice(0, 500)).slice(0, 32);
-
-      const newContext: CentralContext = {
-        source: {
-          content: input,
-          contentType,
-          title: title || understanding.keyEntities?.[0] || 'Untitled',
-          lastUpdated: Date.now(),
-        },
-        understanding,
-        artifacts: get().centralContext?.artifacts ?? {},
-        overrides: get().centralContext?.overrides ?? [],
-      };
-
-      set({ centralContext: newContext, isProcessing: false });
-      saveToStorage({
-        nodes: store.nodes,
-        edges: store.edges,
-        events: store.events,
-        messages: store.messages,
-      });
-
-      // Build response message with suggestions
-      const artifactSuggestions = understanding.suggestedArtifacts?.slice(0, 6) || [];
-      const _agentObj = getAgent(store.cidMode);
-      const emoji = store.cidMode === 'rowan' ? '🎯' : '🔍';
-      const responseMsg = `${emoji} **Source ingested.** Here's what I understand:
-
-**Summary:** ${understanding.summary}
-**Tone:** ${understanding.tone} · **Audience:** ${understanding.audience}
-**Key entities:** ${understanding.keyEntities?.join(', ') || 'none identified'}
-**Intent:** ${understanding.intent}
-
-I can generate these artifact types from your content:
-${artifactSuggestions.map((a: string) => `• ${a.replace(/-/g, ' ')}`).join('\n')}
-
-What should I build first?`;
-
-      store.addMessage({
-        id: uid(),
-        role: 'cid',
-        content: responseMsg,
-        timestamp: Date.now(),
-        suggestions: artifactSuggestions.map((a: string) => `create ${a.replace(/-/g, ' ')}`),
-      });
-
-      cidLog('ingestSource:complete', {
-        entities: understanding.keyEntities?.length,
-        artifacts: artifactSuggestions.length,
-      });
-    } catch {
-      set((s) => ({
-        messages: s.messages.filter((m) => m.id !== thinkingId),
-        isProcessing: false,
-      }));
-      store.addMessage({
-        id: uid(),
-        role: 'cid',
-        content:
-          "⚠ Failed to analyze source material. I've stored the raw content — you can still ask me to generate artifacts from it.",
-        timestamp: Date.now(),
-      });
-      // Still store the raw context even on AI failure — preserve existing artifacts/overrides
-      const existingCtx = get().centralContext;
-      set({
-        centralContext: {
-          source: {
-            content: input,
-            contentType,
-            title: title || existingCtx?.source?.title || 'Untitled',
-            lastUpdated: Date.now(),
-          },
-          understanding: existingCtx?.understanding ?? {
-            summary: input.slice(0, 200),
-            keyEntities: [],
-            tone: 'professional',
-            audience: 'general',
-            intent: 'content creation',
-            constraints: [],
-            suggestedArtifacts: [],
-          },
-          artifacts: existingCtx?.artifacts ?? {},
-          overrides: existingCtx?.overrides ?? [],
-        },
-      });
-    }
-  },
-
-  updateSource: async (newContent) => {
-    const store = get();
-    const ctx = store.centralContext;
-    if (!ctx) {
-      // No existing context — treat as fresh ingestion
-      return store.ingestSource(newContent, 'text');
-    }
-
-    cidLog('updateSource', { oldLength: ctx.source.content.length, newLength: newContent.length });
-
-    // Update source and re-analyze
-    const _oldContent = ctx.source.content;
-    set({
-      centralContext: {
-        ...ctx,
-        source: { ...ctx.source, content: newContent, lastUpdated: Date.now() },
-      },
-    });
-
-    // Mark all artifacts as stale
-    const artifacts = { ...ctx.artifacts };
-    console.error('[CID:updateSource]', 'marking stale:', Object.keys(artifacts));
-    for (const nodeId of Object.keys(artifacts)) {
-      artifacts[nodeId] = { ...artifacts[nodeId], syncStatus: 'stale' };
-      // Also mark the node itself as stale on canvas
-      const node = store.nodes.find((n) => n.id === nodeId);
-      if (node) {
-        store.updateNodeData(nodeId, {
-          status: 'stale',
-          artifactContract: { ...artifacts[nodeId] },
-        });
-      }
-    }
-    set((s) => ({
-      centralContext: s.centralContext ? { ...s.centralContext, artifacts } : null,
-    }));
-
-    // Re-ingest to update understanding
-    await store.ingestSource(newContent, ctx.source.contentType, ctx.source.title);
-  },
-
-  createArtifact: async (artifactType, customPrompt) => {
-    const store = get();
-    const ctx = store.centralContext;
-    if (!ctx) {
-      store.addMessage({
-        id: uid(),
-        role: 'cid',
-        content:
-          "⚠ No source material ingested yet. Paste or describe your content first, and I'll analyze it before generating artifacts.",
-        timestamp: Date.now(),
-      });
-      return null;
-    }
-
-    cidLog('createArtifact', { artifactType });
-    store.setProcessing(true);
-    store.pushHistory();
-
-    const thinkingId = uid();
-    store.addMessage({
-      id: thinkingId,
-      role: 'cid',
-      content: '',
-      timestamp: Date.now(),
-      action: 'building',
-    });
-
-    try {
-      const prompt =
-        customPrompt || `Generate a ${artifactType.replace(/-/g, ' ')} from the source material.`;
-      const systemPrompt = `You are CID, an AI agent generating content artifacts.
-
-SOURCE MATERIAL:
-${ctx.source.content.slice(0, 6000)}
-
-UNDERSTANDING:
-- Summary: ${ctx.understanding.summary}
-- Tone: ${ctx.understanding.tone}
-- Audience: ${ctx.understanding.audience}
-- Intent: ${ctx.understanding.intent}
-- Key entities: ${ctx.understanding.keyEntities.join(', ')}
-- Constraints: ${ctx.understanding.constraints.join(', ') || 'none'}
-
-${ctx.overrides
-  .filter((o) => o.scope === 'global')
-  .map((o) => `GLOBAL OVERRIDE: ${o.cidInterpretation || o.field + ': ' + o.userValue}`)
-  .join('\n')}
-
-Generate a high-quality ${artifactType.replace(/-/g, ' ')} based on this source material.
-Return ONLY valid JSON:
-{
-  "title": "artifact title",
-  "content": "full artifact content in markdown (at least 300 chars, real content not placeholders)",
-  "derivedFields": [
-    { "field": "field name (e.g. headline, body, cta)", "sourceMapping": "what part of source this came from", "transform": "how it was transformed" }
-  ]
-}`;
-
-      const res = await fetch('/api/cid', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          systemPrompt,
-          messages: [{ role: 'user', content: prompt }],
-          model: store.cidAIModel,
-          taskType: 'generate',
-        }),
-      });
-
-      const data = await res.json();
-      set((s) => ({ messages: s.messages.filter((m) => m.id !== thinkingId) }));
-
-      if (data.error) {
-        set({ isProcessing: false });
-        store.addMessage({
-          id: uid(),
-          role: 'cid',
-          content: '⚠ Failed to generate artifact. Try again or rephrase.',
-          timestamp: Date.now(),
-        });
-        return null;
-      }
-
-      let result;
-      const raw =
-        typeof data.result === 'string'
-          ? data.result
-          : data.result?.message || JSON.stringify(data.result);
-      try {
-        const jsonMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, raw];
-        result = JSON.parse(jsonMatch[1]!.trim());
-      } catch {
-        // AI returned plain text — use it as content directly
-        result = {
-          title: `${artifactType.replace(/-/g, ' ')} — ${ctx.source.title || 'Untitled'}`,
-          content: raw,
-          derivedFields: [{ field: 'body', sourceMapping: 'full source', transform: 'generate' }],
-        };
-      }
-
-      // Create the node on canvas
-      const nodeId = uid();
-      const sourceHash = btoa(ctx.source.content.slice(0, 500)).slice(0, 32);
-      const contract: ArtifactContract = {
-        nodeId,
-        artifactType,
-        derivedFields: result.derivedFields || [],
-        generationPrompt: prompt,
-        model: store.cidAIModel,
-        lastSyncedAt: Date.now(),
-        lastSourceHash: sourceHash,
-        syncStatus: 'current',
-        userEdits: [],
-      };
-
-      // Position: find a good spot radiating from center
-      const existingNodes = get().nodes;
-      const centerX =
-        existingNodes.length > 0
-          ? existingNodes.reduce((sum, n) => sum + n.position.x, 0) / existingNodes.length
-          : 400;
-      const centerY =
-        existingNodes.length > 0
-          ? existingNodes.reduce((sum, n) => sum + n.position.y, 0) / existingNodes.length
-          : 300;
-      const angle =
-        Object.keys(ctx.artifacts).length *
-        ((2 * Math.PI) / Math.max(Object.keys(ctx.artifacts).length + 1, 4));
-      const radius = 300;
-      const x = centerX + Math.cos(angle) * radius;
-      const y = centerY + Math.sin(angle) * radius;
-
-      const newNode: Node<NodeData> = {
-        id: nodeId,
-        type: 'lifecycleNode',
-        position: { x, y },
-        data: {
-          label: result.title || `${artifactType.replace(/-/g, ' ')}`,
-          category: 'deliverable' as NodeCategory,
-          status: 'active',
-          description: `CID-managed ${artifactType.replace(/-/g, ' ')} · derived from source`,
-          content: result.content || '',
-          version: 1,
-          lastUpdated: Date.now(),
-          artifactContract: contract,
-        },
-      };
-
-      // Add node and update central context
-      set((s) => {
-        const updatedArtifacts = { ...(s.centralContext?.artifacts ?? {}), [nodeId]: contract };
-        return {
-          nodes: [...s.nodes, newNode],
-          centralContext: s.centralContext
-            ? { ...s.centralContext, artifacts: updatedArtifacts }
-            : null,
-          isProcessing: false,
-        };
-      });
-
-      get().requestFitView();
-      saveToStorage({
-        nodes: get().nodes,
-        edges: get().edges,
-        events: get().events,
-        messages: get().messages,
-      });
-
-      const agentEmoji = store.cidMode === 'rowan' ? '✅' : '📋';
-      store.addMessage({
-        id: uid(),
-        role: 'cid',
-        content: `${agentEmoji} **${result.title || artifactType}** created and added to canvas.\n\n${(result.derivedFields || []).length} fields derived from source. This artifact is now tracked — I'll keep it in sync when your source changes.`,
-        timestamp: Date.now(),
-        suggestions: [
-          ...(ctx?.understanding?.suggestedArtifacts || [])
-            .filter((a) => a !== artifactType)
-            .slice(0, 2)
-            .map((a) => `create ${a.replace(/-/g, ' ')}`),
-          'sync all',
-          'show understanding',
-          `edit ${result.title || artifactType}`,
-        ],
-      });
-
-      cidLog('createArtifact:complete', {
-        nodeId,
-        artifactType,
-        contentLength: result.content?.length,
-      });
-      return nodeId;
-    } catch {
-      set((s) => ({
-        messages: s.messages.filter((m) => m.id !== thinkingId),
-        isProcessing: false,
-      }));
-      store.addMessage({
-        id: uid(),
-        role: 'cid',
-        content: '⚠ Artifact generation failed. Try again.',
-        timestamp: Date.now(),
-      });
-      return null;
-    }
-  },
-
-  syncArtifact: async (nodeId) => {
-    const store = get();
-    const ctx = store.centralContext;
-    if (!ctx) {
-      (window as any).__cidSync = { exit: 'no context' };
-      return null;
-    }
-
-    const contract = ctx.artifacts[nodeId];
-    if (!contract) {
-      (window as any).__cidSync = {
-        exit: 'no contract',
-        nodeId,
-        artifactKeys: Object.keys(ctx.artifacts),
-      };
-      return null;
-    }
-    if (contract.syncStatus === 'current') {
-      (window as any).__cidSync = { exit: 'already current', nodeId };
-      return null;
-    }
-
-    cidLog('syncArtifact', { nodeId, artifactType: contract.artifactType });
-
-    const node = store.nodes.find((n) => n.id === nodeId);
-    if (!node) {
-      (window as any).__cidSync = { exit: 'node not found', nodeId };
-      return null;
-    }
-
-    // Mark as regenerating
-    store.updateNodeData(nodeId, {
-      status: 'generating',
-      artifactContract: { ...contract, syncStatus: 'regenerating' },
-    });
-
-    try {
-      const overrides = ctx.overrides.filter((o) => o.nodeId === nodeId);
-      const overrideInstructions =
-        overrides.length > 0
-          ? `\n\nUSER OVERRIDES (respect these — do not change these aspects):\n${overrides.map((o) => `- ${o.field}: "${o.userValue}" (reason: ${o.cidInterpretation || 'user preference'})`).join('\n')}`
-          : '';
-
-      const systemPrompt = `You are CID performing a surgical sync on an artifact.
-
-SOURCE MATERIAL (updated):
-${ctx.source.content.slice(0, 6000)}
-
-CURRENT ARTIFACT CONTENT:
-${node.data.content?.slice(0, 4000) || '(empty)'}
-
-ARTIFACT CONTRACT:
-- Type: ${contract.artifactType}
-- Derived fields: ${contract.derivedFields.map((f) => `${f.field} (from: ${f.sourceMapping}, transform: ${f.transform})`).join('; ')}
-${overrideInstructions}
-
-The source material has been updated since this artifact was last synced.
-Surgically update ONLY the parts of the artifact that are affected by the source changes.
-Preserve the overall structure and any user overrides.
-
-Return JSON:
-{
-  "updatedContent": "the full updated artifact content",
-  "changes": [
-    { "field": "field name", "before": "old text snippet", "after": "new text snippet", "reason": "why this changed" }
-  ],
-  "skipped": [
-    { "field": "field name", "reason": "why this was not changed" }
-  ],
-  "confidence": 0.85
-}`;
-
-      const syncController = new AbortController();
-      const syncTimeout = setTimeout(() => syncController.abort(), 90000);
-      const res = await fetch('/api/cid', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          systemPrompt,
-          messages: [{ role: 'user', content: 'Perform surgical sync now.' }],
-          model: store.cidAIModel,
-          taskType: 'generate',
-        }),
-        signal: syncController.signal,
-      });
-      clearTimeout(syncTimeout);
-
-      const data = await res.json();
-      (window as any).__cidSync = {
-        stage: 'api_response',
-        status: res.status,
-        hasError: !!data.error,
-        hasResult: !!data.result,
-        resultType: typeof data.result,
-      };
-      if (data.error) {
-        (window as any).__cidSync = { exit: 'api_error', error: data.error };
-        store.updateNodeData(nodeId, { status: 'stale' });
-        return null;
-      }
-
-      let result;
-      const raw =
-        typeof data.result === 'string'
-          ? data.result
-          : data.result?.message || JSON.stringify(data.result);
-      cidLog('syncArtifact:rawResponse', {
-        nodeId,
-        rawLength: raw?.length,
-        rawPreview: raw?.slice(0, 200),
-      });
-      try {
-        // Try to extract JSON from code blocks or raw text
-        const jsonMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/) ||
-          raw.match(/(\{[\s\S]*\})/) || [null, raw];
-        result = JSON.parse(jsonMatch[1]!.trim());
-      } catch (parseErr) {
-        (window as any).__cidSync = {
-          exit: 'parse_error',
-          error: String(parseErr),
-          rawPreview: raw?.slice(0, 300),
-        };
-        store.updateNodeData(nodeId, { status: 'stale' });
-        return null;
-      }
-
-      // Apply the sync
-      const sourceHash = btoa(ctx.source.content.slice(0, 500)).slice(0, 32);
-      const updatedContract: ArtifactContract = {
-        ...contract,
-        lastSyncedAt: Date.now(),
-        lastSourceHash: sourceHash,
-        syncStatus: 'current',
-      };
-
-      store.updateNodeData(nodeId, {
-        content: result.updatedContent || node.data.content,
-        status: 'active',
-        artifactContract: updatedContract,
-        version: (node.data.version || 1) + 1,
-        lastUpdated: Date.now(),
-      });
-
-      // Update central context
-      set((s) => ({
-        centralContext: s.centralContext
-          ? {
-              ...s.centralContext,
-              artifacts: { ...s.centralContext.artifacts, [nodeId]: updatedContract },
-            }
-          : null,
-      }));
-
-      const diff: SurgicalDiff = {
-        nodeId,
-        changes: result.changes || [],
-        skipped: result.skipped || [],
-        confidence: result.confidence || 0.8,
-      };
-
-      cidLog('syncArtifact:complete', {
-        nodeId,
-        changes: diff.changes.length,
-        skipped: diff.skipped.length,
-      });
-      return diff;
-    } catch (outerErr) {
-      (window as any).__cidSync = { exit: 'outer_catch', error: String(outerErr) };
-      store.updateNodeData(nodeId, { status: 'stale' });
-      return null;
-    }
-  },
-
-  syncAllStale: async () => {
-    const store = get();
-    const ctx = store.centralContext;
-    if (!ctx) return [];
-
-    const allArtifacts = Object.entries(ctx.artifacts);
-    console.error(
-      '[CID:syncAllStale]',
-      'artifacts:',
-      allArtifacts.map(([id, c]) => `${id}:${c.syncStatus}`),
-    );
-    const staleIds = allArtifacts.filter(([, c]) => c.syncStatus === 'stale').map(([id]) => id);
-
-    if (staleIds.length === 0) {
-      store.addMessage({
-        id: uid(),
-        role: 'cid',
-        content: 'All artifacts are current. Nothing to sync.',
-        timestamp: Date.now(),
-      });
-      return [];
-    }
-
-    store.addMessage({
-      id: uid(),
-      role: 'cid',
-      content: `🔄 Syncing ${staleIds.length} stale artifact${staleIds.length > 1 ? 's' : ''}...`,
-      timestamp: Date.now(),
-    });
-
-    const results: SurgicalDiff[] = [];
-    for (const nodeId of staleIds) {
-      const diff = await store.syncArtifact(nodeId);
-      if (diff) results.push(diff);
-    }
-
-    const totalChanges = results.reduce((sum, d) => sum + d.changes.length, 0);
-    const totalSkipped = results.reduce((sum, d) => sum + d.skipped.length, 0);
-    store.addMessage({
-      id: uid(),
-      role: 'cid',
-      content: `✅ Sync complete. **${results.length}** artifact${results.length > 1 ? 's' : ''} updated with **${totalChanges}** surgical change${totalChanges !== 1 ? 's' : ''}. ${totalSkipped} field${totalSkipped !== 1 ? 's' : ''} unchanged.`,
-      timestamp: Date.now(),
-      suggestions: ['status', 'show understanding', 'diff'],
-    });
-
-    return results;
-  },
-
-  previewSync: () => {
-    const ctx = get().centralContext;
-    if (!ctx) return [];
-    return Object.entries(ctx.artifacts)
-      .filter(([, c]) => c.syncStatus === 'stale')
-      .map(([nodeId, c]) => ({
-        nodeId,
-        reason: `${c.artifactType} is stale — source changed since last sync`,
-      }));
-  },
-
-  recordOverride: (nodeId, field, oldVal, newVal) => {
-    const ctx = get().centralContext;
-    if (!ctx) return;
-
-    const override: Override = {
-      id: `ovr-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      nodeId,
-      field,
-      originalValue: oldVal,
-      userValue: newVal,
-      timestamp: Date.now(),
-      propagated: false,
-      scope: 'this-node',
-    };
-
-    set((s) => ({
-      centralContext: s.centralContext
-        ? {
-            ...s.centralContext,
-            overrides: [...s.centralContext.overrides, override],
-          }
-        : null,
-    }));
-
-    // Also update the artifact contract's userEdits
-    const contract = ctx.artifacts[nodeId];
-    if (contract) {
-      const updatedContract: ArtifactContract = {
-        ...contract,
-        syncStatus: 'override',
-        userEdits: [
-          ...contract.userEdits,
-          {
-            field,
-            originalValue: oldVal,
-            userValue: newVal,
-            timestamp: Date.now(),
-          },
-        ],
-      };
-      set((s) => ({
-        centralContext: s.centralContext
-          ? {
-              ...s.centralContext,
-              artifacts: { ...s.centralContext.artifacts, [nodeId]: updatedContract },
-            }
-          : null,
-      }));
-    }
-
-    cidLog('recordOverride', { nodeId, field });
-  },
-
-  interpretOverride: async (overrideId) => {
-    const store = get();
-    const ctx = store.centralContext;
-    if (!ctx) return null;
-
-    const override = ctx.overrides.find((o) => o.id === overrideId);
-    if (!override) return null;
-
-    const node = store.nodes.find((n) => n.id === override.nodeId);
-    const nodeLabel = node?.data?.label || override.nodeId;
-    const contract = ctx.artifacts[override.nodeId];
-
-    cidLog('interpretOverride', { overrideId, nodeId: override.nodeId, field: override.field });
-
-    try {
-      const res = await fetch('/api/cid', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          systemPrompt: `You are CID, a content intelligence agent. Analyze a user's manual edit to an AI-generated artifact and deduce the user's intent. Be concise — one sentence explaining what the user wanted and why. Examples: "User wants a more casual tone for social content", "User corrected a factual error about pricing", "User prefers shorter paragraphs for readability".`,
-          model: store.cidAIModel,
-          taskType: 'analyze',
-          effortLevel: 'low',
-          messages: [
-            {
-              role: 'user',
-              content: `Artifact: "${nodeLabel}" (${contract?.artifactType || 'unknown type'})\nField changed: ${override.field}\n\nOriginal value:\n${override.originalValue.slice(0, 500)}\n\nUser's new value:\n${override.userValue.slice(0, 500)}\n\nWhat was the user's intent with this edit? Respond with a single concise sentence.`,
-            },
-          ],
-        }),
-      });
-
-      if (!res.ok) return null;
-      const result = await res.json();
-      const interpretation = (result.content || result.message || '').trim();
-      if (!interpretation) return null;
-
-      // Store the interpretation on the override
-      set((s) => ({
-        centralContext: s.centralContext
-          ? {
-              ...s.centralContext,
-              overrides: s.centralContext.overrides.map((o) =>
-                o.id === overrideId ? { ...o, cidInterpretation: interpretation } : o,
-              ),
-            }
-          : null,
-      }));
-
-      cidLog('interpretOverride:done', { overrideId, interpretation: interpretation.slice(0, 80) });
-      return interpretation;
-    } catch (err) {
-      cidLog('interpretOverride:error', String(err));
-      return null;
-    }
-  },
-
-  propagateOverride: async (overrideId, scope) => {
-    const store = get();
-    const ctx = store.centralContext;
-    if (!ctx) return;
-
-    const override = ctx.overrides.find((o) => o.id === overrideId);
-    if (!override) return;
-
-    cidLog('propagateOverride', { overrideId, scope });
-
-    // Ensure we have an interpretation first
-    let interpretation = override.cidInterpretation;
-    if (!interpretation) {
-      interpretation = (await store.interpretOverride(overrideId)) || undefined;
-    }
-
-    if (scope === 'this-node') {
-      // Already scoped — just mark as propagated
-      set((s) => ({
-        centralContext: s.centralContext
-          ? {
-              ...s.centralContext,
-              overrides: s.centralContext.overrides.map((o) =>
-                o.id === overrideId ? { ...o, scope: 'this-node', propagated: true } : o,
-              ),
-            }
-          : null,
-      }));
-      store.addMessage({
-        id: `msg-${Date.now()}`,
-        role: 'cid',
-        content: `Override kept for this node only. I'll respect "${override.field}" edits on "${store.nodes.find((n) => n.id === override.nodeId)?.data?.label || override.nodeId}" going forward.`,
-        timestamp: Date.now(),
-      });
-    } else if (scope === 'all-similar') {
-      // Apply the override intent to all artifacts of the same type
-      const sourceContract = ctx.artifacts[override.nodeId];
-      if (!sourceContract) return;
-      const similarNodeIds = Object.entries(ctx.artifacts)
-        .filter(
-          ([id, c]) => id !== override.nodeId && c.artifactType === sourceContract.artifactType,
-        )
-        .map(([id]) => id);
-
-      // Record override on similar nodes
-      for (const nodeId of similarNodeIds) {
-        store.recordOverride(nodeId, override.field, '', override.userValue);
-      }
-
-      set((s) => ({
-        centralContext: s.centralContext
-          ? {
-              ...s.centralContext,
-              overrides: s.centralContext.overrides.map((o) =>
-                o.id === overrideId ? { ...o, scope: 'all-similar', propagated: true } : o,
-              ),
-            }
-          : null,
-      }));
-
-      const names = similarNodeIds.map(
-        (id) => store.nodes.find((n) => n.id === id)?.data?.label || id,
-      );
-      store.addMessage({
-        id: `msg-${Date.now()}`,
-        role: 'cid',
-        content:
-          similarNodeIds.length > 0
-            ? `Override applied to ${similarNodeIds.length} similar artifact${similarNodeIds.length > 1 ? 's' : ''}: ${names.join(', ')}. ${interpretation ? `Intent: ${interpretation}` : ''}`
-            : `No other artifacts of the same type found. Override kept on this node.`,
-        timestamp: Date.now(),
-      });
-    } else if (scope === 'global') {
-      // Update the central context understanding based on the override intent
-      if (interpretation) {
-        set((s) => {
-          if (!s.centralContext) return {};
-          const currentConstraints = s.centralContext.understanding.constraints || [];
-          return {
-            centralContext: {
-              ...s.centralContext,
-              understanding: {
-                ...s.centralContext.understanding,
-                constraints: [...currentConstraints, interpretation],
-              },
-              overrides: s.centralContext.overrides.map((o) =>
-                o.id === overrideId ? { ...o, scope: 'global', propagated: true } : o,
-              ),
-            },
-          };
-        });
-
-        store.addMessage({
-          id: `msg-${Date.now()}`,
-          role: 'cid',
-          content: `Updated my understanding globally: "${interpretation}". All future artifacts will respect this preference.`,
-          timestamp: Date.now(),
-        });
-      } else {
-        store.addMessage({
-          id: `msg-${Date.now()}`,
-          role: 'cid',
-          content: `I couldn't determine the intent of this edit clearly enough to apply it globally. Try describing what you want in the chat instead.`,
-          timestamp: Date.now(),
-        });
-      }
-    }
-
-    cidLog('propagateOverride:done', { overrideId, scope });
-  },
-
-  forgetOverride: (overrideId) => {
-    set((s) => ({
-      centralContext: s.centralContext
-        ? {
-            ...s.centralContext,
-            overrides: s.centralContext.overrides.filter((o) => o.id !== overrideId),
-          }
-        : null,
-    }));
-  },
+  // ── Central Brain Architecture — from CentralBrainSlice ──
 }));
