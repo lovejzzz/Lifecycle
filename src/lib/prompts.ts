@@ -501,6 +501,44 @@ export function buildSharedContextHint(
   return `\n\n## Workflow Run Context (available to you)\n${parts.join('\n\n')}\nYou may reference this context in your output without calling read_context.`;
 }
 
+// ── Output Length Calibration ─────────────────────────────────────────────────
+
+/**
+ * Calibrated output length guidance per node category.
+ *
+ * Injected into execution system prompts to prevent two common failure modes:
+ *   - Verbose terse-category nodes (state, trigger) producing walls of text
+ *   - Terse comprehensive-category nodes (artifact, deliverable) producing summaries
+ *
+ * Returns an empty string for unknown/custom categories.
+ */
+export function buildOutputLengthHint(category: string): string {
+  const hints: Record<string, string> = {
+    // Concise — structural/passthrough nodes that track state or events
+    input:       'Target 50-150 words. Report what data was received — brief and structured.',
+    trigger:     'Target 50-150 words. Describe the trigger event and payload — concise and factual.',
+    dependency:  'Target 100-200 words. List dependencies with their status — no prose.',
+    state:       'Target 100-250 words. Use key-value pairs for state variables. Do not write an essay.',
+    // Medium — structured reports with defined sections and clear verdicts
+    patch:       'Target 150-350 words. Focus on the minimal correct change. Use diff format or before/after blocks.',
+    review:      'Target 200-400 words. Produce a checklist then a single APPROVE / REQUEST_CHANGES / BLOCK verdict.',
+    test:        'Target 200-500 words. Use a test results table (Criterion | Status | Evidence). End with one VERDICT line.',
+    policy:      'Target 200-400 words. Numbered rules — each needs CONDITION, ACTION, and ENFORCEMENT.',
+    note:        'Target 200-400 words. Organized insight sections — prioritize actionable takeaways.',
+    action:      'Target 200-400 words. Step-by-step with concrete commands. Report outcome at the end.',
+    // Comprehensive — full documents, deep reasoning, polished deliverables
+    cid:         'Target 300-700 words. Think through each sub-problem. Provide a clear, well-supported conclusion.',
+    process:     'Target 300-600 words. Report each step performed, key decisions made, and outputs produced.',
+    artifact:    'Target 600-1200 words. Write a complete, standalone document. Every section must be substantive — no placeholders.',
+    deliverable: 'Target 600-1200 words. Produce a polished, audience-ready document. Every section complete.',
+    output:      'Target 400-1000 words. Synthesize all upstream content into a cohesive deliverable. Open with an executive summary.',
+  };
+
+  const hint = hints[category];
+  if (!hint) return '';
+  return `\n\nOUTPUT LENGTH: ${hint}`;
+}
+
 /** Get a category-aware system prompt for node execution. */
 export function getExecutionSystemPrompt(
   category: string,
@@ -527,7 +565,8 @@ export function getExecutionSystemPrompt(
     : '';
   const agentHint = agentName ? (AGENT_EXECUTION_HINTS[agentName.toLowerCase()] ?? '') : '';
   const coTScaffold = directInputCount !== undefined ? buildMultiInputCoTScaffold(directInputCount) : '';
-  return `${categoryPrompt}\n\nYou are working on a workflow node called "${sanitizeForPrompt(label, 100)}" (category: ${category}).${contextHint}${downstreamHint}${sharedContextHint}${coTScaffold}${agentHint} Return ONLY the content as markdown text. Do not wrap in JSON or code blocks.`;
+  const outputLengthHint = buildOutputLengthHint(category);
+  return `${categoryPrompt}\n\nYou are working on a workflow node called "${sanitizeForPrompt(label, 100)}" (category: ${category}).${contextHint}${downstreamHint}${sharedContextHint}${coTScaffold}${outputLengthHint}${agentHint} Return ONLY the content as markdown text. Do not wrap in JSON or code blocks.`;
 }
 
 /**

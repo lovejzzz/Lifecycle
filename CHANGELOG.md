@@ -1,5 +1,26 @@
 # Changelog
 
+### 2026-04-01 — Round 71: Prompt Engineering — Output Length Calibration
+
+**Improvement — Output Length Calibration per Node Category (Prompt Engineering):**
+- Added `buildOutputLengthHint(category: string): string` — a new exported utility in `prompts.ts`
+- Maps every built-in node category to a calibrated output length target (words):
+  - **Concise** (input, trigger, dependency, state): 50-250 words — structural nodes that track state or events, not prose
+  - **Medium** (patch, review, test, policy, note, action): 150-500 words — structured reports with clear verdicts
+  - **Comprehensive** (cid, process, artifact, deliverable, output): 300-1200 words — full documents and deep reasoning
+- Returns empty string for unknown/custom categories (safe no-op)
+- Injected into `getExecutionSystemPrompt` between the CoT scaffold and agent style hints — after reasoning scaffolds but before the final format instruction
+- Ordering in final system prompt: `categoryPrompt → contextHint → downstreamHint → sharedContextHint → coTScaffold → outputLengthHint → agentHint → Return ONLY`
+
+**Why this matters:**
+- Prevents the two most common LLM verbosity failures: verbose state/trigger nodes producing walls of text, and terse artifact/deliverable nodes producing one-sentence summaries
+- Works synergistically with existing agent style hints (Rowan's "Skip preamble" and Poirot's "thorough investigation" now have quantitative length context)
+- Compatible with all existing CoT scaffold, shared context, and downstream format hints
+
+**Files changed:** `src/lib/prompts.ts`, `src/lib/__tests__/prompts.test.ts`
+
+**Test Results:** Build passes. 1452/1452 new tests pass (12 new tests for `buildOutputLengthHint`, all 183 prompts tests pass).
+
 ### 2026-03-31 — Round 70: Tool Intelligence — list_context_keys, JSON Repair, Format 3 Parsing
 
 **Improvement — Tool Intelligence (Area 1):**

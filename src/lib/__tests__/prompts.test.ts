@@ -14,6 +14,7 @@ import {
   buildSharedContextHint,
   buildAncestorContextHint,
   buildMultiInputCoTScaffold,
+  buildOutputLengthHint,
 } from '../prompts';
 import type { ContextInput } from '../prompts';
 import { getAgent } from '../agents';
@@ -1321,5 +1322,97 @@ describe('getExecutionSystemPrompt — multi-input CoT scaffold', () => {
     const coTIndex = prompt.indexOf('SYNTHESIS GUIDE');
     expect(ctxIndex).toBeGreaterThan(-1);
     expect(coTIndex).toBeGreaterThan(ctxIndex);
+  });
+});
+
+// ── buildOutputLengthHint ────────────────────────────────────────────────────
+
+describe('buildOutputLengthHint', () => {
+  it('returns empty string for unknown/custom categories', () => {
+    expect(buildOutputLengthHint('custom')).toBe('');
+    expect(buildOutputLengthHint('unknown')).toBe('');
+    expect(buildOutputLengthHint('')).toBe('');
+  });
+
+  it('returns a concise hint for state nodes', () => {
+    const result = buildOutputLengthHint('state');
+    expect(result).toContain('OUTPUT LENGTH');
+    expect(result).toContain('100-250');
+  });
+
+  it('returns a concise hint for input nodes', () => {
+    const result = buildOutputLengthHint('input');
+    expect(result).toContain('OUTPUT LENGTH');
+    expect(result).toContain('50-150');
+  });
+
+  it('returns a comprehensive hint for artifact nodes', () => {
+    const result = buildOutputLengthHint('artifact');
+    expect(result).toContain('OUTPUT LENGTH');
+    expect(result).toContain('600-1200');
+  });
+
+  it('returns a comprehensive hint for deliverable nodes', () => {
+    const result = buildOutputLengthHint('deliverable');
+    expect(result).toContain('OUTPUT LENGTH');
+    expect(result).toContain('600-1200');
+  });
+
+  it('returns medium hint for review nodes', () => {
+    const result = buildOutputLengthHint('review');
+    expect(result).toContain('OUTPUT LENGTH');
+    expect(result).toContain('200-400');
+    expect(result).toContain('APPROVE');
+  });
+
+  it('returns medium hint for test nodes with VERDICT reference', () => {
+    const result = buildOutputLengthHint('test');
+    expect(result).toContain('OUTPUT LENGTH');
+    expect(result).toContain('VERDICT');
+  });
+
+  it('returns hint for all known structured categories', () => {
+    const knownCategories = ['input', 'trigger', 'dependency', 'state', 'patch', 'review', 'test', 'policy', 'note', 'action', 'cid', 'process', 'artifact', 'deliverable', 'output'];
+    for (const cat of knownCategories) {
+      expect(buildOutputLengthHint(cat)).not.toBe('');
+    }
+  });
+
+  it('hint is injected into getExecutionSystemPrompt for known categories', () => {
+    const prompt = getExecutionSystemPrompt('artifact', 'My Artifact', '');
+    expect(prompt).toContain('OUTPUT LENGTH');
+    expect(prompt).toContain('600-1200');
+  });
+
+  it('no length hint injected for custom categories', () => {
+    const prompt = getExecutionSystemPrompt('custom', 'My Custom Node', '');
+    expect(prompt).not.toContain('OUTPUT LENGTH');
+  });
+
+  it('output length hint appears before Return ONLY instruction', () => {
+    const prompt = getExecutionSystemPrompt('state', 'Status Tracker', '');
+    const lengthIdx = prompt.indexOf('OUTPUT LENGTH');
+    const returnIdx = prompt.indexOf('Return ONLY');
+    expect(lengthIdx).toBeGreaterThan(-1);
+    expect(returnIdx).toBeGreaterThan(-1);
+    expect(lengthIdx).toBeLessThan(returnIdx);
+  });
+
+  it('output length hint appears after CoT scaffold when both present', () => {
+    const prompt = getExecutionSystemPrompt('cid', 'Analyzer', '', undefined, undefined, undefined, 4);
+    const coTIdx = prompt.indexOf('SYNTHESIS GUIDE');
+    const lengthIdx = prompt.indexOf('OUTPUT LENGTH');
+    expect(coTIdx).toBeGreaterThan(-1);
+    expect(lengthIdx).toBeGreaterThan(-1);
+    expect(lengthIdx).toBeGreaterThan(coTIdx);
+  });
+
+  it('output length hint appears before agent execution style hint', () => {
+    const prompt = getExecutionSystemPrompt('review', 'Code Review', '', undefined, 'rowan');
+    const lengthIdx = prompt.indexOf('OUTPUT LENGTH');
+    const agentIdx = prompt.indexOf('ROWAN EXECUTION STYLE');
+    expect(lengthIdx).toBeGreaterThan(-1);
+    expect(agentIdx).toBeGreaterThan(-1);
+    expect(lengthIdx).toBeLessThan(agentIdx);
   });
 });
