@@ -1,7 +1,7 @@
 /**
  * Tests for src/lib/storage.ts — multi-project persistence + backend abstraction
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
   listProjects,
   loadProject,
@@ -24,15 +24,25 @@ import type { ProjectData, StorageBackend } from '../storage';
 const store: Record<string, string> = {};
 const mockStorage = {
   getItem: (key: string) => store[key] ?? null,
-  setItem: (key: string, val: string) => { store[key] = val; },
-  removeItem: (key: string) => { delete store[key]; },
-  clear: () => { Object.keys(store).forEach(k => delete store[k]); },
+  setItem: (key: string, val: string) => {
+    store[key] = val;
+  },
+  removeItem: (key: string) => {
+    delete store[key];
+  },
+  clear: () => {
+    Object.keys(store).forEach((k) => delete store[k]);
+  },
 };
 Object.defineProperty(globalThis, 'window', { value: {}, writable: true, configurable: true });
-Object.defineProperty(globalThis, 'localStorage', { value: mockStorage, writable: true, configurable: true });
+Object.defineProperty(globalThis, 'localStorage', {
+  value: mockStorage,
+  writable: true,
+  configurable: true,
+});
 
 beforeEach(() => {
-  Object.keys(store).forEach(k => delete store[k]);
+  Object.keys(store).forEach((k) => delete store[k]);
 });
 
 const sampleData: ProjectData = {
@@ -66,7 +76,7 @@ describe('storage — synchronous API', () => {
     expect(loaded).not.toBeNull();
     expect(loaded!.nodes).toHaveLength(1);
     expect(loaded!.edges).toHaveLength(1);
-    const meta = listProjects().find(p => p.id === id);
+    const meta = listProjects().find((p) => p.id === id);
     expect(meta!.nodeCount).toBe(1);
     expect(meta!.edgeCount).toBe(1);
   });
@@ -82,7 +92,7 @@ describe('storage — synchronous API', () => {
   it('renameProject updates the name in the index', () => {
     const id = createProject('Old Name');
     renameProject(id, 'New Name');
-    const meta = listProjects().find(p => p.id === id);
+    const meta = listProjects().find((p) => p.id === id);
     expect(meta!.name).toBe('New Name');
   });
 

@@ -6,28 +6,46 @@
  *
  * Each scenario represents a real user need. Failures here mean a real user would hit a bug.
  */
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // ── Mock browser globals BEFORE store import ──────────────────────────────────
 const storage: Record<string, string> = {};
 const mockLocalStorage = {
   getItem: (key: string) => storage[key] ?? null,
-  setItem: (key: string, val: string) => { storage[key] = val; },
-  removeItem: (key: string) => { delete storage[key]; },
-  clear: () => { Object.keys(storage).forEach(k => delete storage[k]); },
+  setItem: (key: string, val: string) => {
+    storage[key] = val;
+  },
+  removeItem: (key: string) => {
+    delete storage[key];
+  },
+  clear: () => {
+    Object.keys(storage).forEach((k) => delete storage[k]);
+  },
 };
 
 // The store checks `typeof window !== 'undefined'` for SSR guard
-Object.defineProperty(globalThis, 'window', { value: { location: { origin: 'http://localhost:3000' } }, writable: true, configurable: true });
-Object.defineProperty(globalThis, 'localStorage', { value: mockLocalStorage, writable: true, configurable: true });
+Object.defineProperty(globalThis, 'window', {
+  value: { location: { origin: 'http://localhost:3000' } },
+  writable: true,
+  configurable: true,
+});
+Object.defineProperty(globalThis, 'localStorage', {
+  value: mockLocalStorage,
+  writable: true,
+  configurable: true,
+});
 
 // Mock fetch for AI calls — returns realistic structured responses
 let fetchCallCount = 0;
 let lastFetchBody: Record<string, unknown> | null = null;
-const mockFetch = vi.fn(async (url: string, opts?: RequestInit) => {
+const mockFetch = vi.fn(async (url: string, opts?: RequestInit): Promise<any> => {
   fetchCallCount++;
   if (opts?.body) {
-    try { lastFetchBody = JSON.parse(opts.body as string); } catch { lastFetchBody = null; }
+    try {
+      lastFetchBody = JSON.parse(opts.body as string);
+    } catch {
+      lastFetchBody = null;
+    }
   }
 
   // Simulate different response types based on what the store asks for
@@ -57,7 +75,11 @@ const mockFetch = vi.fn(async (url: string, opts?: RequestInit) => {
   }
 
   // Node execution — return content
-  if (systemPrompt.includes('Execute') || systemPrompt.includes('category-aware') || systemPrompt.includes('generate the content')) {
+  if (
+    systemPrompt.includes('Execute') ||
+    systemPrompt.includes('category-aware') ||
+    systemPrompt.includes('generate the content')
+  ) {
     return {
       ok: true,
       json: async () => ({
@@ -91,19 +113,25 @@ const mockFetch = vi.fn(async (url: string, opts?: RequestInit) => {
     }),
   };
 });
-Object.defineProperty(globalThis, 'fetch', { value: mockFetch, writable: true, configurable: true });
+Object.defineProperty(globalThis, 'fetch', {
+  value: mockFetch,
+  writable: true,
+  configurable: true,
+});
 
 // Mock AbortController
 if (!globalThis.AbortController) {
   globalThis.AbortController = class {
     signal = { addEventListener: () => {}, aborted: false };
-    abort() { (this.signal as any).aborted = true; }
+    abort() {
+      (this.signal as any).aborted = true;
+    }
   } as unknown as typeof AbortController;
 }
 
 // Mock setTimeout/clearTimeout for debounced saves
-const originalSetTimeout = globalThis.setTimeout;
-const originalClearTimeout = globalThis.clearTimeout;
+const _originalSetTimeout = globalThis.setTimeout;
+const _originalClearTimeout = globalThis.clearTimeout;
 
 // Now import the store (after mocks are in place)
 import { useLifecycleStore } from '@/store/useStore';
@@ -116,7 +144,12 @@ function getStore() {
   return useLifecycleStore.getState();
 }
 
-function mkNode(id: string, label: string, category: NodeCategory = 'action', extra: Partial<NodeData> = {}): Node<NodeData> {
+function mkNode(
+  id: string,
+  label: string,
+  category: NodeCategory = 'action',
+  extra: Partial<NodeData> = {},
+): Node<NodeData> {
   return {
     id,
     type: 'lifecycleNode',
@@ -131,7 +164,7 @@ function mkEdge(id: string, source: string, target: string, label = 'feeds'): Ed
 
 /** Reset store to a clean empty state between tests */
 function resetStore() {
-  Object.keys(storage).forEach(k => delete storage[k]);
+  Object.keys(storage).forEach((k) => delete storage[k]);
   fetchCallCount = 0;
   lastFetchBody = null;
   mockFetch.mockClear();
@@ -158,7 +191,7 @@ function resetStore() {
 
 /** Build a simple 3-node workflow directly in the store */
 function buildSimpleWorkflow() {
-  const store = getStore();
+  const _store = getStore();
   const n1 = mkNode('node-1', 'Input Data', 'input', { content: 'User requirements document' });
   const n2 = mkNode('node-2', 'Process', 'action', { content: 'Analyze and transform data' });
   const n3 = mkNode('node-3', 'Output Report', 'output', { content: 'Generate final report' });
@@ -175,8 +208,12 @@ function buildSimpleWorkflow() {
 /** Build a complex 6-node workflow with branches */
 function buildComplexWorkflow() {
   const nodes = [
-    mkNode('node-1', 'Requirements', 'input', { content: 'Gather user stories and acceptance criteria' }),
-    mkNode('node-2', 'Architecture', 'action', { content: 'Design system architecture based on requirements' }),
+    mkNode('node-1', 'Requirements', 'input', {
+      content: 'Gather user stories and acceptance criteria',
+    }),
+    mkNode('node-2', 'Architecture', 'action', {
+      content: 'Design system architecture based on requirements',
+    }),
     mkNode('node-3', 'Implementation', 'action', { content: 'Build the feature' }),
     mkNode('node-4', 'Testing', 'test', { content: 'Write and run tests' }),
     mkNode('node-5', 'Code Review', 'review', { content: 'Peer review all changes' }),
@@ -199,13 +236,13 @@ function buildComplexWorkflow() {
 /** Verify the store is in a consistent state */
 function assertStoreInvariants() {
   const s = getStore();
-  const nodeIds = new Set(s.nodes.map(n => n.id));
+  const nodeIds = new Set(s.nodes.map((n) => n.id));
 
   // No duplicate node IDs
   expect(nodeIds.size).toBe(s.nodes.length);
 
   // No duplicate edge IDs
-  const edgeIds = new Set(s.edges.map(e => e.id));
+  const edgeIds = new Set(s.edges.map((e) => e.id));
   expect(edgeIds.size).toBe(s.edges.length);
 
   // All edges reference existing nodes
@@ -265,16 +302,18 @@ describe('User Simulation: Real Journeys', () => {
 
       // PM edits the Architecture node content (semantic change)
       s.pushHistory();
-      s.updateNodeData('node-2', { content: 'Completely new architecture approach using microservices' });
+      s.updateNodeData('node-2', {
+        content: 'Completely new architecture approach using microservices',
+      });
 
       // Wait for microtask (undo op computation)
-      await new Promise(r => setTimeout(r, 10));
+      await new Promise((r) => setTimeout(r, 10));
 
       // Node-2 was edited, downstream nodes should be affected
       // Check that staleness propagated (node-3, node-4, node-5, node-6 are downstream)
       const updated = getStore();
-      const node3 = updated.nodes.find(n => n.id === 'node-3');
-      const node5 = updated.nodes.find(n => n.id === 'node-5');
+      const _node3 = updated.nodes.find((n) => n.id === 'node-3');
+      const _node5 = updated.nodes.find((n) => n.id === 'node-5');
 
       // Staleness should cascade through the graph
       // node-3 and node-4 are direct children, node-5 and node-6 are transitive
@@ -290,7 +329,9 @@ describe('User Simulation: Real Journeys', () => {
 
       // PM adds a review gate
       s.pushHistory();
-      const reviewNode = mkNode('node-4', 'Peer Review', 'review', { content: 'Review output quality' });
+      const reviewNode = mkNode('node-4', 'Peer Review', 'review', {
+        content: 'Review output quality',
+      });
       s.addNode(reviewNode);
 
       // Connect it between Process and Output
@@ -304,7 +345,9 @@ describe('User Simulation: Real Journeys', () => {
       assertStoreInvariants();
 
       // Verify the review gate is properly connected
-      const reviewEdges = updated.edges.filter(e => e.source === 'node-4' || e.target === 'node-4');
+      const reviewEdges = updated.edges.filter(
+        (e) => e.source === 'node-4' || e.target === 'node-4',
+      );
       expect(reviewEdges).toHaveLength(2);
     });
 
@@ -319,7 +362,9 @@ describe('User Simulation: Real Journeys', () => {
       const updated = getStore();
       expect(updated.nodes).toHaveLength(5);
       // Edge e-2-4 and e-4-5 should be gone
-      expect(updated.edges.find(e => e.source === 'node-4' || e.target === 'node-4')).toBeUndefined();
+      expect(
+        updated.edges.find((e) => e.source === 'node-4' || e.target === 'node-4'),
+      ).toBeUndefined();
       assertStoreInvariants();
     });
   });
@@ -337,7 +382,7 @@ describe('User Simulation: Real Journeys', () => {
       s.addNode(mkNode('node-1', 'First', 'input'));
 
       // Wait for microtask to compute undo op
-      await new Promise(r => setTimeout(r, 10));
+      await new Promise((r) => setTimeout(r, 10));
 
       expect(getStore().nodes).toHaveLength(1);
       expect(getStore().history.length).toBeGreaterThanOrEqual(1);
@@ -364,16 +409,18 @@ describe('User Simulation: Real Journeys', () => {
       s.pushHistory();
       s.deleteNode('node-2');
 
-      await new Promise(r => setTimeout(r, 10));
+      await new Promise((r) => setTimeout(r, 10));
 
       expect(getStore().nodes).toHaveLength(2);
-      expect(getStore().edges.filter(e => e.source === 'node-2' || e.target === 'node-2')).toHaveLength(0);
+      expect(
+        getStore().edges.filter((e) => e.source === 'node-2' || e.target === 'node-2'),
+      ).toHaveLength(0);
 
       // Undo — node and its edges should come back
       getStore().undo();
       const restored = getStore();
       expect(restored.nodes).toHaveLength(3);
-      expect(restored.nodes.find(n => n.id === 'node-2')).toBeTruthy();
+      expect(restored.nodes.find((n) => n.id === 'node-2')).toBeTruthy();
 
       assertStoreInvariants();
     });
@@ -385,12 +432,14 @@ describe('User Simulation: Real Journeys', () => {
       s.pushHistory();
       s.updateNodeData('node-1', { content: 'Changed content' });
 
-      await new Promise(r => setTimeout(r, 10));
+      await new Promise((r) => setTimeout(r, 10));
 
-      expect(getStore().nodes.find(n => n.id === 'node-1')!.data.content).toBe('Changed content');
+      expect(getStore().nodes.find((n) => n.id === 'node-1')!.data.content).toBe('Changed content');
 
       getStore().undo();
-      expect(getStore().nodes.find(n => n.id === 'node-1')!.data.content).toBe('User requirements document');
+      expect(getStore().nodes.find((n) => n.id === 'node-1')!.data.content).toBe(
+        'User requirements document',
+      );
 
       assertStoreInvariants();
     });
@@ -401,17 +450,17 @@ describe('User Simulation: Real Journeys', () => {
       // Step 1: Add node
       s.pushHistory();
       s.addNode(mkNode('node-1', 'A', 'input'));
-      await new Promise(r => setTimeout(r, 10));
+      await new Promise((r) => setTimeout(r, 10));
 
       // Step 2: Add another node
       getStore().pushHistory();
       getStore().addNode(mkNode('node-2', 'B', 'action'));
-      await new Promise(r => setTimeout(r, 10));
+      await new Promise((r) => setTimeout(r, 10));
 
       // Step 3: Add edge
       getStore().pushHistory();
       getStore().addEdge(mkEdge('e-1-2', 'node-1', 'node-2'));
-      await new Promise(r => setTimeout(r, 10));
+      await new Promise((r) => setTimeout(r, 10));
 
       expect(getStore().nodes).toHaveLength(2);
       expect(getStore().edges).toHaveLength(1);
@@ -447,9 +496,9 @@ describe('User Simulation: Real Journeys', () => {
       s.updateNodeData('node-6', { content: 'Deploy to staging first, then production' });
 
       const updated = getStore();
-      expect(updated.nodes.find(n => n.id === 'node-1')!.data.content).toContain('user stories');
-      expect(updated.nodes.find(n => n.id === 'node-3')!.data.content).toContain('React');
-      expect(updated.nodes.find(n => n.id === 'node-6')!.data.content).toContain('staging');
+      expect(updated.nodes.find((n) => n.id === 'node-1')!.data.content).toContain('user stories');
+      expect(updated.nodes.find((n) => n.id === 'node-3')!.data.content).toContain('React');
+      expect(updated.nodes.find((n) => n.id === 'node-6')!.data.content).toContain('staging');
       assertStoreInvariants();
     });
 
@@ -492,7 +541,9 @@ describe('User Simulation: Real Journeys', () => {
       expect(updated.nodes).toHaveLength(4);
 
       // Find the cloned node
-      const clone = updated.nodes.find(n => n.id !== 'node-2' && n.data.label.includes('Process'));
+      const clone = updated.nodes.find(
+        (n) => n.id !== 'node-2' && n.data.label.includes('Process'),
+      );
       expect(clone).toBeTruthy();
       expect(clone!.data.category).toBe('action');
       assertStoreInvariants();
@@ -537,7 +588,9 @@ describe('User Simulation: Real Journeys', () => {
     it('orphan detection finds disconnected nodes', () => {
       buildSimpleWorkflow();
       // Add a disconnected node
-      getStore().addNode(mkNode('node-orphan', 'Lonely Node', 'note', { content: 'I have no connections' }));
+      getStore().addNode(
+        mkNode('node-orphan', 'Lonely Node', 'note', { content: 'I have no connections' }),
+      );
       const result = getStore().findOrphans();
       expect(typeof result).toBe('string');
       expect(result.toLowerCase()).toContain('lonely');
@@ -597,7 +650,7 @@ describe('User Simulation: Real Journeys', () => {
       s.pushHistory();
       s.updateEdgeLabel(edge.id, 'new-label');
 
-      expect(getStore().edges.find(e => e.id === edge.id)!.label).toBe('new-label');
+      expect(getStore().edges.find((e) => e.id === edge.id)!.label).toBe('new-label');
       assertStoreInvariants();
     });
 
@@ -620,14 +673,14 @@ describe('User Simulation: Real Journeys', () => {
   describe('Scenario 7: Layout operations', () => {
     it('optimize layout repositions nodes', () => {
       buildComplexWorkflow();
-      const beforePositions = getStore().nodes.map(n => ({ id: n.id, ...n.position }));
+      const beforePositions = getStore().nodes.map((n) => ({ id: n.id, ...n.position }));
 
       getStore().optimizeLayout();
 
-      const afterPositions = getStore().nodes.map(n => ({ id: n.id, ...n.position }));
+      const afterPositions = getStore().nodes.map((n) => ({ id: n.id, ...n.position }));
       // At least some nodes should have moved
-      const moved = afterPositions.filter((a, i) =>
-        a.x !== beforePositions[i].x || a.y !== beforePositions[i].y
+      const moved = afterPositions.filter(
+        (a, i) => a.x !== beforePositions[i].x || a.y !== beforePositions[i].y,
       );
       expect(moved.length).toBeGreaterThan(0);
       assertStoreInvariants();
@@ -690,7 +743,7 @@ describe('User Simulation: Real Journeys', () => {
       // Selection should be cleared or point to valid node
       const sel = getStore().selectedNodeId;
       if (sel) {
-        expect(getStore().nodes.find(n => n.id === sel)).toBeTruthy();
+        expect(getStore().nodes.find((n) => n.id === sel)).toBeTruthy();
       }
       assertStoreInvariants();
     });
@@ -738,7 +791,7 @@ describe('User Simulation: Real Journeys', () => {
       s.addEdge(mkEdge('e-1-2', 'node-1', 'node-3', 'replaced'));
       const updated = getStore();
       expect(updated.edges.length).toBe(edgeCount); // same count, not +1
-      expect(updated.edges.find(e => e.id === 'e-1-2')!.label).toBe('replaced');
+      expect(updated.edges.find((e) => e.id === 'e-1-2')!.label).toBe('replaced');
       assertStoreInvariants();
     });
   });
@@ -750,7 +803,7 @@ describe('User Simulation: Real Journeys', () => {
       s.createNewNode('input' as NodeCategory);
       const events = getStore().events;
       // Should have at least one 'created' event
-      const createEvents = events.filter(e => e.type === 'created');
+      const createEvents = events.filter((e) => e.type === 'created');
       expect(createEvents.length).toBeGreaterThanOrEqual(1);
     });
 
@@ -858,14 +911,14 @@ describe('User Simulation: Real Journeys', () => {
       const s = getStore();
 
       s.lockNode('node-1');
-      expect(getStore().nodes.find(n => n.id === 'node-1')!.data.locked).toBe(true);
+      expect(getStore().nodes.find((n) => n.id === 'node-1')!.data.locked).toBe(true);
 
       // Mark node stale first, then approve it back to active
       s.updateNodeStatus('node-2', 'stale');
-      expect(getStore().nodes.find(n => n.id === 'node-2')!.data.status).toBe('stale');
+      expect(getStore().nodes.find((n) => n.id === 'node-2')!.data.status).toBe('stale');
 
       s.approveNode('node-2');
-      const approved = getStore().nodes.find(n => n.id === 'node-2')!;
+      const approved = getStore().nodes.find((n) => n.id === 'node-2')!;
       expect(approved.data.status).toBe('active');
     });
 
@@ -874,7 +927,7 @@ describe('User Simulation: Real Journeys', () => {
       const s = getStore();
 
       s.updateNodeStatus('node-2', 'stale');
-      expect(getStore().nodes.find(n => n.id === 'node-2')!.data.status).toBe('stale');
+      expect(getStore().nodes.find((n) => n.id === 'node-2')!.data.status).toBe('stale');
 
       const cleared = s.clearStale();
       expect(cleared.count).toBeGreaterThanOrEqual(1);
@@ -886,7 +939,7 @@ describe('User Simulation: Real Journeys', () => {
       buildSimpleWorkflow();
       const s = getStore();
       // After building workflow, nodeCounter should be high
-      const oldNodes = s.nodes.map(n => n.id);
+      const oldNodes = s.nodes.map((n) => n.id);
       expect(oldNodes.length).toBeGreaterThan(0);
 
       // Create new project
@@ -901,7 +954,14 @@ describe('User Simulation: Real Journeys', () => {
         id: `node-100`,
         type: 'lifecycleNode',
         position: { x: 0, y: 0 },
-        data: { label: 'Fresh', category: 'note', status: 'active', description: '', version: 1, lastUpdated: Date.now() },
+        data: {
+          label: 'Fresh',
+          category: 'note',
+          status: 'active',
+          description: '',
+          version: 1,
+          lastUpdated: Date.now(),
+        },
       });
       expect(getStore().nodes).toHaveLength(1);
     });
@@ -924,13 +984,20 @@ describe('User Simulation: Real Journeys', () => {
         id: `node-200`,
         type: 'lifecycleNode',
         position: { x: 0, y: 0 },
-        data: { label: 'Project B Node', category: 'action', status: 'active', description: '', version: 1, lastUpdated: Date.now() },
+        data: {
+          label: 'Project B Node',
+          category: 'action',
+          status: 'active',
+          description: '',
+          version: 1,
+          lastUpdated: Date.now(),
+        },
       });
 
       // Switch back — selectedNodeId should be null
       const projects = getStore().listProjects();
       if (projects.length > 1) {
-        const otherId = projects.find(p => p.id !== newId)?.id;
+        const otherId = projects.find((p) => p.id !== newId)?.id;
         if (otherId) {
           getStore().switchProject(otherId);
           expect(getStore().selectedNodeId).toBeNull();
@@ -984,13 +1051,13 @@ describe('User Simulation: Real Journeys', () => {
 
       // Create a node via the high-level API (calls pushHistory internally)
       s.createNewNode('input');
-      await new Promise(r => setTimeout(r, 50)); // let microtask complete
+      await new Promise((r) => setTimeout(r, 50)); // let microtask complete
       const firstId = getStore().nodes[getStore().nodes.length - 1].id;
       expect(getStore().nodes.length).toBe(initialCount + 1);
 
       // Create another node
       getStore().createNewNode('artifact');
-      await new Promise(r => setTimeout(r, 50));
+      await new Promise((r) => setTimeout(r, 50));
       const secondId = getStore().nodes[getStore().nodes.length - 1].id;
       expect(firstId).not.toBe(secondId);
 
@@ -1000,9 +1067,9 @@ describe('User Simulation: Real Journeys', () => {
 
       // Create a new node — should NOT collide with any existing ID
       getStore().createNewNode('state');
-      await new Promise(r => setTimeout(r, 50));
+      await new Promise((r) => setTimeout(r, 50));
 
-      const ids = getStore().nodes.map(n => n.id);
+      const ids = getStore().nodes.map((n) => n.id);
       const uniqueIds = new Set(ids);
       expect(uniqueIds.size).toBe(ids.length);
     });
@@ -1013,7 +1080,7 @@ describe('User Simulation: Real Journeys', () => {
 
       // Create, undo, redo
       s.createNewNode('input');
-      await new Promise(r => setTimeout(r, 50));
+      await new Promise((r) => setTimeout(r, 50));
       const afterAdd = getStore().nodes.length;
       expect(afterAdd).toBe(initialCount + 1);
 
@@ -1025,9 +1092,9 @@ describe('User Simulation: Real Journeys', () => {
 
       // Create new after redo — no collisions
       getStore().createNewNode('artifact');
-      await new Promise(r => setTimeout(r, 50));
+      await new Promise((r) => setTimeout(r, 50));
 
-      const ids = getStore().nodes.map(n => n.id);
+      const ids = getStore().nodes.map((n) => n.id);
       const uniqueIds = new Set(ids);
       expect(uniqueIds.size).toBe(ids.length);
     });
@@ -1049,7 +1116,7 @@ describe('User Simulation: Real Journeys', () => {
       expect(result.success).toBe(true);
       expect(result.message).toContain('Research Notes');
       expect(getStore().nodes.length).toBe(before + 1);
-      const newNode = getStore().nodes.find(n => n.data.label === 'Research Notes');
+      const newNode = getStore().nodes.find((n) => n.data.label === 'Research Notes');
       expect(newNode).toBeDefined();
       expect(newNode!.data.category).toBe('note');
     });
@@ -1063,7 +1130,9 @@ describe('User Simulation: Real Journeys', () => {
     it('addNodeByName registers custom category', () => {
       const result = getStore().addNodeByName('add mycustomtype called "Custom Thing"');
       expect(result.success).toBe(true);
-      expect(getStore().nodes.find(n => n.data.label === 'Custom Thing')!.data.category).toBe('mycustomtype');
+      expect(getStore().nodes.find((n) => n.data.label === 'Custom Thing')!.data.category).toBe(
+        'mycustomtype',
+      );
     });
 
     it('renameByName renames existing node', () => {
@@ -1072,7 +1141,7 @@ describe('User Simulation: Real Journeys', () => {
       const result = getStore().renameByName(`rename ${oldLabel} to "Better Name"`);
       expect(result.success).toBe(true);
       expect(result.message).toContain('Better Name');
-      expect(getStore().nodes.find(n => n.id === node.id)!.data.label).toBe('Better Name');
+      expect(getStore().nodes.find((n) => n.id === node.id)!.data.label).toBe('Better Name');
     });
 
     it('renameByName fails for non-existent node', () => {
@@ -1113,7 +1182,9 @@ describe('User Simulation: Real Journeys', () => {
     it('connectByName connects two nodes', () => {
       const nodes = getStore().nodes;
       const edgesBefore = getStore().edges.length;
-      const result = getStore().connectByName(`connect ${nodes[0].data.label} to ${nodes[1].data.label}`);
+      const result = getStore().connectByName(
+        `connect ${nodes[0].data.label} to ${nodes[1].data.label}`,
+      );
       expect(result.success).toBe(true);
       expect(result.message).toContain('Connected');
       expect(getStore().edges.length).toBe(edgesBefore + 1);
@@ -1129,7 +1200,9 @@ describe('User Simulation: Real Journeys', () => {
     it('connectByName rejects duplicate connection', () => {
       const nodes = getStore().nodes;
       getStore().connectByName(`connect ${nodes[0].data.label} to ${nodes[1].data.label}`);
-      const result = getStore().connectByName(`connect ${nodes[0].data.label} to ${nodes[1].data.label}`);
+      const result = getStore().connectByName(
+        `connect ${nodes[0].data.label} to ${nodes[1].data.label}`,
+      );
       expect(result.success).toBe(false);
       expect(result.message).toContain('already connected');
     });
@@ -1148,7 +1221,9 @@ describe('User Simulation: Real Journeys', () => {
       const nodes = getStore().nodes;
       getStore().connectByName(`connect ${nodes[0].data.label} to ${nodes[1].data.label}`);
       const edgesAfterConnect = getStore().edges.length;
-      const result = getStore().disconnectByName(`disconnect ${nodes[0].data.label} from ${nodes[1].data.label}`);
+      const result = getStore().disconnectByName(
+        `disconnect ${nodes[0].data.label} from ${nodes[1].data.label}`,
+      );
       expect(result.success).toBe(true);
       expect(getStore().edges.length).toBe(edgesAfterConnect - 1);
     });
@@ -1171,7 +1246,7 @@ describe('User Simulation: Real Journeys', () => {
       const nodes = getStore().nodes;
       const result = getStore().explainWorkflow();
       // Should mention at least one node label
-      const mentionsANode = nodes.some(n => result.includes(n.data.label));
+      const mentionsANode = nodes.some((n) => result.includes(n.data.label));
       expect(mentionsANode).toBe(true);
     });
 
@@ -1202,7 +1277,13 @@ describe('User Simulation: Real Journeys', () => {
 
     it('importWorkflow rejects edges referencing non-existent nodes', () => {
       const json = JSON.stringify({
-        nodes: [{ id: 'n1', position: { x: 0, y: 0 }, data: { label: 'A', category: 'input', status: 'active' } }],
+        nodes: [
+          {
+            id: 'n1',
+            position: { x: 0, y: 0 },
+            data: { label: 'A', category: 'input', status: 'active' },
+          },
+        ],
         edges: [{ id: 'e1', source: 'n1', target: 'n999' }],
       });
       expect(getStore().importWorkflow(json)).toBe(false);
@@ -1238,7 +1319,14 @@ describe('User Simulation: Real Journeys', () => {
   describe('Scenario 19 — Store analytics & UI helpers', () => {
     beforeEach(() => {
       // Reset to clean state then build a known 3-node workflow
-      useLifecycleStore.setState({ nodes: [], edges: [], events: [], messages: [], impactPreview: null, toasts: [] });
+      useLifecycleStore.setState({
+        nodes: [],
+        edges: [],
+        events: [],
+        messages: [],
+        impactPreview: null,
+        toasts: [],
+      });
       getStore().createNewNode('input');
       getStore().createNewNode('artifact');
       getStore().createNewNode('review');
@@ -1271,7 +1359,7 @@ describe('User Simulation: Real Journeys', () => {
 
     it('getHealthScore deducts when no review node', () => {
       useLifecycleStore.setState({
-        nodes: getStore().nodes.filter(n => n.data.category !== 'review'),
+        nodes: getStore().nodes.filter((n) => n.data.category !== 'review'),
       });
       const score = getStore().getHealthScore();
       // -15 for no review, plus orphan deductions
@@ -1281,7 +1369,7 @@ describe('User Simulation: Real Journeys', () => {
     it('getHealthScore clamps to 0-100 range', () => {
       // Create many stale nodes to push score negative
       for (let i = 0; i < 12; i++) getStore().createNewNode('input');
-      getStore().nodes.forEach(n => getStore().updateNodeStatus(n.id, 'stale'));
+      getStore().nodes.forEach((n) => getStore().updateNodeStatus(n.id, 'stale'));
       const score = getStore().getHealthScore();
       expect(score).toBeGreaterThanOrEqual(0);
       expect(score).toBeLessThanOrEqual(100);
@@ -1371,7 +1459,13 @@ describe('User Simulation: Real Journeys', () => {
       useLifecycleStore.setState({
         messages: [
           { id: 'msg-1', role: 'user' as const, content: 'Hello', timestamp: Date.now() },
-          { id: 'msg-2', role: 'cid' as const, content: 'thinking...', timestamp: Date.now(), action: 'thinking' as const },
+          {
+            id: 'msg-2',
+            role: 'cid' as const,
+            content: 'thinking...',
+            timestamp: Date.now(),
+            action: 'thinking' as const,
+          },
           { id: 'msg-3', role: 'cid' as const, content: 'My response', timestamp: Date.now() },
         ],
       });
@@ -1415,8 +1509,20 @@ describe('User Simulation: Real Journeys', () => {
       useLifecycleStore.setState({
         isProcessing: true,
         messages: [
-          { id: 'msg-1', role: 'cid' as const, content: '', timestamp: Date.now(), action: 'building' as const },
-          { id: 'msg-2', role: 'cid' as const, content: 'Partial result', timestamp: Date.now(), action: 'thinking' as const },
+          {
+            id: 'msg-1',
+            role: 'cid' as const,
+            content: '',
+            timestamp: Date.now(),
+            action: 'building' as const,
+          },
+          {
+            id: 'msg-2',
+            role: 'cid' as const,
+            content: 'Partial result',
+            timestamp: Date.now(),
+            action: 'thinking' as const,
+          },
           { id: 'msg-3', role: 'user' as const, content: 'Question', timestamp: Date.now() },
         ],
       });
@@ -1424,9 +1530,9 @@ describe('User Simulation: Real Journeys', () => {
       expect(getStore().isProcessing).toBe(false);
       // Building with empty content removed, thinking with content kept (action cleared)
       const msgs = getStore().messages;
-      expect(msgs.some(m => m.action === 'building')).toBe(false);
-      expect(msgs.find(m => m.content === 'Partial result')?.action).toBeUndefined();
-      expect(msgs.some(m => m.content === 'Question')).toBe(true);
+      expect(msgs.some((m) => m.action === 'building')).toBe(false);
+      expect(msgs.find((m) => m.content === 'Partial result')?.action).toBeUndefined();
+      expect(msgs.some((m) => m.content === 'Question')).toBe(true);
     });
 
     // ── addToast / removeToast ──
@@ -1462,7 +1568,9 @@ describe('User Simulation: Real Journeys', () => {
       getStore().connectByName(`connect ${nodes[0].data.label} to ${nodes[1].data.label}`);
       // Directly set stale to avoid cascade
       useLifecycleStore.setState({
-        nodes: getStore().nodes.map(n => n.id === nodes[1].id ? { ...n, data: { ...n.data, status: 'stale' } } : n),
+        nodes: getStore().nodes.map((n) =>
+          n.id === nodes[1].id ? { ...n, data: { ...n.data, status: 'stale' } } : n,
+        ),
       });
       getStore().showImpactPreview();
       const preview = getStore().impactPreview;
@@ -1477,10 +1585,10 @@ describe('User Simulation: Real Journeys', () => {
       // Directly set two nodes stale
       const nodes = getStore().nodes;
       useLifecycleStore.setState({
-        nodes: nodes.map(n =>
+        nodes: nodes.map((n) =>
           n.id === nodes[0].id || n.id === nodes[1].id
             ? { ...n, data: { ...n.data, status: 'stale' } }
-            : n
+            : n,
         ),
       });
       getStore().showImpactPreview();
@@ -1501,10 +1609,10 @@ describe('User Simulation: Real Journeys', () => {
     it('selectAllImpactNodes selects all stale nodes', () => {
       const nodes = getStore().nodes;
       useLifecycleStore.setState({
-        nodes: nodes.map(n =>
+        nodes: nodes.map((n) =>
           n.id === nodes[0].id || n.id === nodes[1].id
             ? { ...n, data: { ...n.data, status: 'stale' } }
-            : n
+            : n,
         ),
       });
       getStore().showImpactPreview();
@@ -1528,7 +1636,14 @@ describe('User Simulation: Real Journeys', () => {
   // ── Scenario 20: Lifecycle loop — staleness, edit classification, lock/approve ──
   describe('Scenario 20 — Lifecycle loop core', () => {
     beforeEach(() => {
-      useLifecycleStore.setState({ nodes: [], edges: [], events: [], messages: [], impactPreview: null, toasts: [] });
+      useLifecycleStore.setState({
+        nodes: [],
+        edges: [],
+        events: [],
+        messages: [],
+        impactPreview: null,
+        toasts: [],
+      });
       getStore().createNewNode('input');
       getStore().createNewNode('artifact');
       getStore().createNewNode('review');
@@ -1545,32 +1660,32 @@ describe('User Simulation: Real Journeys', () => {
       getStore().updateNodeStatus(inputId, 'stale');
       // All downstream nodes should become stale
       const updated = getStore().nodes;
-      expect(updated.find(n => n.id === inputId)!.data.status).toBe('stale');
+      expect(updated.find((n) => n.id === inputId)!.data.status).toBe('stale');
       // Artifact is downstream of input
-      expect(updated.find(n => n.id === nodes[1].id)!.data.status).toBe('stale');
+      expect(updated.find((n) => n.id === nodes[1].id)!.data.status).toBe('stale');
       // Review is downstream of artifact
-      expect(updated.find(n => n.id === nodes[2].id)!.data.status).toBe('stale');
+      expect(updated.find((n) => n.id === nodes[2].id)!.data.status).toBe('stale');
     });
 
     it('staleness traverses through locked nodes — locked node protected, downstream stale', () => {
       const nodes = getStore().nodes;
       // Lock the artifact node
       getStore().lockNode(nodes[1].id);
-      expect(getStore().nodes.find(n => n.id === nodes[1].id)!.data.locked).toBe(true);
+      expect(getStore().nodes.find((n) => n.id === nodes[1].id)!.data.locked).toBe(true);
       // Now mark input as stale
       getStore().updateNodeStatus(nodes[0].id, 'stale');
       const updated = getStore().nodes;
-      expect(updated.find(n => n.id === nodes[0].id)!.data.status).toBe('stale');
+      expect(updated.find((n) => n.id === nodes[0].id)!.data.status).toBe('stale');
       // Locked artifact should NOT become stale (it's protected)
-      expect(updated.find(n => n.id === nodes[1].id)!.data.status).toBe('locked');
+      expect(updated.find((n) => n.id === nodes[1].id)!.data.status).toBe('locked');
       // Review (downstream of locked) DOES become stale — no stale islands
-      expect(updated.find(n => n.id === nodes[2].id)!.data.status).toBe('stale');
+      expect(updated.find((n) => n.id === nodes[2].id)!.data.status).toBe('stale');
     });
 
     it('lockNode sets locked status and flag', () => {
       const nodeId = getStore().nodes[0].id;
       getStore().lockNode(nodeId);
-      const node = getStore().nodes.find(n => n.id === nodeId)!;
+      const node = getStore().nodes.find((n) => n.id === nodeId)!;
       expect(node.data.status).toBe('locked');
       expect(node.data.locked).toBe(true);
     });
@@ -1579,7 +1694,7 @@ describe('User Simulation: Real Journeys', () => {
       const nodeId = getStore().nodes[0].id;
       getStore().updateNodeStatus(nodeId, 'reviewing');
       getStore().approveNode(nodeId);
-      expect(getStore().nodes.find(n => n.id === nodeId)!.data.status).toBe('active');
+      expect(getStore().nodes.find((n) => n.id === nodeId)!.data.status).toBe('active');
     });
 
     // ── updateNodeData: edit classification ──
@@ -1593,7 +1708,7 @@ describe('User Simulation: Real Journeys', () => {
       // Cosmetic edit: just whitespace change
       getStore().updateNodeData(artifactId, { content: 'Hello   world' });
       // Review (downstream) should still be active, not stale
-      expect(getStore().nodes.find(n => n.id === nodes[2].id)!.data.status).toBe('active');
+      expect(getStore().nodes.find((n) => n.id === nodes[2].id)!.data.status).toBe('active');
     });
 
     it('updateNodeData semantic edit propagates staleness', () => {
@@ -1602,13 +1717,15 @@ describe('User Simulation: Real Journeys', () => {
       // Set initial content
       getStore().updateNodeData(artifactId, { content: 'Original requirements for the project' });
       // Reset downstream to active
-      getStore().nodes.forEach(n => {
+      getStore().nodes.forEach((n) => {
         if (n.id !== artifactId) getStore().updateNodeStatus(n.id, 'active');
       });
       // Semantic edit: completely different content
-      getStore().updateNodeData(artifactId, { content: 'Brand new architecture with different goals' });
+      getStore().updateNodeData(artifactId, {
+        content: 'Brand new architecture with different goals',
+      });
       // Review (downstream) should become stale
-      const review = getStore().nodes.find(n => n.id === nodes[2].id)!;
+      const review = getStore().nodes.find((n) => n.id === nodes[2].id)!;
       expect(review.data.status).toBe('stale');
     });
 
@@ -1616,29 +1733,32 @@ describe('User Simulation: Real Journeys', () => {
       const nodes = getStore().nodes;
       const artifactId = nodes[1].id;
       // Reset all to active
-      nodes.forEach(n => getStore().updateNodeStatus(n.id, 'active'));
+      nodes.forEach((n) => getStore().updateNodeStatus(n.id, 'active'));
       // Structural edit: rename
       getStore().updateNodeData(artifactId, { label: 'Renamed Artifact' });
       // Should propagate to downstream
-      const review = getStore().nodes.find(n => n.id === nodes[2].id)!;
+      const review = getStore().nodes.find((n) => n.id === nodes[2].id)!;
       expect(review.data.status).toBe('stale');
     });
 
     it('updateNodeData blocks non-execution updates on executing nodes', () => {
       const nodeId = getStore().nodes[0].id;
       getStore()._lockNode(nodeId); // execution lock
-      const labelBefore = getStore().nodes.find(n => n.id === nodeId)!.data.label;
+      const labelBefore = getStore().nodes.find((n) => n.id === nodeId)!.data.label;
       // Try to update label — should be blocked
       getStore().updateNodeData(nodeId, { label: 'Hacked Label' });
-      expect(getStore().nodes.find(n => n.id === nodeId)!.data.label).toBe(labelBefore);
+      expect(getStore().nodes.find((n) => n.id === nodeId)!.data.label).toBe(labelBefore);
       getStore()._unlockNode(nodeId);
     });
 
     it('updateNodeData allows execution updates on executing nodes', () => {
       const nodeId = getStore().nodes[0].id;
       getStore()._lockNode(nodeId);
-      getStore().updateNodeData(nodeId, { executionResult: 'Some AI output', executionStatus: 'success' });
-      const node = getStore().nodes.find(n => n.id === nodeId)!;
+      getStore().updateNodeData(nodeId, {
+        executionResult: 'Some AI output',
+        executionStatus: 'success',
+      });
+      const node = getStore().nodes.find((n) => n.id === nodeId)!;
       expect(node.data.executionResult).toBe('Some AI output');
       expect(node.data.executionStatus).toBe('success');
       getStore()._unlockNode(nodeId);
@@ -1647,20 +1767,24 @@ describe('User Simulation: Real Journeys', () => {
     it('updateNodeData creates version history on semantic edit', () => {
       const nodeId = getStore().nodes[1].id;
       getStore().updateNodeData(nodeId, { content: 'Version one content with important details' });
-      getStore().updateNodeData(nodeId, { content: 'Completely rewritten content about something else entirely' });
-      const node = getStore().nodes.find(n => n.id === nodeId)!;
+      getStore().updateNodeData(nodeId, {
+        content: 'Completely rewritten content about something else entirely',
+      });
+      const node = getStore().nodes.find((n) => n.id === nodeId)!;
       expect(node.data._versionHistory).toBeDefined();
       expect(node.data._versionHistory!.length).toBeGreaterThanOrEqual(1);
-      expect(node.data._versionHistory![0].content).toBe('Version one content with important details');
+      expect(node.data._versionHistory![0].content).toBe(
+        'Version one content with important details',
+      );
     });
 
     // ── onConnect auto-labeling ──
     it('onConnect infers edge label from category pair', () => {
       const edges = getStore().edges;
       // input→artifact edge should have 'feeds' label
-      const inputToArtifact = edges.find(e => {
-        const src = getStore().nodes.find(n => n.id === e.source);
-        const tgt = getStore().nodes.find(n => n.id === e.target);
+      const inputToArtifact = edges.find((e) => {
+        const src = getStore().nodes.find((n) => n.id === e.source);
+        const tgt = getStore().nodes.find((n) => n.id === e.target);
         return src?.data.category === 'input' && tgt?.data.category === 'artifact';
       });
       expect(inputToArtifact).toBeDefined();
@@ -1697,7 +1821,14 @@ describe('User Simulation: Real Journeys', () => {
   // ── Scenario 21: Async executeNode with fetch mock ──
   describe('Scenario 21 — executeNode async paths', () => {
     beforeEach(() => {
-      useLifecycleStore.setState({ nodes: [], edges: [], events: [], messages: [], impactPreview: null, toasts: [] });
+      useLifecycleStore.setState({
+        nodes: [],
+        edges: [],
+        events: [],
+        messages: [],
+        impactPreview: null,
+        toasts: [],
+      });
     });
 
     // ── Passthrough categories (no fetch needed) ──
@@ -1706,7 +1837,7 @@ describe('User Simulation: Real Journeys', () => {
       const node = getStore().nodes[0];
       getStore().updateNodeData(node.id, { inputValue: 'My input data' });
       await getStore().executeNode(node.id);
-      const updated = getStore().nodes.find(n => n.id === node.id)!;
+      const updated = getStore().nodes.find((n) => n.id === node.id)!;
       expect(updated.data.executionResult).toBe('My input data');
       expect(updated.data.executionStatus).toBe('success');
     });
@@ -1715,7 +1846,7 @@ describe('User Simulation: Real Journeys', () => {
       getStore().createNewNode('input');
       const node = getStore().nodes[0];
       await getStore().executeNode(node.id);
-      const updated = getStore().nodes.find(n => n.id === node.id)!;
+      const updated = getStore().nodes.find((n) => n.id === node.id)!;
       expect(updated.data.executionStatus).toBe('idle');
     });
 
@@ -1724,7 +1855,7 @@ describe('User Simulation: Real Journeys', () => {
       const node = getStore().nodes[0];
       getStore().updateNodeData(node.id, { content: 'On schedule' });
       await getStore().executeNode(node.id);
-      const updated = getStore().nodes.find(n => n.id === node.id)!;
+      const updated = getStore().nodes.find((n) => n.id === node.id)!;
       expect(updated.data.executionResult).toBe('On schedule');
       expect(updated.data.executionStatus).toBe('success');
     });
@@ -1734,7 +1865,7 @@ describe('User Simulation: Real Journeys', () => {
       const node = getStore().nodes[0];
       getStore().updateNodeData(node.id, { content: 'Requires auth service' });
       await getStore().executeNode(node.id);
-      const updated = getStore().nodes.find(n => n.id === node.id)!;
+      const updated = getStore().nodes.find((n) => n.id === node.id)!;
       expect(updated.data.executionResult).toBe('Requires auth service');
       expect(updated.data.executionStatus).toBe('success');
     });
@@ -1745,7 +1876,7 @@ describe('User Simulation: Real Journeys', () => {
       getStore()._lockNode(node.id);
       await getStore().executeNode(node.id); // should skip
       // Node should still be locked but no executionResult set
-      expect(getStore().nodes.find(n => n.id === node.id)!.data.executionResult).toBeUndefined();
+      expect(getStore().nodes.find((n) => n.id === node.id)!.data.executionResult).toBeUndefined();
       getStore()._unlockNode(node.id);
     });
 
@@ -1763,7 +1894,7 @@ describe('User Simulation: Real Journeys', () => {
       // Mark upstream as failed
       getStore().updateNodeData(nodes[0].id, { executionStatus: 'error' });
       await getStore().executeNode(nodes[1].id);
-      const artifact = getStore().nodes.find(n => n.id === nodes[1].id)!;
+      const artifact = getStore().nodes.find((n) => n.id === nodes[1].id)!;
       expect(artifact.data.executionStatus).toBe('error');
       expect(artifact.data.executionError).toContain('upstream');
     });
@@ -1777,7 +1908,7 @@ describe('User Simulation: Real Journeys', () => {
         content: 'This is rich pre-generated content that is longer than fifty characters for sure',
       });
       await getStore().executeNode(node.id);
-      const updated = getStore().nodes.find(n => n.id === node.id)!;
+      const updated = getStore().nodes.find((n) => n.id === node.id)!;
       expect(updated.data.executionResult).toBe(updated.data.content);
       expect(updated.data.executionStatus).toBe('success');
     });
@@ -1797,7 +1928,7 @@ describe('User Simulation: Real Journeys', () => {
         json: async () => ({ result: 'AI-generated artifact content' }),
       }));
       await getStore().executeNode(nodes[1].id);
-      const artifact = getStore().nodes.find(n => n.id === nodes[1].id)!;
+      const artifact = getStore().nodes.find((n) => n.id === nodes[1].id)!;
       expect(artifact.data.executionResult).toBe('AI-generated artifact content');
       expect(artifact.data.executionStatus).toBe('success');
     });
@@ -1811,13 +1942,16 @@ describe('User Simulation: Real Journeys', () => {
       getStore().updateNodeData(nodes[0].id, { inputValue: 'User input' });
       await getStore().executeNode(nodes[0].id);
       // Mock fetch returning error
-      mockFetch.mockImplementationOnce(async () => ({
-        ok: false,
-        status: 500,
-        json: async () => ({}),
-      } as unknown as Response));
+      mockFetch.mockImplementationOnce(
+        async () =>
+          ({
+            ok: false,
+            status: 500,
+            json: async () => ({}),
+          }) as unknown as Response,
+      );
       await getStore().executeNode(nodes[1].id);
-      const artifact = getStore().nodes.find(n => n.id === nodes[1].id)!;
+      const artifact = getStore().nodes.find((n) => n.id === nodes[1].id)!;
       expect(artifact.data.executionStatus).toBe('error');
       expect(artifact.data.executionError).toContain('500');
     });
@@ -1830,12 +1964,15 @@ describe('User Simulation: Real Journeys', () => {
       getStore().connectByName(`connect ${nodes[0].data.label} to ${nodes[1].data.label}`);
       getStore().updateNodeData(nodes[0].id, { inputValue: 'Data' });
       await getStore().executeNode(nodes[0].id);
-      mockFetch.mockImplementationOnce(async () => ({
-        ok: true,
-        json: async () => ({ error: 'no_api_key', message: 'No API key configured' }),
-      } as unknown as Response));
+      mockFetch.mockImplementationOnce(
+        async () =>
+          ({
+            ok: true,
+            json: async () => ({ error: 'no_api_key', message: 'No API key configured' }),
+          }) as unknown as Response,
+      );
       await getStore().executeNode(nodes[1].id);
-      const artifact = getStore().nodes.find(n => n.id === nodes[1].id)!;
+      const artifact = getStore().nodes.find((n) => n.id === nodes[1].id)!;
       expect(artifact.data.executionStatus).toBe('error');
     });
 
@@ -1847,9 +1984,11 @@ describe('User Simulation: Real Journeys', () => {
       getStore().connectByName(`connect ${nodes[0].data.label} to ${nodes[1].data.label}`);
       getStore().updateNodeData(nodes[0].id, { inputValue: 'Input data' });
       await getStore().executeNode(nodes[0].id);
-      mockFetch.mockImplementationOnce(async () => { throw new Error('Network error'); });
+      mockFetch.mockImplementationOnce(async () => {
+        throw new Error('Network error');
+      });
       await getStore().executeNode(nodes[1].id);
-      const artifact = getStore().nodes.find(n => n.id === nodes[1].id)!;
+      const artifact = getStore().nodes.find((n) => n.id === nodes[1].id)!;
       expect(artifact.data.executionStatus).toBe('error');
       expect(artifact.data.executionError).toContain('Network error');
       // Node should be unlocked
@@ -1879,8 +2018,13 @@ describe('User Simulation: Real Journeys', () => {
   describe('Scenario 22 — propagateStale & chatWithCID', () => {
     beforeEach(() => {
       useLifecycleStore.setState({
-        nodes: [], edges: [], events: [], messages: [],
-        impactPreview: null, toasts: [], isProcessing: false,
+        nodes: [],
+        edges: [],
+        events: [],
+        messages: [],
+        impactPreview: null,
+        toasts: [],
+        isProcessing: false,
       });
       mockFetch.mockClear();
     });
@@ -1891,7 +2035,7 @@ describe('User Simulation: Real Journeys', () => {
       getStore().createNewNode('input');
       await getStore().propagateStale();
       const msgs = getStore().messages;
-      expect(msgs.some(m => m.content.includes('up to date'))).toBe(true);
+      expect(msgs.some((m) => m.content.includes('up to date'))).toBe(true);
     });
 
     it('propagateStale: re-executes stale nodes in topo order', async () => {
@@ -1904,16 +2048,17 @@ describe('User Simulation: Real Journeys', () => {
 
       // Manually mark both as stale
       useLifecycleStore.setState({
-        nodes: getStore().nodes.map(n => ({
-          ...n, data: { ...n.data, status: 'stale' as const },
+        nodes: getStore().nodes.map((n) => ({
+          ...n,
+          data: { ...n.data, status: 'stale' as const },
         })),
       });
 
       await getStore().propagateStale();
 
       // After propagation: nodes should be active (not stale)
-      const updatedInp = getStore().nodes.find(n => n.id === inp.id)!;
-      const updatedArt = getStore().nodes.find(n => n.id === art.id)!;
+      const updatedInp = getStore().nodes.find((n) => n.id === inp.id)!;
+      const updatedArt = getStore().nodes.find((n) => n.id === art.id)!;
       expect(updatedInp.data.status).toBe('active');
       expect(updatedArt.data.status).toBe('active');
     });
@@ -1926,10 +2071,11 @@ describe('User Simulation: Real Journeys', () => {
 
       // Force exact state: inp active, art stale, no edges, no prior events
       useLifecycleStore.setState({
-        nodes: getStore().nodes.map(n => ({
-          ...n, data: {
+        nodes: getStore().nodes.map((n) => ({
+          ...n,
+          data: {
             ...n.data,
-            status: n.id === art.id ? 'stale' as const : 'active' as const,
+            status: n.id === art.id ? ('stale' as const) : ('active' as const),
             inputValue: n.id === inp.id ? 'data' : undefined,
           },
         })),
@@ -1939,16 +2085,25 @@ describe('User Simulation: Real Journeys', () => {
 
       await getStore().propagateStale();
       // Only artifact should produce regenerated events (executeNode + propagateStale each add one)
-      const regenEvents = getStore().events.filter(e => e.type === 'regenerated');
+      const regenEvents = getStore().events.filter((e) => e.type === 'regenerated');
       expect(regenEvents.length).toBe(2);
-      expect(regenEvents.every(e => e.nodeId === art.id)).toBe(true);
+      expect(regenEvents.every((e) => e.nodeId === art.id)).toBe(true);
     });
 
     it('propagateStale: clears impact preview after completion', async () => {
       getStore().createNewNode('input');
       useLifecycleStore.setState({
-        nodes: getStore().nodes.map(n => ({ ...n, data: { ...n.data, status: 'stale' as const, inputValue: 'x' } })),
-        impactPreview: { visible: true, staleNodes: [], executionOrder: [], estimatedCalls: 0, selectedNodeIds: new Set<string>() },
+        nodes: getStore().nodes.map((n) => ({
+          ...n,
+          data: { ...n.data, status: 'stale' as const, inputValue: 'x' },
+        })),
+        impactPreview: {
+          visible: true,
+          staleNodes: [],
+          executionOrder: [],
+          estimatedCalls: 0,
+          selectedNodeIds: new Set<string>(),
+        },
       });
       await getStore().propagateStale();
       expect(getStore().impactPreview).toBeNull();
@@ -1956,9 +2111,12 @@ describe('User Simulation: Real Journeys', () => {
 
     it('propagateStale: reports error count when execution fails', async () => {
       getStore().createNewNode('artifact');
-      const art = getStore().nodes[0];
+      const _art = getStore().nodes[0];
       useLifecycleStore.setState({
-        nodes: getStore().nodes.map(n => ({ ...n, data: { ...n.data, status: 'stale' as const } })),
+        nodes: getStore().nodes.map((n) => ({
+          ...n,
+          data: { ...n.data, status: 'stale' as const },
+        })),
       });
       // Mock fetch to return error
       mockFetch.mockImplementationOnce(async () => ({
@@ -1970,14 +2128,19 @@ describe('User Simulation: Real Journeys', () => {
       await getStore().propagateStale();
       // Should have a completion message (either success or error count)
       const msgs = getStore().messages;
-      const doneMsg = msgs.find(m => m.content.includes('refreshed') || m.content.includes('failed'));
+      const doneMsg = msgs.find(
+        (m) => m.content.includes('refreshed') || m.content.includes('failed'),
+      );
       expect(doneMsg).toBeDefined();
     });
 
     it('propagateStale: pushes undo history', async () => {
       getStore().createNewNode('input');
       useLifecycleStore.setState({
-        nodes: getStore().nodes.map(n => ({ ...n, data: { ...n.data, status: 'stale' as const, inputValue: 'x' } })),
+        nodes: getStore().nodes.map((n) => ({
+          ...n,
+          data: { ...n.data, status: 'stale' as const, inputValue: 'x' },
+        })),
       });
       const historyBefore = getStore().history.length;
       await getStore().propagateStale();
@@ -1988,62 +2151,76 @@ describe('User Simulation: Real Journeys', () => {
 
     it('chatWithCID: sends user message and shows thinking state', async () => {
       // Override fetch for chat response
-      mockFetch.mockImplementationOnce(async () => ({
-        ok: true,
-        json: async () => ({
-          result: { message: 'Hello! I can help with that.', workflow: null },
-        }),
-      } as unknown as Response));
+      mockFetch.mockImplementationOnce(
+        async () =>
+          ({
+            ok: true,
+            json: async () => ({
+              result: { message: 'Hello! I can help with that.', workflow: null },
+            }),
+          }) as unknown as Response,
+      );
 
       await getStore().chatWithCID('hello');
 
       const msgs = getStore().messages;
       // Should have user message
-      expect(msgs.some(m => m.role === 'user' && m.content === 'hello')).toBe(true);
+      expect(msgs.some((m) => m.role === 'user' && m.content === 'hello')).toBe(true);
       // Should have CID response (thinking removed, actual response added)
-      expect(msgs.some(m => m.role === 'cid' && !m.action)).toBe(true);
+      expect(msgs.some((m) => m.role === 'cid' && !m.action)).toBe(true);
     });
 
     it('chatWithCID: handles no_api_key with fallback', async () => {
-      mockFetch.mockImplementationOnce(async () => ({
-        ok: true,
-        json: async () => ({ error: 'no_api_key' }),
-      } as unknown as Response));
+      mockFetch.mockImplementationOnce(
+        async () =>
+          ({
+            ok: true,
+            json: async () => ({ error: 'no_api_key' }),
+          }) as unknown as Response,
+      );
 
       await getStore().chatWithCID('build a workflow');
 
       const msgs = getStore().messages;
       // Should have a CID response (fallback)
-      expect(msgs.filter(m => m.role === 'cid').length).toBeGreaterThan(0);
+      expect(msgs.filter((m) => m.role === 'cid').length).toBeGreaterThan(0);
       expect(getStore().isProcessing).toBe(false);
     });
 
     it('chatWithCID: handles api_error with fallback', async () => {
-      mockFetch.mockImplementationOnce(async () => ({
-        ok: true,
-        json: async () => ({ error: 'api_error', message: '429 rate limit' }),
-      } as unknown as Response));
+      mockFetch.mockImplementationOnce(
+        async () =>
+          ({
+            ok: true,
+            json: async () => ({ error: 'api_error', message: '429 rate limit' }),
+          }) as unknown as Response,
+      );
 
       await getStore().chatWithCID('build a workflow');
 
       const msgs = getStore().messages;
-      expect(msgs.some(m => m.content.includes('rate limited') || m.content.includes('unavailable'))).toBe(true);
+      expect(
+        msgs.some((m) => m.content.includes('rate limited') || m.content.includes('unavailable')),
+      ).toBe(true);
       expect(getStore().isProcessing).toBe(false);
     });
 
     it('chatWithCID: strips modifications for advice questions', async () => {
-      mockFetch.mockImplementationOnce(async () => ({
-        ok: true,
-        json: async () => ({
-          result: {
-            message: 'Here is my advice...',
-            workflow: null,
-            modifications: {
-              update_nodes: [{ label: 'Input', changes: { description: 'should not apply' } }],
-            },
-          },
-        }),
-      } as unknown as Response));
+      mockFetch.mockImplementationOnce(
+        async () =>
+          ({
+            ok: true,
+            json: async () => ({
+              result: {
+                message: 'Here is my advice...',
+                workflow: null,
+                modifications: {
+                  update_nodes: [{ label: 'Input', changes: { description: 'should not apply' } }],
+                },
+              },
+            }),
+          }) as unknown as Response,
+      );
 
       getStore().createNewNode('input');
       const origDesc = getStore().nodes[0].data.description;
@@ -2059,34 +2236,44 @@ describe('User Simulation: Real Journeys', () => {
       getStore().createNewNode('input');
       const origNode = getStore().nodes[0];
 
-      mockFetch.mockImplementationOnce(async () => ({
-        ok: true,
-        json: async () => ({
-          result: {
-            message: 'Updated the workflow.',
-            workflow: null,
-            modifications: {
-              update_nodes: [{ label: origNode.data.label, changes: { description: 'New description from AI' } }],
-            },
-          },
-        }),
-      } as unknown as Response));
+      mockFetch.mockImplementationOnce(
+        async () =>
+          ({
+            ok: true,
+            json: async () => ({
+              result: {
+                message: 'Updated the workflow.',
+                workflow: null,
+                modifications: {
+                  update_nodes: [
+                    {
+                      label: origNode.data.label,
+                      changes: { description: 'New description from AI' },
+                    },
+                  ],
+                },
+              },
+            }),
+          }) as unknown as Response,
+      );
 
       await getStore().chatWithCID('update the input node description');
 
-      const updated = getStore().nodes.find(n => n.id === origNode.id)!;
+      const updated = getStore().nodes.find((n) => n.id === origNode.id)!;
       expect(updated.data.description).toBe('New description from AI');
     });
 
     it('chatWithCID: falls back to template on network error', async () => {
-      mockFetch.mockImplementationOnce(async () => { throw new Error('Network error'); });
+      mockFetch.mockImplementationOnce(async () => {
+        throw new Error('Network error');
+      });
 
       await getStore().chatWithCID('hello');
 
       // Should have removed thinking and added fallback
       const msgs = getStore().messages;
-      expect(msgs.some(m => m.action === 'thinking')).toBe(false);
-      expect(msgs.filter(m => m.role === 'cid' && m.content).length).toBeGreaterThan(0);
+      expect(msgs.some((m) => m.action === 'thinking')).toBe(false);
+      expect(msgs.filter((m) => m.role === 'cid' && m.content).length).toBeGreaterThan(0);
       expect(getStore().isProcessing).toBe(false);
     });
 
@@ -2123,7 +2310,7 @@ describe('User Simulation: Real Journeys', () => {
 
       const msgs = getStore().messages;
       // The CID response should contain the parsed message content
-      expect(msgs.some(m => m.role === 'cid')).toBe(true);
+      expect(msgs.some((m) => m.role === 'cid')).toBe(true);
     });
   });
 
@@ -2131,9 +2318,15 @@ describe('User Simulation: Real Journeys', () => {
   describe('Scenario 23 — executeWorkflow & executeBranch', () => {
     beforeEach(() => {
       useLifecycleStore.setState({
-        nodes: [], edges: [], events: [], messages: [],
-        impactPreview: null, toasts: [], isProcessing: false,
-        executionProgress: null, lastExecutionSnapshot: new Map(),
+        nodes: [],
+        edges: [],
+        events: [],
+        messages: [],
+        impactPreview: null,
+        toasts: [],
+        isProcessing: false,
+        executionProgress: null,
+        lastExecutionSnapshot: new Map(),
       });
       mockFetch.mockClear();
     });
@@ -2166,12 +2359,16 @@ describe('User Simulation: Real Journeys', () => {
       await getStore().executeWorkflow();
 
       // Both should be executed
-      const updatedInp = getStore().nodes.find(n => n.id === inp.id)!;
-      const updatedArt = getStore().nodes.find(n => n.id === art.id)!;
+      const updatedInp = getStore().nodes.find((n) => n.id === inp.id)!;
+      const updatedArt = getStore().nodes.find((n) => n.id === art.id)!;
       expect(updatedInp.data.executionStatus).toBe('success');
       expect(updatedArt.data.executionStatus).toBe('success');
       // Should have a completion message
-      expect(getStore().messages.some(m => m.content.includes('nodes processed') || m.content.includes('Magnifique'))).toBe(true);
+      expect(
+        getStore().messages.some(
+          (m) => m.content.includes('nodes processed') || m.content.includes('Magnifique'),
+        ),
+      ).toBe(true);
     });
 
     it('executeWorkflow: saves execution snapshot for diff', async () => {
@@ -2195,15 +2392,18 @@ describe('User Simulation: Real Journeys', () => {
       getStore().addEdge({ id: 'e1', source: a1.id, target: a2.id, type: 'default' });
 
       // Mock first artifact to fail
-      mockFetch.mockImplementationOnce(async () => ({
-        ok: false,
-        json: async () => ({ error: 'server error' }),
-      } as unknown as Response));
+      mockFetch.mockImplementationOnce(
+        async () =>
+          ({
+            ok: false,
+            json: async () => ({ error: 'server error' }),
+          }) as unknown as Response,
+      );
 
       await getStore().executeWorkflow();
 
       // a2 should be skipped due to upstream failure
-      const updatedA2 = getStore().nodes.find(n => n.id === a2.id)!;
+      const updatedA2 = getStore().nodes.find((n) => n.id === a2.id)!;
       expect(updatedA2.data.executionStatus).toBe('error');
       expect(updatedA2.data.executionError).toContain('upstream');
     });
@@ -2215,7 +2415,7 @@ describe('User Simulation: Real Journeys', () => {
       await getStore().executeWorkflow();
 
       const msgs = getStore().messages;
-      const completionMsg = msgs.find(m => m.content.includes('Timing:'));
+      const completionMsg = msgs.find((m) => m.content.includes('Timing:'));
       expect(completionMsg).toBeDefined();
     });
 
@@ -2240,7 +2440,7 @@ describe('User Simulation: Real Journeys', () => {
       await getStore().executeWorkflow();
 
       // Should report cycle and not execute
-      expect(getStore().messages.some(m => m.content.toLowerCase().includes('cycle'))).toBe(true);
+      expect(getStore().messages.some((m) => m.content.toLowerCase().includes('cycle'))).toBe(true);
     });
 
     // ── executeBranch ──
@@ -2261,15 +2461,16 @@ describe('User Simulation: Real Journeys', () => {
 
       // Pre-execute both to mark as success
       useLifecycleStore.setState({
-        nodes: getStore().nodes.map(n => ({
-          ...n, data: { ...n.data, executionStatus: 'success' as const },
+        nodes: getStore().nodes.map((n) => ({
+          ...n,
+          data: { ...n.data, executionStatus: 'success' as const },
         })),
       });
 
       await getStore().executeBranch(art.id);
 
       // Should report all-executed message
-      expect(getStore().messages.some(m => m.content.includes('already executed'))).toBe(true);
+      expect(getStore().messages.some((m) => m.content.includes('already executed'))).toBe(true);
     });
 
     it('executeBranch: executes only upstream subset', async () => {
@@ -2286,10 +2487,10 @@ describe('User Simulation: Real Journeys', () => {
       await getStore().executeBranch(art.id);
 
       // art should be executed (inp passes through, art gets API call)
-      const updatedArt = getStore().nodes.find(n => n.id === art.id)!;
+      const updatedArt = getStore().nodes.find((n) => n.id === art.id)!;
       expect(updatedArt.data.executionStatus).toBe('success');
       // out should NOT be executed
-      const updatedOut = getStore().nodes.find(n => n.id === out.id)!;
+      const updatedOut = getStore().nodes.find((n) => n.id === out.id)!;
       expect(updatedOut.data.executionStatus).not.toBe('success');
     });
 
@@ -2303,9 +2504,11 @@ describe('User Simulation: Real Journeys', () => {
 
       await getStore().executeBranch(art.id);
 
-      expect(getStore().messages.some(m =>
-        m.content.includes('Branch execution complete') && m.content.includes('node(s)')
-      )).toBe(true);
+      expect(
+        getStore().messages.some(
+          (m) => m.content.includes('Branch execution complete') && m.content.includes('node(s)'),
+        ),
+      ).toBe(true);
     });
 
     it('executeBranch: skips already-succeeded upstream nodes', async () => {
@@ -2318,15 +2521,19 @@ describe('User Simulation: Real Journeys', () => {
 
       // Pre-mark input as already succeeded
       useLifecycleStore.setState({
-        nodes: getStore().nodes.map(n => ({
-          ...n, data: { ...n.data, executionStatus: n.id === inp.id ? 'success' as const : n.data.executionStatus },
+        nodes: getStore().nodes.map((n) => ({
+          ...n,
+          data: {
+            ...n.data,
+            executionStatus: n.id === inp.id ? ('success' as const) : n.data.executionStatus,
+          },
         })),
       });
 
       await getStore().executeBranch(art.id);
 
       // Should only execute 1 node (art), not 2
-      const branchMsg = getStore().messages.find(m => m.content.includes('1 node(s) to execute'));
+      const branchMsg = getStore().messages.find((m) => m.content.includes('1 node(s) to execute'));
       expect(branchMsg).toBeDefined();
     });
   });
@@ -2335,11 +2542,19 @@ describe('User Simulation: Real Journeys', () => {
   describe('Scenario 24 — UI handlers & selection management', () => {
     beforeEach(() => {
       useLifecycleStore.setState({
-        nodes: [], edges: [], events: [], messages: [],
-        impactPreview: null, toasts: [], isProcessing: false,
-        showCIDPanel: false, showPreviewPanel: false,
-        selectedNodeId: null, multiSelectedIds: new Set(),
-        contextMenu: null, activeArtifactNodeId: null,
+        nodes: [],
+        edges: [],
+        events: [],
+        messages: [],
+        impactPreview: null,
+        toasts: [],
+        isProcessing: false,
+        showCIDPanel: false,
+        showPreviewPanel: false,
+        selectedNodeId: null,
+        multiSelectedIds: new Set(),
+        contextMenu: null,
+        activeArtifactNodeId: null,
       });
     });
 
@@ -2416,9 +2631,9 @@ describe('User Simulation: Real Journeys', () => {
       const count = getStore().deleteMultiSelected();
 
       expect(count).toBe(1);
-      expect(getStore().nodes.find(n => n.id === a.id)).toBeUndefined();
+      expect(getStore().nodes.find((n) => n.id === a.id)).toBeUndefined();
       // Edge from a → b should also be removed
-      expect(getStore().edges.find(e => e.source === a.id)).toBeUndefined();
+      expect(getStore().edges.find((e) => e.source === a.id)).toBeUndefined();
       expect(getStore().multiSelectedIds.size).toBe(0);
     });
 
@@ -2449,7 +2664,7 @@ describe('User Simulation: Real Journeys', () => {
       const orig = getStore().nodes[0];
       getStore().duplicateNode(orig.id);
       expect(getStore().nodes).toHaveLength(2);
-      const copy = getStore().nodes.find(n => n.id !== orig.id)!;
+      const copy = getStore().nodes.find((n) => n.id !== orig.id)!;
       expect(copy.data.label).toContain('(copy)');
       expect(copy.data.category).toBe(orig.data.category);
       expect(copy.data.version).toBe(1);
@@ -2500,7 +2715,7 @@ describe('User Simulation: Real Journeys', () => {
       // Both start as 'active'
       const count = getStore().batchUpdateStatus('active', 'reviewing');
       expect(count).toBe(2);
-      expect(getStore().nodes.every(n => n.data.status === 'reviewing')).toBe(true);
+      expect(getStore().nodes.every((n) => n.data.status === 'reviewing')).toBe(true);
     });
 
     it('batchUpdateStatus: returns 0 when no nodes match', () => {
@@ -2519,7 +2734,7 @@ describe('User Simulation: Real Journeys', () => {
       // Batch input → stale should cascade to artifact
       const count = getStore().batchUpdateStatus('active', 'stale');
       // Both should be stale (input directly, artifact via cascade)
-      expect(getStore().nodes.every(n => n.data.status === 'stale')).toBe(true);
+      expect(getStore().nodes.every((n) => n.data.status === 'stale')).toBe(true);
       expect(count).toBeGreaterThanOrEqual(1);
     });
 
@@ -2533,7 +2748,7 @@ describe('User Simulation: Real Journeys', () => {
       getStore().addEdge({ id: 'e1', source: a.id, target: b.id, type: 'default' });
 
       getStore().updateEdgeLabel('e1', 'validates');
-      const edge = getStore().edges.find(e => e.id === 'e1')!;
+      const edge = getStore().edges.find((e) => e.id === 'e1')!;
       expect(edge.label).toBe('validates');
     });
   });
@@ -2545,9 +2760,16 @@ describe('User Simulation: Real Journeys', () => {
   describe('Scenario 25 — store utility handlers', () => {
     beforeEach(() => {
       useLifecycleStore.setState({
-        nodes: [], edges: [], events: [], messages: [],
-        impactPreview: null, toasts: [], isProcessing: false,
-        cidRules: [], breadcrumbs: [], snapshots: new Map(),
+        nodes: [],
+        edges: [],
+        events: [],
+        messages: [],
+        impactPreview: null,
+        toasts: [],
+        isProcessing: false,
+        cidRules: [],
+        breadcrumbs: [],
+        snapshots: new Map(),
         _lastHealthFingerprint: '',
       });
       mockFetch.mockClear();
@@ -2655,8 +2877,8 @@ describe('User Simulation: Real Journeys', () => {
           ...n,
           data: {
             ...n.data,
-            executionStatus: i === 0 ? 'success' as const : undefined,
-            status: i === 1 ? 'stale' as const : n.data.status,
+            executionStatus: i === 0 ? ('success' as const) : undefined,
+            status: i === 1 ? ('stale' as const) : n.data.status,
           },
         })),
       });
@@ -2750,8 +2972,8 @@ describe('User Simulation: Real Journeys', () => {
       const result = getStore().batchWhere('batch locked where category=review');
       expect(result.success).toBe(true);
       expect(result.message).toContain('2');
-      const reviews = getStore().nodes.filter(n => n.data.category === 'review');
-      expect(reviews.every(n => n.data.status === 'locked')).toBe(true);
+      const reviews = getStore().nodes.filter((n) => n.data.category === 'review');
+      expect(reviews.every((n) => n.data.status === 'locked')).toBe(true);
     });
 
     it('batchWhere: updates by status field', () => {
@@ -2760,7 +2982,7 @@ describe('User Simulation: Real Journeys', () => {
       // Both start as active
       const result = getStore().batchWhere('batch reviewing where status=active');
       expect(result.success).toBe(true);
-      expect(getStore().nodes.every(n => n.data.status === 'reviewing')).toBe(true);
+      expect(getStore().nodes.every((n) => n.data.status === 'reviewing')).toBe(true);
     });
 
     it('batchWhere: already at target status', () => {
@@ -2830,7 +3052,7 @@ describe('User Simulation: Real Journeys', () => {
       // Create a disconnected node to trigger health issue
       getStore().runHealthCheck(true);
       // Silent should not add messages even with issues
-      const healthMsgs = getStore().messages.filter(m => m.role === 'cid');
+      const healthMsgs = getStore().messages.filter((m) => m.role === 'cid');
       expect(healthMsgs).toHaveLength(0);
     });
 
@@ -2885,7 +3107,13 @@ describe('User Simulation: Real Journeys', () => {
       getStore().createNewNode('input');
       const nodeId = getStore().nodes[0].id;
       useLifecycleStore.setState({
-        impactPreview: { visible: true, staleNodes: [{ id: nodeId, label: 'Input', category: 'input' }], executionOrder: [nodeId], estimatedCalls: 1, selectedNodeIds: new Set([nodeId]) },
+        impactPreview: {
+          visible: true,
+          staleNodes: [{ id: nodeId, label: 'Input', category: 'input' }],
+          executionOrder: [nodeId],
+          estimatedCalls: 1,
+          selectedNodeIds: new Set([nodeId]),
+        },
       });
       await getStore().regenerateSelected([nodeId]);
       expect(getStore().impactPreview).toBeNull();
@@ -2899,8 +3127,13 @@ describe('User Simulation: Real Journeys', () => {
   describe('Scenario 26 — artifact helpers & downstream', () => {
     beforeEach(() => {
       useLifecycleStore.setState({
-        nodes: [], edges: [], events: [], messages: [],
-        impactPreview: null, toasts: [], isProcessing: false,
+        nodes: [],
+        edges: [],
+        events: [],
+        messages: [],
+        impactPreview: null,
+        toasts: [],
+        isProcessing: false,
         artifactVersions: {},
       });
       mockFetch.mockClear();
@@ -2913,8 +3146,10 @@ describe('User Simulation: Real Journeys', () => {
       const nodeId = getStore().nodes[0].id;
       // Set some content
       useLifecycleStore.setState({
-        nodes: getStore().nodes.map(n =>
-          n.id === nodeId ? { ...n, data: { ...n.data, content: 'Draft 1', executionResult: 'Result 1' } } : n
+        nodes: getStore().nodes.map((n) =>
+          n.id === nodeId
+            ? { ...n, data: { ...n.data, content: 'Draft 1', executionResult: 'Result 1' } }
+            : n,
         ),
       });
       getStore().saveArtifactVersion(nodeId);
@@ -2956,8 +3191,8 @@ describe('User Simulation: Real Journeys', () => {
       const nodeId = getStore().nodes[0].id;
       // Save v0 with "Original"
       useLifecycleStore.setState({
-        nodes: getStore().nodes.map(n =>
-          n.id === nodeId ? { ...n, data: { ...n.data, content: 'Original' } } : n
+        nodes: getStore().nodes.map((n) =>
+          n.id === nodeId ? { ...n, data: { ...n.data, content: 'Original' } } : n,
         ),
       });
       getStore().saveArtifactVersion(nodeId);
@@ -2987,7 +3222,7 @@ describe('User Simulation: Real Journeys', () => {
       const nodeId = getStore().nodes[0].id;
       getStore().saveArtifactVersion(nodeId);
       getStore().restoreArtifactVersion(nodeId, 0);
-      const restoreEvents = getStore().events.filter(e => e.message.includes('Restored'));
+      const restoreEvents = getStore().events.filter((e) => e.message.includes('Restored'));
       expect(restoreEvents.length).toBeGreaterThanOrEqual(1);
     });
 
@@ -3010,8 +3245,8 @@ describe('User Simulation: Real Journeys', () => {
       getStore().addEdge({ id: 'e2', source: inp.id, target: out.id, type: 'default' });
       const downstream = getStore().getDownstreamNodes(inp.id);
       expect(downstream).toHaveLength(2);
-      expect(downstream.map(d => d.id)).toContain(art.id);
-      expect(downstream.map(d => d.id)).toContain(out.id);
+      expect(downstream.map((d) => d.id)).toContain(art.id);
+      expect(downstream.map((d) => d.id)).toContain(out.id);
     });
 
     it('getDownstreamNodes: traverses full chain (BFS)', () => {
@@ -3043,7 +3278,7 @@ describe('User Simulation: Real Journeys', () => {
       const downstream = getStore().getDownstreamNodes(inp.id);
       // Should be 3 (a, b, out) with no duplicates
       expect(downstream).toHaveLength(3);
-      const ids = downstream.map(d => d.id);
+      const ids = downstream.map((d) => d.id);
       expect(new Set(ids).size).toBe(3);
     });
 
@@ -3052,11 +3287,11 @@ describe('User Simulation: Real Journeys', () => {
     it('getExecutedNodesInOrder: returns only nodes with content', () => {
       getStore().createNewNode('input');
       getStore().createNewNode('artifact');
-      const [inp, art] = getStore().nodes;
+      const [_inp, art] = getStore().nodes;
       // Only give content to the artifact
       useLifecycleStore.setState({
-        nodes: getStore().nodes.map(n =>
-          n.id === art.id ? { ...n, data: { ...n.data, executionResult: 'Some result' } } : n
+        nodes: getStore().nodes.map((n) =>
+          n.id === art.id ? { ...n, data: { ...n.data, executionResult: 'Some result' } } : n,
         ),
       });
       const executed = getStore().getExecutedNodesInOrder();
@@ -3168,7 +3403,7 @@ describe('User Simulation: Real Journeys', () => {
       const result = getStore().renameByName('rename Process to Transform');
       expect(result.success).toBe(true);
       expect(result.message).toContain('Transform');
-      const renamed = getStore().nodes.find(n => n.data.label === 'Transform');
+      const renamed = getStore().nodes.find((n) => n.data.label === 'Transform');
       expect(renamed).toBeTruthy();
     });
 
@@ -3246,10 +3481,7 @@ describe('User Simulation: Real Journeys', () => {
 
     it('getStatusReport: lists stale nodes in action items', () => {
       useLifecycleStore.setState({
-        nodes: [
-          mkNode('n1', 'A', 'review', { status: 'stale' }),
-          mkNode('n2', 'B', 'action'),
-        ],
+        nodes: [mkNode('n1', 'A', 'review', { status: 'stale' }), mkNode('n2', 'B', 'action')],
         edges: [mkEdge('e1', 'n1', 'n2')],
       });
       const report = getStore().getStatusReport();
@@ -3528,16 +3760,16 @@ describe('User Simulation: Real Journeys', () => {
     it('reverseByName: reverses edges on a node', () => {
       buildSimpleWorkflow();
       // Process has 1 incoming (from Input Data) and 1 outgoing (to Output Report)
-      const beforeEdges = getStore().edges.map(e => ({ source: e.source, target: e.target }));
+      const _beforeEdges = getStore().edges.map((e) => ({ source: e.source, target: e.target }));
       const result = getStore().reverseByName('reverse edges of Process');
       expect(result.success).toBe(true);
       expect(result.message).toContain('Reversed');
       // Edges should be flipped
       const afterEdges = getStore().edges;
-      const procNode = getStore().nodes.find(n => n.data.label === 'Process')!;
+      const procNode = getStore().nodes.find((n) => n.data.label === 'Process')!;
       // Previously Process had 1 incoming, 1 outgoing. Now reversed.
-      const incomingAfter = afterEdges.filter(e => e.target === procNode.id);
-      const outgoingAfter = afterEdges.filter(e => e.source === procNode.id);
+      const incomingAfter = afterEdges.filter((e) => e.target === procNode.id);
+      const outgoingAfter = afterEdges.filter((e) => e.source === procNode.id);
       // Input Data -> Process becomes Process -> Input Data (so Process now has outgoing to Input Data)
       expect(incomingAfter.length + outgoingAfter.length).toBe(2);
     });
@@ -3550,7 +3782,11 @@ describe('User Simulation: Real Journeys', () => {
 
     it('findOrphans: detects orphaned nodes', () => {
       useLifecycleStore.setState({
-        nodes: [mkNode('n1', 'Connected', 'action'), mkNode('n2', 'Other', 'action'), mkNode('n3', 'Orphan', 'action')],
+        nodes: [
+          mkNode('n1', 'Connected', 'action'),
+          mkNode('n2', 'Other', 'action'),
+          mkNode('n3', 'Orphan', 'action'),
+        ],
         edges: [mkEdge('e1', 'n1', 'n2')],
       });
       const result = getStore().findOrphans();
@@ -3579,7 +3815,7 @@ describe('User Simulation: Real Journeys', () => {
       expect(result.message).toContain('3');
       // Nodes of same category should have same x position
       const nodes = getStore().nodes;
-      expect(nodes.every(n => n.position.x >= 0)).toBe(true);
+      expect(nodes.every((n) => n.position.x >= 0)).toBe(true);
     });
 
     it('groupByCategory: fails with no nodes', () => {
@@ -3630,10 +3866,10 @@ describe('User Simulation: Real Journeys', () => {
       buildSimpleWorkflow();
       const nodeId = getStore().nodes[0].id;
       getStore().lockNode(nodeId);
-      const node = getStore().nodes.find(n => n.id === nodeId)!;
+      const node = getStore().nodes.find((n) => n.id === nodeId)!;
       expect(node.data.locked).toBe(true);
       expect(node.data.status).toBe('locked');
-      expect(getStore().events.some(e => e.type === 'locked')).toBe(true);
+      expect(getStore().events.some((e) => e.type === 'locked')).toBe(true);
     });
 
     it('approveNode: sets active status', () => {
@@ -3641,17 +3877,14 @@ describe('User Simulation: Real Journeys', () => {
       const nodeId = getStore().nodes[0].id;
       getStore().updateNodeStatus(nodeId, 'reviewing');
       getStore().approveNode(nodeId);
-      const node = getStore().nodes.find(n => n.id === nodeId)!;
+      const node = getStore().nodes.find((n) => n.id === nodeId)!;
       expect(node.data.status).toBe('active');
-      expect(getStore().events.some(e => e.type === 'approved')).toBe(true);
+      expect(getStore().events.some((e) => e.type === 'approved')).toBe(true);
     });
 
     it('cidSolve: creates connector hub for isolated nodes', () => {
       useLifecycleStore.setState({
-        nodes: [
-          mkNode('n1', 'Island A', 'action'),
-          mkNode('n2', 'Island B', 'action'),
-        ],
+        nodes: [mkNode('n1', 'Island A', 'action'), mkNode('n2', 'Island B', 'action')],
         edges: [],
       });
       const result = getStore().cidSolve();
@@ -3664,10 +3897,7 @@ describe('User Simulation: Real Journeys', () => {
 
     it('cidSolve: creates validator for unvalidated artifacts', () => {
       useLifecycleStore.setState({
-        nodes: [
-          mkNode('n1', 'My Artifact', 'artifact'),
-          mkNode('n2', 'Another', 'action'),
-        ],
+        nodes: [mkNode('n1', 'My Artifact', 'artifact'), mkNode('n2', 'Another', 'action')],
         edges: [mkEdge('e1', 'n1', 'n2')],
       });
       const result = getStore().cidSolve();
@@ -3740,7 +3970,7 @@ describe('User Simulation: Real Journeys', () => {
       });
       const count = getStore().batchUpdateStatus('active', 'reviewing');
       expect(count).toBe(2);
-      const reviewing = getStore().nodes.filter(n => n.data.status === 'reviewing');
+      const reviewing = getStore().nodes.filter((n) => n.data.status === 'reviewing');
       expect(reviewing).toHaveLength(2);
     });
 
@@ -3810,11 +4040,7 @@ describe('User Simulation: Real Journeys', () => {
           mkNode('n3', 'Source3', 'input'),
           mkNode('n4', 'Bottleneck', 'action'),
         ],
-        edges: [
-          mkEdge('e1', 'n1', 'n4'),
-          mkEdge('e2', 'n2', 'n4'),
-          mkEdge('e3', 'n3', 'n4'),
-        ],
+        edges: [mkEdge('e1', 'n1', 'n4'), mkEdge('e2', 'n2', 'n4'), mkEdge('e3', 'n3', 'n4')],
       });
       const result = getStore().findBottlenecks();
       expect(result).toContain('Bottleneck');
@@ -3829,11 +4055,7 @@ describe('User Simulation: Real Journeys', () => {
           mkNode('n3', 'Leaf2', 'action'),
           mkNode('n4', 'Leaf3', 'output'),
         ],
-        edges: [
-          mkEdge('e1', 'n1', 'n2'),
-          mkEdge('e2', 'n1', 'n3'),
-          mkEdge('e3', 'n1', 'n4'),
-        ],
+        edges: [mkEdge('e1', 'n1', 'n2'), mkEdge('e2', 'n1', 'n3'), mkEdge('e3', 'n1', 'n4')],
       });
       const result = getStore().findBottlenecks();
       expect(result).toContain('Hub');
@@ -3934,7 +4156,7 @@ describe('User Simulation: Real Journeys', () => {
       buildSimpleWorkflow();
       const result = getStore().setStatusByName('set Process to stale');
       expect(result.success).toBe(true);
-      const proc = getStore().nodes.find(n => n.data.label === 'Process')!;
+      const proc = getStore().nodes.find((n) => n.data.label === 'Process')!;
       expect(proc.data.status).toBe('stale');
     });
 
@@ -3946,9 +4168,11 @@ describe('User Simulation: Real Journeys', () => {
 
     it('contentByName: sets content on a node', () => {
       buildSimpleWorkflow();
-      const result = getStore().contentByName('content Process = This is the new content for the process node');
+      const result = getStore().contentByName(
+        'content Process = This is the new content for the process node',
+      );
       expect(result.success).toBe(true);
-      const proc = getStore().nodes.find(n => n.data.label === 'Process')!;
+      const proc = getStore().nodes.find((n) => n.data.label === 'Process')!;
       expect(proc.data.content).toContain('new content');
     });
 
@@ -3968,10 +4192,12 @@ describe('User Simulation: Real Journeys', () => {
 
     it('describeByName: sets description on a node', () => {
       buildSimpleWorkflow();
-      const result = getStore().describeByName('describe Process as Transforms input data into structured output');
+      const result = getStore().describeByName(
+        'describe Process as Transforms input data into structured output',
+      );
       expect(result.success).toBe(true);
       expect(result.message).toContain('Process');
-      const proc = getStore().nodes.find(n => n.data.label === 'Process')!;
+      const proc = getStore().nodes.find((n) => n.data.label === 'Process')!;
       expect(proc.data.description).toContain('Transforms');
     });
 
@@ -3987,8 +4213,8 @@ describe('User Simulation: Real Journeys', () => {
       const before2 = { ...getStore().nodes[1].position };
       const result = getStore().swapByName('swap Input Data and Process');
       expect(result.success).toBe(true);
-      const after1 = getStore().nodes.find(n => n.data.label === 'Input Data')!.position;
-      const after2 = getStore().nodes.find(n => n.data.label === 'Process')!.position;
+      const after1 = getStore().nodes.find((n) => n.data.label === 'Input Data')!.position;
+      const after2 = getStore().nodes.find((n) => n.data.label === 'Process')!.position;
       expect(after1.x).toBe(before2.x);
       expect(after2.x).toBe(before1.x);
     });
@@ -3997,7 +4223,7 @@ describe('User Simulation: Real Journeys', () => {
       buildSimpleWorkflow();
       // Change edge labels to something wrong first
       useLifecycleStore.setState({
-        edges: getStore().edges.map(e => ({ ...e, label: 'wrong' })),
+        edges: getStore().edges.map((e) => ({ ...e, label: 'wrong' })),
       });
       const result = getStore().relabelAllEdges();
       expect(result.count).toBeGreaterThan(0);
@@ -4013,7 +4239,10 @@ describe('User Simulation: Real Journeys', () => {
     it('clearExecutionResults: clears results from nodes', () => {
       useLifecycleStore.setState({
         nodes: [
-          mkNode('n1', 'A', 'action', { executionStatus: 'success' as any, executionResult: 'result' }),
+          mkNode('n1', 'A', 'action', {
+            executionStatus: 'success' as any,
+            executionResult: 'result',
+          }),
           mkNode('n2', 'B', 'action'),
         ],
         edges: [],
@@ -4021,7 +4250,7 @@ describe('User Simulation: Real Journeys', () => {
       const result = getStore().clearExecutionResults();
       expect(result).toContain('Cleared');
       const nodes = getStore().nodes;
-      expect(nodes.every(n => !n.data.executionResult)).toBe(true);
+      expect(nodes.every((n) => !n.data.executionResult)).toBe(true);
     });
 
     it('exportChatHistory: exports messages as markdown', () => {
@@ -4086,7 +4315,12 @@ describe('User Simulation: Real Journeys', () => {
     it('searchMessages: finds matching messages', () => {
       useLifecycleStore.setState({
         messages: [
-          { id: 'm1', role: 'user', content: 'build a workflow for testing', timestamp: Date.now() },
+          {
+            id: 'm1',
+            role: 'user',
+            content: 'build a workflow for testing',
+            timestamp: Date.now(),
+          },
           { id: 'm2', role: 'cid', content: 'Here is your workflow', timestamp: Date.now() },
         ],
       });
@@ -4148,7 +4382,8 @@ describe('User Simulation: Real Journeys', () => {
     // Rubric is locked (professor approved it already)
     function buildEducationWorkflow() {
       const syllabus = mkNode('syllabus', 'Syllabus', 'input', {
-        content: 'COURSE 101: Introduction to Biology. 15 weeks. Covers cell biology, genetics, ecology.',
+        content:
+          'COURSE 101: Introduction to Biology. 15 weeks. Covers cell biology, genetics, ecology.',
         executionResult: 'Course syllabus content generated.',
         executionStatus: 'success' as const,
       });
@@ -4208,23 +4443,24 @@ describe('User Simulation: Real Journeys', () => {
 
       // Professor adds a new week to the lesson plan (semantic edit — content rewritten)
       store.updateNodeData('lesson-plan', {
-        content: 'Week 1: Cell Structure. Week 2: Cell Division. Week 3: DNA & RNA. Week 4: Protein Synthesis & Gene Expression.',
+        content:
+          'Week 1: Cell Structure. Week 2: Cell Division. Week 3: DNA & RNA. Week 4: Protein Synthesis & Gene Expression.',
       });
 
       // Lesson plan itself should be marked stale (the edit triggers propagation)
-      const lp = getStore().nodes.find(n => n.id === 'lesson-plan')!;
+      const lp = getStore().nodes.find((n) => n.id === 'lesson-plan')!;
       expect(lp.data.status).toBe('stale');
 
       // Downstream nodes should be stale (quiz bank, study guide, course FAQ)
-      const quiz = getStore().nodes.find(n => n.id === 'quiz-bank')!;
-      const sg = getStore().nodes.find(n => n.id === 'study-guide')!;
-      const faq = getStore().nodes.find(n => n.id === 'course-faq')!;
+      const quiz = getStore().nodes.find((n) => n.id === 'quiz-bank')!;
+      const sg = getStore().nodes.find((n) => n.id === 'study-guide')!;
+      const faq = getStore().nodes.find((n) => n.id === 'course-faq')!;
       expect(quiz.data.status).toBe('stale');
       expect(sg.data.status).toBe('stale');
       expect(faq.data.status).toBe('stale');
 
       // Review gate should also be stale (downstream of quiz/sg/faq)
-      const rev = getStore().nodes.find(n => n.id === 'review-gate')!;
+      const rev = getStore().nodes.find((n) => n.id === 'review-gate')!;
       expect(rev.data.status).toBe('stale');
     });
 
@@ -4238,7 +4474,7 @@ describe('User Simulation: Real Journeys', () => {
       });
 
       // Rubric is locked — should remain locked, NOT stale
-      const rubric = getStore().nodes.find(n => n.id === 'rubric')!;
+      const rubric = getStore().nodes.find((n) => n.id === 'rubric')!;
       expect(rubric.data.status).toBe('locked');
       expect(rubric.data.locked).toBe(true);
     });
@@ -4253,8 +4489,8 @@ describe('User Simulation: Real Journeys', () => {
       });
 
       // Downstream should remain active — cosmetic edits don't propagate
-      const quiz = getStore().nodes.find(n => n.id === 'quiz-bank')!;
-      const sg = getStore().nodes.find(n => n.id === 'study-guide')!;
+      const quiz = getStore().nodes.find((n) => n.id === 'quiz-bank')!;
+      const sg = getStore().nodes.find((n) => n.id === 'study-guide')!;
       expect(quiz.data.status).toBe('active');
       expect(sg.data.status).toBe('active');
     });
@@ -4269,7 +4505,7 @@ describe('User Simulation: Real Journeys', () => {
         content: 'Week 1: Molecular Biology. Week 2: Genetics. Week 3: Ecology. Week 4: Evolution.',
       });
 
-      const lp = getStore().nodes.find(n => n.id === 'lesson-plan')!;
+      const lp = getStore().nodes.find((n) => n.id === 'lesson-plan')!;
       expect(lp.data._versionHistory).toBeDefined();
       expect(lp.data._versionHistory!.length).toBeGreaterThanOrEqual(1);
 
@@ -4292,7 +4528,7 @@ describe('User Simulation: Real Journeys', () => {
       });
 
       // Count stale nodes before propagation
-      const staleBefore = getStore().nodes.filter(n => n.data.status === 'stale').length;
+      const staleBefore = getStore().nodes.filter((n) => n.data.status === 'stale').length;
       expect(staleBefore).toBeGreaterThanOrEqual(3); // quiz, study guide, faq at minimum
 
       // Track fetch calls to verify execution happened
@@ -4302,14 +4538,14 @@ describe('User Simulation: Real Journeys', () => {
       await store.propagateStale();
 
       // Stale nodes should now be active (re-executed successfully)
-      const staleAfter = getStore().nodes.filter(n => n.data.status === 'stale').length;
+      const staleAfter = getStore().nodes.filter((n) => n.data.status === 'stale').length;
       expect(staleAfter).toBeLessThan(staleBefore);
 
       // Fetch should have been called for each re-executed node
       expect(fetchCallCount).toBeGreaterThan(fetchCountBefore);
 
       // Events should record regeneration
-      const regenEvents = getStore().events.filter(e => e.type === 'regenerated');
+      const regenEvents = getStore().events.filter((e) => e.type === 'regenerated');
       expect(regenEvents.length).toBeGreaterThan(0);
     });
 
@@ -4319,7 +4555,7 @@ describe('User Simulation: Real Journeys', () => {
       const downstream = store.getDownstreamNodes('lesson-plan');
 
       // Should include rubric, quiz bank, study guide, course FAQ, and review gate
-      const labels = downstream.map(n => n.label);
+      const labels = downstream.map((n) => n.label);
       expect(labels).toContain('Quiz Bank');
       expect(labels).toContain('Study Guide');
       expect(labels).toContain('Course FAQ');
@@ -4333,7 +4569,7 @@ describe('User Simulation: Real Journeys', () => {
       const store = getStore();
 
       // No stale nodes initially
-      const initialStale = store.nodes.filter(n => n.data.status === 'stale').length;
+      const initialStale = store.nodes.filter((n) => n.data.status === 'stale').length;
       expect(initialStale).toBe(0);
 
       // Semantic edit triggers cascade
@@ -4341,7 +4577,7 @@ describe('User Simulation: Real Journeys', () => {
         content: 'Major rewrite of all lesson content.',
       });
 
-      const afterEditStale = getStore().nodes.filter(n => n.data.status === 'stale').length;
+      const afterEditStale = getStore().nodes.filter((n) => n.data.status === 'stale').length;
       expect(afterEditStale).toBeGreaterThanOrEqual(4); // lesson-plan + quiz + study guide + faq + review
     });
 
@@ -4357,9 +4593,11 @@ describe('User Simulation: Real Journeys', () => {
 
       const newEvents = getStore().events.slice(eventsBefore);
       expect(newEvents.length).toBeGreaterThan(0);
-      expect(newEvents.some(e => e.type === 'edited')).toBe(true);
+      expect(newEvents.some((e) => e.type === 'edited')).toBe(true);
       // Should mention the edit type
-      expect(newEvents.some(e => e.message.includes('semantic') || e.message.includes('edit'))).toBe(true);
+      expect(
+        newEvents.some((e) => e.message.includes('semantic') || e.message.includes('edit')),
+      ).toBe(true);
     });
 
     it('full lifecycle: edit → stale → propagate → active → version bumped', async () => {
@@ -4367,8 +4605,8 @@ describe('User Simulation: Real Journeys', () => {
       const store = getStore();
 
       // Step 1: All artifacts start as active/locked
-      expect(getStore().nodes.find(n => n.id === 'quiz-bank')!.data.status).toBe('active');
-      expect(getStore().nodes.find(n => n.id === 'study-guide')!.data.status).toBe('active');
+      expect(getStore().nodes.find((n) => n.id === 'quiz-bank')!.data.status).toBe('active');
+      expect(getStore().nodes.find((n) => n.id === 'study-guide')!.data.status).toBe('active');
 
       // Step 2: Professor rewrites the lesson plan
       store.updateNodeData('lesson-plan', {
@@ -4376,21 +4614,21 @@ describe('User Simulation: Real Journeys', () => {
       });
 
       // Step 3: Quiz and study guide should be stale
-      expect(getStore().nodes.find(n => n.id === 'quiz-bank')!.data.status).toBe('stale');
-      expect(getStore().nodes.find(n => n.id === 'study-guide')!.data.status).toBe('stale');
+      expect(getStore().nodes.find((n) => n.id === 'quiz-bank')!.data.status).toBe('stale');
+      expect(getStore().nodes.find((n) => n.id === 'study-guide')!.data.status).toBe('stale');
 
       // Step 4: Propagate stale — re-execute
       await store.propagateStale();
 
       // Step 5: Quiz and study guide should be active again with new execution results
-      const quizAfter = getStore().nodes.find(n => n.id === 'quiz-bank')!;
-      const sgAfter = getStore().nodes.find(n => n.id === 'study-guide')!;
+      const quizAfter = getStore().nodes.find((n) => n.id === 'quiz-bank')!;
+      const sgAfter = getStore().nodes.find((n) => n.id === 'study-guide')!;
       // They should have been re-executed (status active or at least not stale)
       expect(['active', 'locked']).toContain(quizAfter.data.status);
       expect(['active', 'locked']).toContain(sgAfter.data.status);
 
       // Step 6: Rubric stayed locked throughout
-      expect(getStore().nodes.find(n => n.id === 'rubric')!.data.status).toBe('locked');
+      expect(getStore().nodes.find((n) => n.id === 'rubric')!.data.status).toBe('locked');
     });
   });
 
@@ -4471,7 +4709,12 @@ describe('User Simulation: Real Journeys', () => {
       const store = getStore();
 
       // Record an override
-      store.recordOverride('blog-a', 'content', 'Original blog A content', 'Rewritten casual blog A');
+      store.recordOverride(
+        'blog-a',
+        'content',
+        'Original blog A content',
+        'Rewritten casual blog A',
+      );
 
       // Grab the override id
       const ctx1 = getStore().centralContext!;
@@ -4491,7 +4734,7 @@ describe('User Simulation: Real Journeys', () => {
 
       // Override should now have cidInterpretation stored
       const ctx2 = getStore().centralContext!;
-      const updated = ctx2.overrides.find(o => o.id === overrideId)!;
+      const updated = ctx2.overrides.find((o) => o.id === overrideId)!;
       expect(updated.cidInterpretation).toBe('User wants a more casual tone for blog content');
     });
 
@@ -4513,14 +4756,18 @@ describe('User Simulation: Real Journeys', () => {
 
       // Override should be marked propagated with scope 'this-node'
       const ctx = getStore().centralContext!;
-      const ovr = ctx.overrides.find(o => o.id === overrideId)!;
+      const ovr = ctx.overrides.find((o) => o.id === overrideId)!;
       expect(ovr.propagated).toBe(true);
       expect(ovr.scope).toBe('this-node');
 
       // A CID message should have been added
       const msgs = getStore().messages;
       expect(msgs.length).toBeGreaterThanOrEqual(1);
-      expect(msgs.some((m: { content: string }) => m.content.includes('Override kept for this node only'))).toBe(true);
+      expect(
+        msgs.some((m: { content: string }) =>
+          m.content.includes('Override kept for this node only'),
+        ),
+      ).toBe(true);
     });
 
     it('propagateOverride with scope all-similar propagates override to similar artifact nodes', async () => {
@@ -4542,19 +4789,21 @@ describe('User Simulation: Real Journeys', () => {
       const ctx = getStore().centralContext!;
 
       // Original override should be marked propagated with scope 'all-similar'
-      const originalOvr = ctx.overrides.find(o => o.id === overrideId)!;
+      const originalOvr = ctx.overrides.find((o) => o.id === overrideId)!;
       expect(originalOvr.propagated).toBe(true);
       expect(originalOvr.scope).toBe('all-similar');
 
       // blog-b should have gotten a new override (same field, same userValue)
-      const blogBOverrides = ctx.overrides.filter(o => o.nodeId === 'blog-b');
+      const blogBOverrides = ctx.overrides.filter((o) => o.nodeId === 'blog-b');
       expect(blogBOverrides.length).toBeGreaterThanOrEqual(1);
       expect(blogBOverrides[0].field).toBe('content');
       expect(blogBOverrides[0].userValue).toBe('Casual blog rewrite');
 
       // CID message should mention similar artifacts
       const msgs = getStore().messages;
-      expect(msgs.some((m: { content: string }) => m.content.includes('similar artifact'))).toBe(true);
+      expect(msgs.some((m: { content: string }) => m.content.includes('similar artifact'))).toBe(
+        true,
+      );
     });
 
     it('propagateOverride with scope global adds interpretation to centralContext constraints', async () => {
@@ -4566,13 +4815,17 @@ describe('User Simulation: Real Journeys', () => {
       const overrideId = getStore().centralContext!.overrides[0].id;
 
       // Pre-set the cidInterpretation so global scope has something to add
-      useLifecycleStore.setState(s => ({
-        centralContext: s.centralContext ? {
-          ...s.centralContext,
-          overrides: s.centralContext.overrides.map(o =>
-            o.id === overrideId ? { ...o, cidInterpretation: 'User prefers casual tone across all content' } : o
-          ),
-        } : null,
+      useLifecycleStore.setState((s) => ({
+        centralContext: s.centralContext
+          ? {
+              ...s.centralContext,
+              overrides: s.centralContext.overrides.map((o) =>
+                o.id === overrideId
+                  ? { ...o, cidInterpretation: 'User prefers casual tone across all content' }
+                  : o,
+              ),
+            }
+          : null,
       }));
 
       await store.propagateOverride(overrideId, 'global');
@@ -4580,16 +4833,22 @@ describe('User Simulation: Real Journeys', () => {
       const ctx = getStore().centralContext!;
 
       // Override should be marked propagated with scope 'global'
-      const ovr = ctx.overrides.find(o => o.id === overrideId)!;
+      const ovr = ctx.overrides.find((o) => o.id === overrideId)!;
       expect(ovr.propagated).toBe(true);
       expect(ovr.scope).toBe('global');
 
       // The interpretation should have been added to understanding.constraints
-      expect(ctx.understanding.constraints).toContain('User prefers casual tone across all content');
+      expect(ctx.understanding.constraints).toContain(
+        'User prefers casual tone across all content',
+      );
 
       // CID message should mention global understanding update
       const msgs = getStore().messages;
-      expect(msgs.some((m: { content: string }) => m.content.includes('Updated my understanding globally'))).toBe(true);
+      expect(
+        msgs.some((m: { content: string }) =>
+          m.content.includes('Updated my understanding globally'),
+        ),
+      ).toBe(true);
     });
   });
 
@@ -4646,7 +4905,9 @@ describe('User Simulation: Real Journeys', () => {
 
       const edges = getStore().edges;
       expect(edges).toHaveLength(2); // No new edge added
-      expect(getStore().toasts.some((t: { message: string }) => t.message.includes('cycle'))).toBe(true);
+      expect(getStore().toasts.some((t: { message: string }) => t.message.includes('cycle'))).toBe(
+        true,
+      );
     });
   });
 });

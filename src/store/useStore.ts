@@ -9,7 +9,7 @@ import { buildSystemPrompt, buildMessages, getExecutionSystemPrompt, inferEffort
 import type { ExecutionRunSummary } from '@/lib/prompts';
 import type { NoteRefinementResult } from '@/lib/prompts';
 import { classifyEdit } from '@/lib/edits';
-import { buildCacheKey, sha256, getCacheEntry, setCacheEntry, createEmptyUsageStats } from '@/lib/cache';
+import { buildCacheKey, sha256, getCacheEntry, setCacheEntry, createEmptyUsageStats, MODEL_PRICING } from '@/lib/cache';
 import { validateOutput, extractKeywords, buildRefinementPrompt } from '@/lib/validate';
 import type { UsageStats } from '@/lib/cache';
 import {
@@ -722,6 +722,40 @@ export const useLifecycleStore = create<LifecycleStore>((set, get, api) => ({
   _sharedNodeContext: {},
   clearSharedNodeContext: () => set({ _sharedNodeContext: {} }),
 
+  // Session cost tracking
+  _sessionCost: { totalTokens: 0, estimatedCostUSD: 0, callCount: 0 },
+  trackCost: (inputTokens: number, outputTokens: number, model: string) => {
+    const pricing = MODEL_PRICING[model] || MODEL_PRICING['deepseek-reasoner'];
+    const cost = (inputTokens / 1_000_000) * pricing.input + (outputTokens / 1_000_000) * pricing.output;
+    set((s) => ({
+      _sessionCost: {
+        totalTokens: s._sessionCost.totalTokens + inputTokens + outputTokens,
+        estimatedCostUSD: s._sessionCost.estimatedCostUSD + cost,
+        callCount: s._sessionCost.callCount + 1,
+      },
+    }));
+  },
+  resetSessionCost: () =>
+    set({ _sessionCost: { totalTokens: 0, estimatedCostUSD: 0, callCount: 0 } }),
+
+  // Execution snapshot for rollback
+  _preExecutionSnapshot: null as { nodes: Node<NodeData>[]; edges: Edge[] } | null,
+  snapshotBeforeExecution: () => {
+    const { nodes, edges } = get();
+    set({
+      _preExecutionSnapshot: {
+        nodes: JSON.parse(JSON.stringify(nodes)),
+        edges: JSON.parse(JSON.stringify(edges)),
+      },
+    });
+  },
+  rollbackExecution: () => {
+    const snapshot = get()._preExecutionSnapshot;
+    if (!snapshot) return false;
+    set({ nodes: snapshot.nodes, edges: snapshot.edges, _preExecutionSnapshot: null });
+    return true;
+  },
+
   // Agent mode
   cidMode: persistedMode,
   setCIDMode: (mode) => set((s) => {
@@ -1354,6 +1388,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
               totalOutputTokens: s._usageStats.totalOutputTokens + outputTok,
             },
           }));
+          store.trackCost(inputTok, outputTok, store.cidAIModel);
 
           // Parse tool calls from the output
           const { cleanText, toolCalls } = parseToolCalls(rawOutput);
@@ -1495,6 +1530,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     const { nodes, edges } = store;
     cidLog('executeWorkflow', { nodeCount: nodes.length, edgeCount: edges.length });
     if (nodes.length === 0) return;
+    store.snapshotBeforeExecution();
     const mode = get().cidMode;
 
     // ── Initialize workflow context for agentic routing ──

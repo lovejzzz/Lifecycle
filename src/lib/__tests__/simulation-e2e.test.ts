@@ -12,9 +12,15 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 const storage: Record<string, string> = {};
 const mockLocalStorage = {
   getItem: (key: string) => storage[key] ?? null,
-  setItem: (key: string, val: string) => { storage[key] = val; },
-  removeItem: (key: string) => { delete storage[key]; },
-  clear: () => { Object.keys(storage).forEach(k => delete storage[k]); },
+  setItem: (key: string, val: string) => {
+    storage[key] = val;
+  },
+  removeItem: (key: string) => {
+    delete storage[key];
+  },
+  clear: () => {
+    Object.keys(storage).forEach((k) => delete storage[k]);
+  },
 };
 
 // The store checks `typeof window !== 'undefined'` for SSR guard
@@ -38,7 +44,11 @@ let fetchFailForNodes: Set<string> = new Set();
 const mockFetch = vi.fn(async (url: string, opts?: RequestInit) => {
   fetchCallCount++;
   if (opts?.body) {
-    try { lastFetchBody = JSON.parse(opts.body as string); } catch { lastFetchBody = null; }
+    try {
+      lastFetchBody = JSON.parse(opts.body as string);
+    } catch {
+      lastFetchBody = null;
+    }
   }
 
   // Global failure mode
@@ -49,7 +59,7 @@ const mockFetch = vi.fn(async (url: string, opts?: RequestInit) => {
   const body = lastFetchBody;
   const systemPrompt = (body?.systemPrompt as string) || '';
   const messages = (body?.messages as Array<{ role: string; content: string }>) || [];
-  const lastUserMsg = messages.filter(m => m.role === 'user').pop()?.content || '';
+  const lastUserMsg = messages.filter((m) => m.role === 'user').pop()?.content || '';
 
   // Selective node failure: check if the prompt mentions a node we want to fail
   for (const failLabel of fetchFailForNodes) {
@@ -63,7 +73,11 @@ const mockFetch = vi.fn(async (url: string, opts?: RequestInit) => {
 
   // Workflow generation — return structured workflow JSON
   // The store expects data.result = { message, workflow: { nodes, edges } }
-  if (systemPrompt.includes('workflow') || systemPrompt.includes('lifecycle graph') || systemPrompt.includes('Build a workflow')) {
+  if (
+    systemPrompt.includes('workflow') ||
+    systemPrompt.includes('lifecycle graph') ||
+    systemPrompt.includes('Build a workflow')
+  ) {
     return {
       ok: true,
       json: async () => ({
@@ -71,10 +85,30 @@ const mockFetch = vi.fn(async (url: string, opts?: RequestInit) => {
           message: 'Here is your workflow for the blog content pipeline.',
           workflow: {
             nodes: [
-              { label: 'Research', category: 'input', description: 'Gather topic ideas and references', content: 'Research phase: identify trending topics and gather source material' },
-              { label: 'Draft', category: 'action', description: 'Write first draft', content: 'Draft the blog post based on research findings' },
-              { label: 'Edit', category: 'review', description: 'Review and polish', content: 'Review draft for clarity, grammar, and style' },
-              { label: 'Publish', category: 'output', description: 'Publish the post', content: 'Format and publish the final blog post' },
+              {
+                label: 'Research',
+                category: 'input',
+                description: 'Gather topic ideas and references',
+                content: 'Research phase: identify trending topics and gather source material',
+              },
+              {
+                label: 'Draft',
+                category: 'action',
+                description: 'Write first draft',
+                content: 'Draft the blog post based on research findings',
+              },
+              {
+                label: 'Edit',
+                category: 'review',
+                description: 'Review and polish',
+                content: 'Review draft for clarity, grammar, and style',
+              },
+              {
+                label: 'Publish',
+                category: 'output',
+                description: 'Publish the post',
+                content: 'Format and publish the final blog post',
+              },
             ],
             edges: [
               { from: 0, to: 1, label: 'feeds' },
@@ -88,8 +122,12 @@ const mockFetch = vi.fn(async (url: string, opts?: RequestInit) => {
   }
 
   // Node execution — return content result
-  if (systemPrompt.includes('Execute') || systemPrompt.includes('category-aware') ||
-      systemPrompt.includes('generate the content') || systemPrompt.includes('node')) {
+  if (
+    systemPrompt.includes('Execute') ||
+    systemPrompt.includes('category-aware') ||
+    systemPrompt.includes('generate the content') ||
+    systemPrompt.includes('node')
+  ) {
     return {
       ok: true,
       json: async () => ({
@@ -106,13 +144,19 @@ const mockFetch = vi.fn(async (url: string, opts?: RequestInit) => {
     }),
   };
 });
-Object.defineProperty(globalThis, 'fetch', { value: mockFetch, writable: true, configurable: true });
+Object.defineProperty(globalThis, 'fetch', {
+  value: mockFetch,
+  writable: true,
+  configurable: true,
+});
 
 // Mock AbortController
 if (!globalThis.AbortController) {
   globalThis.AbortController = class {
     signal = { addEventListener: () => {}, removeEventListener: () => {}, aborted: false };
-    abort() { (this.signal as any).aborted = true; }
+    abort() {
+      (this.signal as any).aborted = true;
+    }
   } as unknown as typeof AbortController;
 }
 
@@ -127,7 +171,12 @@ function getStore() {
   return useLifecycleStore.getState();
 }
 
-function mkNode(id: string, label: string, category: NodeCategory = 'action', extra: Partial<NodeData> = {}): Node<NodeData> {
+function mkNode(
+  id: string,
+  label: string,
+  category: NodeCategory = 'action',
+  extra: Partial<NodeData> = {},
+): Node<NodeData> {
   return {
     id,
     type: 'lifecycleNode',
@@ -142,7 +191,7 @@ function mkEdge(id: string, source: string, target: string, label = 'feeds'): Ed
 
 /** Reset store to a clean empty state between tests */
 function resetStore() {
-  Object.keys(storage).forEach(k => delete storage[k]);
+  Object.keys(storage).forEach((k) => delete storage[k]);
   fetchCallCount = 0;
   lastFetchBody = null;
   fetchShouldFail = false;
@@ -171,8 +220,12 @@ function resetStore() {
 
 /** Build a 4-node linear workflow directly in the store for fast tests */
 function buildLinearWorkflow() {
-  const n1 = mkNode('n-1', 'Input', 'input', { content: 'User requirements document with detailed specifications' });
-  const n2 = mkNode('n-2', 'Process', 'action', { content: 'Analyze requirements and build data model' });
+  const n1 = mkNode('n-1', 'Input', 'input', {
+    content: 'User requirements document with detailed specifications',
+  });
+  const n2 = mkNode('n-2', 'Process', 'action', {
+    content: 'Analyze requirements and build data model',
+  });
   const n3 = mkNode('n-3', 'Review', 'review', { content: 'Check processed data for quality' });
   const n4 = mkNode('n-4', 'Output', 'output', { content: 'Generate final deliverable report' });
   const e1 = mkEdge('e-1-2', 'n-1', 'n-2', 'feeds');
@@ -207,10 +260,10 @@ function buildBranchingWorkflow() {
 }
 
 /** Async wait helper */
-const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** Poll until a condition is met or timeout */
-async function waitFor(condition: () => boolean, timeoutMs = 5000, pollMs = 50): Promise<void> {
+async function _waitFor(condition: () => boolean, timeoutMs = 5000, pollMs = 50): Promise<void> {
   const start = Date.now();
   while (!condition()) {
     if (Date.now() - start > timeoutMs) {
@@ -224,13 +277,13 @@ async function waitFor(condition: () => boolean, timeoutMs = 5000, pollMs = 50):
 
 function assertStoreInvariants() {
   const s = getStore();
-  const nodeIds = new Set(s.nodes.map(n => n.id));
+  const nodeIds = new Set(s.nodes.map((n) => n.id));
 
   // No duplicate node IDs
   expect(nodeIds.size).toBe(s.nodes.length);
 
   // No duplicate edge IDs
-  const edgeIds = new Set(s.edges.map(e => e.id));
+  const edgeIds = new Set(s.edges.map((e) => e.id));
   expect(edgeIds.size).toBe(s.edges.length);
 
   // All edges reference existing nodes
@@ -271,13 +324,19 @@ describe('E2E Async Simulation Tests', () => {
 
   // ── Scenario A: Full lifecycle loop ──────────────────────────────────────
   describe('Scenario A: Full lifecycle loop', () => {
-
     it('generates a workflow from prompt via AI API', async () => {
       const store = getStore();
 
       // Ensure Rowan mode and skip interview gate
       store.setCIDMode('rowan');
-      useLifecycleStore.setState({ poirotContext: { phase: 'revealing', originalPrompt: 'Build a blog content pipeline', answers: {}, questionIndex: 0 } });
+      useLifecycleStore.setState({
+        poirotContext: {
+          phase: 'revealing',
+          originalPrompt: 'Build a blog content pipeline',
+          answers: {},
+          questionIndex: 0,
+        },
+      });
 
       store.generateWorkflow('Build a blog content pipeline');
 
@@ -292,7 +351,7 @@ describe('E2E Async Simulation Tests', () => {
       expect(s.edges.length).toBeGreaterThanOrEqual(3);
 
       // Verify the node labels match our mock
-      const labels = s.nodes.map(n => n.data.label);
+      const labels = s.nodes.map((n) => n.data.label);
       expect(labels).toContain('Research');
       expect(labels).toContain('Draft');
       expect(labels).toContain('Edit');
@@ -316,7 +375,7 @@ describe('E2E Async Simulation Tests', () => {
 
       const s = getStore();
       // Input node should have executionResult from its content/inputValue passthrough
-      const inputNode = s.nodes.find(n => n.id === 'n-1');
+      const inputNode = s.nodes.find((n) => n.id === 'n-1');
       expect(inputNode?.data.executionStatus).toBe('success');
       expect(inputNode?.data.executionResult).toBeTruthy();
 
@@ -328,7 +387,7 @@ describe('E2E Async Simulation Tests', () => {
       }
 
       // Messages should contain execution summary
-      const execMsgs = s.messages.filter(m => m.role === 'cid' && m.content?.includes('node'));
+      const execMsgs = s.messages.filter((m) => m.role === 'cid' && m.content?.includes('node'));
       expect(execMsgs.length).toBeGreaterThan(0);
 
       assertStoreInvariants();
@@ -341,12 +400,12 @@ describe('E2E Async Simulation Tests', () => {
       // Execute just the input node
       await store.executeNode('n-1');
 
-      const inputNode = getStore().nodes.find(n => n.id === 'n-1');
+      const inputNode = getStore().nodes.find((n) => n.id === 'n-1');
       expect(inputNode?.data.executionStatus).toBe('success');
       expect(inputNode?.data.executionResult).toBeTruthy();
 
       // Other nodes should not have been executed
-      const processNode = getStore().nodes.find(n => n.id === 'n-2');
+      const processNode = getStore().nodes.find((n) => n.id === 'n-2');
       expect(processNode?.data.executionStatus).toBeUndefined();
 
       assertStoreInvariants();
@@ -366,24 +425,26 @@ describe('E2E Async Simulation Tests', () => {
 
       // Now edit the Process node with a SEMANTIC change (different key terms)
       store.pushHistory();
-      store.updateNodeData('n-2', { content: 'Completely rewrite using machine learning algorithms and neural networks' });
+      store.updateNodeData('n-2', {
+        content: 'Completely rewrite using machine learning algorithms and neural networks',
+      });
 
       // Wait for staleness cascade (uses setTimeout internally)
       await vi.advanceTimersByTimeAsync(500);
 
       const s = getStore();
       // The edited node should be stale
-      const editedNode = s.nodes.find(n => n.id === 'n-2');
+      const editedNode = s.nodes.find((n) => n.id === 'n-2');
       expect(editedNode?.data.status).toBe('stale');
 
       // Downstream nodes (Review, Output) should also be stale
-      const reviewNode = s.nodes.find(n => n.id === 'n-3');
-      const outputNode = s.nodes.find(n => n.id === 'n-4');
+      const reviewNode = s.nodes.find((n) => n.id === 'n-3');
+      const outputNode = s.nodes.find((n) => n.id === 'n-4');
       expect(reviewNode?.data.status).toBe('stale');
       expect(outputNode?.data.status).toBe('stale');
 
       // Upstream (Input) should NOT be stale
-      const inputNode = s.nodes.find(n => n.id === 'n-1');
+      const inputNode = s.nodes.find((n) => n.id === 'n-1');
       expect(inputNode?.data.status).not.toBe('stale');
 
       assertStoreInvariants();
@@ -405,7 +466,7 @@ describe('E2E Async Simulation Tests', () => {
       expect(preview!.staleNodes.length).toBeGreaterThanOrEqual(1);
 
       // Stale nodes should include n-2 and downstream n-3, n-4
-      const staleIds = preview!.staleNodes.map(n => n.id);
+      const staleIds = preview!.staleNodes.map((n) => n.id);
       expect(staleIds).toContain('n-2');
       expect(staleIds).toContain('n-3');
       expect(staleIds).toContain('n-4');
@@ -441,7 +502,7 @@ describe('E2E Async Simulation Tests', () => {
 
       // Regenerated nodes should be active again
       for (const id of staleIds) {
-        const node = getStore().nodes.find(n => n.id === id);
+        const node = getStore().nodes.find((n) => n.id === id);
         // Either active (successfully regenerated) or still stale if error
         // Our mock returns success, so should be active
         if (node?.data.executionStatus !== 'error') {
@@ -463,14 +524,14 @@ describe('E2E Async Simulation Tests', () => {
       store.updateNodeStatus('n-2', 'stale');
       await vi.advanceTimersByTimeAsync(500);
 
-      const staleCountBefore = getStore().nodes.filter(n => n.data.status === 'stale').length;
+      const staleCountBefore = getStore().nodes.filter((n) => n.data.status === 'stale').length;
       expect(staleCountBefore).toBeGreaterThanOrEqual(3); // n-2, n-3, n-4
 
       await store.propagateStale();
       await vi.advanceTimersByTimeAsync(1000);
 
       // After propagation, stale nodes should be active
-      const staleCountAfter = getStore().nodes.filter(n => n.data.status === 'stale').length;
+      const staleCountAfter = getStore().nodes.filter((n) => n.data.status === 'stale').length;
       expect(staleCountAfter).toBe(0);
 
       assertStoreInvariants();
@@ -479,7 +540,6 @@ describe('E2E Async Simulation Tests', () => {
 
   // ── Scenario B: Undo across async operations ────────────────────────────
   describe('Scenario B: Undo across async operations', () => {
-
     it('undo restores a deleted node', async () => {
       buildLinearWorkflow();
       expect(getStore().nodes).toHaveLength(4);
@@ -489,31 +549,35 @@ describe('E2E Async Simulation Tests', () => {
       await vi.advanceTimersByTimeAsync(50);
 
       expect(getStore().nodes).toHaveLength(3);
-      expect(getStore().nodes.find(n => n.id === 'n-2')).toBeUndefined();
+      expect(getStore().nodes.find((n) => n.id === 'n-2')).toBeUndefined();
       // Edges to/from n-2 should be gone
-      expect(getStore().edges.filter(e => e.source === 'n-2' || e.target === 'n-2')).toHaveLength(0);
+      expect(getStore().edges.filter((e) => e.source === 'n-2' || e.target === 'n-2')).toHaveLength(
+        0,
+      );
 
       // Undo
       getStore().undo();
 
       expect(getStore().nodes).toHaveLength(4);
-      expect(getStore().nodes.find(n => n.id === 'n-2')).toBeTruthy();
+      expect(getStore().nodes.find((n) => n.id === 'n-2')).toBeTruthy();
       assertStoreInvariants();
     });
 
     it('undo reverses a content edit', async () => {
       buildLinearWorkflow();
-      const originalContent = getStore().nodes.find(n => n.id === 'n-2')!.data.content;
+      const originalContent = getStore().nodes.find((n) => n.id === 'n-2')!.data.content;
 
       getStore().pushHistory();
-      getStore().updateNodeData('n-2', { content: 'Completely rewritten content using different technology stack' });
+      getStore().updateNodeData('n-2', {
+        content: 'Completely rewritten content using different technology stack',
+      });
       await vi.advanceTimersByTimeAsync(50);
 
-      expect(getStore().nodes.find(n => n.id === 'n-2')!.data.content).toContain('rewritten');
+      expect(getStore().nodes.find((n) => n.id === 'n-2')!.data.content).toContain('rewritten');
 
       getStore().undo();
 
-      const restoredContent = getStore().nodes.find(n => n.id === 'n-2')!.data.content;
+      const restoredContent = getStore().nodes.find((n) => n.id === 'n-2')!.data.content;
       expect(restoredContent).toBe(originalContent);
 
       assertStoreInvariants();
@@ -523,14 +587,18 @@ describe('E2E Async Simulation Tests', () => {
       buildLinearWorkflow();
 
       getStore().pushHistory();
-      getStore().updateNodeData('n-2', { content: 'New content for redo testing with unique terms' });
+      getStore().updateNodeData('n-2', {
+        content: 'New content for redo testing with unique terms',
+      });
       await vi.advanceTimersByTimeAsync(50);
 
       getStore().undo();
-      expect(getStore().nodes.find(n => n.id === 'n-2')!.data.content).not.toContain('redo testing');
+      expect(getStore().nodes.find((n) => n.id === 'n-2')!.data.content).not.toContain(
+        'redo testing',
+      );
 
       getStore().redo();
-      expect(getStore().nodes.find(n => n.id === 'n-2')!.data.content).toContain('redo testing');
+      expect(getStore().nodes.find((n) => n.id === 'n-2')!.data.content).toContain('redo testing');
 
       assertStoreInvariants();
     });
@@ -579,7 +647,9 @@ describe('E2E Async Simulation Tests', () => {
 
       expect(getStore().nodes).toHaveLength(2);
       expect(getStore().edges).toHaveLength(1);
-      expect(getStore().nodes.find(n => n.id === 'a-1')!.data.content).toContain('machine learning');
+      expect(getStore().nodes.find((n) => n.id === 'a-1')!.data.content).toContain(
+        'machine learning',
+      );
 
       assertStoreInvariants();
     });
@@ -603,7 +673,7 @@ describe('E2E Async Simulation Tests', () => {
       // Undo again
       getStore().undo();
       expect(getStore().nodes).toHaveLength(4);
-      expect(getStore().nodes.find(n => n.id === 'n-3')).toBeTruthy();
+      expect(getStore().nodes.find((n) => n.id === 'n-3')).toBeTruthy();
 
       assertStoreInvariants();
     });
@@ -611,7 +681,6 @@ describe('E2E Async Simulation Tests', () => {
 
   // ── Scenario C: Project switching ────────────────────────────────────────
   describe('Scenario C: Project switching under load', () => {
-
     it('creates a new project and preserves the old one', async () => {
       buildLinearWorkflow();
       const store = getStore();
@@ -640,10 +709,22 @@ describe('E2E Async Simulation Tests', () => {
 
       // Build workflow in project A using store APIs so saves trigger
       const store = getStore();
-      store.addNode(mkNode('pa-1', 'Input', 'input', { content: 'User requirements document with detailed specifications' }));
-      store.addNode(mkNode('pa-2', 'Process', 'action', { content: 'Analyze requirements and build data model' }));
-      store.addNode(mkNode('pa-3', 'Review', 'review', { content: 'Check processed data for quality' }));
-      store.addNode(mkNode('pa-4', 'Output', 'output', { content: 'Generate final deliverable report' }));
+      store.addNode(
+        mkNode('pa-1', 'Input', 'input', {
+          content: 'User requirements document with detailed specifications',
+        }),
+      );
+      store.addNode(
+        mkNode('pa-2', 'Process', 'action', {
+          content: 'Analyze requirements and build data model',
+        }),
+      );
+      store.addNode(
+        mkNode('pa-3', 'Review', 'review', { content: 'Check processed data for quality' }),
+      );
+      store.addNode(
+        mkNode('pa-4', 'Output', 'output', { content: 'Generate final deliverable report' }),
+      );
       store.addEdge(mkEdge('pae-1-2', 'pa-1', 'pa-2', 'feeds'));
       store.addEdge(mkEdge('pae-2-3', 'pa-2', 'pa-3', 'triggers'));
       store.addEdge(mkEdge('pae-3-4', 'pa-3', 'pa-4', 'produces'));
@@ -680,7 +761,7 @@ describe('E2E Async Simulation Tests', () => {
         // Verify A's nodes are restored
         const aNodes = getStore().nodes;
         expect(aNodes.length).toBeGreaterThanOrEqual(4);
-        const labels = aNodes.map(n => n.data.label);
+        const labels = aNodes.map((n) => n.data.label);
         expect(labels).toContain('Input');
         expect(labels).toContain('Process');
         assertStoreInvariants();
@@ -691,7 +772,7 @@ describe('E2E Async Simulation Tests', () => {
           await vi.advanceTimersByTimeAsync(500);
 
           expect(getStore().nodes).toHaveLength(2);
-          const bLabels = getStore().nodes.map(n => n.data.label);
+          const bLabels = getStore().nodes.map((n) => n.data.label);
           expect(bLabels).toContain('Server');
           expect(bLabels).toContain('Client');
           assertStoreInvariants();
@@ -715,7 +796,6 @@ describe('E2E Async Simulation Tests', () => {
 
   // ── Scenario D: Execution failure resilience ─────────────────────────────
   describe('Scenario D: Execution failure resilience', () => {
-
     it('failed nodes get error status and downstream nodes are skipped', async () => {
       buildLinearWorkflow();
 
@@ -729,19 +809,19 @@ describe('E2E Async Simulation Tests', () => {
 
       const s = getStore();
       // Input node uses passthrough, so should succeed even with fetch failure
-      const inputNode = s.nodes.find(n => n.id === 'n-1');
+      const inputNode = s.nodes.find((n) => n.id === 'n-1');
       expect(inputNode?.data.executionStatus).toBe('success');
 
       // Process, Review, and Output should have error status (failed or skipped)
-      const processNode = s.nodes.find(n => n.id === 'n-2');
-      const reviewNode = s.nodes.find(n => n.id === 'n-3');
-      const outputNode = s.nodes.find(n => n.id === 'n-4');
+      const _processNode = s.nodes.find((n) => n.id === 'n-2');
+      const _reviewNode = s.nodes.find((n) => n.id === 'n-3');
+      const _outputNode = s.nodes.find((n) => n.id === 'n-4');
 
       // Process should fail (API error)
       // Since the nodes have content > 50 chars and no upstream exec results differ,
       // they may use content bypass. Let's check what actually happened.
       // The circuit breaker should at least show some nodes failed/skipped
-      const failedOrError = s.nodes.filter(n => n.data.executionStatus === 'error');
+      const _failedOrError = s.nodes.filter((n) => n.data.executionStatus === 'error');
       // At minimum, downstream nodes of a failed node should show error
       // (this validates the circuit breaker pattern)
       assertStoreInvariants();
@@ -766,7 +846,9 @@ describe('E2E Async Simulation Tests', () => {
       await vi.advanceTimersByTimeAsync(500);
 
       // Input passes through, so check downstream
-      const failedCount = getStore().nodes.filter(n => n.data.executionStatus === 'error').length;
+      const _failedCount = getStore().nodes.filter(
+        (n) => n.data.executionStatus === 'error',
+      ).length;
 
       // Fix the mock and retry
       fetchShouldFail = false;
@@ -799,9 +881,9 @@ describe('E2E Async Simulation Tests', () => {
       fetchFailForNodes = new Set();
 
       const s = getStore();
-      const pathA = s.nodes.find(n => n.id === 'n-2');
-      const pathB = s.nodes.find(n => n.id === 'n-3');
-      const merge = s.nodes.find(n => n.id === 'n-4');
+      const _pathA = s.nodes.find((n) => n.id === 'n-2');
+      const _pathB = s.nodes.find((n) => n.id === 'n-3');
+      const _merge = s.nodes.find((n) => n.id === 'n-4');
 
       // Path B may succeed or use content bypass
       // Merge node should get error because at least one upstream (Path A) failed
@@ -812,23 +894,22 @@ describe('E2E Async Simulation Tests', () => {
 
   // ── Scenario E: Staleness cascade with locked nodes ─────────────────────
   describe('Scenario E: Staleness cascade with locked nodes', () => {
-
     it('locked nodes are protected but staleness traverses through them', async () => {
       buildLinearWorkflow();
       const store = getStore();
 
       // Lock the Review node
       store.lockNode('n-3');
-      expect(getStore().nodes.find(n => n.id === 'n-3')!.data.locked).toBe(true);
+      expect(getStore().nodes.find((n) => n.id === 'n-3')!.data.locked).toBe(true);
 
       // Mark Process stale — cascades through locked Review to Output
       store.updateNodeStatus('n-2', 'stale');
       await vi.advanceTimersByTimeAsync(500);
 
       const s = getStore();
-      const processNode = s.nodes.find(n => n.id === 'n-2');
-      const reviewNode = s.nodes.find(n => n.id === 'n-3');
-      const outputNode = s.nodes.find(n => n.id === 'n-4');
+      const processNode = s.nodes.find((n) => n.id === 'n-2');
+      const reviewNode = s.nodes.find((n) => n.id === 'n-3');
+      const outputNode = s.nodes.find((n) => n.id === 'n-4');
 
       expect(processNode?.data.status).toBe('stale');
       // Locked node should NOT become stale (it's protected)
@@ -843,11 +924,10 @@ describe('E2E Async Simulation Tests', () => {
 
   // ── Scenario F: Execution mutex prevents double-execution ───────────────
   describe('Scenario F: Execution mutex', () => {
-
     it('double executeNode on same node does not duplicate work', async () => {
       buildLinearWorkflow();
 
-      const initialFetchCount = fetchCallCount;
+      const _initialFetchCount = fetchCallCount;
 
       // Try to execute the same node concurrently
       const p1 = getStore().executeNode('n-1');
@@ -863,7 +943,6 @@ describe('E2E Async Simulation Tests', () => {
 
   // ── Scenario G: Full generate -> execute -> edit -> regen cycle ─────────
   describe('Scenario G: Complete cycle with real async', () => {
-
     it('full cycle: build -> execute -> edit -> stale -> regen', async () => {
       // Build workflow directly (skip animation delays)
       buildLinearWorkflow();
@@ -875,7 +954,7 @@ describe('E2E Async Simulation Tests', () => {
 
       // Verify execution happened
       const afterExec = getStore();
-      const executedNodes = afterExec.nodes.filter(n => n.data.executionStatus === 'success');
+      const executedNodes = afterExec.nodes.filter((n) => n.data.executionStatus === 'success');
       expect(executedNodes.length).toBeGreaterThan(0);
 
       // Step 2: Edit a middle node (semantic change)
@@ -887,7 +966,7 @@ describe('E2E Async Simulation Tests', () => {
 
       // Step 3: Verify staleness
       const afterEdit = getStore();
-      const staleNodes = afterEdit.nodes.filter(n => n.data.status === 'stale');
+      const staleNodes = afterEdit.nodes.filter((n) => n.data.status === 'stale');
       expect(staleNodes.length).toBeGreaterThan(0);
 
       // Step 4: Show impact preview
@@ -904,7 +983,7 @@ describe('E2E Async Simulation Tests', () => {
 
       // Previously stale nodes should now be active
       for (const staleNode of staleNodes) {
-        const current = afterRegen.nodes.find(n => n.id === staleNode.id);
+        const current = afterRegen.nodes.find((n) => n.id === staleNode.id);
         if (current && current.data.executionStatus !== 'error') {
           expect(current.data.status).toBe('active');
         }
@@ -919,7 +998,7 @@ describe('E2E Async Simulation Tests', () => {
       const afterUndo = getStore();
       // After undoing all operations, node content should be close to original
       // (execution results are stripped from undo, so content may or may not revert)
-      const undoneNode = afterUndo.nodes.find(n => n.id === 'n-2');
+      const undoneNode = afterUndo.nodes.find((n) => n.id === 'n-2');
       expect(undoneNode).toBeTruthy();
 
       assertStoreInvariants();
@@ -928,7 +1007,6 @@ describe('E2E Async Simulation Tests', () => {
 
   // ── Scenario H: Workflow with parallel execution stages ─────────────────
   describe('Scenario H: Parallel execution stages', () => {
-
     it('branching workflow executes parallel paths concurrently', async () => {
       buildBranchingWorkflow();
 
@@ -937,18 +1015,22 @@ describe('E2E Async Simulation Tests', () => {
 
       const s = getStore();
       // Both Path A and Path B should have been executed
-      const pathA = s.nodes.find(n => n.id === 'n-2');
-      const pathB = s.nodes.find(n => n.id === 'n-3');
+      const pathA = s.nodes.find((n) => n.id === 'n-2');
+      const pathB = s.nodes.find((n) => n.id === 'n-3');
       expect(pathA?.data.executionStatus).toBe('success');
       expect(pathB?.data.executionStatus).toBe('success');
 
       // Merge node should also be executed after both paths
-      const merge = s.nodes.find(n => n.id === 'n-4');
+      const merge = s.nodes.find((n) => n.id === 'n-4');
       expect(merge?.data.executionStatus).toBe('success');
 
       // Messages should include execution summary
-      const summaryMsgs = s.messages.filter(m =>
-        m.role === 'cid' && (m.content?.includes('complete') || m.content?.includes('processed') || m.content?.includes('Done'))
+      const summaryMsgs = s.messages.filter(
+        (m) =>
+          m.role === 'cid' &&
+          (m.content?.includes('complete') ||
+            m.content?.includes('processed') ||
+            m.content?.includes('Done')),
       );
       expect(summaryMsgs.length).toBeGreaterThan(0);
 
@@ -958,7 +1040,6 @@ describe('E2E Async Simulation Tests', () => {
 
   // ── Scenario I: Edge case — empty workflow operations ───────────────────
   describe('Scenario I: Edge cases', () => {
-
     it('executeWorkflow on empty graph is a no-op', async () => {
       expect(getStore().nodes).toHaveLength(0);
       await getStore().executeWorkflow();
@@ -971,7 +1052,7 @@ describe('E2E Async Simulation Tests', () => {
       await getStore().propagateStale();
       await vi.advanceTimersByTimeAsync(500);
 
-      const msgs = getStore().messages.filter(m => m.content?.includes('up to date'));
+      const msgs = getStore().messages.filter((m) => m.content?.includes('up to date'));
       expect(msgs.length).toBeGreaterThan(0);
       assertStoreInvariants();
     });
@@ -1018,7 +1099,7 @@ describe('E2E Async Simulation Tests', () => {
       assertStoreInvariants();
 
       // Node should have the last edit's content
-      const node = getStore().nodes.find(n => n.id === 'n-2');
+      const node = getStore().nodes.find((n) => n.id === 'n-2');
       expect(node?.data.content).toContain('Iteration 9');
     });
 
@@ -1032,7 +1113,6 @@ describe('E2E Async Simulation Tests', () => {
 
   // ── Scenario J: Staleness with branching graph ──────────────────────────
   describe('Scenario J: Staleness in branching graphs', () => {
-
     it('staleness from shared parent affects both branches', async () => {
       buildBranchingWorkflow();
 
@@ -1042,10 +1122,10 @@ describe('E2E Async Simulation Tests', () => {
 
       const s = getStore();
       // Both Path A and Path B should be stale (downstream of Input)
-      expect(s.nodes.find(n => n.id === 'n-2')?.data.status).toBe('stale');
-      expect(s.nodes.find(n => n.id === 'n-3')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'n-2')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'n-3')?.data.status).toBe('stale');
       // Merge should also be stale (downstream of both paths)
-      expect(s.nodes.find(n => n.id === 'n-4')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'n-4')?.data.status).toBe('stale');
 
       assertStoreInvariants();
     });
@@ -1059,11 +1139,11 @@ describe('E2E Async Simulation Tests', () => {
 
       const s = getStore();
       // Path A is stale
-      expect(s.nodes.find(n => n.id === 'n-2')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'n-2')?.data.status).toBe('stale');
       // Path B should NOT be stale (it's a sibling, not downstream)
-      expect(s.nodes.find(n => n.id === 'n-3')?.data.status).not.toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'n-3')?.data.status).not.toBe('stale');
       // Merge IS downstream of Path A, so it should be stale
-      expect(s.nodes.find(n => n.id === 'n-4')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'n-4')?.data.status).toBe('stale');
 
       assertStoreInvariants();
     });
@@ -1078,14 +1158,54 @@ describe('E2E Async Simulation Tests', () => {
     function buildCourseDesign() {
       const store = getStore();
       const nodes = [
-        mkNode('syllabus', 'Syllabus', 'input', { content: 'CS101: Intro to Computer Science. 15 weeks. Topics: variables, loops, functions, OOP, data structures.', executionResult: 'Parsed syllabus with 15 modules covering fundamentals of CS.', executionStatus: 'success' as const }),
-        mkNode('objectives', 'Learning Objectives', 'process', { content: 'Students will be able to write programs using variables, loops, and functions.', executionResult: 'LO1: Explain variables and data types\nLO2: Implement loops and conditionals\nLO3: Design functions\nLO4: Apply OOP principles\nLO5: Use basic data structures', executionStatus: 'success' as const }),
-        mkNode('lessons', 'Lesson Plans', 'deliverable', { content: 'Week 1: Variables and types. Week 2: Conditionals. Week 3: Loops.', executionResult: 'Lesson Plan 1: Variables (2hr)\nLesson Plan 2: Conditionals (2hr)\nLesson Plan 3: Loops (2hr)', executionStatus: 'success' as const }),
-        mkNode('assignments', 'Assignments', 'deliverable', { content: 'HW1: Variable exercises. HW2: Loop practice. HW3: Function design.', executionResult: 'Assignment 1: Variable Exercises (due Week 2)\nAssignment 2: Loop Practice (due Week 4)\nAssignment 3: Function Design (due Week 6)', executionStatus: 'success' as const }),
-        mkNode('rubrics', 'Rubrics', 'deliverable', { content: 'Grading criteria for each assignment.', executionResult: 'Rubric for HW1: Correctness 40%, Style 20%, Testing 20%, Documentation 20%', executionStatus: 'success' as const }),
-        mkNode('quizbank', 'Quiz Bank', 'deliverable', { content: 'Questions covering variables, loops, functions.', executionResult: 'Q1: What is a variable? Q2: Write a for loop. Q3: Define a function that...', executionStatus: 'success' as const }),
-        mkNode('studyguide', 'Study Guide', 'deliverable', { content: 'Review material for midterm and final.', executionResult: 'Chapter 1: Variables - key concepts, practice problems\nChapter 2: Loops - patterns, common mistakes', executionStatus: 'success' as const }),
-        mkNode('faq', 'Course FAQ', 'deliverable', { content: 'Common student questions.', executionResult: 'Q: When is HW1 due? A: Week 2\nQ: What topics are on the midterm? A: Weeks 1-7', executionStatus: 'success' as const }),
+        mkNode('syllabus', 'Syllabus', 'input', {
+          content:
+            'CS101: Intro to Computer Science. 15 weeks. Topics: variables, loops, functions, OOP, data structures.',
+          executionResult: 'Parsed syllabus with 15 modules covering fundamentals of CS.',
+          executionStatus: 'success' as const,
+        }),
+        mkNode('objectives', 'Learning Objectives', 'process', {
+          content: 'Students will be able to write programs using variables, loops, and functions.',
+          executionResult:
+            'LO1: Explain variables and data types\nLO2: Implement loops and conditionals\nLO3: Design functions\nLO4: Apply OOP principles\nLO5: Use basic data structures',
+          executionStatus: 'success' as const,
+        }),
+        mkNode('lessons', 'Lesson Plans', 'deliverable', {
+          content: 'Week 1: Variables and types. Week 2: Conditionals. Week 3: Loops.',
+          executionResult:
+            'Lesson Plan 1: Variables (2hr)\nLesson Plan 2: Conditionals (2hr)\nLesson Plan 3: Loops (2hr)',
+          executionStatus: 'success' as const,
+        }),
+        mkNode('assignments', 'Assignments', 'deliverable', {
+          content: 'HW1: Variable exercises. HW2: Loop practice. HW3: Function design.',
+          executionResult:
+            'Assignment 1: Variable Exercises (due Week 2)\nAssignment 2: Loop Practice (due Week 4)\nAssignment 3: Function Design (due Week 6)',
+          executionStatus: 'success' as const,
+        }),
+        mkNode('rubrics', 'Rubrics', 'deliverable', {
+          content: 'Grading criteria for each assignment.',
+          executionResult:
+            'Rubric for HW1: Correctness 40%, Style 20%, Testing 20%, Documentation 20%',
+          executionStatus: 'success' as const,
+        }),
+        mkNode('quizbank', 'Quiz Bank', 'deliverable', {
+          content: 'Questions covering variables, loops, functions.',
+          executionResult:
+            'Q1: What is a variable? Q2: Write a for loop. Q3: Define a function that...',
+          executionStatus: 'success' as const,
+        }),
+        mkNode('studyguide', 'Study Guide', 'deliverable', {
+          content: 'Review material for midterm and final.',
+          executionResult:
+            'Chapter 1: Variables - key concepts, practice problems\nChapter 2: Loops - patterns, common mistakes',
+          executionStatus: 'success' as const,
+        }),
+        mkNode('faq', 'Course FAQ', 'deliverable', {
+          content: 'Common student questions.',
+          executionResult:
+            'Q: When is HW1 due? A: Week 2\nQ: What topics are on the midterm? A: Weeks 1-7',
+          executionStatus: 'success' as const,
+        }),
       ];
       // Edges mirror the updated Course Design template
       const edges = [
@@ -1111,12 +1231,14 @@ describe('E2E Async Simulation Tests', () => {
       vi.useFakeTimers();
       buildCourseDesign();
     });
-    afterEach(() => { vi.useRealTimers(); });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
 
     it('all 8 nodes start as active/success', () => {
       const nodes = getStore().nodes;
       expect(nodes).toHaveLength(8);
-      nodes.forEach(n => {
+      nodes.forEach((n) => {
         expect(n.data.status).toBe('active');
         expect(n.data.executionStatus).toBe('success');
       });
@@ -1128,42 +1250,44 @@ describe('E2E Async Simulation Tests', () => {
       const store = getStore();
       // Semantic edit: add a new homework topic
       store.updateNodeData('lessons', {
-        content: 'Week 1: Variables. Week 2: Conditionals. Week 3: Loops. Week 4: RECURSION (new topic added).',
+        content:
+          'Week 1: Variables. Week 2: Conditionals. Week 3: Loops. Week 4: RECURSION (new topic added).',
       });
       await vi.advanceTimersByTimeAsync(500);
 
       const s = getStore();
       // Lesson Plans itself goes stale
-      expect(s.nodes.find(n => n.id === 'lessons')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'lessons')?.data.status).toBe('stale');
       // All downstream should cascade to stale
-      expect(s.nodes.find(n => n.id === 'assignments')?.data.status).toBe('stale');
-      expect(s.nodes.find(n => n.id === 'rubrics')?.data.status).toBe('stale');
-      expect(s.nodes.find(n => n.id === 'quizbank')?.data.status).toBe('stale');
-      expect(s.nodes.find(n => n.id === 'studyguide')?.data.status).toBe('stale');
-      expect(s.nodes.find(n => n.id === 'faq')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'assignments')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'rubrics')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'quizbank')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'studyguide')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'faq')?.data.status).toBe('stale');
       // Upstream should NOT be stale
-      expect(s.nodes.find(n => n.id === 'syllabus')?.data.status).toBe('active');
-      expect(s.nodes.find(n => n.id === 'objectives')?.data.status).toBe('active');
+      expect(s.nodes.find((n) => n.id === 'syllabus')?.data.status).toBe('active');
+      expect(s.nodes.find((n) => n.id === 'objectives')?.data.status).toBe('active');
     });
 
     it('editing Assignments marks Rubrics, Quiz Bank, Study Guide, FAQ stale — but NOT Lesson Plans', async () => {
       const store = getStore();
       store.updateNodeData('assignments', {
-        content: 'HW1: Variable exercises. HW2: Loop practice. HW3: Function design. HW4: RECURSION PROJECT (new assignment).',
+        content:
+          'HW1: Variable exercises. HW2: Loop practice. HW3: Function design. HW4: RECURSION PROJECT (new assignment).',
       });
       await vi.advanceTimersByTimeAsync(500);
 
       const s = getStore();
-      expect(s.nodes.find(n => n.id === 'assignments')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'assignments')?.data.status).toBe('stale');
       // Downstream of assignments
-      expect(s.nodes.find(n => n.id === 'rubrics')?.data.status).toBe('stale');
-      expect(s.nodes.find(n => n.id === 'quizbank')?.data.status).toBe('stale');
-      expect(s.nodes.find(n => n.id === 'studyguide')?.data.status).toBe('stale');
-      expect(s.nodes.find(n => n.id === 'faq')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'rubrics')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'quizbank')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'studyguide')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'faq')?.data.status).toBe('stale');
       // Upstream NOT affected
-      expect(s.nodes.find(n => n.id === 'syllabus')?.data.status).toBe('active');
-      expect(s.nodes.find(n => n.id === 'objectives')?.data.status).toBe('active');
-      expect(s.nodes.find(n => n.id === 'lessons')?.data.status).toBe('active');
+      expect(s.nodes.find((n) => n.id === 'syllabus')?.data.status).toBe('active');
+      expect(s.nodes.find((n) => n.id === 'objectives')?.data.status).toBe('active');
+      expect(s.nodes.find((n) => n.id === 'lessons')?.data.status).toBe('active');
     });
 
     it('editing Quiz Bank marks Study Guide and FAQ stale — but NOT Assignments or Rubrics', async () => {
@@ -1174,14 +1298,14 @@ describe('E2E Async Simulation Tests', () => {
       await vi.advanceTimersByTimeAsync(500);
 
       const s = getStore();
-      expect(s.nodes.find(n => n.id === 'quizbank')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'quizbank')?.data.status).toBe('stale');
       // Quiz Bank → Study Guide → FAQ
-      expect(s.nodes.find(n => n.id === 'studyguide')?.data.status).toBe('stale');
-      expect(s.nodes.find(n => n.id === 'faq')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'studyguide')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'faq')?.data.status).toBe('stale');
       // NOT affected: upstream or sibling
-      expect(s.nodes.find(n => n.id === 'assignments')?.data.status).toBe('active');
-      expect(s.nodes.find(n => n.id === 'rubrics')?.data.status).toBe('active');
-      expect(s.nodes.find(n => n.id === 'lessons')?.data.status).toBe('active');
+      expect(s.nodes.find((n) => n.id === 'assignments')?.data.status).toBe('active');
+      expect(s.nodes.find((n) => n.id === 'rubrics')?.data.status).toBe('active');
+      expect(s.nodes.find((n) => n.id === 'lessons')?.data.status).toBe('active');
     });
 
     it('editing Rubrics marks FAQ stale — but NOT Study Guide', async () => {
@@ -1192,32 +1316,33 @@ describe('E2E Async Simulation Tests', () => {
       await vi.advanceTimersByTimeAsync(500);
 
       const s = getStore();
-      expect(s.nodes.find(n => n.id === 'rubrics')?.data.status).toBe('stale');
-      expect(s.nodes.find(n => n.id === 'faq')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'rubrics')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'faq')?.data.status).toBe('stale');
       // Rubrics does NOT connect to Study Guide
-      expect(s.nodes.find(n => n.id === 'studyguide')?.data.status).toBe('active');
-      expect(s.nodes.find(n => n.id === 'assignments')?.data.status).toBe('active');
+      expect(s.nodes.find((n) => n.id === 'studyguide')?.data.status).toBe('active');
+      expect(s.nodes.find((n) => n.id === 'assignments')?.data.status).toBe('active');
     });
 
     it('editing Syllabus cascades stale to ALL 7 downstream nodes', async () => {
       const store = getStore();
       store.updateNodeData('syllabus', {
-        content: 'CS201: Advanced Data Structures. Completely different course — trees, graphs, hash tables.',
+        content:
+          'CS201: Advanced Data Structures. Completely different course — trees, graphs, hash tables.',
       });
       await vi.advanceTimersByTimeAsync(500);
 
       const s = getStore();
       // Every node downstream of syllabus should be stale
-      expect(s.nodes.find(n => n.id === 'syllabus')?.data.status).toBe('stale');
-      expect(s.nodes.find(n => n.id === 'objectives')?.data.status).toBe('stale');
-      expect(s.nodes.find(n => n.id === 'lessons')?.data.status).toBe('stale');
-      expect(s.nodes.find(n => n.id === 'assignments')?.data.status).toBe('stale');
-      expect(s.nodes.find(n => n.id === 'rubrics')?.data.status).toBe('stale');
-      expect(s.nodes.find(n => n.id === 'quizbank')?.data.status).toBe('stale');
-      expect(s.nodes.find(n => n.id === 'studyguide')?.data.status).toBe('stale');
-      expect(s.nodes.find(n => n.id === 'faq')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'syllabus')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'objectives')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'lessons')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'assignments')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'rubrics')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'quizbank')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'studyguide')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'faq')?.data.status).toBe('stale');
 
-      const staleCount = s.nodes.filter(n => n.data.status === 'stale').length;
+      const staleCount = s.nodes.filter((n) => n.data.status === 'stale').length;
       expect(staleCount).toBe(8);
     });
 
@@ -1229,9 +1354,9 @@ describe('E2E Async Simulation Tests', () => {
       await vi.advanceTimersByTimeAsync(500);
 
       const s = getStore();
-      expect(s.nodes.find(n => n.id === 'faq')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'faq')?.data.status).toBe('stale');
       // No other node should be affected
-      const staleCount = s.nodes.filter(n => n.data.status === 'stale').length;
+      const staleCount = s.nodes.filter((n) => n.data.status === 'stale').length;
       expect(staleCount).toBe(1);
     });
 
@@ -1239,14 +1364,14 @@ describe('E2E Async Simulation Tests', () => {
 
     it('cosmetic edit (whitespace only) does NOT cascade', async () => {
       const store = getStore();
-      const original = store.nodes.find(n => n.id === 'lessons')?.data.content;
+      const original = store.nodes.find((n) => n.id === 'lessons')?.data.content;
       store.updateNodeData('lessons', {
         content: original + '   ', // just trailing whitespace
       });
       await vi.advanceTimersByTimeAsync(500);
 
       const s = getStore();
-      const staleCount = s.nodes.filter(n => n.data.status === 'stale').length;
+      const staleCount = s.nodes.filter((n) => n.data.status === 'stale').length;
       expect(staleCount).toBe(0);
     });
 
@@ -1260,7 +1385,7 @@ describe('E2E Async Simulation Tests', () => {
 
       const s = getStore();
       // Should classify as local (high term overlap, small length change)
-      const staleCount = s.nodes.filter(n => n.data.status === 'stale').length;
+      const staleCount = s.nodes.filter((n) => n.data.status === 'stale').length;
       expect(staleCount).toBe(0);
     });
 
@@ -1288,7 +1413,7 @@ describe('E2E Async Simulation Tests', () => {
       });
       await vi.advanceTimersByTimeAsync(500);
 
-      const staleBeforeCount = getStore().nodes.filter(n => n.data.status === 'stale').length;
+      const staleBeforeCount = getStore().nodes.filter((n) => n.data.status === 'stale').length;
       expect(staleBeforeCount).toBe(6);
 
       fetchCallCount = 0;
@@ -1296,7 +1421,7 @@ describe('E2E Async Simulation Tests', () => {
       await vi.advanceTimersByTimeAsync(2000);
 
       const s = getStore();
-      const staleAfterCount = s.nodes.filter(n => n.data.status === 'stale').length;
+      const staleAfterCount = s.nodes.filter((n) => n.data.status === 'stale').length;
       expect(staleAfterCount).toBe(0);
       // Should have made API calls for each stale node
       expect(fetchCallCount).toBeGreaterThanOrEqual(6);
@@ -1318,14 +1443,14 @@ describe('E2E Async Simulation Tests', () => {
 
       const s = getStore();
       // Lessons goes stale
-      expect(s.nodes.find(n => n.id === 'lessons')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'lessons')?.data.status).toBe('stale');
       // Direct children of Lessons that aren't locked: Quiz Bank, Study Guide go stale
-      expect(s.nodes.find(n => n.id === 'quizbank')?.data.status).toBe('stale');
-      expect(s.nodes.find(n => n.id === 'studyguide')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'quizbank')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'studyguide')?.data.status).toBe('stale');
       // Assignments is LOCKED — staleness stops here
-      expect(s.nodes.find(n => n.id === 'assignments')?.data.status).toBe('locked');
+      expect(s.nodes.find((n) => n.id === 'assignments')?.data.status).toBe('locked');
       // FAQ: reachable via Study Guide path, so still stale
-      expect(s.nodes.find(n => n.id === 'faq')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'faq')?.data.status).toBe('stale');
     });
 
     it('FIX: staleness traverses THROUGH locked nodes — Rubrics goes stale even though Assignments is locked', async () => {
@@ -1340,12 +1465,12 @@ describe('E2E Async Simulation Tests', () => {
 
       const s = getStore();
       // Assignments stays locked (protected from becoming stale)
-      expect(s.nodes.find(n => n.id === 'assignments')?.data.status).toBe('locked');
+      expect(s.nodes.find((n) => n.id === 'assignments')?.data.status).toBe('locked');
       // But Rubrics (downstream of locked Assignments) DOES go stale
       // because staleness traverses THROUGH locked nodes — it just doesn't mark them
-      expect(s.nodes.find(n => n.id === 'rubrics')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'rubrics')?.data.status).toBe('stale');
       // FAQ also stale (reachable via multiple paths)
-      expect(s.nodes.find(n => n.id === 'faq')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'faq')?.data.status).toBe('stale');
     });
 
     // ── Multiple edits ──
@@ -1362,12 +1487,12 @@ describe('E2E Async Simulation Tests', () => {
 
       const s = getStore();
       // Assignments + Rubrics + Quiz Bank + Study Guide + FAQ = 5 stale
-      const staleCount = s.nodes.filter(n => n.data.status === 'stale').length;
+      const staleCount = s.nodes.filter((n) => n.data.status === 'stale').length;
       expect(staleCount).toBe(5);
       // Upstream unaffected
-      expect(s.nodes.find(n => n.id === 'syllabus')?.data.status).toBe('active');
-      expect(s.nodes.find(n => n.id === 'objectives')?.data.status).toBe('active');
-      expect(s.nodes.find(n => n.id === 'lessons')?.data.status).toBe('active');
+      expect(s.nodes.find((n) => n.id === 'syllabus')?.data.status).toBe('active');
+      expect(s.nodes.find((n) => n.id === 'objectives')?.data.status).toBe('active');
+      expect(s.nodes.find((n) => n.id === 'lessons')?.data.status).toBe('active');
     });
 
     // ── Label change = structural edit ──
@@ -1378,9 +1503,9 @@ describe('E2E Async Simulation Tests', () => {
       await vi.advanceTimersByTimeAsync(500);
 
       const s = getStore();
-      expect(s.nodes.find(n => n.id === 'assignments')?.data.status).toBe('stale');
-      expect(s.nodes.find(n => n.id === 'rubrics')?.data.status).toBe('stale');
-      expect(s.nodes.find(n => n.id === 'faq')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'assignments')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'rubrics')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'faq')?.data.status).toBe('stale');
     });
 
     // ── Category change = structural edit ──
@@ -1391,8 +1516,8 @@ describe('E2E Async Simulation Tests', () => {
       await vi.advanceTimersByTimeAsync(500);
 
       const s = getStore();
-      expect(s.nodes.find(n => n.id === 'studyguide')?.data.status).toBe('stale');
-      expect(s.nodes.find(n => n.id === 'faq')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'studyguide')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'faq')?.data.status).toBe('stale');
     });
 
     // ── Regenerate selected subset ──
@@ -1419,10 +1544,10 @@ describe('E2E Async Simulation Tests', () => {
 
       const s = getStore();
       // Rubrics should be regenerated (active)
-      expect(s.nodes.find(n => n.id === 'rubrics')?.data.status).toBe('active');
+      expect(s.nodes.find((n) => n.id === 'rubrics')?.data.status).toBe('active');
       // Others should still be stale
-      expect(s.nodes.find(n => n.id === 'quizbank')?.data.status).toBe('stale');
-      expect(s.nodes.find(n => n.id === 'studyguide')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'quizbank')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'studyguide')?.data.status).toBe('stale');
     });
 
     // ── Execution order matters ──
@@ -1446,7 +1571,8 @@ describe('E2E Async Simulation Tests', () => {
         else if (prompt.includes('Quiz')) executionOrder.push('quizbank');
         else if (prompt.includes('Study')) executionOrder.push('studyguide');
         else if (prompt.includes('Rubric')) executionOrder.push('rubrics');
-        else if (prompt.includes('FAQ') || prompt.includes('Course FAQ')) executionOrder.push('faq');
+        else if (prompt.includes('FAQ') || prompt.includes('Course FAQ'))
+          executionOrder.push('faq');
         else executionOrder.push('unknown');
 
         return {
@@ -1505,7 +1631,7 @@ describe('E2E Async Simulation Tests', () => {
       // But the exact behavior depends on execution strategy
       const s = getStore();
       // Lessons should have executed
-      const lessonsNode = s.nodes.find(n => n.id === 'lessons');
+      const lessonsNode = s.nodes.find((n) => n.id === 'lessons');
       expect(lessonsNode?.data.executionStatus).toBe('success');
 
       assertStoreInvariants();
@@ -1522,10 +1648,10 @@ describe('E2E Async Simulation Tests', () => {
           content: `Content for node ${i} in the pipeline`,
           executionResult: `Result ${i}`,
           executionStatus: 'success' as const,
-        })
+        }),
       );
       const edges = Array.from({ length: 5 }, (_, i) =>
-        mkEdge(`de${i}`, `d${i}`, `d${i + 1}`, 'feeds')
+        mkEdge(`de${i}`, `d${i}`, `d${i + 1}`, 'feeds'),
       );
       store.setNodes(nodes);
       store.setEdges(edges);
@@ -1536,7 +1662,9 @@ describe('E2E Async Simulation Tests', () => {
       vi.useFakeTimers();
       buildDeepChain();
     });
-    afterEach(() => { vi.useRealTimers(); });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
 
     it('editing first node cascades stale through all 5 downstream', async () => {
       const store = getStore();
@@ -1547,7 +1675,7 @@ describe('E2E Async Simulation Tests', () => {
 
       const s = getStore();
       for (let i = 0; i < 6; i++) {
-        expect(s.nodes.find(n => n.id === `d${i}`)?.data.status).toBe('stale');
+        expect(s.nodes.find((n) => n.id === `d${i}`)?.data.status).toBe('stale');
       }
     });
 
@@ -1560,13 +1688,13 @@ describe('E2E Async Simulation Tests', () => {
 
       const s = getStore();
       // d0, d1, d2 should stay active (upstream)
-      expect(s.nodes.find(n => n.id === 'd0')?.data.status).toBe('active');
-      expect(s.nodes.find(n => n.id === 'd1')?.data.status).toBe('active');
-      expect(s.nodes.find(n => n.id === 'd2')?.data.status).toBe('active');
+      expect(s.nodes.find((n) => n.id === 'd0')?.data.status).toBe('active');
+      expect(s.nodes.find((n) => n.id === 'd1')?.data.status).toBe('active');
+      expect(s.nodes.find((n) => n.id === 'd2')?.data.status).toBe('active');
       // d3, d4, d5 should be stale
-      expect(s.nodes.find(n => n.id === 'd3')?.data.status).toBe('stale');
-      expect(s.nodes.find(n => n.id === 'd4')?.data.status).toBe('stale');
-      expect(s.nodes.find(n => n.id === 'd5')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'd3')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'd4')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'd5')?.data.status).toBe('stale');
     });
 
     it('editing last node (leaf) only marks itself stale', async () => {
@@ -1577,9 +1705,9 @@ describe('E2E Async Simulation Tests', () => {
       await vi.advanceTimersByTimeAsync(500);
 
       const s = getStore();
-      const staleCount = s.nodes.filter(n => n.data.status === 'stale').length;
+      const staleCount = s.nodes.filter((n) => n.data.status === 'stale').length;
       expect(staleCount).toBe(1);
-      expect(s.nodes.find(n => n.id === 'd5')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'd5')?.data.status).toBe('stale');
     });
   });
 
@@ -1590,10 +1718,26 @@ describe('E2E Async Simulation Tests', () => {
     function buildDiamond() {
       const store = getStore();
       store.setNodes([
-        mkNode('top', 'Source', 'input', { content: 'Source data', executionResult: 'Source output', executionStatus: 'success' as const }),
-        mkNode('left', 'Path A', 'process', { content: 'Process via path A', executionResult: 'Path A result', executionStatus: 'success' as const }),
-        mkNode('right', 'Path B', 'process', { content: 'Process via path B', executionResult: 'Path B result', executionStatus: 'success' as const }),
-        mkNode('bottom', 'Merge', 'deliverable', { content: 'Merged result', executionResult: 'Merged output', executionStatus: 'success' as const }),
+        mkNode('top', 'Source', 'input', {
+          content: 'Source data',
+          executionResult: 'Source output',
+          executionStatus: 'success' as const,
+        }),
+        mkNode('left', 'Path A', 'process', {
+          content: 'Process via path A',
+          executionResult: 'Path A result',
+          executionStatus: 'success' as const,
+        }),
+        mkNode('right', 'Path B', 'process', {
+          content: 'Process via path B',
+          executionResult: 'Path B result',
+          executionStatus: 'success' as const,
+        }),
+        mkNode('bottom', 'Merge', 'deliverable', {
+          content: 'Merged result',
+          executionResult: 'Merged output',
+          executionStatus: 'success' as const,
+        }),
       ]);
       store.setEdges([
         mkEdge('e-tl', 'top', 'left', 'feeds'),
@@ -1608,26 +1752,32 @@ describe('E2E Async Simulation Tests', () => {
       vi.useFakeTimers();
       buildDiamond();
     });
-    afterEach(() => { vi.useRealTimers(); });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
 
     it('editing Source marks both paths AND merge stale', async () => {
-      getStore().updateNodeData('top', { content: 'Completely new source data for all downstream paths.' });
+      getStore().updateNodeData('top', {
+        content: 'Completely new source data for all downstream paths.',
+      });
       await vi.advanceTimersByTimeAsync(500);
 
       const s = getStore();
-      expect(s.nodes.filter(n => n.data.status === 'stale').length).toBe(4);
+      expect(s.nodes.filter((n) => n.data.status === 'stale').length).toBe(4);
     });
 
     it('editing one path marks merge stale but not the other path', async () => {
-      getStore().updateNodeData('left', { content: 'Path A completely restructured with new processing logic.' });
+      getStore().updateNodeData('left', {
+        content: 'Path A completely restructured with new processing logic.',
+      });
       await vi.advanceTimersByTimeAsync(500);
 
       const s = getStore();
-      expect(s.nodes.find(n => n.id === 'left')?.data.status).toBe('stale');
-      expect(s.nodes.find(n => n.id === 'bottom')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'left')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'bottom')?.data.status).toBe('stale');
       // Other path untouched
-      expect(s.nodes.find(n => n.id === 'right')?.data.status).toBe('active');
-      expect(s.nodes.find(n => n.id === 'top')?.data.status).toBe('active');
+      expect(s.nodes.find((n) => n.id === 'right')?.data.status).toBe('active');
+      expect(s.nodes.find((n) => n.id === 'top')?.data.status).toBe('active');
     });
   });
 
@@ -1638,13 +1788,24 @@ describe('E2E Async Simulation Tests', () => {
       resetStore();
       vi.useFakeTimers();
     });
-    afterEach(() => { vi.useRealTimers(); });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
 
     it('node with executionStatus=error but status=active still cascades stale', async () => {
       const store = getStore();
       store.setNodes([
-        mkNode('a', 'Source', 'input', { content: 'Data', executionResult: 'Out', executionStatus: 'success' as const }),
-        mkNode('b', 'Processor', 'process', { content: 'Process', executionResult: '', executionStatus: 'error' as const, executionError: 'Previous failure' }),
+        mkNode('a', 'Source', 'input', {
+          content: 'Data',
+          executionResult: 'Out',
+          executionStatus: 'success' as const,
+        }),
+        mkNode('b', 'Processor', 'process', {
+          content: 'Process',
+          executionResult: '',
+          executionStatus: 'error' as const,
+          executionError: 'Previous failure',
+        }),
       ]);
       store.setEdges([mkEdge('e1', 'a', 'b', 'feeds')]);
 
@@ -1652,7 +1813,7 @@ describe('E2E Async Simulation Tests', () => {
       await vi.advanceTimersByTimeAsync(500);
 
       // b has status='active' (default from mkNode), so staleness cascades
-      const bNode = getStore().nodes.find(n => n.id === 'b');
+      const bNode = getStore().nodes.find((n) => n.id === 'b');
       expect(bNode?.data.status).toBe('stale');
     });
 
@@ -1665,25 +1826,24 @@ describe('E2E Async Simulation Tests', () => {
         mkNode('b', 'Middle', 'process', { content: 'Process' }),
         mkNode('c', 'End', 'deliverable', { content: 'Output' }),
       ]);
-      store.setEdges([
-        mkEdge('e1', 'a', 'b', 'feeds'),
-        mkEdge('e2', 'b', 'c', 'feeds'),
-      ]);
+      store.setEdges([mkEdge('e1', 'a', 'b', 'feeds'), mkEdge('e2', 'b', 'c', 'feeds')]);
 
       // First edit — cascades to b and c
       store.updateNodeData('a', { content: 'First major change with new topics.' });
       await vi.advanceTimersByTimeAsync(500);
-      expect(getStore().nodes.find(n => n.id === 'b')?.data.status).toBe('stale');
-      expect(getStore().nodes.find(n => n.id === 'c')?.data.status).toBe('stale');
+      expect(getStore().nodes.find((n) => n.id === 'b')?.data.status).toBe('stale');
+      expect(getStore().nodes.find((n) => n.id === 'c')?.data.status).toBe('stale');
 
       const msgCountBefore = getStore().messages.length;
 
       // Second edit to same node — b and c are ALREADY stale
-      store.updateNodeData('a', { content: 'Second major change with completely different topics.' });
+      store.updateNodeData('a', {
+        content: 'Second major change with completely different topics.',
+      });
       await vi.advanceTimersByTimeAsync(500);
 
       // Still stale (correct)
-      expect(getStore().nodes.find(n => n.id === 'b')?.data.status).toBe('stale');
+      expect(getStore().nodes.find((n) => n.id === 'b')?.data.status).toBe('stale');
       // But no NEW cascade message (because staleableStatuses doesn't include 'stale')
       // This is expected behavior — we don't spam the user with duplicate cascade alerts
       const msgCountAfter = getStore().messages.length;
@@ -1718,7 +1878,9 @@ describe('E2E Async Simulation Tests', () => {
       vi.useFakeTimers();
       getStore().resetUsageStats();
 
-      const node = mkNode('cache-q1', 'Cache Test Node', 'action', { content: 'Test content for caching' });
+      const node = mkNode('cache-q1', 'Cache Test Node', 'action', {
+        content: 'Test content for caching',
+      });
       getStore().setNodes([node]);
       getStore().setEdges([]);
       await vi.advanceTimersByTimeAsync(100);
@@ -1742,33 +1904,46 @@ describe('E2E Async Simulation Tests', () => {
       // params: (output, category, label, promptKeywords?)
       const warnings = validateOutput('', 'action', 'Test Node');
       expect(warnings.length).toBeGreaterThan(0);
-      expect(warnings.some(w => w.code === 'empty-output')).toBe(true);
+      expect(warnings.some((w) => w.code === 'empty-output')).toBe(true);
     });
 
     it('validateOutput returns warnings for too-short output', async () => {
       const { validateOutput } = await import('@/lib/validate');
       // params: (output, category, label, promptKeywords?)
-      const warnings = validateOutput('OK', 'action', 'Test Node', ['generate', 'detailed', 'analysis']);
-      expect(warnings.some(w => w.code === 'too-short')).toBe(true);
+      const warnings = validateOutput('OK', 'action', 'Test Node', [
+        'generate',
+        'detailed',
+        'analysis',
+      ]);
+      expect(warnings.some((w) => w.code === 'too-short')).toBe(true);
     });
 
     it('validateOutput returns warnings for placeholder content', async () => {
       const { validateOutput } = await import('@/lib/validate');
-      const warnings = validateOutput('TODO: fill in later with actual content', 'action', 'Test Node');
-      expect(warnings.some(w => w.code === 'placeholder')).toBe(true);
+      const warnings = validateOutput(
+        'TODO: fill in later with actual content',
+        'action',
+        'Test Node',
+      );
+      expect(warnings.some((w) => w.code === 'placeholder')).toBe(true);
     });
 
     it('validateOutput checks review nodes for evaluation criteria', async () => {
       const { validateOutput } = await import('@/lib/validate');
-      const warnings = validateOutput('This is a general review with no specific criteria mentioned at all.', 'review', 'Review Gate');
-      expect(warnings.some(w => w.code === 'missing-evaluation')).toBe(true);
+      const warnings = validateOutput(
+        'This is a general review with no specific criteria mentioned at all.',
+        'review',
+        'Review Gate',
+      );
+      expect(warnings.some((w) => w.code === 'missing-evaluation')).toBe(true);
     });
 
     it('validateOutput accepts good output with no warnings', async () => {
       const { validateOutput } = await import('@/lib/validate');
-      const goodOutput = 'This comprehensive analysis evaluates the key criteria including completeness, accuracy, and relevance. The score is 85/100 based on rubric alignment.';
+      const goodOutput =
+        'This comprehensive analysis evaluates the key criteria including completeness, accuracy, and relevance. The score is 85/100 based on rubric alignment.';
       const warnings = validateOutput(goodOutput, 'review', 'Review Gate', ['evaluate', 'rubric']);
-      const highSeverity = warnings.filter(w => w.severity === 'warning');
+      const highSeverity = warnings.filter((w) => w.severity === 'warning');
       expect(highSeverity.length).toBe(0);
     });
 
@@ -1776,8 +1951,10 @@ describe('E2E Async Simulation Tests', () => {
       const node = mkNode('val-r1', 'Validation Test', 'action');
       // _validationWarnings should be settable
       getStore().setNodes([node]);
-      getStore().updateNodeData('val-r1', { _validationWarnings: [{ code: 'test', message: 'Test warning', severity: 'info' as const }] });
-      const updated = getStore().nodes.find(n => n.id === 'val-r1');
+      getStore().updateNodeData('val-r1', {
+        _validationWarnings: [{ code: 'test', message: 'Test warning', severity: 'info' as const }],
+      });
+      const updated = getStore().nodes.find((n) => n.id === 'val-r1');
       expect(updated?.data._validationWarnings).toHaveLength(1);
       expect(updated?.data._validationWarnings![0].code).toBe('test');
     });
@@ -1789,22 +1966,27 @@ describe('E2E Async Simulation Tests', () => {
     it('node version starts at 1', () => {
       const node = mkNode('ver-s1', 'Version Test', 'action');
       getStore().setNodes([node]);
-      const n = getStore().nodes.find(n => n.id === 'ver-s1');
+      const n = getStore().nodes.find((n) => n.id === 'ver-s1');
       expect(n?.data.version === undefined || n?.data.version >= 1).toBe(true);
     });
 
     it('editing node content increments version', async () => {
       vi.useFakeTimers();
-      const node = mkNode('ver-s2', 'Version Track', 'action', { content: 'Original content', version: 1 });
+      const node = mkNode('ver-s2', 'Version Track', 'action', {
+        content: 'Original content',
+        version: 1,
+      });
       getStore().setNodes([node]);
       await vi.advanceTimersByTimeAsync(100);
 
-      const vBefore = getStore().nodes.find(n => n.id === 'ver-s2')?.data.version || 1;
+      const vBefore = getStore().nodes.find((n) => n.id === 'ver-s2')?.data.version || 1;
 
-      getStore().updateNodeData('ver-s2', { content: 'Completely rewritten content about a totally different subject matter' });
+      getStore().updateNodeData('ver-s2', {
+        content: 'Completely rewritten content about a totally different subject matter',
+      });
       await vi.advanceTimersByTimeAsync(500);
 
-      const vAfter = getStore().nodes.find(n => n.id === 'ver-s2')?.data.version || 1;
+      const vAfter = getStore().nodes.find((n) => n.id === 'ver-s2')?.data.version || 1;
       expect(vAfter).toBeGreaterThanOrEqual(vBefore);
     });
 
@@ -1818,23 +2000,30 @@ describe('E2E Async Simulation Tests', () => {
       getStore().executeNode('ver-s3');
       await vi.advanceTimersByTimeAsync(5000);
 
-      const n = getStore().nodes.find(n => n.id === 'ver-s3');
+      const n = getStore().nodes.find((n) => n.id === 'ver-s3');
       expect(n?.data.status === 'active' || n?.data.executionResult !== undefined).toBe(true);
     });
 
     it('version history grows with each significant edit', async () => {
       vi.useFakeTimers();
-      const node = mkNode('ver-s4', 'History Track', 'action', { content: 'Initial content', version: 1 });
+      const node = mkNode('ver-s4', 'History Track', 'action', {
+        content: 'Initial content',
+        version: 1,
+      });
       getStore().setNodes([node]);
       await vi.advanceTimersByTimeAsync(100);
 
-      getStore().updateNodeData('ver-s4', { content: 'Major rewrite about machine learning algorithms' });
+      getStore().updateNodeData('ver-s4', {
+        content: 'Major rewrite about machine learning algorithms',
+      });
       await vi.advanceTimersByTimeAsync(500);
 
-      getStore().updateNodeData('ver-s4', { content: 'Another complete rewrite about quantum computing fundamentals' });
+      getStore().updateNodeData('ver-s4', {
+        content: 'Another complete rewrite about quantum computing fundamentals',
+      });
       await vi.advanceTimersByTimeAsync(500);
 
-      const n = getStore().nodes.find(n => n.id === 'ver-s4');
+      const n = getStore().nodes.find((n) => n.id === 'ver-s4');
       expect(n?.data.version).toBeGreaterThanOrEqual(1);
     });
   });
@@ -1856,17 +2045,18 @@ describe('E2E Async Simulation Tests', () => {
 
       // Edit Input node with a major content change
       getStore().updateNodeData('n-1', {
-        content: 'Completely different requirements about machine learning pipelines and neural networks',
+        content:
+          'Completely different requirements about machine learning pipelines and neural networks',
       });
       await vi.advanceTimersByTimeAsync(500);
 
       // Input itself should be stale (it was edited)
       const s1 = getStore();
-      expect(s1.nodes.find(n => n.id === 'n-1')?.data.status).toBe('stale');
+      expect(s1.nodes.find((n) => n.id === 'n-1')?.data.status).toBe('stale');
       // All downstream should be stale
-      expect(s1.nodes.find(n => n.id === 'n-2')?.data.status).toBe('stale');
-      expect(s1.nodes.find(n => n.id === 'n-3')?.data.status).toBe('stale');
-      expect(s1.nodes.find(n => n.id === 'n-4')?.data.status).toBe('stale');
+      expect(s1.nodes.find((n) => n.id === 'n-2')?.data.status).toBe('stale');
+      expect(s1.nodes.find((n) => n.id === 'n-3')?.data.status).toBe('stale');
+      expect(s1.nodes.find((n) => n.id === 'n-4')?.data.status).toBe('stale');
     });
 
     it('propagateStale re-executes stale nodes and recovers them', async () => {
@@ -1878,8 +2068,8 @@ describe('E2E Async Simulation Tests', () => {
       await vi.advanceTimersByTimeAsync(500);
 
       const before = getStore();
-      expect(before.nodes.find(n => n.id === 'n-2')?.data.status).toBe('stale');
-      expect(before.nodes.find(n => n.id === 'n-4')?.data.status).toBe('stale');
+      expect(before.nodes.find((n) => n.id === 'n-2')?.data.status).toBe('stale');
+      expect(before.nodes.find((n) => n.id === 'n-4')?.data.status).toBe('stale');
 
       // Propagate should attempt to re-execute stale nodes
       getStore().propagateStale();
@@ -1887,7 +2077,7 @@ describe('E2E Async Simulation Tests', () => {
 
       const after = getStore();
       // Nodes should either be active (recovered) or generating (in-progress)
-      const n2Status = after.nodes.find(n => n.id === 'n-2')?.data.status;
+      const n2Status = after.nodes.find((n) => n.id === 'n-2')?.data.status;
       // At minimum the store should remain consistent
       assertStoreInvariants();
       // At least one stale node should have been picked up for re-execution
@@ -1912,7 +2102,7 @@ describe('E2E Async Simulation Tests', () => {
 
       // Lock the Review node (n-3)
       getStore().lockNode('n-3');
-      expect(getStore().nodes.find(n => n.id === 'n-3')?.data.locked).toBe(true);
+      expect(getStore().nodes.find((n) => n.id === 'n-3')?.data.locked).toBe(true);
 
       // Edit Input → causes downstream stale
       getStore().updateNodeData('n-1', {
@@ -1922,14 +2112,14 @@ describe('E2E Async Simulation Tests', () => {
 
       const s = getStore();
       // n-1 is stale (edited)
-      expect(s.nodes.find(n => n.id === 'n-1')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'n-1')?.data.status).toBe('stale');
       // n-2 is stale (downstream)
-      expect(s.nodes.find(n => n.id === 'n-2')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'n-2')?.data.status).toBe('stale');
       // n-3 is locked — should NOT become stale
-      expect(s.nodes.find(n => n.id === 'n-3')?.data.status).toBe('locked');
-      expect(s.nodes.find(n => n.id === 'n-3')?.data.locked).toBe(true);
+      expect(s.nodes.find((n) => n.id === 'n-3')?.data.status).toBe('locked');
+      expect(s.nodes.find((n) => n.id === 'n-3')?.data.locked).toBe(true);
       // n-4 IS stale — staleness traverses through locked nodes
-      expect(s.nodes.find(n => n.id === 'n-4')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'n-4')?.data.status).toBe('stale');
 
       assertStoreInvariants();
     });
@@ -1937,18 +2127,20 @@ describe('E2E Async Simulation Tests', () => {
     it('unlocking a node (approve) after cascade makes it active', async () => {
       vi.useFakeTimers();
       const n1 = mkNode('lock-1', 'Source', 'input', { content: 'Source data for processing' });
-      const n2 = mkNode('lock-2', 'Processor', 'action', { content: 'Process the data thoroughly' });
+      const n2 = mkNode('lock-2', 'Processor', 'action', {
+        content: 'Process the data thoroughly',
+      });
       getStore().setNodes([n1, n2]);
       getStore().setEdges([mkEdge('lock-e1', 'lock-1', 'lock-2')]);
       await vi.advanceTimersByTimeAsync(100);
 
       // Lock then unlock
       getStore().lockNode('lock-2');
-      expect(getStore().nodes.find(n => n.id === 'lock-2')?.data.status).toBe('locked');
+      expect(getStore().nodes.find((n) => n.id === 'lock-2')?.data.status).toBe('locked');
 
       getStore().approveNode('lock-2');
       // approveNode sets status to active (the node is now approved/reviewed)
-      expect(getStore().nodes.find(n => n.id === 'lock-2')?.data.status).toBe('active');
+      expect(getStore().nodes.find((n) => n.id === 'lock-2')?.data.status).toBe('active');
 
       assertStoreInvariants();
     });
@@ -1958,7 +2150,9 @@ describe('E2E Async Simulation Tests', () => {
   describe('Scenario V: Error recovery with retry', () => {
     it('node fails execution, then succeeds on retry', async () => {
       vi.useFakeTimers();
-      const node = mkNode('retry-1', 'Flaky Node', 'action', { content: 'Content that needs processing' });
+      const node = mkNode('retry-1', 'Flaky Node', 'action', {
+        content: 'Content that needs processing',
+      });
       getStore().setNodes([node]);
       getStore().setEdges([]);
       await vi.advanceTimersByTimeAsync(100);
@@ -1968,7 +2162,7 @@ describe('E2E Async Simulation Tests', () => {
       getStore().executeNode('retry-1');
       await vi.advanceTimersByTimeAsync(5000);
 
-      const afterFail = getStore().nodes.find(n => n.id === 'retry-1');
+      const afterFail = getStore().nodes.find((n) => n.id === 'retry-1');
       // Node should be back to active or stale after failed execution (no 'error' status in type)
       expect(afterFail?.data.status === 'stale' || afterFail?.data.status === 'active').toBe(true);
 
@@ -1977,7 +2171,7 @@ describe('E2E Async Simulation Tests', () => {
       getStore().executeNode('retry-1');
       await vi.advanceTimersByTimeAsync(5000);
 
-      const afterRetry = getStore().nodes.find(n => n.id === 'retry-1');
+      const afterRetry = getStore().nodes.find((n) => n.id === 'retry-1');
       expect(afterRetry?.data.status).toBe('active');
       expect(afterRetry?.data.executionResult).toBeTruthy();
       assertStoreInvariants();
@@ -1993,19 +2187,23 @@ describe('E2E Async Simulation Tests', () => {
       await vi.advanceTimersByTimeAsync(5000);
 
       const s = getStore();
-      const processNode = s.nodes.find(n => n.id === 'n-2');
+      const processNode = s.nodes.find((n) => n.id === 'n-2');
       // Process should be active or stale after failed execution
-      expect(processNode?.data.status === 'stale' || processNode?.data.status === 'active').toBe(true);
+      expect(processNode?.data.status === 'stale' || processNode?.data.status === 'active').toBe(
+        true,
+      );
       // Downstream nodes should NOT be affected (still active, not stale)
-      expect(s.nodes.find(n => n.id === 'n-3')?.data.status).toBe('active');
-      expect(s.nodes.find(n => n.id === 'n-4')?.data.status).toBe('active');
+      expect(s.nodes.find((n) => n.id === 'n-3')?.data.status).toBe('active');
+      expect(s.nodes.find((n) => n.id === 'n-4')?.data.status).toBe('active');
 
       assertStoreInvariants();
     });
 
     it('re-executing failed node in chain recovers it', async () => {
       vi.useFakeTimers();
-      const node = mkNode('recover-1', 'Recoverable', 'action', { content: 'Important analysis task' });
+      const node = mkNode('recover-1', 'Recoverable', 'action', {
+        content: 'Important analysis task',
+      });
       getStore().setNodes([node]);
       getStore().setEdges([]);
       await vi.advanceTimersByTimeAsync(100);
@@ -2020,7 +2218,7 @@ describe('E2E Async Simulation Tests', () => {
       getStore().executeNode('recover-1');
       await vi.advanceTimersByTimeAsync(5000);
 
-      const n = getStore().nodes.find(n => n.id === 'recover-1');
+      const n = getStore().nodes.find((n) => n.id === 'recover-1');
       expect(n?.data.status).toBe('active');
       assertStoreInvariants();
     });
@@ -2058,13 +2256,13 @@ describe('E2E Async Simulation Tests', () => {
 
       const s = getStore();
       // Note itself should be stale
-      expect(s.nodes.find(n => n.id === 'note-1')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'note-1')?.data.status).toBe('stale');
       // Rubric mentions "Grading Policy" → stale
-      expect(s.nodes.find(n => n.id === 'rubric-1')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'rubric-1')?.data.status).toBe('stale');
       // Syllabus mentions "Grading Policy" → stale
-      expect(s.nodes.find(n => n.id === 'syl-1')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'syl-1')?.data.status).toBe('stale');
       // FAQ does NOT mention "Grading Policy" → still active
-      expect(s.nodes.find(n => n.id === 'unrel-1')?.data.status).toBe('active');
+      expect(s.nodes.find((n) => n.id === 'unrel-1')?.data.status).toBe('active');
 
       assertStoreInvariants();
     });
@@ -2091,7 +2289,7 @@ describe('E2E Async Simulation Tests', () => {
 
       const s = getStore();
       // Paper should be stale (via edge, not implicit)
-      expect(s.nodes.find(n => n.id === 'paper-1')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'paper-1')?.data.status).toBe('stale');
       assertStoreInvariants();
     });
 
@@ -2119,7 +2317,7 @@ describe('E2E Async Simulation Tests', () => {
 
       const s = getStore();
       // Locked node should NOT become stale even though it references the note
-      expect(s.nodes.find(n => n.id === 'locked-1')?.data.status).toBe('locked');
+      expect(s.nodes.find((n) => n.id === 'locked-1')?.data.status).toBe('locked');
       assertStoreInvariants();
     });
 
@@ -2138,13 +2336,13 @@ describe('E2E Async Simulation Tests', () => {
 
       // Cosmetic edit (typo fix)
       getStore().updateNodeData('note-4', {
-        content: 'All assignments due by 11:59 PM on the posted date.',  // same content
+        content: 'All assignments due by 11:59 PM on the posted date.', // same content
       });
       await vi.advanceTimersByTimeAsync(500);
 
       const s = getStore();
       // Task should remain active — no change propagated
-      expect(s.nodes.find(n => n.id === 'task-1')?.data.status).toBe('active');
+      expect(s.nodes.find((n) => n.id === 'task-1')?.data.status).toBe('active');
       assertStoreInvariants();
     });
   });
@@ -2154,10 +2352,18 @@ describe('E2E Async Simulation Tests', () => {
     it('executeWorkflow processes nodes in topological order', async () => {
       vi.useFakeTimers();
       // Build: input → action → review → output (linear chain)
-      const n1 = mkNode('mix-1', 'Syllabus Upload', 'input', { content: 'Upload the course syllabus document' });
-      const n2 = mkNode('mix-2', 'Lesson Generator', 'action', { content: 'Generate lesson plans from the syllabus' });
-      const n3 = mkNode('mix-3', 'Quality Check', 'review', { content: 'Review generated lessons for completeness' });
-      const n4 = mkNode('mix-4', 'Final Export', 'output', { content: 'Export approved lessons as PDF' });
+      const n1 = mkNode('mix-1', 'Syllabus Upload', 'input', {
+        content: 'Upload the course syllabus document',
+      });
+      const n2 = mkNode('mix-2', 'Lesson Generator', 'action', {
+        content: 'Generate lesson plans from the syllabus',
+      });
+      const n3 = mkNode('mix-3', 'Quality Check', 'review', {
+        content: 'Review generated lessons for completeness',
+      });
+      const n4 = mkNode('mix-4', 'Final Export', 'output', {
+        content: 'Export approved lessons as PDF',
+      });
       getStore().setNodes([n1, n2, n3, n4]);
       getStore().setEdges([
         mkEdge('mix-e1', 'mix-1', 'mix-2', 'feeds'),
@@ -2173,8 +2379,10 @@ describe('E2E Async Simulation Tests', () => {
       const s = getStore();
       // All nodes should have been processed (active or have execution results)
       for (const id of ['mix-1', 'mix-2', 'mix-3', 'mix-4']) {
-        const node = s.nodes.find(n => n.id === id);
-        expect(node?.data.status === 'active' || node?.data.executionResult !== undefined).toBe(true);
+        const node = s.nodes.find((n) => n.id === id);
+        expect(node?.data.status === 'active' || node?.data.executionResult !== undefined).toBe(
+          true,
+        );
       }
       assertStoreInvariants();
     });
@@ -2182,7 +2390,9 @@ describe('E2E Async Simulation Tests', () => {
     it('executeWorkflow processes all nodes including previously locked ones', async () => {
       vi.useFakeTimers();
       const n1 = mkNode('mixl-1', 'Source', 'input', { content: 'Source data for the pipeline' });
-      const n2 = mkNode('mixl-2', 'Processor', 'action', { content: 'Process and analyze the data' });
+      const n2 = mkNode('mixl-2', 'Processor', 'action', {
+        content: 'Process and analyze the data',
+      });
       const n3 = mkNode('mixl-3', 'Reporter', 'output', { content: 'Generate the final report' });
       getStore().setNodes([n1, n2, n3]);
       getStore().setEdges([
@@ -2197,8 +2407,10 @@ describe('E2E Async Simulation Tests', () => {
       const s = getStore();
       // All nodes should have been processed
       for (const id of ['mixl-1', 'mixl-2', 'mixl-3']) {
-        const node = s.nodes.find(n => n.id === id);
-        expect(node?.data.status === 'active' || node?.data.executionResult !== undefined).toBe(true);
+        const node = s.nodes.find((n) => n.id === id);
+        expect(node?.data.status === 'active' || node?.data.executionResult !== undefined).toBe(
+          true,
+        );
       }
       assertStoreInvariants();
     });
@@ -2220,16 +2432,17 @@ describe('E2E Async Simulation Tests', () => {
       getStore().executeNode('vcyc-1');
       await vi.advanceTimersByTimeAsync(5000);
 
-      const afterExec1 = getStore().nodes.find(n => n.id === 'vcyc-1');
+      const afterExec1 = getStore().nodes.find((n) => n.id === 'vcyc-1');
       expect(afterExec1?.data.status).toBe('active');
 
       // Semantic edit — completely different content
       getStore().updateNodeData('vcyc-1', {
-        content: 'Week 1: Introduction to machine learning and neural networks with practical exercises',
+        content:
+          'Week 1: Introduction to machine learning and neural networks with practical exercises',
       });
       await vi.advanceTimersByTimeAsync(500);
 
-      const afterEdit = getStore().nodes.find(n => n.id === 'vcyc-1');
+      const afterEdit = getStore().nodes.find((n) => n.id === 'vcyc-1');
       // Version should have incremented from the semantic edit
       expect(afterEdit?.data.version).toBeGreaterThanOrEqual(2);
       // Should be stale after semantic edit
@@ -2239,7 +2452,7 @@ describe('E2E Async Simulation Tests', () => {
       getStore().executeNode('vcyc-1');
       await vi.advanceTimersByTimeAsync(5000);
 
-      const afterExec2 = getStore().nodes.find(n => n.id === 'vcyc-1');
+      const afterExec2 = getStore().nodes.find((n) => n.id === 'vcyc-1');
       // After execution, node may be active (if execution succeeded) or still stale
       // The key assertion: version was incremented by the semantic edit
       expect(afterExec2?.data.version).toBeGreaterThanOrEqual(2);
@@ -2265,7 +2478,7 @@ describe('E2E Async Simulation Tests', () => {
       });
       await vi.advanceTimersByTimeAsync(500);
 
-      const after = getStore().nodes.find(n => n.id === 'vcyc-2');
+      const after = getStore().nodes.find((n) => n.id === 'vcyc-2');
       // Version should NOT have incremented
       expect(after?.data.version).toBe(1);
       // Should still be active (cosmetic = no propagation)
@@ -2302,19 +2515,20 @@ describe('E2E Async Simulation Tests', () => {
 
       // Semantically edit the note
       getStore().updateNodeData('nz-note', {
-        content: 'Grades now based on project portfolio (60%) and peer review (40%). Complete restructure.',
+        content:
+          'Grades now based on project portfolio (60%) and peer review (40%). Complete restructure.',
       });
       await vi.advanceTimersByTimeAsync(500);
 
       const s = getStore();
       // Note itself stale
-      expect(s.nodes.find(n => n.id === 'nz-note')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'nz-note')?.data.status).toBe('stale');
       // Rubric references "Grading Criteria" → stale via implicit dep
-      expect(s.nodes.find(n => n.id === 'nz-rubric')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'nz-rubric')?.data.status).toBe('stale');
       // FAQ is downstream of Rubric via edge → stale via BFS cascade from Rubric going stale
-      expect(s.nodes.find(n => n.id === 'nz-faq')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'nz-faq')?.data.status).toBe('stale');
       // Lab Manual doesn't reference note → still active
-      expect(s.nodes.find(n => n.id === 'nz-other')?.data.status).toBe('active');
+      expect(s.nodes.find((n) => n.id === 'nz-other')?.data.status).toBe('active');
 
       assertStoreInvariants();
     });
@@ -2342,7 +2556,7 @@ describe('E2E Async Simulation Tests', () => {
       });
       await vi.advanceTimersByTimeAsync(500);
 
-      const afterEdit = getStore().nodes.find(n => n.id === 'rb-1');
+      const afterEdit = getStore().nodes.find((n) => n.id === 'rb-1');
       expect(afterEdit?.data.version).toBeGreaterThanOrEqual(2);
       expect((afterEdit?.data._versionHistory || []).length).toBeGreaterThanOrEqual(1);
 
@@ -2356,13 +2570,15 @@ describe('E2E Async Simulation Tests', () => {
 
       const s = getStore();
       // Node itself should be stale (rollback triggers staleness)
-      expect(s.nodes.find(n => n.id === 'rb-1')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'rb-1')?.data.status).toBe('stale');
       // Downstream should also be stale
-      expect(s.nodes.find(n => n.id === 'rb-2')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'rb-2')?.data.status).toBe('stale');
       // Content should be restored to v1
-      expect(s.nodes.find(n => n.id === 'rb-1')?.data.content).toBe('Week 1: Introduction to algorithms');
+      expect(s.nodes.find((n) => n.id === 'rb-1')?.data.content).toBe(
+        'Week 1: Introduction to algorithms',
+      );
       // Version should have incremented (rollback creates a new version entry)
-      expect(s.nodes.find(n => n.id === 'rb-1')?.data.version).toBeGreaterThanOrEqual(3);
+      expect(s.nodes.find((n) => n.id === 'rb-1')?.data.version).toBeGreaterThanOrEqual(3);
 
       assertStoreInvariants();
     });
@@ -2382,8 +2598,10 @@ describe('E2E Async Simulation Tests', () => {
       await vi.advanceTimersByTimeAsync(500);
 
       // Content should be unchanged
-      expect(getStore().nodes.find(n => n.id === 'rb-3')?.data.content).toBe('Original content here');
-      expect(getStore().nodes.find(n => n.id === 'rb-3')?.data.version).toBe(1);
+      expect(getStore().nodes.find((n) => n.id === 'rb-3')?.data.content).toBe(
+        'Original content here',
+      );
+      expect(getStore().nodes.find((n) => n.id === 'rb-3')?.data.version).toBe(1);
 
       assertStoreInvariants();
     });
@@ -2395,11 +2613,25 @@ describe('E2E Async Simulation Tests', () => {
       vi.useFakeTimers();
       // Root → BranchA → LeafA
       // Root → BranchB → LeafB
-      const root = mkNode('iso-root', 'Root Input', 'input', { content: 'Source requirements document' });
-      const brA = mkNode('iso-a', 'Branch A', 'action', { content: 'Process path A analysis', status: 'active' as const });
-      const brB = mkNode('iso-b', 'Branch B', 'action', { content: 'Process path B analysis', status: 'active' as const });
-      const leafA = mkNode('iso-la', 'Leaf A', 'output', { content: 'Output from branch A', status: 'active' as const });
-      const leafB = mkNode('iso-lb', 'Leaf B', 'output', { content: 'Output from branch B', status: 'active' as const });
+      const root = mkNode('iso-root', 'Root Input', 'input', {
+        content: 'Source requirements document',
+      });
+      const brA = mkNode('iso-a', 'Branch A', 'action', {
+        content: 'Process path A analysis',
+        status: 'active' as const,
+      });
+      const brB = mkNode('iso-b', 'Branch B', 'action', {
+        content: 'Process path B analysis',
+        status: 'active' as const,
+      });
+      const leafA = mkNode('iso-la', 'Leaf A', 'output', {
+        content: 'Output from branch A',
+        status: 'active' as const,
+      });
+      const leafB = mkNode('iso-lb', 'Leaf B', 'output', {
+        content: 'Output from branch B',
+        status: 'active' as const,
+      });
       getStore().setNodes([root, brA, brB, leafA, leafB]);
       getStore().setEdges([
         mkEdge('iso-e1', 'iso-root', 'iso-a'),
@@ -2411,19 +2643,20 @@ describe('E2E Async Simulation Tests', () => {
 
       // Edit Branch A with semantic change
       getStore().updateNodeData('iso-a', {
-        content: 'Completely rewritten: new statistical analysis methodology using Bayesian inference',
+        content:
+          'Completely rewritten: new statistical analysis methodology using Bayesian inference',
       });
       await vi.advanceTimersByTimeAsync(500);
 
       const s = getStore();
       // Branch A and its leaf should be stale
-      expect(s.nodes.find(n => n.id === 'iso-a')?.data.status).toBe('stale');
-      expect(s.nodes.find(n => n.id === 'iso-la')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'iso-a')?.data.status).toBe('stale');
+      expect(s.nodes.find((n) => n.id === 'iso-la')?.data.status).toBe('stale');
       // Branch B and its leaf should be UNAFFECTED
-      expect(s.nodes.find(n => n.id === 'iso-b')?.data.status).toBe('active');
-      expect(s.nodes.find(n => n.id === 'iso-lb')?.data.status).toBe('active');
+      expect(s.nodes.find((n) => n.id === 'iso-b')?.data.status).toBe('active');
+      expect(s.nodes.find((n) => n.id === 'iso-lb')?.data.status).toBe('active');
       // Root should be unaffected (upstream of edit)
-      expect(s.nodes.find(n => n.id === 'iso-root')?.data.status).toBe('active');
+      expect(s.nodes.find((n) => n.id === 'iso-root')?.data.status).toBe('active');
 
       assertStoreInvariants();
     });
@@ -2453,7 +2686,7 @@ describe('E2E Async Simulation Tests', () => {
       // Delete the node
       getStore().deleteNode('del-1');
       await vi.advanceTimersByTimeAsync(100);
-      expect(getStore().nodes.find(n => n.id === 'del-1')).toBeUndefined();
+      expect(getStore().nodes.find((n) => n.id === 'del-1')).toBeUndefined();
 
       // Update should not crash
       getStore().updateNodeData('del-1', { content: 'Ghost update' });
@@ -2504,7 +2737,7 @@ describe('E2E Async Simulation Tests', () => {
 
       const result = getStore().renameByName('rename Old Name to New Name');
       expect(result.success).toBe(true);
-      expect(getStore().nodes.find(n => n.id === 'nb-3')?.data.label).toBe('New Name');
+      expect(getStore().nodes.find((n) => n.id === 'nb-3')?.data.label).toBe('New Name');
       assertStoreInvariants();
     });
 
@@ -2559,7 +2792,7 @@ describe('E2E Async Simulation Tests', () => {
       await vi.advanceTimersByTimeAsync(500);
 
       // Verify cascade happened
-      expect(getStore().nodes.find(n => n.id === 'n-2')?.data.status).toBe('stale');
+      expect(getStore().nodes.find((n) => n.id === 'n-2')?.data.status).toBe('stale');
 
       // Undo
       getStore().undo();
@@ -2567,10 +2800,12 @@ describe('E2E Async Simulation Tests', () => {
 
       const s = getStore();
       // All nodes should be back to active (pre-edit state)
-      expect(s.nodes.find(n => n.id === 'n-1')?.data.content).toBe('User requirements document with detailed specifications');
+      expect(s.nodes.find((n) => n.id === 'n-1')?.data.content).toBe(
+        'User requirements document with detailed specifications',
+      );
       // Downstream should no longer be stale
       for (const id of ['n-2', 'n-3', 'n-4']) {
-        expect(s.nodes.find(n => n.id === id)?.data.status).toBe('active');
+        expect(s.nodes.find((n) => n.id === id)?.data.status).toBe('active');
       }
       assertStoreInvariants();
     });
@@ -2581,9 +2816,15 @@ describe('E2E Async Simulation Tests', () => {
     it('execute node → edit content → verify stale cascade → re-execute', async () => {
       vi.useFakeTimers();
       // Simple 3-node chain: Syllabus → Lesson → Quiz
-      const syl = mkNode('prof-1', 'Syllabus', 'input', { content: 'CS101 course overview covering algorithms' });
-      const les = mkNode('prof-2', 'Lesson Plan', 'artifact', { content: 'Lessons derived from syllabus' });
-      const quiz = mkNode('prof-3', 'Quiz Bank', 'artifact', { content: 'Quiz questions from lessons' });
+      const syl = mkNode('prof-1', 'Syllabus', 'input', {
+        content: 'CS101 course overview covering algorithms',
+      });
+      const les = mkNode('prof-2', 'Lesson Plan', 'artifact', {
+        content: 'Lessons derived from syllabus',
+      });
+      const quiz = mkNode('prof-3', 'Quiz Bank', 'artifact', {
+        content: 'Quiz questions from lessons',
+      });
       getStore().setNodes([syl, les, quiz]);
       getStore().setEdges([
         mkEdge('prof-e1', 'prof-1', 'prof-2'),
@@ -2601,20 +2842,21 @@ describe('E2E Async Simulation Tests', () => {
 
       // All should be active after execution
       for (const id of ['prof-1', 'prof-2', 'prof-3']) {
-        expect(getStore().nodes.find(n => n.id === id)?.data.status).toBe('active');
+        expect(getStore().nodes.find((n) => n.id === id)?.data.status).toBe('active');
       }
 
       // Step 2: Professor adds homework to Lesson Plan (semantic edit)
       getStore().updateNodeData('prof-2', {
-        content: 'Lessons derived from syllabus. NEW: Homework assignment on sorting algorithms due Week 3.',
+        content:
+          'Lessons derived from syllabus. NEW: Homework assignment on sorting algorithms due Week 3.',
       });
       await vi.advanceTimersByTimeAsync(500);
 
       // Step 3: Verify cascade — Lesson Plan and Quiz Bank should be stale
-      expect(getStore().nodes.find(n => n.id === 'prof-2')?.data.status).toBe('stale');
-      expect(getStore().nodes.find(n => n.id === 'prof-3')?.data.status).toBe('stale');
+      expect(getStore().nodes.find((n) => n.id === 'prof-2')?.data.status).toBe('stale');
+      expect(getStore().nodes.find((n) => n.id === 'prof-3')?.data.status).toBe('stale');
       // Syllabus (upstream) should be unaffected
-      expect(getStore().nodes.find(n => n.id === 'prof-1')?.data.status).toBe('active');
+      expect(getStore().nodes.find((n) => n.id === 'prof-1')?.data.status).toBe('active');
 
       // Step 4: Re-execute the stale Lesson Plan
       getStore().executeNode('prof-2');
@@ -2624,8 +2866,8 @@ describe('E2E Async Simulation Tests', () => {
       // Note: executeNode updates content via updateNodeData, which may re-trigger
       // staleness classification if generated content differs significantly.
       // We verify execution happened by checking the node was processed.
-      const final = getStore().nodes.find(n => n.id === 'prof-2');
-      const finalVersion = final?.data._versionHistory?.length ?? 0;
+      const final = getStore().nodes.find((n) => n.id === 'prof-2');
+      const _finalVersion = final?.data._versionHistory?.length ?? 0;
       // Execution should have either set active or re-triggered a cascade
       expect(['active', 'stale']).toContain(final?.data.status);
 
@@ -2641,7 +2883,9 @@ describe('E2E Async Simulation Tests', () => {
       const root = mkNode('ag-root', 'Root', 'input', { content: 'Core content for all branches' });
       const branchA = mkNode('ag-a', 'Branch A', 'artifact', { content: 'Derived from Root' });
       const branchB = mkNode('ag-b', 'Branch B', 'artifact', { content: 'Also derived from Root' });
-      const branchC = mkNode('ag-c', 'Branch C', 'artifact', { content: 'Third derivation from Root' });
+      const branchC = mkNode('ag-c', 'Branch C', 'artifact', {
+        content: 'Third derivation from Root',
+      });
       getStore().setNodes([root, branchA, branchB, branchC]);
       getStore().setEdges([
         mkEdge('ag-e1', 'ag-root', 'ag-a'),
@@ -2657,22 +2901,28 @@ describe('E2E Async Simulation Tests', () => {
       await vi.advanceTimersByTimeAsync(500);
 
       // All 3 branches should be stale
-      expect(getStore().nodes.find(n => n.id === 'ag-a')?.data.status).toBe('stale');
-      expect(getStore().nodes.find(n => n.id === 'ag-b')?.data.status).toBe('stale');
-      expect(getStore().nodes.find(n => n.id === 'ag-c')?.data.status).toBe('stale');
+      expect(getStore().nodes.find((n) => n.id === 'ag-a')?.data.status).toBe('stale');
+      expect(getStore().nodes.find((n) => n.id === 'ag-b')?.data.status).toBe('stale');
+      expect(getStore().nodes.find((n) => n.id === 'ag-c')?.data.status).toBe('stale');
       // Root itself should also be stale (it was edited semantically)
-      expect(getStore().nodes.find(n => n.id === 'ag-root')?.data.status).toBe('stale');
+      expect(getStore().nodes.find((n) => n.id === 'ag-root')?.data.status).toBe('stale');
 
       assertStoreInvariants();
     });
 
     it('propagateStale recovers all branches', async () => {
       vi.useFakeTimers();
-      const root = mkNode('ag2-root', 'Root', 'input', { content: 'Base content', status: 'stale' });
+      const root = mkNode('ag2-root', 'Root', 'input', {
+        content: 'Base content',
+        status: 'stale',
+      });
       const a = mkNode('ag2-a', 'A', 'artifact', { content: 'From root', status: 'stale' });
       const b = mkNode('ag2-b', 'B', 'artifact', { content: 'From root', status: 'stale' });
       getStore().setNodes([root, a, b]);
-      getStore().setEdges([mkEdge('ag2-e1', 'ag2-root', 'ag2-a'), mkEdge('ag2-e2', 'ag2-root', 'ag2-b')]);
+      getStore().setEdges([
+        mkEdge('ag2-e1', 'ag2-root', 'ag2-a'),
+        mkEdge('ag2-e2', 'ag2-root', 'ag2-b'),
+      ]);
       await vi.advanceTimersByTimeAsync(100);
 
       // Execute via propagateStale
@@ -2681,8 +2931,8 @@ describe('E2E Async Simulation Tests', () => {
 
       // Both branches should have been processed
       const storeNodes = getStore().nodes;
-      const aNode = storeNodes.find(n => n.id === 'ag2-a');
-      const bNode = storeNodes.find(n => n.id === 'ag2-b');
+      const aNode = storeNodes.find((n) => n.id === 'ag2-a');
+      const bNode = storeNodes.find((n) => n.id === 'ag2-b');
       // propagateStale re-executes stale nodes — status may be active or stale depending on execution result
       expect(aNode).toBeDefined();
       expect(bNode).toBeDefined();
@@ -2708,7 +2958,7 @@ describe('E2E Async Simulation Tests', () => {
       await vi.advanceTimersByTimeAsync(10000);
 
       // Node B should still be stale (wasn't selected)
-      const bNode = getStore().nodes.find(n => n.id === 'ah-2');
+      const bNode = getStore().nodes.find((n) => n.id === 'ah-2');
       expect(bNode?.data.status).toBe('stale');
 
       // At least some fetch calls should have been made for A and C
@@ -2741,7 +2991,7 @@ describe('E2E Async Simulation Tests', () => {
       await vi.advanceTimersByTimeAsync(500);
 
       // Downstream should be stale now
-      expect(getStore().nodes.find(n => n.id === 'ai-2')?.data.status).toBe('stale');
+      expect(getStore().nodes.find((n) => n.id === 'ai-2')?.data.status).toBe('stale');
 
       // Re-execute downstream — upstream changed, so cache hash should differ
       getStore().executeNode('ai-2');
@@ -2810,7 +3060,7 @@ describe('E2E Async Simulation Tests', () => {
 
       // All 4 nodes should have been processed (not still pending/generating)
       for (const id of ['ak-1', 'ak-2', 'ak-3', 'ak-4']) {
-        const node = getStore().nodes.find(n => n.id === id);
+        const node = getStore().nodes.find((n) => n.id === id);
         expect(node).toBeDefined();
         // Node should not be in generating state anymore
         expect(node?.data.status).not.toBe('generating');
@@ -2840,11 +3090,11 @@ describe('E2E Async Simulation Tests', () => {
 
       // Store should be in consistent state — no crashes
       const nodes = getStore().nodes;
-      expect(nodes.find(n => n.id === 'al-1')).toBeDefined();
-      expect(nodes.find(n => n.id === 'al-2')).toBeDefined();
+      expect(nodes.find((n) => n.id === 'al-1')).toBeDefined();
+      expect(nodes.find((n) => n.id === 'al-2')).toBeDefined();
 
       // Node B should be stale (it was edited semantically and is downstream of A)
-      expect(nodes.find(n => n.id === 'al-2')?.data.status).toBe('stale');
+      expect(nodes.find((n) => n.id === 'al-2')?.data.status).toBe('stale');
 
       assertStoreInvariants();
     });
@@ -2872,8 +3122,8 @@ describe('E2E Async Simulation Tests', () => {
 
       // Source should be stale (self-propagation), but Target should remain active
       // because the edge was removed — no dependency path exists
-      expect(getStore().nodes.find(n => n.id === 'am-1')?.data.status).toBe('stale');
-      expect(getStore().nodes.find(n => n.id === 'am-2')?.data.status).toBe('active');
+      expect(getStore().nodes.find((n) => n.id === 'am-1')?.data.status).toBe('stale');
+      expect(getStore().nodes.find((n) => n.id === 'am-2')?.data.status).toBe('active');
 
       assertStoreInvariants();
     });
@@ -2884,7 +3134,11 @@ describe('E2E Async Simulation Tests', () => {
     it('executeWorkflow processes unlocked nodes and handles locked ones', async () => {
       vi.useFakeTimers();
       const n1 = mkNode('an-1', 'Start', 'input', { content: 'Start' });
-      const n2 = mkNode('an-2', 'Middle', 'action', { content: 'Processing', status: 'locked', locked: true });
+      const n2 = mkNode('an-2', 'Middle', 'action', {
+        content: 'Processing',
+        status: 'locked',
+        locked: true,
+      });
       const n3 = mkNode('an-3', 'End', 'output', { content: 'Final' });
       getStore().setNodes([n1, n2, n3]);
       getStore().setEdges([mkEdge('an-e1', 'an-1', 'an-2'), mkEdge('an-e2', 'an-2', 'an-3')]);
@@ -2894,12 +3148,12 @@ describe('E2E Async Simulation Tests', () => {
       await vi.advanceTimersByTimeAsync(15000);
 
       // Start node should have been processed
-      const startNode = getStore().nodes.find(n => n.id === 'an-1');
+      const startNode = getStore().nodes.find((n) => n.id === 'an-1');
       expect(startNode?.data.status).not.toBe('generating');
 
       // Middle node was locked — execution may or may not skip it,
       // but it should still exist and the workflow shouldn't crash
-      const middleNode = getStore().nodes.find(n => n.id === 'an-2');
+      const middleNode = getStore().nodes.find((n) => n.id === 'an-2');
       expect(middleNode).toBeDefined();
 
       assertStoreInvariants();
@@ -2921,7 +3175,7 @@ describe('E2E Async Simulation Tests', () => {
       getStore().executeNode('ao-1');
       await vi.advanceTimersByTimeAsync(5000);
 
-      const p1StatusAfterExec = getStore().nodes.find(n => n.id === 'ao-1')?.data.status;
+      const _p1StatusAfterExec = getStore().nodes.find((n) => n.id === 'ao-1')?.data.status;
 
       // Create new project (switches to it automatically)
       getStore().newProject();
@@ -2932,7 +3186,7 @@ describe('E2E Async Simulation Tests', () => {
       await vi.advanceTimersByTimeAsync(100);
 
       // Project 2 node should be untouched (active, no execution result)
-      const p2Node = getStore().nodes.find(n => n.id === 'ao-2');
+      const p2Node = getStore().nodes.find((n) => n.id === 'ao-2');
       expect(p2Node?.data.status).toBe('active');
 
       // Switch back to project 1

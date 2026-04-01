@@ -76,15 +76,18 @@ export const BUILT_IN_TOOLS: AgentTool[] = [
   },
   {
     name: 'http_request',
-    description: 'Make an HTTP request to fetch data from a URL. Args: { "url": "https://...", "method": "GET" }',
+    description:
+      'Make an HTTP request to fetch data from a URL. Args: { "url": "https://...", "method": "GET" }',
   },
   {
     name: 'extract_json',
-    description: 'Extract structured JSON data from text. Args: { "text": "...", "schema": "description of fields to extract" }',
+    description:
+      'Extract structured JSON data from text. Args: { "text": "...", "schema": "description of fields to extract" }',
   },
   {
     name: 'store_context',
-    description: 'Store a value in the shared workflow context for other nodes to read. Args: { "key": "name", "value": "data" }',
+    description:
+      'Store a value in the shared workflow context for other nodes to read. Args: { "key": "name", "value": "data" }',
   },
   {
     name: 'read_context',
@@ -269,16 +272,44 @@ export function buildToolPrompt(tools: AgentTool[], agentName?: string): string 
   if (tools.length === 0) return '';
 
   const orderedTools = agentName ? getPreferredTools(agentName, tools) : tools;
-  const toolDescs = orderedTools.map(t => `- **${t.name}**: ${t.description}`).join('\n');
+  const toolDescs = orderedTools
+    .map((t) => `- **${t.name}**: ${t.description}`)
+    .join('\n');
 
-  const styleHint = agentName && AGENT_TOOL_STYLE[agentName.toLowerCase()]
-    ? `\n\n**Your tool usage style**: ${AGENT_TOOL_STYLE[agentName.toLowerCase()]}`
-    : '';
+  const styleHint =
+    agentName && AGENT_TOOL_STYLE[agentName.toLowerCase()]
+      ? `\n\n**Your tool usage style**: ${AGENT_TOOL_STYLE[agentName.toLowerCase()]}`
+      : '';
 
   const agentKey = agentName?.toLowerCase();
   const exampleBlock = (agentKey && AGENT_TOOL_EXAMPLES[agentKey]) || DEFAULT_TOOL_EXAMPLES;
 
   return `\n\n## Available Tools\nYou can call tools by including a JSON block in your response:\n\`\`\`tool_call\n{"tool": "tool_name", "args": {"key": "value"}}\n\`\`\`\n\nAvailable tools:\n${toolDescs}${styleHint}${exampleBlock}\n\nYou may call multiple tools. After each tool call block, continue your response. Tool results will be provided in a follow-up message if the node supports looping.\n\nIMPORTANT: Only use tools when genuinely needed. Most tasks can be completed with your own knowledge.`;
+}
+
+// ── SSRF Protection ─────────────────────────────────────────────────────────
+
+const BLOCKED_IP_PATTERNS = [
+  /^127\./,
+  /^10\./,
+  /^172\.(1[6-9]|2\d|3[01])\./,
+  /^192\.168\./,
+  /^0\./,
+  /^169\.254\./,
+  /^::1$/,
+  /^fc00:/i,
+  /^fe80:/i,
+];
+
+/** Check if a URL targets an internal/private network address */
+export function isBlockedUrl(urlString: string): boolean {
+  try {
+    const { hostname } = new URL(urlString);
+    if (hostname === 'localhost' || hostname === '[::1]') return true;
+    return BLOCKED_IP_PATTERNS.some((p) => p.test(hostname));
+  } catch {
+    return true; // Malformed URLs are blocked
+  }
 }
 
 // ── Tool Call Parsing ────────────────────────────────────────────────────────
@@ -480,12 +511,22 @@ async function _executeToolImpl(
     switch (call.name) {
       case 'web_search': {
         const query = String(call.args.query || '');
-        if (!query) return { tool: call.name, args: call.args, result: 'Error: missing query argument', success: false, durationMs: Date.now() - start };
+        if (!query)
+          return {
+            tool: call.name,
+            args: call.args,
+            result: 'Error: missing query argument',
+            success: false,
+            durationMs: Date.now() - start,
+          };
         // Use a simple search proxy — in production this would be a proper search API
         try {
-          const res = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`, {
-            signal: AbortSignal.timeout(10000),
-          });
+          const res = await fetch(
+            `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`,
+            {
+              signal: AbortSignal.timeout(10000),
+            },
+          );
           const data = await res.json();
           const results: string[] = [];
           // Answer field — short direct answers (e.g. "What is 2+2?")
@@ -512,32 +553,72 @@ async function _executeToolImpl(
               }
             }
           }
-          const output = results.length > 0
-            ? results.join('\n')
-            : `No instant-answer results for "${query}". The DuckDuckGo instant-answer API works best for well-known entities and facts. Consider rephrasing or using http_request for a specific data source.`;
-          return { tool: call.name, args: call.args, result: output, success: true, durationMs: Date.now() - start };
+          const output =
+            results.length > 0
+              ? results.join('\n')
+              : `No instant-answer results for "${query}". The DuckDuckGo instant-answer API works best for well-known entities and facts. Consider rephrasing or using http_request for a specific data source.`;
+          return {
+            tool: call.name,
+            args: call.args,
+            result: output,
+            success: true,
+            durationMs: Date.now() - start,
+          };
         } catch {
-          return { tool: call.name, args: call.args, result: `Search failed for "${query}". Network error.`, success: false, durationMs: Date.now() - start };
+          return {
+            tool: call.name,
+            args: call.args,
+            result: `Search failed for "${query}". Network error.`,
+            success: false,
+            durationMs: Date.now() - start,
+          };
         }
       }
 
       case 'http_request': {
         const url = String(call.args.url || '');
         const method = String(call.args.method || 'GET').toUpperCase();
-        if (!url) return { tool: call.name, args: call.args, result: 'Error: missing url argument', success: false, durationMs: Date.now() - start };
+        if (!url)
+          return {
+            tool: call.name,
+            args: call.args,
+            result: 'Error: missing url argument',
+            success: false,
+            durationMs: Date.now() - start,
+          };
+        if (isBlockedUrl(url))
+          return {
+            tool: call.name,
+            args: call.args,
+            result: 'Error: blocked — cannot access internal/private network addresses',
+            success: false,
+            durationMs: Date.now() - start,
+          };
         try {
           const res = await fetch(url, {
             method,
-            headers: call.args.headers as Record<string, string> || {},
+            headers: (call.args.headers as Record<string, string>) || {},
             body: method !== 'GET' && call.args.body ? JSON.stringify(call.args.body) : undefined,
             signal: AbortSignal.timeout(15000),
           });
           const text = await res.text();
           // Truncate large responses
           const truncated = text.length > 3000 ? text.slice(0, 3000) + '\n... (truncated)' : text;
-          return { tool: call.name, args: call.args, result: `HTTP ${res.status}\n${truncated}`, success: res.ok, durationMs: Date.now() - start };
+          return {
+            tool: call.name,
+            args: call.args,
+            result: `HTTP ${res.status}\n${truncated}`,
+            success: res.ok,
+            durationMs: Date.now() - start,
+          };
         } catch (err) {
-          return { tool: call.name, args: call.args, result: `HTTP request failed: ${err instanceof Error ? err.message : 'unknown error'}`, success: false, durationMs: Date.now() - start };
+          return {
+            tool: call.name,
+            args: call.args,
+            result: `HTTP request failed: ${err instanceof Error ? err.message : 'unknown error'}`,
+            success: false,
+            durationMs: Date.now() - start,
+          };
         }
       }
 
@@ -547,31 +628,71 @@ async function _executeToolImpl(
         // This tool is a no-op in terms of execution — the LLM will do the extraction
         // in its next iteration using the schema instruction
         return {
-          tool: call.name, args: call.args,
+          tool: call.name,
+          args: call.args,
           result: `Extraction task queued. Schema: ${schema}. Text length: ${text.length} chars. The LLM will perform extraction in the next iteration.`,
-          success: true, durationMs: Date.now() - start,
+          success: true,
+          durationMs: Date.now() - start,
         };
       }
 
       case 'store_context': {
         const key = String(call.args.key || '');
         const value = call.args.value;
-        if (!key) return { tool: call.name, args: call.args, result: 'Error: missing key argument', success: false, durationMs: Date.now() - start };
+        if (!key)
+          return {
+            tool: call.name,
+            args: call.args,
+            result: 'Error: missing key argument',
+            success: false,
+            durationMs: Date.now() - start,
+          };
         if (sharedContext) {
           sharedContext[key] = value;
-          return { tool: call.name, args: call.args, result: `Stored "${key}" in workflow context.`, success: true, durationMs: Date.now() - start };
+          return {
+            tool: call.name,
+            args: call.args,
+            result: `Stored "${key}" in workflow context.`,
+            success: true,
+            durationMs: Date.now() - start,
+          };
         }
-        return { tool: call.name, args: call.args, result: 'Warning: no workflow context available. Value not persisted.', success: false, durationMs: Date.now() - start };
+        return {
+          tool: call.name,
+          args: call.args,
+          result: 'Warning: no workflow context available. Value not persisted.',
+          success: false,
+          durationMs: Date.now() - start,
+        };
       }
 
       case 'read_context': {
         const key = String(call.args.key || '');
-        if (!key) return { tool: call.name, args: call.args, result: 'Error: missing key argument', success: false, durationMs: Date.now() - start };
+        if (!key)
+          return {
+            tool: call.name,
+            args: call.args,
+            result: 'Error: missing key argument',
+            success: false,
+            durationMs: Date.now() - start,
+          };
         if (sharedContext && key in sharedContext) {
           const val = sharedContext[key];
-          return { tool: call.name, args: call.args, result: `Context["${key}"] = ${JSON.stringify(val)}`, success: true, durationMs: Date.now() - start };
+          return {
+            tool: call.name,
+            args: call.args,
+            result: `Context["${key}"] = ${JSON.stringify(val)}`,
+            success: true,
+            durationMs: Date.now() - start,
+          };
         }
-        return { tool: call.name, args: call.args, result: `Key "${key}" not found in workflow context.`, success: true, durationMs: Date.now() - start };
+        return {
+          tool: call.name,
+          args: call.args,
+          result: `Key "${key}" not found in workflow context.`,
+          success: true,
+          durationMs: Date.now() - start,
+        };
       }
 
       case 'validate_json': {
@@ -698,16 +819,28 @@ async function _executeToolImpl(
       }
 
       default:
-        return rec({ tool: call.name, args: call.args, result: `Unknown tool: ${call.name}`, success: false, durationMs: Date.now() - start });
+        return rec({
+          tool: call.name,
+          args: call.args,
+          result: `Unknown tool: ${call.name}`,
+          success: false,
+          durationMs: Date.now() - start,
+        });
     }
   } catch (err) {
-    return rec({ tool: call.name, args: call.args, result: `Tool execution error: ${err instanceof Error ? err.message : 'unknown'}`, success: false, durationMs: Date.now() - start });
+    return rec({
+      tool: call.name,
+      args: call.args,
+      result: `Tool execution error: ${err instanceof Error ? err.message : 'unknown'}`,
+      success: false,
+      durationMs: Date.now() - start,
+    });
   }
 }
 
 /** Format tool results for injection into the next LLM message */
 export function formatToolResults(results: ToolCallResult[]): string {
-  return results.map(r =>
-    `[Tool: ${r.tool}] ${r.success ? '✓' : '✗'} (${r.durationMs}ms)\n${r.result}`
-  ).join('\n\n');
+  return results
+    .map((r) => `[Tool: ${r.tool}] ${r.success ? '✓' : '✗'} (${r.durationMs}ms)\n${r.result}`)
+    .join('\n\n');
 }

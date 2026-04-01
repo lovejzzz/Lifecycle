@@ -6,12 +6,15 @@
 import type { Node, Edge } from '@xyflow/react';
 import type { NodeData } from '@/lib/types';
 import type { UndoOperation } from './types';
+import { createLogger } from '@/lib/logger';
 
-/** Agent activity logger — visible in browser console for debugging */
+const log = createLogger('CID');
+
+/** Agent activity logger — delegates to structured logger */
 export const cidLog = (action: string, detail?: string | Record<string, unknown>) => {
-  const ts = new Date().toISOString().slice(11, 23);
-  const msg = typeof detail === 'string' ? detail : detail ? JSON.stringify(detail) : '';
-  console.log(`%c[CID ${ts}]%c ${action}${msg ? ' — ' + msg : ''}`, 'color: #10b981; font-weight: bold', 'color: inherit');
+  const meta =
+    typeof detail === 'string' ? { detail } : (detail as Record<string, unknown> | undefined);
+  log.info(action, meta);
 };
 
 // ── Undo/Redo pure helpers ──────────────────────────────────────────────────
@@ -34,10 +37,10 @@ export function computeUndoOp(
   beforeEdges: Edge[],
   afterEdges: Edge[],
 ): UndoOperation | null {
-  const bNodeMap = new Map(beforeNodes.map(n => [n.id, stripExecutionData(n)]));
-  const aNodeMap = new Map(afterNodes.map(n => [n.id, stripExecutionData(n)]));
-  const bEdgeMap = new Map(beforeEdges.map(e => [e.id, e]));
-  const aEdgeMap = new Map(afterEdges.map(e => [e.id, e]));
+  const bNodeMap = new Map(beforeNodes.map((n) => [n.id, stripExecutionData(n)]));
+  const aNodeMap = new Map(afterNodes.map((n) => [n.id, stripExecutionData(n)]));
+  const bEdgeMap = new Map(beforeEdges.map((e) => [e.id, e]));
+  const aEdgeMap = new Map(afterEdges.map((e) => [e.id, e]));
 
   const changedBeforeNodes = new Map<string, Node<NodeData>>();
   const changedAfterNodes = new Map<string, Node<NodeData>>();
@@ -53,8 +56,11 @@ export function computeUndoOp(
     if (!aNode) {
       deletedNodeIds.push(id);
       changedBeforeNodes.set(id, bNode);
-    } else if (JSON.stringify(bNode.data) !== JSON.stringify(aNode.data) ||
-               bNode.position.x !== aNode.position.x || bNode.position.y !== aNode.position.y) {
+    } else if (
+      JSON.stringify(bNode.data) !== JSON.stringify(aNode.data) ||
+      bNode.position.x !== aNode.position.x ||
+      bNode.position.y !== aNode.position.y
+    ) {
       changedBeforeNodes.set(id, bNode);
       changedAfterNodes.set(id, aNode);
     }
@@ -82,10 +88,18 @@ export function computeUndoOp(
     }
   }
 
-  const totalChanges = changedBeforeNodes.size + changedAfterNodes.size +
-    changedBeforeEdges.size + changedAfterEdges.size;
-  if (totalChanges === 0 && deletedNodeIds.length === 0 && createdNodeIds.length === 0 &&
-      deletedEdgeIds.length === 0 && createdEdgeIds.length === 0) {
+  const totalChanges =
+    changedBeforeNodes.size +
+    changedAfterNodes.size +
+    changedBeforeEdges.size +
+    changedAfterEdges.size;
+  if (
+    totalChanges === 0 &&
+    deletedNodeIds.length === 0 &&
+    createdNodeIds.length === 0 &&
+    deletedEdgeIds.length === 0 &&
+    createdEdgeIds.length === 0
+  ) {
     return null;
   }
 
@@ -102,13 +116,17 @@ export function computeUndoOp(
 }
 
 /** Apply an undo operation to the current nodes/edges (going backward). */
-export function applyUndo(op: UndoOperation, nodes: Node<NodeData>[], edges: Edge[]): { nodes: Node<NodeData>[]; edges: Edge[] } {
+export function applyUndo(
+  op: UndoOperation,
+  nodes: Node<NodeData>[],
+  edges: Edge[],
+): { nodes: Node<NodeData>[]; edges: Edge[] } {
   let newNodes = [...nodes];
   let newEdges = [...edges];
 
   if (op.createdNodeIds.length > 0) {
     const created = new Set(op.createdNodeIds);
-    newNodes = newNodes.filter(n => !created.has(n.id));
+    newNodes = newNodes.filter((n) => !created.has(n.id));
   }
   for (const id of op.deletedNodeIds) {
     const before = op.beforeNodes.get(id);
@@ -116,13 +134,13 @@ export function applyUndo(op: UndoOperation, nodes: Node<NodeData>[], edges: Edg
   }
   for (const [id, beforeNode] of op.beforeNodes) {
     if (op.deletedNodeIds.includes(id)) continue;
-    const idx = newNodes.findIndex(n => n.id === id);
+    const idx = newNodes.findIndex((n) => n.id === id);
     if (idx >= 0) newNodes[idx] = beforeNode;
   }
 
   if (op.createdEdgeIds.length > 0) {
     const created = new Set(op.createdEdgeIds);
-    newEdges = newEdges.filter(e => !created.has(e.id));
+    newEdges = newEdges.filter((e) => !created.has(e.id));
   }
   for (const id of op.deletedEdgeIds) {
     const before = op.beforeEdges.get(id);
@@ -130,7 +148,7 @@ export function applyUndo(op: UndoOperation, nodes: Node<NodeData>[], edges: Edg
   }
   for (const [id, beforeEdge] of op.beforeEdges) {
     if (op.deletedEdgeIds.includes(id)) continue;
-    const idx = newEdges.findIndex(e => e.id === id);
+    const idx = newEdges.findIndex((e) => e.id === id);
     if (idx >= 0) newEdges[idx] = beforeEdge;
   }
 
@@ -138,13 +156,17 @@ export function applyUndo(op: UndoOperation, nodes: Node<NodeData>[], edges: Edg
 }
 
 /** Apply a redo operation (going forward). */
-export function applyRedo(op: UndoOperation, nodes: Node<NodeData>[], edges: Edge[]): { nodes: Node<NodeData>[]; edges: Edge[] } {
+export function applyRedo(
+  op: UndoOperation,
+  nodes: Node<NodeData>[],
+  edges: Edge[],
+): { nodes: Node<NodeData>[]; edges: Edge[] } {
   let newNodes = [...nodes];
   let newEdges = [...edges];
 
   if (op.deletedNodeIds.length > 0) {
     const deleted = new Set(op.deletedNodeIds);
-    newNodes = newNodes.filter(n => !deleted.has(n.id));
+    newNodes = newNodes.filter((n) => !deleted.has(n.id));
   }
   for (const id of op.createdNodeIds) {
     const after = op.afterNodes.get(id);
@@ -152,13 +174,13 @@ export function applyRedo(op: UndoOperation, nodes: Node<NodeData>[], edges: Edg
   }
   for (const [id, afterNode] of op.afterNodes) {
     if (op.createdNodeIds.includes(id)) continue;
-    const idx = newNodes.findIndex(n => n.id === id);
+    const idx = newNodes.findIndex((n) => n.id === id);
     if (idx >= 0) newNodes[idx] = afterNode;
   }
 
   if (op.deletedEdgeIds.length > 0) {
     const deleted = new Set(op.deletedEdgeIds);
-    newEdges = newEdges.filter(e => !deleted.has(e.id));
+    newEdges = newEdges.filter((e) => !deleted.has(e.id));
   }
   for (const id of op.createdEdgeIds) {
     const after = op.afterEdges.get(id);
@@ -166,7 +188,7 @@ export function applyRedo(op: UndoOperation, nodes: Node<NodeData>[], edges: Edg
   }
   for (const [id, afterEdge] of op.afterEdges) {
     if (op.createdEdgeIds.includes(id)) continue;
-    const idx = newEdges.findIndex(e => e.id === id);
+    const idx = newEdges.findIndex((e) => e.id === id);
     if (idx >= 0) newEdges[idx] = afterEdge;
   }
 

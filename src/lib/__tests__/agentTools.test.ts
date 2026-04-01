@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseToolCalls, repairJson, executeTool, buildToolPrompt, getPreferredTools, safeEval } from '../agentTools';
+import { parseToolCalls, repairJson, executeTool, buildToolPrompt, getPreferredTools, safeEval, isBlockedUrl } from '../agentTools';
 import type { AgentTool } from '../types';
 
 // ── repairJson ───────────────────────────────────────────────────────────────
@@ -599,4 +599,42 @@ describe('parseToolCalls — Format 4 inline JSON', () => {
     const { toolCalls } = parseToolCalls(text);
     expect(toolCalls).toHaveLength(0);
   });
+});
+
+// ── isBlockedUrl — SSRF protection ──────────────────────────────────────────
+
+describe('isBlockedUrl — SSRF protection', () => {
+  const blocked = [
+    'http://127.0.0.1/admin',
+    'http://10.0.0.1/api',
+    'http://172.16.0.1/secret',
+    'http://172.31.255.255/data',
+    'http://192.168.1.1/router',
+    'http://localhost:8080/debug',
+    'http://[::1]/internal',
+    'http://0.0.0.0/zero',
+    'http://169.254.169.254/metadata', // AWS IMDS
+    'not-a-url',
+    '',
+  ];
+
+  const allowed = [
+    'https://google.com',
+    'https://api.deepseek.com/v1/chat',
+    'https://8.8.8.8/dns',
+    'https://example.com:443/path?q=1',
+    'http://172.15.0.1/ok', // 172.15.x is NOT in the private range
+  ];
+
+  for (const url of blocked) {
+    it(`blocks ${url || '(empty)'}`, () => {
+      expect(isBlockedUrl(url)).toBe(true);
+    });
+  }
+
+  for (const url of allowed) {
+    it(`allows ${url}`, () => {
+      expect(isBlockedUrl(url)).toBe(false);
+    });
+  }
 });

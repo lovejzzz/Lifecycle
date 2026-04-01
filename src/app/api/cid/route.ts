@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { RateLimiter } from '@/lib/rateLimiter';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('CID-API');
+const limiter = new RateLimiter({ maxPerMinute: 30, maxConcurrent: 10 });
 
 // CID API route — uses DeepSeek as primary, OpenRouter as fallback.
 // DeepSeek API is OpenAI-compatible.
@@ -9,7 +14,9 @@ import { createClient } from '@supabase/supabase-js';
 // REQUIRE_AUTH=true, every request must include a valid Supabase JWT.
 // This prevents unauthorized LLM usage while keeping local dev frictionless.
 
-async function verifyAuth(req: NextRequest): Promise<{ userId: string | null; error: NextResponse | null }> {
+async function verifyAuth(
+  req: NextRequest,
+): Promise<{ userId: string | null; error: NextResponse | null }> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const requireAuth = process.env.REQUIRE_AUTH === 'true';
@@ -27,7 +34,10 @@ async function verifyAuth(req: NextRequest): Promise<{ userId: string | null; er
     return {
       userId: null,
       error: NextResponse.json(
-        { error: 'unauthorized', message: 'Authentication required. Include Authorization: Bearer <token>' },
+        {
+          error: 'unauthorized',
+          message: 'Authentication required. Include Authorization: Bearer <token>',
+        },
         { status: 401 },
       ),
     };
@@ -38,7 +48,10 @@ async function verifyAuth(req: NextRequest): Promise<{ userId: string | null; er
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  const { data: { user }, error } = await supabase.auth.getUser(token);
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser(token);
 
   if (error || !user) {
     return {
@@ -113,7 +126,12 @@ function validateWorkflowQuality(
   const outgoingSet = new Set<number>();
   for (const e of edges) outgoingSet.add(e.from);
   for (let i = 0; i < nodes.length; i++) {
-    if (!outgoingSet.has(i) && nodes[i].category !== 'output' && nodes[i].category !== 'input' && nodes.length > 1) {
+    if (
+      !outgoingSet.has(i) &&
+      nodes[i].category !== 'output' &&
+      nodes[i].category !== 'input' &&
+      nodes.length > 1
+    ) {
       issues.push({
         code: 'terminal-non-output',
         message: `Terminal node "${nodes[i].label || 'Untitled'}" (index ${i}) has no outgoing edges but category "${nodes[i].category}" instead of "output". Change it to "output".`,
@@ -139,11 +157,12 @@ function validateWorkflowQuality(
   }
 
   // noFeedbackLoop: zero backward edges
-  const hasBackwardEdge = edges.some(e => e.from > e.to);
+  const hasBackwardEdge = edges.some((e) => e.from > e.to);
   if (nodes.length > 3 && !hasBackwardEdge) {
     issues.push({
       code: 'no-feedback-loop',
-      message: 'No feedback loops detected. Add at least one backward edge (e.g., review rejection → rework).',
+      message:
+        'No feedback loops detected. Add at least one backward edge (e.g., review rejection → rework).',
       penalty: -10,
     });
   }
@@ -153,13 +172,35 @@ function validateWorkflowQuality(
 }
 
 export async function POST(req: NextRequest) {
+  // ── Rate limiting ────────────────────────────────────────────────────
+  const clientIp =
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    req.headers.get('x-real-ip') ||
+    'unknown';
+  const rateCheck = limiter.check(clientIp);
+  if (!rateCheck.allowed) {
+    log.warn('rate-limited', { clientIp, reason: rateCheck.reason });
+    return NextResponse.json(
+      { error: 'rate_limited', message: rateCheck.reason },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil(rateCheck.retryAfterMs / 1000)) } },
+    );
+  }
+  limiter.acquire(clientIp);
   try {
     // ── Auth gate ─────────────────────────────────────────────────────────
     const { error: authError } = await verifyAuth(req);
     if (authError) return authError;
 
     const body = await req.json();
-    const { systemPrompt, messages, model: requestedModel, taskType, _retryCount, effortLevel: rawEffort, stream: requestStream } = body as {
+    const {
+      systemPrompt,
+      messages,
+      model: requestedModel,
+      taskType,
+      _retryCount,
+      effortLevel: rawEffort,
+      stream: requestStream,
+    } = body as {
       systemPrompt: string;
       messages: Array<{ role: 'user' | 'assistant'; content: string }>;
       model?: string;
@@ -172,7 +213,10 @@ export async function POST(req: NextRequest) {
 
     if (!systemPrompt || !messages || !Array.isArray(messages) || messages.length === 0) {
       return NextResponse.json(
-        { error: 'invalid_request', message: 'Missing required fields: systemPrompt, messages (non-empty array)' },
+        {
+          error: 'invalid_request',
+          message: 'Missing required fields: systemPrompt, messages (non-empty array)',
+        },
         { status: 400 },
       );
     }
@@ -228,17 +272,28 @@ export async function POST(req: NextRequest) {
     // Temperature varies by task type: creative generation higher, analysis lower
     // deepseek-reasoner (R1) does not support temperature — omit it
     const isReasonerModel = model.includes('reasoner');
-    const temperature = isReasonerModel ? undefined : (
-      taskType === 'generate' ? 0.8 :
-      taskType === 'analyze' || taskType === 'interpret-override' ? 0.4 :
-      taskType === 'sync' ? 0.3 :
-      taskType === 'understand' ? 0.5 :
-      0.7
-    );
+    const temperature = isReasonerModel
+      ? undefined
+      : taskType === 'generate'
+        ? 0.8
+        : taskType === 'analyze' || taskType === 'interpret-override'
+          ? 0.4
+          : taskType === 'sync'
+            ? 0.3
+            : taskType === 'understand'
+              ? 0.5
+              : 0.7;
 
     const msgCount = messages.length;
     const promptLen = systemPrompt.length;
-    console.log(`[CID API] Using ${provider} (${model}) | temp=${temperature} task=${taskType || 'chat'} msgs=${msgCount} prompt=${promptLen}c`);
+    log.info('request', {
+      provider,
+      model,
+      temperature,
+      taskType: taskType || 'chat',
+      msgCount,
+      promptLen,
+    });
 
     // Build provider-specific request
     const buildPayloadAndHeaders = (): { headers: Record<string, string>; body: string } => {
@@ -252,7 +307,10 @@ export async function POST(req: NextRequest) {
         if (temperature !== undefined) anthropicBody.temperature = temperature;
         // Adaptive thinking effort (GA on Claude Opus 4.6)
         if (effortLevel && effortLevel !== 'medium') {
-          anthropicBody.thinking = { type: 'enabled', budget_tokens: { low: 2048, medium: 4096, high: 8192, max: 16384 }[effortLevel] || 4096 };
+          anthropicBody.thinking = {
+            type: 'enabled',
+            budget_tokens: { low: 2048, medium: 4096, high: 8192, max: 16384 }[effortLevel] || 4096,
+          };
         }
         return {
           headers: {
@@ -264,7 +322,7 @@ export async function POST(req: NextRequest) {
         };
       }
       const headers: Record<string, string> = {
-        'Authorization': `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       };
       if (provider === 'openrouter') {
@@ -273,10 +331,13 @@ export async function POST(req: NextRequest) {
       }
       // deepseek-reasoner uses reasoning tokens from the max_tokens budget,
       // so we need a larger budget to avoid truncated JSON responses
-      const effortTokenMap: Record<string, number> = { low: 4096, medium: 8192, high: 16384, max: 32768 };
-      const maxTokens = isReasonerModel
-        ? (effortTokenMap[effortLevel] || 16384)
-        : 4096;
+      const effortTokenMap: Record<string, number> = {
+        low: 4096,
+        medium: 8192,
+        high: 16384,
+        max: 32768,
+      };
+      const maxTokens = isReasonerModel ? effortTokenMap[effortLevel] || 16384 : 4096;
       return {
         headers,
         body: JSON.stringify({
@@ -359,7 +420,11 @@ export async function POST(req: NextRequest) {
               }
             }
           } catch (err) {
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: err instanceof Error ? err.message : 'Stream error' })}\n\n`));
+            controller.enqueue(
+              encoder.encode(
+                `data: ${JSON.stringify({ error: err instanceof Error ? err.message : 'Stream error' })}\n\n`,
+              ),
+            );
           } finally {
             controller.enqueue(encoder.encode('data: [DONE]\n\n'));
             controller.close();
@@ -371,7 +436,7 @@ export async function POST(req: NextRequest) {
         headers: {
           'Content-Type': 'text/event-stream',
           'Cache-Control': 'no-cache',
-          'Connection': 'keep-alive',
+          Connection: 'keep-alive',
         },
       });
     }
@@ -393,13 +458,19 @@ export async function POST(req: NextRequest) {
 
       if (response.status !== 429) break;
       const wait = Math.pow(2, attempt + 1) * 1500;
-      console.log(`Rate limited (429), retrying in ${wait}ms (attempt ${attempt + 1}/4)`);
-      await new Promise(r => setTimeout(r, wait));
+      log.warn('upstream-429', { attempt: attempt + 1, waitMs: wait });
+      await new Promise((r) => setTimeout(r, wait));
     }
 
     if (!response || !response.ok) {
       const errorText = response ? await response.text() : 'No response';
-      console.error(`[CID API] ${provider} error:`, response?.status, errorText, `| model=${model} msgs=${msgCount} prompt=${promptLen}c`);
+      log.error('provider-error', {
+        provider,
+        status: response?.status,
+        model,
+        msgCount,
+        promptLen,
+      });
       return NextResponse.json(
         { error: 'api_error', message: `${response?.status}: ${errorText}` },
         { status: 500 },
@@ -409,19 +480,34 @@ export async function POST(req: NextRequest) {
     const data = await response.json();
 
     // Extract token usage from provider response (OpenAI/DeepSeek vs Anthropic format)
-    const usage = provider === 'anthropic'
-      ? { prompt_tokens: data.usage?.input_tokens ?? 0, completion_tokens: data.usage?.output_tokens ?? 0, total_tokens: (data.usage?.input_tokens ?? 0) + (data.usage?.output_tokens ?? 0) }
-      : { prompt_tokens: data.usage?.prompt_tokens ?? 0, completion_tokens: data.usage?.completion_tokens ?? 0, total_tokens: data.usage?.total_tokens ?? 0 };
+    const usage =
+      provider === 'anthropic'
+        ? {
+            prompt_tokens: data.usage?.input_tokens ?? 0,
+            completion_tokens: data.usage?.output_tokens ?? 0,
+            total_tokens: (data.usage?.input_tokens ?? 0) + (data.usage?.output_tokens ?? 0),
+          }
+        : {
+            prompt_tokens: data.usage?.prompt_tokens ?? 0,
+            completion_tokens: data.usage?.completion_tokens ?? 0,
+            total_tokens: data.usage?.total_tokens ?? 0,
+          };
 
     // Anthropic returns content[0].text, OpenAI-compatible returns choices[0].message.content
     // deepseek-reasoner returns reasoning_content + content in message
-    const text = provider === 'anthropic'
-      ? (data.content?.[0]?.text || '')
-      : (data.choices?.[0]?.message?.content || data.choices?.[0]?.message?.reasoning_content || '');
+    const text =
+      provider === 'anthropic'
+        ? data.content?.[0]?.text || ''
+        : data.choices?.[0]?.message?.content ||
+          data.choices?.[0]?.message?.reasoning_content ||
+          '';
 
     // Try to parse as JSON (our expected format)
     // The LLM might wrap JSON in markdown code blocks or add preamble text
-    let cleaned = text.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+    let cleaned = text
+      .replace(/^```(?:json)?\s*\n?/i, '')
+      .replace(/\n?```\s*$/i, '')
+      .trim();
     // deepseek-reasoner sometimes adds text before JSON — extract the JSON object
     if (cleaned.length > 0 && !cleaned.startsWith('{')) {
       const jsonStart = cleaned.indexOf('{');
@@ -431,7 +517,13 @@ export async function POST(req: NextRequest) {
         let jsonEnd = -1;
         for (let i = jsonStart; i < cleaned.length; i++) {
           if (cleaned[i] === '{') depth++;
-          else if (cleaned[i] === '}') { depth--; if (depth === 0) { jsonEnd = i + 1; break; } }
+          else if (cleaned[i] === '}') {
+            depth--;
+            if (depth === 0) {
+              jsonEnd = i + 1;
+              break;
+            }
+          }
         }
         if (jsonEnd > 0) cleaned = cleaned.slice(jsonStart, jsonEnd);
       }
@@ -442,69 +534,197 @@ export async function POST(req: NextRequest) {
       // If parsed JSON doesn't look like a CID response (no message, no workflow, no modifications),
       // treat the raw text as the message — the model generated content, not CID format
       if (!parsed.message && !parsed.workflow && !parsed.modifications) {
-        return NextResponse.json({ result: { message: text, workflow: null }, provider, model, usage });
+        return NextResponse.json({
+          result: { message: text, workflow: null },
+          provider,
+          model,
+          usage,
+        });
       }
 
       // Normalize edge format — some models return source/target instead of from/to
       // Also normalize non-standard labels to our known set
-      const KNOWN_LABELS = new Set(['drives', 'feeds', 'refines', 'validates', 'monitors', 'connects', 'outputs', 'updates', 'watches', 'approves', 'triggers', 'requires', 'informs', 'blocks']);
+      const KNOWN_LABELS = new Set([
+        'drives',
+        'feeds',
+        'refines',
+        'validates',
+        'monitors',
+        'connects',
+        'outputs',
+        'updates',
+        'watches',
+        'approves',
+        'triggers',
+        'requires',
+        'informs',
+        'blocks',
+      ]);
       const LABEL_MAP: Record<string, string> = {
-        'leads to': 'drives', 'results in': 'outputs', 'assigns': 'drives',
-        'enables': 'feeds', 'prepares for': 'feeds', 'depends on': 'requires',
-        'checks': 'validates', 'verifies': 'validates', 'reviews': 'validates',
-        'notifies': 'informs', 'sends to': 'outputs', 'produces': 'outputs',
-        'starts': 'triggers', 'initiates': 'triggers', 'activates': 'triggers',
-        'needs': 'requires', 'uses': 'feeds', 'consumes': 'feeds',
-        'provides': 'feeds', 'generates': 'outputs', 'creates': 'outputs',
-        'transforms': 'refines', 'processes': 'refines', 'improves': 'refines',
+        'leads to': 'drives',
+        'results in': 'outputs',
+        assigns: 'drives',
+        enables: 'feeds',
+        'prepares for': 'feeds',
+        'depends on': 'requires',
+        checks: 'validates',
+        verifies: 'validates',
+        reviews: 'validates',
+        notifies: 'informs',
+        'sends to': 'outputs',
+        produces: 'outputs',
+        starts: 'triggers',
+        initiates: 'triggers',
+        activates: 'triggers',
+        needs: 'requires',
+        uses: 'feeds',
+        consumes: 'feeds',
+        provides: 'feeds',
+        generates: 'outputs',
+        creates: 'outputs',
+        transforms: 'refines',
+        processes: 'refines',
+        improves: 'refines',
       };
 
       // Normalize non-standard node categories to valid ones
-      const KNOWN_CATEGORIES = new Set(['input', 'output', 'state', 'artifact', 'note', 'cid', 'review', 'policy', 'patch', 'dependency', 'trigger', 'test', 'action', 'custom']);
+      const KNOWN_CATEGORIES = new Set([
+        'input',
+        'output',
+        'state',
+        'artifact',
+        'note',
+        'cid',
+        'review',
+        'policy',
+        'patch',
+        'dependency',
+        'trigger',
+        'test',
+        'action',
+        'custom',
+      ]);
       const CATEGORY_MAP: Record<string, string> = {
-        'monitor': 'state', 'monitoring': 'state', 'tracker': 'state', 'tracking': 'state',
-        'alert': 'state', 'alerting': 'state',
-        'document': 'artifact', 'doc': 'artifact', 'file': 'artifact', 'code': 'artifact',
-        'database': 'artifact', 'data': 'artifact', 'storage': 'artifact',
-        'ai': 'cid', 'agent': 'cid', 'llm': 'cid', 'automation': 'cid',
-        'approval': 'review', 'gate': 'review', 'checkpoint': 'review',
-        'rule': 'policy', 'constraint': 'policy', 'compliance': 'policy',
-        'source': 'input', 'entry': 'input',
-        'trigger': 'trigger', 'webhook': 'trigger', 'cron': 'trigger', 'event': 'trigger', 'schedule': 'trigger', 'listener': 'trigger',
-        'result': 'output', 'delivery': 'output', 'deliverable': 'output', 'final': 'output',
-        'idea': 'note', 'research': 'note', 'comment': 'note',
-        'fix': 'patch', 'hotfix': 'patch', 'bugfix': 'patch',
-        'requirement': 'dependency', 'prerequisite': 'dependency',
-        'process': 'state', 'step': 'state', 'stage': 'state', 'phase': 'state',
-        'task': 'state', 'workflow': 'state',
-        'config': 'policy', 'configuration': 'policy', 'settings': 'policy',
-        'test': 'test', 'testing': 'test', 'qa': 'test', 'validation': 'test',
-        'unit-test': 'test', 'integration-test': 'test', 'e2e': 'test', 'smoke-test': 'test',
-        'deploy': 'action', 'deployment': 'action', 'release': 'action',
-        'notification': 'action', 'notify': 'action', 'send': 'action', 'email': 'action',
-        'execute': 'action', 'run': 'action', 'invoke': 'action', 'call': 'action',
-        'build': 'artifact', 'compile': 'artifact', 'package': 'artifact',
-        'log': 'state', 'logging': 'state', 'audit': 'state',
-        'escalation': 'state', 'incident': 'state', 'response': 'state',
-        'processing': 'cid', 'processor': 'cid', 'transform': 'cid', 'transformer': 'cid',
-        'analysis': 'artifact', 'analyzer': 'cid', 'generator': 'cid',
-        'extraction': 'cid', 'extractor': 'cid', 'parser': 'cid',
-        'upload': 'input', 'download': 'output', 'export': 'output', 'import': 'input',
-        'cleanup': 'state', 'cleaning': 'state', 'filter': 'state',
-        'translation': 'cid', 'translator': 'cid', 'converter': 'cid',
-        'summarization': 'cid', 'summarizer': 'cid',
+        monitor: 'state',
+        monitoring: 'state',
+        tracker: 'state',
+        tracking: 'state',
+        alert: 'state',
+        alerting: 'state',
+        document: 'artifact',
+        doc: 'artifact',
+        file: 'artifact',
+        code: 'artifact',
+        database: 'artifact',
+        data: 'artifact',
+        storage: 'artifact',
+        ai: 'cid',
+        agent: 'cid',
+        llm: 'cid',
+        automation: 'cid',
+        approval: 'review',
+        gate: 'review',
+        checkpoint: 'review',
+        rule: 'policy',
+        constraint: 'policy',
+        compliance: 'policy',
+        source: 'input',
+        entry: 'input',
+        trigger: 'trigger',
+        webhook: 'trigger',
+        cron: 'trigger',
+        event: 'trigger',
+        schedule: 'trigger',
+        listener: 'trigger',
+        result: 'output',
+        delivery: 'output',
+        deliverable: 'output',
+        final: 'output',
+        idea: 'note',
+        research: 'note',
+        comment: 'note',
+        fix: 'patch',
+        hotfix: 'patch',
+        bugfix: 'patch',
+        requirement: 'dependency',
+        prerequisite: 'dependency',
+        process: 'state',
+        step: 'state',
+        stage: 'state',
+        phase: 'state',
+        task: 'state',
+        workflow: 'state',
+        config: 'policy',
+        configuration: 'policy',
+        settings: 'policy',
+        test: 'test',
+        testing: 'test',
+        qa: 'test',
+        validation: 'test',
+        'unit-test': 'test',
+        'integration-test': 'test',
+        e2e: 'test',
+        'smoke-test': 'test',
+        deploy: 'action',
+        deployment: 'action',
+        release: 'action',
+        notification: 'action',
+        notify: 'action',
+        send: 'action',
+        email: 'action',
+        execute: 'action',
+        run: 'action',
+        invoke: 'action',
+        call: 'action',
+        build: 'artifact',
+        compile: 'artifact',
+        package: 'artifact',
+        log: 'state',
+        logging: 'state',
+        audit: 'state',
+        escalation: 'state',
+        incident: 'state',
+        response: 'state',
+        processing: 'cid',
+        processor: 'cid',
+        transform: 'cid',
+        transformer: 'cid',
+        analysis: 'artifact',
+        analyzer: 'cid',
+        generator: 'cid',
+        extraction: 'cid',
+        extractor: 'cid',
+        parser: 'cid',
+        upload: 'input',
+        download: 'output',
+        export: 'output',
+        import: 'input',
+        cleanup: 'state',
+        cleaning: 'state',
+        filter: 'state',
+        translation: 'cid',
+        translator: 'cid',
+        converter: 'cid',
+        summarization: 'cid',
+        summarizer: 'cid',
       };
 
       // Normalize edges key: LLMs sometimes use "connections", "links", "relationships" instead of "edges"
       if (!parsed.workflow?.edges && parsed.workflow) {
-        parsed.workflow.edges = parsed.workflow.connections ?? parsed.workflow.links ?? parsed.workflow.relationships ?? [];
+        parsed.workflow.edges =
+          parsed.workflow.connections ??
+          parsed.workflow.links ??
+          parsed.workflow.relationships ??
+          [];
       }
 
       if (parsed.workflow?.nodes) {
         parsed.workflow.nodes = parsed.workflow.nodes.map((n: Record<string, unknown>) => {
           // Normalize category: some LLMs use "type" instead of "category"
-          const rawCat = ((n.category as string) || (n.type as string) || 'note').toLowerCase().trim();
-          const category = KNOWN_CATEGORIES.has(rawCat) ? rawCat : (CATEGORY_MAP[rawCat] || 'state');
+          const rawCat = ((n.category as string) || (n.type as string) || 'note')
+            .toLowerCase()
+            .trim();
+          const category = KNOWN_CATEGORIES.has(rawCat) ? rawCat : CATEGORY_MAP[rawCat] || 'state';
           // Normalize label: LLMs sometimes use "name", "title", or "node_name" instead of "label"
           const label = (n.label ?? n.name ?? n.title ?? n.node_name ?? 'Untitled') as string;
           return { ...n, label, category };
@@ -547,8 +767,20 @@ export async function POST(req: NextRequest) {
         const nodes = parsed.workflow.nodes || [];
         parsed.workflow.edges = parsed.workflow.edges
           .map((e: Record<string, unknown>) => {
-            const rawLabel = ((e.label as string) || (e.relationship as string) || (e.type as string) || '').toLowerCase().trim();
-            let label = rawLabel && KNOWN_LABELS.has(rawLabel) ? rawLabel : (rawLabel ? (LABEL_MAP[rawLabel] || '') : '');
+            const rawLabel = (
+              (e.label as string) ||
+              (e.relationship as string) ||
+              (e.type as string) ||
+              ''
+            )
+              .toLowerCase()
+              .trim();
+            let label =
+              rawLabel && KNOWN_LABELS.has(rawLabel)
+                ? rawLabel
+                : rawLabel
+                  ? LABEL_MAP[rawLabel] || ''
+                  : '';
             const fromIdx = resolveIndex(e.from ?? e.source);
             const toIdx = resolveIndex(e.to ?? e.target);
             // If label is still generic/empty, infer from categories
@@ -572,8 +804,9 @@ export async function POST(req: NextRequest) {
         const edges = parsed.workflow.edges as Array<{ from: number; to: number; label: string }>;
 
         // Build reorder map: move first trigger to index 0, last output to end
-        const triggerIdx = nodes.findIndex(n => n.category === 'trigger');
-        const outputIdx = nodes.length - 1 - [...nodes].reverse().findIndex(n => n.category === 'output');
+        const triggerIdx = nodes.findIndex((n) => n.category === 'trigger');
+        const outputIdx =
+          nodes.length - 1 - [...nodes].reverse().findIndex((n) => n.category === 'output');
         const lastIdx = nodes.length - 1;
 
         if (triggerIdx >= 0 && outputIdx >= 0 && outputIdx < lastIdx) {
@@ -588,11 +821,11 @@ export async function POST(req: NextRequest) {
           for (let newI = 0; newI < reordered.length; newI++) {
             const oldI = tempNodes.indexOf(reordered[newI]);
             oldToNew.set(oldI, newI);
-            tempNodes[oldI] = null as unknown as typeof nodes[0]; // mark used
+            tempNodes[oldI] = null as unknown as (typeof nodes)[0]; // mark used
           }
 
           parsed.workflow.nodes = reordered;
-          parsed.workflow.edges = edges.map(e => ({
+          parsed.workflow.edges = edges.map((e) => ({
             from: oldToNew.get(e.from) ?? e.from,
             to: oldToNew.get(e.to) ?? e.to,
             label: e.label,
@@ -604,24 +837,31 @@ export async function POST(req: NextRequest) {
       if (parsed.modifications) {
         const mods = parsed.modifications;
         if (mods.update_nodes && Array.isArray(mods.update_nodes)) {
-          mods.update_nodes = mods.update_nodes.filter((u: Record<string, unknown>) => u.label && u.changes);
+          mods.update_nodes = mods.update_nodes.filter(
+            (u: Record<string, unknown>) => u.label && u.changes,
+          );
           for (const u of mods.update_nodes) {
             if (u.changes?.category) {
               const rawCat = (u.changes.category as string).toLowerCase().trim();
-              u.changes.category = KNOWN_CATEGORIES.has(rawCat) ? rawCat : (CATEGORY_MAP[rawCat] || rawCat);
+              u.changes.category = KNOWN_CATEGORIES.has(rawCat)
+                ? rawCat
+                : CATEGORY_MAP[rawCat] || rawCat;
             }
           }
         }
         if (mods.add_nodes && Array.isArray(mods.add_nodes)) {
           mods.add_nodes = mods.add_nodes.map((n: Record<string, unknown>) => {
             const rawCat = ((n.category as string) || 'action').toLowerCase().trim();
-            return { ...n, category: KNOWN_CATEGORIES.has(rawCat) ? rawCat : (CATEGORY_MAP[rawCat] || 'action') };
+            return {
+              ...n,
+              category: KNOWN_CATEGORIES.has(rawCat) ? rawCat : CATEGORY_MAP[rawCat] || 'action',
+            };
           });
         }
         if (mods.add_edges && Array.isArray(mods.add_edges)) {
           mods.add_edges = mods.add_edges.map((e: Record<string, unknown>) => {
             const rawLabel = ((e.label as string) || 'drives').toLowerCase().trim();
-            const label = KNOWN_LABELS.has(rawLabel) ? rawLabel : (LABEL_MAP[rawLabel] || 'drives');
+            const label = KNOWN_LABELS.has(rawLabel) ? rawLabel : LABEL_MAP[rawLabel] || 'drives';
             return { ...e, label };
           });
         }
@@ -632,19 +872,29 @@ export async function POST(req: NextRequest) {
       // ── Pre-flight Workflow Validation (inspired by LangGraph's compile step) ──
       // Catch structural issues the LLM missed and auto-repair before returning
       if (parsed.workflow?.nodes?.length > 0) {
-        const nodes = parsed.workflow.nodes as Array<{ category: string; label: string; content?: string; [k: string]: unknown }>;
+        const nodes = parsed.workflow.nodes as Array<{
+          category: string;
+          label: string;
+          content?: string;
+          [k: string]: unknown;
+        }>;
         const edges = parsed.workflow.edges as Array<{ from: number; to: number; label: string }>;
 
         // 1. Ensure output bookend — last node must be "output"
         if (nodes.length > 1 && nodes[nodes.length - 1].category !== 'output') {
-          const outputIdx = nodes.findIndex(n => n.category === 'output');
+          const outputIdx = nodes.findIndex((n) => n.category === 'output');
           if (outputIdx >= 0 && outputIdx < nodes.length - 1) {
             // Move output to end
             const [outputNode] = nodes.splice(outputIdx, 1);
             nodes.push(outputNode);
             // Remap edges
-            const remap = (idx: number) => idx === outputIdx ? nodes.length - 1 : idx > outputIdx ? idx - 1 : idx;
-            parsed.workflow.edges = edges.map(e => ({ from: remap(e.from), to: remap(e.to), label: e.label }));
+            const remap = (idx: number) =>
+              idx === outputIdx ? nodes.length - 1 : idx > outputIdx ? idx - 1 : idx;
+            parsed.workflow.edges = edges.map((e) => ({
+              from: remap(e.from),
+              to: remap(e.to),
+              label: e.label,
+            }));
           }
         }
 
@@ -659,16 +909,18 @@ export async function POST(req: NextRequest) {
             // Connect orphan to nearest neighbor
             const target = i === 0 ? 1 : i - 1;
             const label = i < target ? 'drives' : 'feeds';
-            (parsed.workflow.edges as Array<{ from: number; to: number; label: string }>).push(
-              { from: Math.min(i, target), to: Math.max(i, target), label }
-            );
+            (parsed.workflow.edges as Array<{ from: number; to: number; label: string }>).push({
+              from: Math.min(i, target),
+              to: Math.max(i, target),
+              label,
+            });
           }
         }
 
         // 3. Log validation metrics
         const edgeCount = (parsed.workflow.edges as unknown[]).length;
         const isLinear = edgeCount === nodes.length - 1;
-        console.log(`[CID API] Validation: ${nodes.length} nodes, ${edgeCount} edges${isLinear ? ' (linear — no loops/branches)' : ''}`);
+        log.info('validation', { nodes: nodes.length, edges: edgeCount, isLinear });
 
         // 4. Self-Correcting Retry Loop — score quality and trigger reflection if needed
         //    Bounded to exactly 1 retry (no infinite loops). Only for generate tasks.
@@ -679,8 +931,11 @@ export async function POST(req: NextRequest) {
           );
 
           if (qualityResult.score < -20) {
-            const issueMessages = qualityResult.issues.map(i => `- [${i.code}] ${i.message}`);
-            console.log(`[CID API] Reflection retry triggered: ${qualityResult.issues.length} issues (score: ${qualityResult.score})`);
+            const issueMessages = qualityResult.issues.map((i) => `- [${i.code}] ${i.message}`);
+            log.info('reflection-retry', {
+              issues: qualityResult.issues.length,
+              score: qualityResult.score,
+            });
 
             const reflectionPrompt = `Your workflow had these quality issues:\n${issueMessages.join('\n')}\n\nFix them and return the corrected JSON. Keep the same overall structure but:\n1. Add parallel branches and feedback loops (more edges than nodes-1)\n2. Expand thin node content to 300+ characters with concrete steps, tools, criteria\n3. Ensure trigger/input at start and output at end\n4. Connect any orphan nodes`;
 
@@ -710,11 +965,13 @@ export async function POST(req: NextRequest) {
 
               if (retryResponse.ok) {
                 const retryData = await retryResponse.json();
-                console.log(`[CID API] Reflection retry succeeded — returning corrected workflow`);
+                log.info('reflection-success');
                 return NextResponse.json(retryData);
               }
             } catch (retryErr) {
-              console.log(`[CID API] Reflection retry failed, returning original:`, retryErr instanceof Error ? retryErr.message : 'unknown');
+              log.warn('reflection-failed', {
+                error: retryErr instanceof Error ? retryErr.message : 'unknown',
+              });
             }
             // If retry fails, fall through and return original result
           }
@@ -723,14 +980,18 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.json({ result: parsed, provider, model, usage });
     } catch {
-      return NextResponse.json({ result: { message: text, workflow: null }, provider, model, usage });
+      return NextResponse.json({
+        result: { message: text, workflow: null },
+        provider,
+        model,
+        usage,
+      });
     }
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error('CID API error:', message);
-    return NextResponse.json(
-      { error: 'api_error', message },
-      { status: 500 },
-    );
+    log.error('unhandled', { message });
+    return NextResponse.json({ error: 'api_error', message }, { status: 500 });
+  } finally {
+    limiter.release(clientIp);
   }
 }

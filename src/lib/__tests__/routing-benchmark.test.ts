@@ -8,7 +8,13 @@
  * To run: npx vitest run src/lib/__tests__/routing-benchmark.test.ts
  */
 import { describe, it, expect } from 'vitest';
-import { classifyRoute, classifyRouteWithConfidence, routePromptCompat, type CommandRoute, type ConfidenceLevel } from '@/lib/routing';
+import {
+  classifyRoute,
+  classifyRouteWithConfidence,
+  routePromptCompat,
+  type CommandRoute,
+  type ConfidenceLevel as _ConfidenceLevel,
+} from '@/lib/routing';
 
 interface BenchmarkCase {
   prompt: string;
@@ -30,10 +36,30 @@ const BENCHMARK: BenchmarkCase[] = [
   { prompt: 'set up a code review pipeline', expected: 'generate', context: 'PM' },
 
   // ── Extend existing workflow ──
-  { prompt: 'add a quiz bank after the lesson plan', expected: 'extend', context: 'professor', hasWorkflow: true },
-  { prompt: 'extend with a final exam node', expected: 'extend', context: 'professor', hasWorkflow: true },
-  { prompt: 'also include a grading rubric', expected: 'extend', context: 'professor', hasWorkflow: true },
-  { prompt: 'insert a review gate before output', expected: 'extend', context: 'PM', hasWorkflow: true },
+  {
+    prompt: 'add a quiz bank after the lesson plan',
+    expected: 'extend',
+    context: 'professor',
+    hasWorkflow: true,
+  },
+  {
+    prompt: 'extend with a final exam node',
+    expected: 'extend',
+    context: 'professor',
+    hasWorkflow: true,
+  },
+  {
+    prompt: 'also include a grading rubric',
+    expected: 'extend',
+    context: 'professor',
+    hasWorkflow: true,
+  },
+  {
+    prompt: 'insert a review gate before output',
+    expected: 'extend',
+    context: 'PM',
+    hasWorkflow: true,
+  },
 
   // ── Propagate / refresh stale ──
   { prompt: 'propagate', expected: 'propagate' },
@@ -50,7 +76,7 @@ const BENCHMARK: BenchmarkCase[] = [
   { prompt: 'regenerate study guide', expected: 'refresh-node', context: 'professor' },
 
   // ── Show stale ──
-  { prompt: 'show me what\'s stale', expected: 'show-stale', context: 'professor' },
+  { prompt: "show me what's stale", expected: 'show-stale', context: 'professor' },
   { prompt: 'show stale nodes', expected: 'show-stale' },
   { prompt: 'find stale', expected: 'show-stale' },
   { prompt: 'list stale', expected: 'show-stale' },
@@ -123,15 +149,27 @@ const BENCHMARK: BenchmarkCase[] = [
   { prompt: 'what if I remove Assignments', expected: 'what-if', context: 'professor' },
   { prompt: 'connect Rubrics to Study Guide', expected: 'connect', context: 'professor' },
   { prompt: 'batch approve where category=artifact', expected: 'batch-where', context: 'PM' },
-  { prompt: 'teach: always generate rubrics with 4 performance levels', expected: 'teach', context: 'professor' },
+  {
+    prompt: 'teach: always generate rubrics with 4 performance levels',
+    expected: 'teach',
+    context: 'professor',
+  },
   { prompt: 'save template my-course-v2', expected: 'save-template', context: 'professor' },
   { prompt: 'deps Rubrics', expected: 'deps', context: 'professor' },
   { prompt: 'swap Assignments and Quiz Bank', expected: 'swap', context: 'professor' },
-  { prompt: 'describe Syllabus as: The master course outline and schedule', expected: 'describe', context: 'professor' },
+  {
+    prompt: 'describe Syllabus as: The master course outline and schedule',
+    expected: 'describe',
+    context: 'professor',
+  },
   { prompt: 'isolate Learning Objectives', expected: 'isolate', context: 'professor' },
   { prompt: 'set Rubrics to locked', expected: 'set-status', context: 'professor' },
   { prompt: 'clone workflow', expected: 'clone-workflow', context: 'PM' },
-  { prompt: 'content Lesson Plans: Week 1 covers intro to algorithms', expected: 'content', context: 'professor' },
+  {
+    prompt: 'content Lesson Plans: Week 1 covers intro to algorithms',
+    expected: 'content',
+    context: 'professor',
+  },
   { prompt: 'disconnect Rubrics from Quiz Bank', expected: 'disconnect', context: 'professor' },
   { prompt: 'search learning objectives', expected: 'search', context: 'professor' },
   { prompt: 'forget 2', expected: 'forget-rule', context: 'professor' },
@@ -162,36 +200,64 @@ const BENCHMARK: BenchmarkCase[] = [
   { prompt: 'destroy old rubric', expected: 'delete', context: 'professor' },
   { prompt: 'lay out the nodes nicely', expected: 'layout', context: 'professor' },
   { prompt: 'list dependencies', expected: 'list', context: 'PM' },
-  { prompt: 'remove the connection between Rubrics and Quiz Bank', expected: 'disconnect', context: 'professor' },
+  {
+    prompt: 'remove the connection between Rubrics and Quiz Bank',
+    expected: 'disconnect',
+    context: 'professor',
+  },
   { prompt: 'show me the critical path', expected: 'critical-path', context: 'PM' },
   { prompt: 'what are the bottlenecks', expected: 'bottlenecks', context: 'PM' },
   { prompt: 'rename Lesson Plans to Weekly Plans', expected: 'rename', context: 'professor' },
 
   // ── Round 6: autoresearch-generated prompts ──
-  { prompt: 'expand the workflow with a peer review step', expected: 'extend', context: 'professor', hasWorkflow: true },
+  {
+    prompt: 'expand the workflow with a peer review step',
+    expected: 'extend',
+    context: 'professor',
+    hasWorkflow: true,
+  },
   { prompt: 'show me bottlenecks in the pipeline', expected: 'bottlenecks', context: 'PM' },
   { prompt: 'dry run the pipeline', expected: 'preflight', context: 'PM' },
 
   // ── Round 7: autoresearch-generated prompts ──
-  { prompt: 'append a study guide to the end', expected: 'extend', context: 'professor', hasWorkflow: true },
+  {
+    prompt: 'append a study guide to the end',
+    expected: 'extend',
+    context: 'professor',
+    hasWorkflow: true,
+  },
   { prompt: 'what can I do next', expected: 'suggest', context: 'professor' },
   { prompt: 'fill descriptions', expected: 'auto-describe', context: 'PM' },
   { prompt: 'show me orphan nodes', expected: 'orphans', context: 'professor' },
   { prompt: 'auto-describe all nodes', expected: 'auto-describe', context: 'PM' },
 
   // ── Round 8: autoresearch-generated prompts ──
-  { prompt: 'include a discussion prompt after each lesson', expected: 'extend', context: 'professor', hasWorkflow: true },
+  {
+    prompt: 'include a discussion prompt after each lesson',
+    expected: 'extend',
+    context: 'professor',
+    hasWorkflow: true,
+  },
   { prompt: 'show me unconnected nodes', expected: 'orphans', context: 'professor' },
   { prompt: 'execution plan', expected: 'preflight', context: 'PM' },
 
   // ── Round 9: autoresearch-generated prompts ──
-  { prompt: 'plus a homework submission node', expected: 'extend', context: 'professor', hasWorkflow: true },
+  {
+    prompt: 'plus a homework submission node',
+    expected: 'extend',
+    context: 'professor',
+    hasWorkflow: true,
+  },
   { prompt: 'run stale', expected: 'propagate', context: 'professor' },
   { prompt: 'show the isolated nodes', expected: 'orphans', context: 'professor' },
 
   // ── Natural language that should fall to LLM ──
   { prompt: 'why is my rubric out of date', expected: 'llm-fallback', context: 'professor' },
-  { prompt: 'why does the rubric depend on assignments', expected: 'llm-fallback', context: 'professor' },
+  {
+    prompt: 'why does the rubric depend on assignments',
+    expected: 'llm-fallback',
+    context: 'professor',
+  },
   { prompt: 'what changed since yesterday', expected: 'llm-fallback', context: 'PM' },
   { prompt: 'how does the lifecycle loop work', expected: 'llm-fallback' },
   { prompt: 'can you make this workflow faster', expected: 'llm-fallback' },
@@ -200,39 +266,134 @@ const BENCHMARK: BenchmarkCase[] = [
   { prompt: 'what changed since last run', expected: 'llm-fallback', context: 'PM' },
 
   // Round 13: education + workflow management + dependency queries
-  { prompt: 'which nodes need attention', expected: 'suggest', context: 'professor checking workflow' },
-  { prompt: 'make the rubric more detailed', expected: 'llm-fallback', context: 'professor editing rubric', hasWorkflow: true },
-  { prompt: "what's blocking the FAQ from running", expected: 'deps', context: 'professor debugging execution' },
+  {
+    prompt: 'which nodes need attention',
+    expected: 'suggest',
+    context: 'professor checking workflow',
+  },
+  {
+    prompt: 'make the rubric more detailed',
+    expected: 'llm-fallback',
+    context: 'professor editing rubric',
+    hasWorkflow: true,
+  },
+  {
+    prompt: "what's blocking the FAQ from running",
+    expected: 'deps',
+    context: 'professor debugging execution',
+  },
 
   // Round 14: dependency queries + stale node discovery
-  { prompt: 'what depends on the Syllabus', expected: 'deps', context: 'professor checking downstream impact', hasWorkflow: true },
-  { prompt: "what's downstream of the Quiz Bank?", expected: 'deps', context: 'professor tracing dependencies', hasWorkflow: true },
-  { prompt: "which nodes haven't been updated recently?", expected: 'suggest', context: 'professor reviewing workflow freshness', hasWorkflow: true },
+  {
+    prompt: 'what depends on the Syllabus',
+    expected: 'deps',
+    context: 'professor checking downstream impact',
+    hasWorkflow: true,
+  },
+  {
+    prompt: "what's downstream of the Quiz Bank?",
+    expected: 'deps',
+    context: 'professor tracing dependencies',
+    hasWorkflow: true,
+  },
+  {
+    prompt: "which nodes haven't been updated recently?",
+    expected: 'suggest',
+    context: 'professor reviewing workflow freshness',
+    hasWorkflow: true,
+  },
 
   // Round 15: stale queries + natural propagation phrasing
-  { prompt: "run everything that's stale", expected: 'propagate', context: 'professor wanting to refresh stale nodes', hasWorkflow: true },
-  { prompt: 'what nodes are stale right now?', expected: 'show-stale', context: 'professor checking stale status', hasWorkflow: true },
-  { prompt: 'how many nodes are stale?', expected: 'show-stale', context: 'professor quick stale check', hasWorkflow: true },
+  {
+    prompt: "run everything that's stale",
+    expected: 'propagate',
+    context: 'professor wanting to refresh stale nodes',
+    hasWorkflow: true,
+  },
+  {
+    prompt: 'what nodes are stale right now?',
+    expected: 'show-stale',
+    context: 'professor checking stale status',
+    hasWorkflow: true,
+  },
+  {
+    prompt: 'how many nodes are stale?',
+    expected: 'show-stale',
+    context: 'professor quick stale check',
+    hasWorkflow: true,
+  },
 
   // Round 16: batch status, preflight readiness, execution order
-  { prompt: 'which nodes are ready to run?', expected: 'preflight', context: 'professor checking before execution', hasWorkflow: true },
-  { prompt: 'what nodes are eligible to execute?', expected: 'preflight', context: 'PM checking readiness', hasWorkflow: true },
-  { prompt: 'mark all nodes as active', expected: 'activate-all', context: 'professor resetting workflow' },
+  {
+    prompt: 'which nodes are ready to run?',
+    expected: 'preflight',
+    context: 'professor checking before execution',
+    hasWorkflow: true,
+  },
+  {
+    prompt: 'what nodes are eligible to execute?',
+    expected: 'preflight',
+    context: 'PM checking readiness',
+    hasWorkflow: true,
+  },
+  {
+    prompt: 'mark all nodes as active',
+    expected: 'activate-all',
+    context: 'professor resetting workflow',
+  },
   { prompt: 'set everything as active', expected: 'activate-all', context: 'PM bulk reset' },
-  { prompt: "what's the execution order?", expected: 'plan', context: 'professor checking run sequence', hasWorkflow: true },
-  { prompt: 'tighten up the rubric criteria', expected: 'llm-fallback', context: 'professor editing rubric', hasWorkflow: true },
+  {
+    prompt: "what's the execution order?",
+    expected: 'plan',
+    context: 'professor checking run sequence',
+    hasWorkflow: true,
+  },
+  {
+    prompt: 'tighten up the rubric criteria',
+    expected: 'llm-fallback',
+    context: 'professor editing rubric',
+    hasWorkflow: true,
+  },
 
   // ── Round 68: Agentic node/edge configuration routes ──
-  { prompt: 'add tool to Rubric', expected: 'add-tool', context: 'PM configuring node tools' },
-  { prompt: 'attach a web_search tool to the Research node', expected: 'add-tool', context: 'PM adding tool to node' },
-  { prompt: 'assign a tool to Quiz Bank', expected: 'add-tool', context: 'professor setting up agentic node' },
+  {
+    prompt: 'add tool to Rubric',
+    expected: 'add-tool',
+    context: 'PM configuring node tools',
+  },
+  {
+    prompt: 'attach a web_search tool to the Research node',
+    expected: 'add-tool',
+    context: 'PM adding tool to node',
+  },
+  {
+    prompt: 'assign a tool to Quiz Bank',
+    expected: 'add-tool',
+    context: 'professor setting up agentic node',
+  },
   { prompt: 'show tools', expected: 'show-tools', context: 'PM listing available tools' },
   { prompt: 'list tools', expected: 'show-tools', context: 'PM listing tools' },
   { prompt: 'tools', expected: 'show-tools', context: 'PM quick tools check' },
-  { prompt: 'set condition on edge from Rubric to Review', expected: 'set-condition', context: 'PM configuring edge guard' },
-  { prompt: 'add condition for the Lesson Plan connection', expected: 'set-condition', context: 'professor adding guard' },
-  { prompt: 'configure retry for Lesson Plan', expected: 'configure-retry', context: 'PM configuring resilience' },
-  { prompt: 'set up retries on the Quiz Bank node', expected: 'configure-retry', context: 'professor configuring retry' },
+  {
+    prompt: 'set condition on edge from Rubric to Review',
+    expected: 'set-condition',
+    context: 'PM configuring edge guard',
+  },
+  {
+    prompt: 'add condition for the Lesson Plan connection',
+    expected: 'set-condition',
+    context: 'professor adding guard',
+  },
+  {
+    prompt: 'configure retry for Lesson Plan',
+    expected: 'configure-retry',
+    context: 'PM configuring resilience',
+  },
+  {
+    prompt: 'set up retries on the Quiz Bank node',
+    expected: 'configure-retry',
+    context: 'professor configuring retry',
+  },
 ];
 
 // ─── Benchmark Runner ───────────────────────────────────────────────────────
@@ -265,7 +426,7 @@ describe('CID Routing Benchmark', () => {
     console.log(`  ROUTING BENCHMARK: ${correct}/${BENCHMARK.length} = ${score}%`);
     if (failures.length > 0) {
       console.log(`  Failures:`);
-      failures.forEach(f => console.log(f));
+      failures.forEach((f) => console.log(f));
     }
     console.log(`  ══════════════════════════════════════════\n`);
 
@@ -277,9 +438,13 @@ describe('CID Routing Benchmark', () => {
 // ─── Confidence Level Tests ──────────────────────────────────────────────────
 
 describe('Routing Confidence Levels', () => {
-  // Patterns with explicit 'high' confidence — exact commands, tight syntax
+  // Patterns with explicit 'high' confidence -- exact commands, tight syntax
   // These must NEVER trigger the low-confidence clarification prompt in CIDPanel.
-  const highConfidenceCases: Array<{ prompt: string; route: CommandRoute; hasWorkflow?: boolean }> = [
+  const highConfidenceCases: Array<{
+    prompt: string;
+    route: CommandRoute;
+    hasWorkflow?: boolean;
+  }> = [
     // Slash commands
     { prompt: '/template course', route: 'template' },
     // Core generation
@@ -288,7 +453,7 @@ describe('Routing Confidence Levels', () => {
     { prompt: 'solve', route: 'solve' },
     { prompt: 'status', route: 'status' },
     { prompt: 'propagate', route: 'propagate' },
-    // Exact single-word commands (these were previously 'low' by position — now fixed)
+    // Exact single-word commands (these were previously 'low' by position -- now fixed)
     { prompt: 'undo', route: 'undo' },
     { prompt: 'redo', route: 'redo' },
     { prompt: 'count', route: 'count' },
@@ -314,8 +479,12 @@ describe('Routing Confidence Levels', () => {
     });
   }
 
-  // Patterns with 'medium' confidence — accept variable content, could need clarification
-  const mediumConfidenceCases: Array<{ prompt: string; route: CommandRoute; hasWorkflow?: boolean }> = [
+  // Patterns with 'medium' confidence -- accept variable content, could need clarification
+  const mediumConfidenceCases: Array<{
+    prompt: string;
+    route: CommandRoute;
+    hasWorkflow?: boolean;
+  }> = [
     { prompt: 'deps Rubric', route: 'deps' },
     { prompt: 'refresh the quiz bank', route: 'refresh-node' },
     { prompt: 'run Lesson Plan', route: 'run-node' },
@@ -332,7 +501,11 @@ describe('Routing Confidence Levels', () => {
   }
 
   // LLM fallback is always low confidence
-  const lowConfidenceCases: Array<{ prompt: string; route: CommandRoute; hasWorkflow?: boolean }> = [
+  const lowConfidenceCases: Array<{
+    prompt: string;
+    route: CommandRoute;
+    hasWorkflow?: boolean;
+  }> = [
     { prompt: 'why is my rubric out of date', route: 'llm-fallback' },
     { prompt: 'how does the lifecycle loop work', route: 'llm-fallback' },
   ];

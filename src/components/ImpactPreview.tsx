@@ -2,7 +2,16 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Play, CheckSquare, Square, Zap, AlertTriangle, ChevronRight, DollarSign } from 'lucide-react';
+import {
+  X,
+  Play,
+  CheckSquare,
+  Square,
+  Zap,
+  AlertTriangle,
+  ChevronRight,
+  DollarSign,
+} from 'lucide-react';
 import { useLifecycleStore } from '@/store/useStore';
 import { getCategoryIcon, getNodeColors } from '@/lib/types';
 import { estimateBatchCost, formatCost } from '@/lib/cache';
@@ -15,7 +24,7 @@ export default function ImpactPreview() {
     selectAllImpactNodes,
     deselectAllImpactNodes,
     regenerateSelected,
-    selectNode,
+    selectNode: _selectNode,
     isProcessing,
     setProcessing,
     cidAIModel,
@@ -23,7 +32,12 @@ export default function ImpactPreview() {
 
   if (!impactPreview || !impactPreview.visible) return null;
 
-  const { staleNodes, executionOrder, estimatedCalls, selectedNodeIds } = impactPreview;
+  const {
+    staleNodes,
+    executionOrder,
+    estimatedCalls: _estimatedCalls,
+    selectedNodeIds,
+  } = impactPreview;
   const allSelected = selectedNodeIds.size === staleNodes.length;
   const noneSelected = selectedNodeIds.size === 0;
 
@@ -53,13 +67,13 @@ export default function ImpactPreview() {
 
   // Order stale nodes by execution order for display
   const orderedNodes = executionOrder
-    .map(id => staleNodes.find(n => n.id === id))
+    .map((id) => staleNodes.find((n) => n.id === id))
     .filter(Boolean) as typeof staleNodes;
 
   // Estimate cost for selected nodes
-  const selectedNodes = orderedNodes.filter(n => selectedNodeIds.has(n.id));
+  const selectedNodes = orderedNodes.filter((n) => selectedNodeIds.has(n.id));
   const costEstimate = estimateBatchCost(
-    selectedNodes.map(n => ({ promptLength: (n.label?.length || 20) * 10 + 500 })),
+    selectedNodes.map((n) => ({ promptLength: (n.label?.length || 20) * 10 + 500 })),
     cidAIModel,
   );
 
@@ -70,7 +84,7 @@ export default function ImpactPreview() {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 20, scale: 0.95 }}
         transition={{ duration: 0.2 }}
-        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[420px] max-w-[90vw] rounded-2xl border border-amber-500/20 bg-[#0e0e18]/95 backdrop-blur-xl shadow-2xl shadow-amber-500/5"
+        className="fixed bottom-6 left-1/2 z-50 w-[420px] max-w-[90vw] -translate-x-1/2 rounded-2xl border border-amber-500/20 bg-[#0e0e18]/95 shadow-2xl shadow-amber-500/5 backdrop-blur-xl"
         role="dialog"
         aria-modal="true"
         aria-label="Impact Preview"
@@ -79,33 +93,29 @@ export default function ImpactPreview() {
         <div className="flex items-center justify-between px-4 pt-3 pb-2">
           <div className="flex items-center gap-2">
             <AlertTriangle size={14} className="text-amber-400" />
-            <span className="text-sm font-semibold text-white/90">
-              Impact Preview
-            </span>
-            <span className="text-[10px] text-amber-400/70 bg-amber-500/10 px-1.5 py-0.5 rounded-full font-medium">
+            <span className="text-sm font-semibold text-white/90">Impact Preview</span>
+            <span className="rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-400/70">
               {staleNodes.length} stale
             </span>
           </div>
           <button
             onClick={hideImpactPreview}
-            className="w-6 h-6 rounded-lg flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors"
+            className="flex h-6 w-6 items-center justify-center rounded-lg text-white/30 transition-colors hover:bg-white/5 hover:text-white/60"
           >
             <X size={14} />
           </button>
         </div>
 
         {/* Node list */}
-        <div className="px-3 pb-2 max-h-[240px] overflow-y-auto">
-          <div className="flex items-center justify-between mb-1.5 px-1">
+        <div className="max-h-[240px] overflow-y-auto px-3 pb-2">
+          <div className="mb-1.5 flex items-center justify-between px-1">
             <button
               onClick={allSelected ? deselectAllImpactNodes : selectAllImpactNodes}
-              className="text-[10px] text-white/30 hover:text-white/60 transition-colors"
+              className="text-[10px] text-white/30 transition-colors hover:text-white/60"
             >
               {allSelected ? 'Deselect all' : 'Select all'}
             </button>
-            <span className="text-[10px] text-white/20">
-              execution order {'\u2193'}
-            </span>
+            <span className="text-[10px] text-white/20">execution order {'\u2193'}</span>
           </div>
           <div className="space-y-1">
             {orderedNodes.map((node, idx) => {
@@ -115,7 +125,7 @@ export default function ImpactPreview() {
               return (
                 <div
                   key={node.id}
-                  className={`flex items-center gap-2.5 px-2.5 py-2 rounded-xl border transition-all cursor-pointer ${
+                  className={`flex cursor-pointer items-center gap-2.5 rounded-xl border px-2.5 py-2 transition-all ${
                     selected
                       ? 'border-amber-500/20 bg-amber-500/5'
                       : 'border-white/[0.04] bg-white/[0.02] opacity-50'
@@ -123,16 +133,18 @@ export default function ImpactPreview() {
                   onClick={() => toggleImpactNodeSelection(node.id)}
                 >
                   {selected ? (
-                    <CheckSquare size={13} className="text-amber-400 shrink-0" />
+                    <CheckSquare size={13} className="shrink-0 text-amber-400" />
                   ) : (
-                    <Square size={13} className="text-white/20 shrink-0" />
+                    <Square size={13} className="shrink-0 text-white/20" />
                   )}
-                  <span className="text-[10px] text-white/20 font-mono w-4 shrink-0">{idx + 1}</span>
+                  <span className="w-4 shrink-0 font-mono text-[10px] text-white/20">
+                    {idx + 1}
+                  </span>
                   <Icon size={12} style={{ color: colors.primary }} className="shrink-0" />
-                  <span className="text-[11px] text-white/70 truncate flex-1">{node.label}</span>
-                  <span className="text-[9px] text-white/20 shrink-0">{node.category}</span>
+                  <span className="flex-1 truncate text-[11px] text-white/70">{node.label}</span>
+                  <span className="shrink-0 text-[9px] text-white/20">{node.category}</span>
                   {idx < orderedNodes.length - 1 && (
-                    <ChevronRight size={10} className="text-white/25 shrink-0" />
+                    <ChevronRight size={10} className="shrink-0 text-white/25" />
                   )}
                 </div>
               );
@@ -141,7 +153,7 @@ export default function ImpactPreview() {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-4 py-3 border-t border-white/[0.06]">
+        <div className="flex items-center justify-between border-t border-white/[0.06] px-4 py-3">
           <div className="flex items-center gap-3 text-[10px] text-white/30">
             <span className="flex items-center gap-1">
               <Zap size={10} />
@@ -157,7 +169,7 @@ export default function ImpactPreview() {
           <div className="flex items-center gap-2">
             <button
               onClick={hideImpactPreview}
-              className="px-3 py-1.5 rounded-lg text-[11px] text-white/40 hover:text-white/60 bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.07] transition-colors"
+              className="rounded-lg border border-white/[0.06] bg-white/[0.04] px-3 py-1.5 text-[11px] text-white/40 transition-colors hover:bg-white/[0.07] hover:text-white/60"
             >
               Cancel
             </button>
@@ -167,11 +179,12 @@ export default function ImpactPreview() {
                 if (!e.shiftKey) handleRegenerate();
               }}
               disabled={noneSelected || isProcessing}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-1.5 text-[11px] font-medium text-amber-400 transition-colors hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-30"
               title="Hold Shift to skip preview next time"
             >
               <Play size={11} />
-              Regenerate{selectedNodeIds.size < staleNodes.length ? ` (${selectedNodeIds.size})` : ' all'}
+              Regenerate
+              {selectedNodeIds.size < staleNodes.length ? ` (${selectedNodeIds.size})` : ' all'}
             </button>
           </div>
         </div>

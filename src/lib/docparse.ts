@@ -80,8 +80,7 @@ export async function extractPdfText(buffer: Buffer): Promise<{ text: string; pa
  */
 export async function extractDocxText(buffer: Buffer): Promise<string> {
   // Dynamic import — mammoth has no types, hence the any cast
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const mammoth = await import('mammoth') as any;
+  const mammoth = (await import('mammoth')) as any;
   const result = await mammoth.extractRawText({ buffer });
   return result.value as string;
 }
@@ -132,7 +131,7 @@ export function detectSections(text: string): DocumentSection[] {
     }
 
     // Check if this line looks like a section heading
-    const isHeading = line.length < 120 && SECTION_PATTERNS.some(p => p.test(line));
+    const isHeading = line.length < 120 && SECTION_PATTERNS.some((p) => p.test(line));
 
     if (isHeading && (currentContent.length > 0 || sections.length === 0)) {
       // Save previous section if it has content
@@ -145,7 +144,10 @@ export function detectSections(text: string): DocumentSection[] {
           offset: sectionStart,
         });
       }
-      currentTitle = line.replace(/^#+\s*/, '').replace(/[:.]$/, '').trim();
+      currentTitle = line
+        .replace(/^#+\s*/, '')
+        .replace(/[:.]$/, '')
+        .trim();
       currentContent = [];
       sectionStart = offset;
     } else {
@@ -188,11 +190,13 @@ export function chunkDocument(text: string, maxTokensPerChunk = 8000): DocumentC
   const maxChars = maxTokensPerChunk * 4;
 
   if (text.length <= maxChars) {
-    return [{
-      text,
-      index: 0,
-      tokenEstimate: estimateTokens(text),
-    }];
+    return [
+      {
+        text,
+        index: 0,
+        tokenEstimate: estimateTokens(text),
+      },
+    ];
   }
 
   const chunks: DocumentChunk[] = [];

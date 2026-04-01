@@ -144,6 +144,7 @@ addPattern((s) => /^(?:health\s+detail|health\s+breakdown|detailed?\s+health|hea
 
 // Status
 addPattern((s) => /^(?:status|report|health|dashboard)\b/i.test(s), 'status', 'high');
+addPattern((s) => /^analyze\s+(?:this\s+)?(?:workflow|graph|nodes?|structure)/i.test(s), 'status', 'high');
 
 // Propagate
 addPattern((s) => /^(?:propagate?|sync|refresh\s*stale|regenerate\s*stale|update\s+(?:all\s+)?stale|run\s+(?:the\s+)?stale)\b/i.test(s), 'propagate', 'high');

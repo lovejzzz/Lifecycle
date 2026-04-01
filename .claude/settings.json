@@ -1,0 +1,10 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "command": "echo 'File modified — remember to run tests'"
+      }
+    ]
+  }
+}

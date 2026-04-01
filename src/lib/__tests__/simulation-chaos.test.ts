@@ -5,30 +5,50 @@
  * Uses a seeded PRNG so failures are reproducible.
  * Logs the full operation sequence on failure for replay.
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, beforeEach, vi } from 'vitest';
 
 // ── Mock browser globals BEFORE store import ──────────────────────────────────
 const storage: Record<string, string> = {};
 const mockLocalStorage = {
   getItem: (key: string) => storage[key] ?? null,
-  setItem: (key: string, val: string) => { storage[key] = val; },
-  removeItem: (key: string) => { delete storage[key]; },
-  clear: () => { Object.keys(storage).forEach(k => delete storage[k]); },
+  setItem: (key: string, val: string) => {
+    storage[key] = val;
+  },
+  removeItem: (key: string) => {
+    delete storage[key];
+  },
+  clear: () => {
+    Object.keys(storage).forEach((k) => delete storage[k]);
+  },
 };
 
-Object.defineProperty(globalThis, 'window', { value: { location: { origin: 'http://localhost:3000' } }, writable: true, configurable: true });
-Object.defineProperty(globalThis, 'localStorage', { value: mockLocalStorage, writable: true, configurable: true });
+Object.defineProperty(globalThis, 'window', {
+  value: { location: { origin: 'http://localhost:3000' } },
+  writable: true,
+  configurable: true,
+});
+Object.defineProperty(globalThis, 'localStorage', {
+  value: mockLocalStorage,
+  writable: true,
+  configurable: true,
+});
 
 const mockFetch = vi.fn(async () => ({
   ok: true,
   json: async () => ({ result: 'AI response.' }),
 }));
-Object.defineProperty(globalThis, 'fetch', { value: mockFetch, writable: true, configurable: true });
+Object.defineProperty(globalThis, 'fetch', {
+  value: mockFetch,
+  writable: true,
+  configurable: true,
+});
 
 if (!globalThis.AbortController) {
   globalThis.AbortController = class {
     signal = { addEventListener: () => {}, aborted: false };
-    abort() { (this.signal as any).aborted = true; }
+    abort() {
+      (this.signal as any).aborted = true;
+    }
   } as unknown as typeof AbortController;
 }
 
@@ -40,20 +60,36 @@ import type { NodeData, NodeCategory } from '@/lib/types';
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const CATEGORIES: NodeCategory[] = [
-  'input', 'trigger', 'state', 'artifact', 'note', 'cid', 'action',
-  'review', 'test', 'policy', 'patch', 'dependency', 'output',
+  'input',
+  'trigger',
+  'state',
+  'artifact',
+  'note',
+  'cid',
+  'action',
+  'review',
+  'test',
+  'policy',
+  'patch',
+  'dependency',
+  'output',
 ];
 
 const STATUSES: NodeData['status'][] = [
-  'active', 'stale', 'pending', 'locked', 'generating', 'reviewing',
+  'active',
+  'stale',
+  'pending',
+  'locked',
+  'generating',
+  'reviewing',
 ];
 
 // ── Seeded PRNG ───────────────────────────────────────────────────────────────
 
 function seededRandom(seed: number) {
   return () => {
-    seed = (seed * 1664525 + 1013904223) & 0xFFFFFFFF;
-    return (seed >>> 0) / 0xFFFFFFFF;
+    seed = (seed * 1664525 + 1013904223) & 0xffffffff;
+    return (seed >>> 0) / 0xffffffff;
   };
 }
 
@@ -64,7 +100,7 @@ function getStore() {
 }
 
 function resetStore() {
-  Object.keys(storage).forEach(k => delete storage[k]);
+  Object.keys(storage).forEach((k) => delete storage[k]);
   mockFetch.mockClear();
   useLifecycleStore.setState({
     nodes: [],
@@ -96,7 +132,12 @@ function mkNode(category: NodeCategory, rand: () => number): Node<NodeData> {
     id,
     type: 'lifecycleNode',
     position: { x: Math.floor(rand() * 1200), y: Math.floor(rand() * 800) },
-    data: { label: `${category}-${nodeCounter}`, category, content: `Content for ${id}`, status: 'active' as const },
+    data: {
+      label: `${category}-${nodeCounter}`,
+      category,
+      content: `Content for ${id}`,
+      status: 'active' as const,
+    },
   };
 }
 
@@ -111,26 +152,30 @@ function checkInvariants(opLog: string[]): void {
   const s = getStore();
 
   // No duplicate node IDs
-  const nodeIds = new Set(s.nodes.map(n => n.id));
+  const nodeIds = new Set(s.nodes.map((n) => n.id));
   if (nodeIds.size !== s.nodes.length) {
-    const dupes = s.nodes.map(n => n.id).filter((id, i, arr) => arr.indexOf(id) !== i);
+    const dupes = s.nodes.map((n) => n.id).filter((id, i, arr) => arr.indexOf(id) !== i);
     throw new Error(`Duplicate node IDs: ${dupes.join(', ')}\nOp log:\n${opLog.join('\n')}`);
   }
 
   // No duplicate edge IDs
-  const edgeIds = new Set(s.edges.map(e => e.id));
+  const edgeIds = new Set(s.edges.map((e) => e.id));
   if (edgeIds.size !== s.edges.length) {
-    const dupes = s.edges.map(e => e.id).filter((id, i, arr) => arr.indexOf(id) !== i);
+    const dupes = s.edges.map((e) => e.id).filter((id, i, arr) => arr.indexOf(id) !== i);
     throw new Error(`Duplicate edge IDs: ${dupes.join(', ')}\nOp log:\n${opLog.join('\n')}`);
   }
 
   // All edges reference existing nodes
   for (const edge of s.edges) {
     if (!nodeIds.has(edge.source)) {
-      throw new Error(`Edge ${edge.id} references missing source ${edge.source}\nOp log:\n${opLog.join('\n')}`);
+      throw new Error(
+        `Edge ${edge.id} references missing source ${edge.source}\nOp log:\n${opLog.join('\n')}`,
+      );
     }
     if (!nodeIds.has(edge.target)) {
-      throw new Error(`Edge ${edge.id} references missing target ${edge.target}\nOp log:\n${opLog.join('\n')}`);
+      throw new Error(
+        `Edge ${edge.id} references missing target ${edge.target}\nOp log:\n${opLog.join('\n')}`,
+      );
     }
   }
 
@@ -146,7 +191,9 @@ function checkInvariants(opLog: string[]): void {
 
   // selectedNodeId is null or references existing node
   if (s.selectedNodeId && !nodeIds.has(s.selectedNodeId)) {
-    throw new Error(`selectedNodeId "${s.selectedNodeId}" references missing node\nOp log:\n${opLog.join('\n')}`);
+    throw new Error(
+      `selectedNodeId "${s.selectedNodeId}" references missing node\nOp log:\n${opLog.join('\n')}`,
+    );
   }
 
   // history and future are arrays
@@ -160,7 +207,9 @@ function checkInvariants(opLog: string[]): void {
   // No NaN in node positions
   for (const node of s.nodes) {
     if (Number.isNaN(node.position.x) || Number.isNaN(node.position.y)) {
-      throw new Error(`Node ${node.id} has NaN position: (${node.position.x}, ${node.position.y})\nOp log:\n${opLog.join('\n')}`);
+      throw new Error(
+        `Node ${node.id} has NaN position: (${node.position.x}, ${node.position.y})\nOp log:\n${opLog.join('\n')}`,
+      );
     }
   }
 }
@@ -259,7 +308,12 @@ function buildOperations(): Operation[] {
           attempts++;
         }
         if (tgt.id === src.id) return 'onConnect(skipped, same src/tgt)';
-        getStore().onConnect({ source: src.id, target: tgt.id, sourceHandle: null, targetHandle: null });
+        getStore().onConnect({
+          source: src.id,
+          target: tgt.id,
+          sourceHandle: null,
+          targetHandle: null,
+        });
         return `onConnect(${src.id} -> ${tgt.id})`;
       },
     },
@@ -373,7 +427,7 @@ function runChaos(config: ChaosConfig): void {
 
   for (let i = 0; i < config.opCount; i++) {
     // Filter to runnable operations
-    let runnable = ops.filter(op => op.canRun());
+    let runnable = ops.filter((op) => op.canRun());
     if (runnable.length === 0) {
       opLog.push(`[${i}] NO RUNNABLE OPS — skip`);
       continue;
@@ -398,8 +452,8 @@ function runChaos(config: ChaosConfig): void {
       // The operation itself crashing is a genuine failure
       throw new Error(
         `Operation "${op.name}" crashed at step ${i}.\n` +
-        `Error: ${(err as Error).message}\n` +
-        `Op log:\n${opLog.join('\n')}`
+          `Error: ${(err as Error).message}\n` +
+          `Op log:\n${opLog.join('\n')}`,
       );
     }
 
@@ -453,10 +507,10 @@ describe('Chaos / Fuzz Testing', () => {
         opCount: 200,
         bias: {
           'pushHistory+undo': 4,
-          'redo': 4,
-          'addNode': 2,
-          'deleteNode': 1,
-          'addEdge': 1,
+          redo: 4,
+          addNode: 2,
+          deleteNode: 1,
+          addEdge: 1,
         },
       });
     });
@@ -467,10 +521,10 @@ describe('Chaos / Fuzz Testing', () => {
         opCount: 200,
         bias: {
           'pushHistory+undo': 4,
-          'redo': 4,
-          'addNode': 2,
-          'deleteNode': 1,
-          'addEdge': 1,
+          redo: 4,
+          addNode: 2,
+          deleteNode: 1,
+          addEdge: 1,
         },
       });
     });
@@ -483,12 +537,12 @@ describe('Chaos / Fuzz Testing', () => {
         seed: 5555,
         opCount: 200,
         bias: {
-          'deleteNode': 6,
-          'deleteEdge': 6,
+          deleteNode: 6,
+          deleteEdge: 6,
           'toggleMultiSelect+deleteMultiSelected': 6,
-          'addNode': 3,
-          'addEdge': 2,
-          'onConnect': 1,
+          addNode: 3,
+          addEdge: 2,
+          onConnect: 1,
         },
       });
     });
@@ -498,12 +552,12 @@ describe('Chaos / Fuzz Testing', () => {
         seed: 6666,
         opCount: 200,
         bias: {
-          'deleteNode': 6,
-          'deleteEdge': 6,
+          deleteNode: 6,
+          deleteEdge: 6,
           'toggleMultiSelect+deleteMultiSelected': 6,
-          'addNode': 3,
-          'addEdge': 2,
-          'onConnect': 1,
+          addNode: 3,
+          addEdge: 2,
+          onConnect: 1,
         },
       });
     });
@@ -523,9 +577,9 @@ describe('Chaos / Fuzz Testing', () => {
         seed: 22222,
         opCount: 200,
         bias: {
-          'addNode': 5,
-          'deleteNode': 5,
-          'duplicateNode': 3,
+          addNode: 5,
+          deleteNode: 5,
+          duplicateNode: 3,
           'toggleMultiSelect+deleteMultiSelected': 3,
         },
       });
@@ -539,11 +593,11 @@ describe('Chaos / Fuzz Testing', () => {
         seed: 33333,
         opCount: 200,
         bias: {
-          'addNode': 3,
-          'addEdge': 5,
-          'deleteEdge': 5,
-          'onConnect': 5,
-          'deleteNode': 1,
+          addNode: 3,
+          addEdge: 5,
+          deleteEdge: 5,
+          onConnect: 5,
+          deleteNode: 1,
         },
       });
     });
@@ -556,13 +610,13 @@ describe('Chaos / Fuzz Testing', () => {
         seed: 44444,
         opCount: 150,
         bias: {
-          'addNode': 3,
-          'selectNode': 5,
-          'optimizeLayout': 4,
-          'lockNode': 3,
-          'approveNode': 3,
-          'clearStale': 2,
-          'updateNodeStatus': 4,
+          addNode: 3,
+          selectNode: 5,
+          optimizeLayout: 4,
+          lockNode: 3,
+          approveNode: 3,
+          clearStale: 2,
+          updateNodeStatus: 4,
         },
       });
     });

@@ -3,12 +3,40 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  X, Eye, Pencil, Save, RotateCcw, Copy, Check,
-  ChevronDown, ChevronRight, Sparkles, GitBranch, Loader2, ArrowRight,
-  Maximize2, Minimize2, Search, Replace, Bold, Italic, Code, Heading2,
-  List, ListOrdered, Quote, Columns2, Minus,
-  ChevronLeft, BookOpen, Download, FileText, FileCode, FileType,
-  GripVertical, GitCompare,
+  X,
+  Eye,
+  Pencil,
+  Save,
+  RotateCcw,
+  Copy,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Sparkles,
+  GitBranch,
+  Loader2,
+  ArrowRight,
+  Maximize2,
+  Minimize2,
+  Search,
+  Replace,
+  Bold,
+  Italic,
+  Code,
+  Heading2,
+  List,
+  ListOrdered,
+  Quote,
+  Columns2,
+  Minus,
+  ChevronLeft,
+  BookOpen,
+  Download,
+  FileText,
+  FileCode,
+  FileType,
+  GripVertical,
+  GitCompare,
 } from 'lucide-react';
 import { useLifecycleStore } from '@/store/useStore';
 import { getNodeColors, CategoryIcon } from '@/lib/types';
@@ -33,7 +61,9 @@ function SelectionToolbar({
   const [instruction, setInstruction] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { inputRef.current?.focus(); }, []);
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
 
   return (
     <motion.div
@@ -41,10 +71,10 @@ function SelectionToolbar({
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 4, scale: 0.95 }}
       transition={{ duration: 0.12 }}
-      className="absolute z-50 bg-[#1a1a2e]/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl p-2 flex items-center gap-2"
+      className="absolute z-50 flex items-center gap-2 rounded-xl border border-white/10 bg-[#1a1a2e]/95 p-2 shadow-2xl backdrop-blur-xl"
       style={{ left: Math.min(position.x, 280), top: position.y }}
     >
-      <Sparkles size={12} className="text-cyan-400/60 flex-shrink-0" />
+      <Sparkles size={12} className="flex-shrink-0 text-cyan-400/60" />
       <input
         ref={inputRef}
         value={instruction}
@@ -54,15 +84,15 @@ function SelectionToolbar({
           if (e.key === 'Escape') onClose();
         }}
         placeholder="How should CID rewrite this?"
-        className="bg-transparent text-[11px] text-white/80 placeholder:text-white/25 outline-none w-[220px]"
+        className="w-[220px] bg-transparent text-[11px] text-white/80 outline-none placeholder:text-white/25"
         disabled={isRewriting}
       />
       {isRewriting ? (
-        <Loader2 size={12} className="text-cyan-400/60 animate-spin flex-shrink-0" />
+        <Loader2 size={12} className="flex-shrink-0 animate-spin text-cyan-400/60" />
       ) : (
         <button
           onClick={() => instruction.trim() && onRewrite(instruction.trim())}
-          className="text-[10px] px-2 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300/80 hover:bg-cyan-500/30 transition-colors flex-shrink-0"
+          className="flex-shrink-0 rounded-md bg-cyan-500/20 px-2 py-0.5 text-[10px] text-cyan-300/80 transition-colors hover:bg-cyan-500/30"
         >
           Rewrite
         </button>
@@ -91,7 +121,7 @@ function VersionHistory({
     <div className="border-t border-white/[0.06] pt-2">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex items-center gap-1.5 text-[10px] text-white/40 hover:text-white/60 transition-colors w-full"
+        className="flex w-full items-center gap-1.5 text-[10px] text-white/40 transition-colors hover:text-white/60"
       >
         {expanded ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
         <RotateCcw size={10} />
@@ -106,7 +136,7 @@ function VersionHistory({
             transition={{ duration: 0.15 }}
             className="overflow-hidden"
           >
-            <div className="mt-1.5 space-y-1 max-h-[120px] overflow-y-auto scrollbar-thin">
+            <div className="scrollbar-thin mt-1.5 max-h-[120px] space-y-1 overflow-y-auto">
               {[...versions].reverse().map((v, i) => {
                 const realIndex = versions.length - 1 - i;
                 const isLatest = realIndex === versions.length - 1;
@@ -114,31 +144,34 @@ function VersionHistory({
                 return (
                   <div
                     key={realIndex}
-                    className={`flex items-center justify-between w-full px-2 py-1 rounded text-[10px] transition-colors ${
+                    className={`flex w-full items-center justify-between rounded px-2 py-1 text-[10px] transition-colors ${
                       isDiffing
-                        ? 'bg-cyan-500/[0.08] border border-cyan-500/20'
+                        ? 'border border-cyan-500/20 bg-cyan-500/[0.08]'
                         : isLatest
                           ? 'bg-white/[0.04] text-white/50'
-                          : 'hover:bg-white/[0.06] text-white/35 hover:text-white/60'
+                          : 'text-white/35 hover:bg-white/[0.06] hover:text-white/60'
                     }`}
                   >
                     <span className="font-mono">{v.label}</span>
                     <div className="flex items-center gap-1">
                       <span className="text-white/20">
-                        {new Date(v.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(v.timestamp).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
                       </span>
                       {!isLatest && (
                         <>
                           <button
                             onClick={() => setDiffIndex(isDiffing ? null : realIndex)}
-                            className={`p-0.5 rounded transition-colors ${isDiffing ? 'text-cyan-400/70' : 'text-white/20 hover:text-white/50'}`}
+                            className={`rounded p-0.5 transition-colors ${isDiffing ? 'text-cyan-400/70' : 'text-white/20 hover:text-white/50'}`}
                             title="Compare with current"
                           >
                             <GitCompare size={9} />
                           </button>
                           <button
                             onClick={() => onRestore(realIndex)}
-                            className="p-0.5 rounded text-white/20 hover:text-amber-400/70 transition-colors"
+                            className="rounded p-0.5 text-white/20 transition-colors hover:text-amber-400/70"
                             title="Restore this version"
                           >
                             <RotateCcw size={9} />
@@ -160,13 +193,17 @@ function VersionHistory({
                   transition={{ duration: 0.15 }}
                   className="mt-2 overflow-hidden"
                 >
-                  <div className="text-[9px] text-white/30 mb-1 px-1">
-                    Comparing <span className="text-cyan-400/60">{versions[diffIndex].label}</span> → current
+                  <div className="mb-1 px-1 text-[9px] text-white/30">
+                    Comparing <span className="text-cyan-400/60">{versions[diffIndex].label}</span>{' '}
+                    → current
                   </div>
                   <DiffView
                     oldText={versions[diffIndex].content}
                     newText={currentContent}
-                    onRevert={() => { onRestore(diffIndex); setDiffIndex(null); }}
+                    onRevert={() => {
+                      onRestore(diffIndex);
+                      setDiffIndex(null);
+                    }}
                     onAccept={() => setDiffIndex(null)}
                     compact
                   />
@@ -200,19 +237,21 @@ function DownstreamImpact({
       <div className="flex items-center justify-between">
         <button
           onClick={() => setExpanded(!expanded)}
-          className="flex items-center gap-1.5 text-[10px] text-white/40 hover:text-white/60 transition-colors"
+          className="flex items-center gap-1.5 text-[10px] text-white/40 transition-colors hover:text-white/60"
         >
           {expanded ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
           <GitBranch size={10} />
-          <span>{downstream.length} downstream node{downstream.length > 1 ? 's' : ''}</span>
+          <span>
+            {downstream.length} downstream node{downstream.length > 1 ? 's' : ''}
+          </span>
         </button>
         <button
           onClick={onSync}
           disabled={isSyncing}
-          className={`flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-md border transition-colors ${
+          className={`flex items-center gap-1 rounded-md border px-2 py-0.5 text-[9px] transition-colors ${
             isSyncing
-              ? 'bg-amber-500/5 border-amber-500/10 text-amber-400/40 cursor-wait'
-              : 'bg-amber-500/10 border-amber-500/20 text-amber-400/70 hover:bg-amber-500/20'
+              ? 'cursor-wait border-amber-500/10 bg-amber-500/5 text-amber-400/40'
+              : 'border-amber-500/20 bg-amber-500/10 text-amber-400/70 hover:bg-amber-500/20'
           }`}
         >
           {isSyncing ? <Loader2 size={9} className="animate-spin" /> : <ArrowRight size={9} />}
@@ -229,11 +268,16 @@ function DownstreamImpact({
             className="overflow-hidden"
           >
             <div className="mt-1.5 space-y-0.5">
-              {downstream.map(n => {
+              {downstream.map((n) => {
                 const colors = getNodeColors(n.category as NodeData['category']);
                 return (
-                  <div key={n.id} className="flex items-center gap-1.5 px-2 py-1 text-[10px] text-white/40">
-                    <span style={{ color: colors.primary }}><CategoryIcon category={n.category as NodeData['category']} size={10} /></span>
+                  <div
+                    key={n.id}
+                    className="flex items-center gap-1.5 px-2 py-1 text-[10px] text-white/40"
+                  >
+                    <span style={{ color: colors.primary }}>
+                      <CategoryIcon category={n.category as NodeData['category']} size={10} />
+                    </span>
                     <span>{n.label}</span>
                   </div>
                 );
@@ -297,21 +341,75 @@ function MarkdownToolbar({
 
   const btn = (id: string) =>
     `p-1 rounded transition-colors ${flashBtn === id ? 'bg-white/[0.15] text-white/80' : 'hover:bg-white/[0.08] text-white/30 hover:text-white/60'}`;
-  const sep = "w-px h-3.5 bg-white/[0.06] mx-0.5";
+  const sep = 'w-px h-3.5 bg-white/[0.06] mx-0.5';
 
   return (
-    <div className="flex items-center gap-0.5 px-1 py-1 border-b border-white/[0.04] bg-white/[0.02]">
-      <button className={btn('bold')} onClick={() => flash('bold', () => wrap('**', '**'))} title="Bold (Ctrl+B)"><Bold size={11} /></button>
-      <button className={btn('italic')} onClick={() => flash('italic', () => wrap('*', '*'))} title="Italic (Ctrl+I)"><Italic size={11} /></button>
-      <button className={btn('code')} onClick={() => flash('code', () => wrap('`', '`'))} title="Inline Code"><Code size={11} /></button>
+    <div className="flex items-center gap-0.5 border-b border-white/[0.04] bg-white/[0.02] px-1 py-1">
+      <button
+        className={btn('bold')}
+        onClick={() => flash('bold', () => wrap('**', '**'))}
+        title="Bold (Ctrl+B)"
+      >
+        <Bold size={11} />
+      </button>
+      <button
+        className={btn('italic')}
+        onClick={() => flash('italic', () => wrap('*', '*'))}
+        title="Italic (Ctrl+I)"
+      >
+        <Italic size={11} />
+      </button>
+      <button
+        className={btn('code')}
+        onClick={() => flash('code', () => wrap('`', '`'))}
+        title="Inline Code"
+      >
+        <Code size={11} />
+      </button>
       <div className={sep} />
-      <button className={btn('h2')} onClick={() => flash('h2', () => insertLine('## '))} title="Heading"><Heading2 size={11} /></button>
-      <button className={btn('ul')} onClick={() => flash('ul', () => insertLine('- '))} title="Bullet List"><List size={11} /></button>
-      <button className={btn('ol')} onClick={() => flash('ol', () => insertLine('1. '))} title="Numbered List"><ListOrdered size={11} /></button>
-      <button className={btn('quote')} onClick={() => flash('quote', () => insertLine('> '))} title="Blockquote"><Quote size={11} /></button>
+      <button
+        className={btn('h2')}
+        onClick={() => flash('h2', () => insertLine('## '))}
+        title="Heading"
+      >
+        <Heading2 size={11} />
+      </button>
+      <button
+        className={btn('ul')}
+        onClick={() => flash('ul', () => insertLine('- '))}
+        title="Bullet List"
+      >
+        <List size={11} />
+      </button>
+      <button
+        className={btn('ol')}
+        onClick={() => flash('ol', () => insertLine('1. '))}
+        title="Numbered List"
+      >
+        <ListOrdered size={11} />
+      </button>
+      <button
+        className={btn('quote')}
+        onClick={() => flash('quote', () => insertLine('> '))}
+        title="Blockquote"
+      >
+        <Quote size={11} />
+      </button>
       <div className={sep} />
-      <button className={btn('codeblock')} onClick={() => flash('codeblock', () => wrap('\n```\n', '\n```\n'))} title="Code Block"><Code size={11} className="text-emerald-400/50" /></button>
-      <button className={btn('hr')} onClick={() => flash('hr', () => insertLine('---\n'))} title="Horizontal Rule"><Minus size={11} /></button>
+      <button
+        className={btn('codeblock')}
+        onClick={() => flash('codeblock', () => wrap('\n```\n', '\n```\n'))}
+        title="Code Block"
+      >
+        <Code size={11} className="text-emerald-400/50" />
+      </button>
+      <button
+        className={btn('hr')}
+        onClick={() => flash('hr', () => insertLine('---\n'))}
+        title="Horizontal Rule"
+      >
+        <Minus size={11} />
+      </button>
     </div>
   );
 }
@@ -335,7 +433,9 @@ function FindReplace({
   const [matchIdx, setMatchIdx] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { inputRef.current?.focus(); }, []);
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
 
   const matches = query
     ? [...text.matchAll(new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'))]
@@ -377,7 +477,9 @@ function FindReplace({
     if ('Highlight' in window && CSS.highlights) {
       const highlight = new Highlight(...ranges);
       CSS.highlights.set('artifact-search', highlight);
-      return () => { CSS.highlights?.delete('artifact-search'); };
+      return () => {
+        CSS.highlights?.delete('artifact-search');
+      };
     }
   }, [query, text, contentRef]);
 
@@ -387,32 +489,58 @@ function FindReplace({
       animate={{ height: 'auto', opacity: 1 }}
       exit={{ height: 0, opacity: 0 }}
       transition={{ duration: 0.12 }}
-      className="border-b border-white/[0.04] px-3 py-2 bg-white/[0.02] space-y-1.5 overflow-hidden"
+      className="space-y-1.5 overflow-hidden border-b border-white/[0.04] bg-white/[0.02] px-3 py-2"
     >
       <div className="flex items-center gap-1.5">
-        <Search size={11} className="text-white/30 flex-shrink-0" />
+        <Search size={11} className="flex-shrink-0 text-white/30" />
         <input
           ref={inputRef}
           value={query}
-          onChange={(e) => { setQuery(e.target.value); setMatchIdx(0); }}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setMatchIdx(0);
+          }}
           onKeyDown={(e) => {
             if (e.key === 'Escape') onClose();
-            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); setMatchIdx(i => (i + 1) % Math.max(1, matches.length)); }
-            if (e.key === 'Enter' && e.shiftKey) { e.preventDefault(); setMatchIdx(i => (i - 1 + matches.length) % Math.max(1, matches.length)); }
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              setMatchIdx((i) => (i + 1) % Math.max(1, matches.length));
+            }
+            if (e.key === 'Enter' && e.shiftKey) {
+              e.preventDefault();
+              setMatchIdx((i) => (i - 1 + matches.length) % Math.max(1, matches.length));
+            }
             // Ctrl/Cmd+G: next match, Shift+Ctrl/Cmd+G: prev match
-            if ((e.metaKey || e.ctrlKey) && e.key === 'g' && !e.shiftKey) { e.preventDefault(); setMatchIdx(i => (i + 1) % Math.max(1, matches.length)); }
-            if ((e.metaKey || e.ctrlKey) && e.key === 'g' && e.shiftKey) { e.preventDefault(); setMatchIdx(i => (i - 1 + matches.length) % Math.max(1, matches.length)); }
+            if ((e.metaKey || e.ctrlKey) && e.key === 'g' && !e.shiftKey) {
+              e.preventDefault();
+              setMatchIdx((i) => (i + 1) % Math.max(1, matches.length));
+            }
+            if ((e.metaKey || e.ctrlKey) && e.key === 'g' && e.shiftKey) {
+              e.preventDefault();
+              setMatchIdx((i) => (i - 1 + matches.length) % Math.max(1, matches.length));
+            }
           }}
           placeholder="Find... (Enter/Shift+Enter to navigate)"
-          className="bg-transparent text-[11px] text-white/70 placeholder:text-white/20 outline-none flex-1"
+          className="flex-1 bg-transparent text-[11px] text-white/70 outline-none placeholder:text-white/20"
         />
-        <span className={`text-[9px] tabular-nums w-14 text-right ${query && matches.length === 0 ? 'text-red-400/60' : 'text-white/30'}`}>
-          {query ? `${matches.length > 0 ? (matchIdx % matches.length) + 1 : 0} of ${matches.length}` : ''}
+        <span
+          className={`w-14 text-right text-[9px] tabular-nums ${query && matches.length === 0 ? 'text-red-400/60' : 'text-white/30'}`}
+        >
+          {query
+            ? `${matches.length > 0 ? (matchIdx % matches.length) + 1 : 0} of ${matches.length}`
+            : ''}
         </span>
-        <button onClick={() => setShowReplace(!showReplace)} className="p-0.5 rounded hover:bg-white/[0.06] text-white/25 hover:text-white/50 transition-colors" title="Toggle Replace">
+        <button
+          onClick={() => setShowReplace(!showReplace)}
+          className="rounded p-0.5 text-white/25 transition-colors hover:bg-white/[0.06] hover:text-white/50"
+          title="Toggle Replace"
+        >
           <Replace size={11} />
         </button>
-        <button onClick={onClose} className="p-0.5 rounded hover:bg-white/[0.06] text-white/25 hover:text-white/50 transition-colors">
+        <button
+          onClick={onClose}
+          className="rounded p-0.5 text-white/25 transition-colors hover:bg-white/[0.06] hover:text-white/50"
+        >
           <X size={11} />
         </button>
       </div>
@@ -424,18 +552,26 @@ function FindReplace({
             exit={{ height: 0, opacity: 0 }}
             className="flex items-center gap-1.5 overflow-hidden"
           >
-            <Replace size={11} className="text-white/30 flex-shrink-0" />
+            <Replace size={11} className="flex-shrink-0 text-white/30" />
             <input
               value={replaceVal}
               onChange={(e) => setReplaceVal(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleReplaceOne(); }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleReplaceOne();
+              }}
               placeholder="Replace..."
-              className="bg-transparent text-[11px] text-white/70 placeholder:text-white/20 outline-none flex-1"
+              className="flex-1 bg-transparent text-[11px] text-white/70 outline-none placeholder:text-white/20"
             />
-            <button onClick={handleReplaceOne} className="text-[9px] px-1.5 py-0.5 rounded bg-white/[0.06] text-white/40 hover:text-white/60 transition-colors">
+            <button
+              onClick={handleReplaceOne}
+              className="rounded bg-white/[0.06] px-1.5 py-0.5 text-[9px] text-white/40 transition-colors hover:text-white/60"
+            >
               One
             </button>
-            <button onClick={handleReplaceAll} className="text-[9px] px-1.5 py-0.5 rounded bg-white/[0.06] text-white/40 hover:text-white/60 transition-colors">
+            <button
+              onClick={handleReplaceAll}
+              className="rounded bg-white/[0.06] px-1.5 py-0.5 text-[9px] text-white/40 transition-colors hover:text-white/60"
+            >
               All
             </button>
           </motion.div>
@@ -485,12 +621,12 @@ function ReadingModeContent({
   }, [activeNodeId]);
 
   return (
-    <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 scrollbar-thin">
-      <div className="max-w-[700px] mx-auto">
-        <h1 className="text-[14px] font-bold text-white/80 mb-1">Workflow Output</h1>
-        <p className="text-[10px] text-white/25 mb-4">{executedNodes.length} nodes with content</p>
+    <div ref={scrollRef} className="scrollbar-thin flex-1 overflow-y-auto px-4 py-3">
+      <div className="mx-auto max-w-[700px]">
+        <h1 className="mb-1 text-[14px] font-bold text-white/80">Workflow Output</h1>
+        <p className="mb-4 text-[10px] text-white/25">{executedNodes.length} nodes with content</p>
         {executedNodes.map((en, i) => {
-          const fullNode = allNodes.find(n => n.id === en.id);
+          const fullNode = allNodes.find((n) => n.id === en.id);
           if (!fullNode) return null;
           const content = fullNode.data.executionResult || fullNode.data.content || '';
           const isRunning = fullNode.data.executionStatus === 'running';
@@ -498,39 +634,39 @@ function ReadingModeContent({
 
           return (
             <div key={en.id} data-node-section={en.id} className="mb-6">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-[10px] text-white/20 font-mono">{i + 1}.</span>
+              <div className="mb-2 flex items-center gap-2">
+                <span className="font-mono text-[10px] text-white/20">{i + 1}.</span>
                 <span style={{ color: colors.primary }}>
                   <CategoryIcon category={en.category as NodeData['category']} size={11} />
                 </span>
                 <button
                   onClick={() => onNavigate(en.id)}
-                  className="text-[11px] font-semibold text-white/60 hover:text-white/90 transition-colors"
+                  className="text-[11px] font-semibold text-white/60 transition-colors hover:text-white/90"
                 >
                   {en.label}
                 </button>
                 <span className="text-[9px] text-white/20">{en.category}</span>
               </div>
               {isRunning ? (
-                <div className="space-y-2 animate-pulse">
-                  <div className="h-3 bg-white/[0.04] rounded w-3/4" />
-                  <div className="h-3 bg-white/[0.04] rounded w-full" />
-                  <div className="h-3 bg-white/[0.04] rounded w-5/6" />
-                  <div className="flex items-center gap-2 mt-2">
+                <div className="animate-pulse space-y-2">
+                  <div className="h-3 w-3/4 rounded bg-white/[0.04]" />
+                  <div className="h-3 w-full rounded bg-white/[0.04]" />
+                  <div className="h-3 w-5/6 rounded bg-white/[0.04]" />
+                  <div className="mt-2 flex items-center gap-2">
                     <Loader2 size={10} className="animate-spin text-cyan-400/40" />
                     <span className="text-[10px] text-cyan-400/40">Generating content…</span>
                   </div>
                 </div>
               ) : (
-                <div className="text-[11px] text-white/55 leading-relaxed">
-                  {content ? renderMarkdown(content) : (
+                <div className="text-[11px] leading-relaxed text-white/55">
+                  {content ? (
+                    renderMarkdown(content)
+                  ) : (
                     <span className="text-white/20 italic">No content yet</span>
                   )}
                 </div>
               )}
-              {i < executedNodes.length - 1 && (
-                <hr className="border-white/[0.06] mt-6" />
-              )}
+              {i < executedNodes.length - 1 && <hr className="mt-6 border-white/[0.06]" />}
             </div>
           );
         })}
@@ -565,8 +701,8 @@ function ExportDropdown({ label, content }: { label: string; content: string }) 
   return (
     <div ref={ref} className="relative">
       <button
-        onClick={() => setOpen(v => !v)}
-        className={`p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors ${open ? 'text-cyan-400/60' : 'text-white/30 hover:text-white/60'}`}
+        onClick={() => setOpen((v) => !v)}
+        className={`rounded-lg p-1.5 transition-colors hover:bg-white/[0.06] ${open ? 'text-cyan-400/60' : 'text-white/30 hover:text-white/60'}`}
         title="Export artifact"
       >
         <Download size={12} />
@@ -578,7 +714,7 @@ function ExportDropdown({ label, content }: { label: string; content: string }) 
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.95 }}
             transition={{ duration: 0.1 }}
-            className="absolute right-0 top-full mt-1 bg-[#1a1a2e]/95 backdrop-blur-xl border border-white/10 rounded-lg shadow-2xl py-1 z-50 min-w-[140px]"
+            className="absolute top-full right-0 z-50 mt-1 min-w-[140px] rounded-lg border border-white/10 bg-[#1a1a2e]/95 py-1 shadow-2xl backdrop-blur-xl"
           >
             {formats.map(({ key, label: fmtLabel, icon: Icon }) => (
               <button
@@ -587,7 +723,7 @@ function ExportDropdown({ label, content }: { label: string; content: string }) 
                   exportAndDownload(content, key, label);
                   setOpen(false);
                 }}
-                className="flex items-center gap-2 w-full px-3 py-1.5 text-[10px] text-white/50 hover:text-white/80 hover:bg-white/[0.06] transition-colors"
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-[10px] text-white/50 transition-colors hover:bg-white/[0.06] hover:text-white/80"
               >
                 <Icon size={11} className="text-white/30" />
                 {fmtLabel}
@@ -604,19 +740,39 @@ function ExportDropdown({ label, content }: { label: string; content: string }) 
 
 export default function ArtifactPanel() {
   const {
-    nodes, edges, activeArtifactNodeId, artifactPanelTab, artifactPanelMode,
-    artifactVersions, closeArtifactPanel, setArtifactTab, setArtifactMode,
-    saveArtifactVersion, restoreArtifactVersion, rewriteArtifactSelection,
-    getDownstreamNodes, updateNodeData, updateNodeStatus, executeNode,
-    addEvent, pushHistory, selectNode,
-    artifactReadingMode, setArtifactReadingMode, getExecutedNodesInOrder,
+    nodes,
+    edges: _edges,
+    activeArtifactNodeId,
+    artifactPanelTab,
+    artifactPanelMode,
+    artifactVersions,
+    closeArtifactPanel,
+    setArtifactTab,
+    setArtifactMode,
+    saveArtifactVersion,
+    restoreArtifactVersion,
+    rewriteArtifactSelection,
+    getDownstreamNodes,
+    updateNodeData,
+    updateNodeStatus,
+    executeNode,
+    addEvent,
+    pushHistory,
+    selectNode,
+    artifactReadingMode,
+    setArtifactReadingMode,
+    getExecutedNodesInOrder,
     openArtifactPanel,
   } = useLifecycleStore();
 
-  const node = nodes.find(n => n.id === activeArtifactNodeId);
+  const node = nodes.find((n) => n.id === activeArtifactNodeId);
   const [editDraft, setEditDraft] = useState('');
   const [copied, setCopied] = useState(false);
-  const [selectionToolbar, setSelectionToolbar] = useState<{ x: number; y: number; text: string } | null>(null);
+  const [selectionToolbar, setSelectionToolbar] = useState<{
+    x: number;
+    y: number;
+    text: string;
+  } | null>(null);
   const [isRewriting, setIsRewriting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -632,7 +788,9 @@ export default function ArtifactPanel() {
 
   // Sync edit draft when source content, node, tab, or mode changes
   const currentText = node
-    ? (artifactPanelTab === 'result' ? (node.data.executionResult || '') : (node.data.content || ''))
+    ? artifactPanelTab === 'result'
+      ? node.data.executionResult || ''
+      : node.data.content || ''
     : '';
   const prevSyncKeyRef = useRef('');
   useEffect(() => {
@@ -656,73 +814,107 @@ export default function ArtifactPanel() {
     autoSaveTimerRef.current = setTimeout(() => {
       saveRef.current?.();
     }, 30000);
-    return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current); };
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
   }, [isDirty, editDraft]);
 
   // Resize handler
-  const startResize = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    isResizingRef.current = true;
-    const startX = e.clientX;
-    const startWidth = panelWidth;
-    const onMove = (me: MouseEvent) => {
-      if (!isResizingRef.current) return;
-      const delta = startX - me.clientX;
-      setPanelWidth(Math.min(Math.max(startWidth + delta, 350), window.innerWidth * 0.8));
-    };
-    const onUp = () => {
-      isResizingRef.current = false;
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    };
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-  }, [panelWidth]);
+  const startResize = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      isResizingRef.current = true;
+      const startX = e.clientX;
+      const startWidth = panelWidth;
+      const onMove = (me: MouseEvent) => {
+        if (!isResizingRef.current) return;
+        const delta = startX - me.clientX;
+        setPanelWidth(Math.min(Math.max(startWidth + delta, 350), window.innerWidth * 0.8));
+      };
+      const onUp = () => {
+        isResizingRef.current = false;
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      };
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    },
+    [panelWidth],
+  );
 
   // Ref to allow save shortcut to call handleSave without stale closure
   const saveRef = useRef<(() => void) | null>(null);
+  // Navigate ref for keyboard shortcuts (must be before early return)
+  const navigateRef = useRef<((dir: 'prev' | 'next') => void) | null>(null);
 
   // Keyboard shortcuts: Ctrl+F (find), Ctrl+B/I (format), Ctrl+S (save), Escape (close fullscreen)
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (!activeArtifactNodeId) return;
-      const isInPanel = panelRef.current?.contains(document.activeElement as globalThis.Node | null);
+      const isInPanel = panelRef.current?.contains(
+        document.activeElement as globalThis.Node | null,
+      );
 
       // Ctrl/Cmd+F: Toggle find/replace (when focused in panel)
       if ((e.metaKey || e.ctrlKey) && e.key === 'f' && isInPanel) {
         e.preventDefault();
-        setShowFindReplace(v => !v);
+        setShowFindReplace((v) => !v);
       }
       // Ctrl/Cmd+S: Save (in edit or split mode, when panel is focused)
-      if ((e.metaKey || e.ctrlKey) && e.key === 's' && isInPanel && (artifactPanelMode === 'edit' || isSplitView)) {
+      if (
+        (e.metaKey || e.ctrlKey) &&
+        e.key === 's' &&
+        isInPanel &&
+        (artifactPanelMode === 'edit' || isSplitView)
+      ) {
         e.preventDefault();
         saveRef.current?.();
       }
       // Escape: close fullscreen first, then find, then panel
       if (e.key === 'Escape') {
-        if (showFindReplace) { setShowFindReplace(false); return; }
-        if (isFullScreen) { setIsFullScreen(false); return; }
+        if (showFindReplace) {
+          setShowFindReplace(false);
+          return;
+        }
+        if (isFullScreen) {
+          setIsFullScreen(false);
+          return;
+        }
       }
       // Ctrl+B: Bold (in edit mode)
-      if ((e.metaKey || e.ctrlKey) && e.key === 'b' && artifactPanelMode === 'edit' && textareaRef.current === document.activeElement) {
+      if (
+        (e.metaKey || e.ctrlKey) &&
+        e.key === 'b' &&
+        artifactPanelMode === 'edit' &&
+        textareaRef.current === document.activeElement
+      ) {
         e.preventDefault();
         const ta = textareaRef.current!;
-        const s = ta.selectionStart, end = ta.selectionEnd;
+        const s = ta.selectionStart,
+          end = ta.selectionEnd;
         const sel = editDraft.slice(s, end);
-        const newText = editDraft.slice(0, s) + '**' + (sel || 'bold') + '**' + editDraft.slice(end);
+        const newText =
+          editDraft.slice(0, s) + '**' + (sel || 'bold') + '**' + editDraft.slice(end);
         setEditDraft(newText);
       }
       // Ctrl+I: Italic (in edit mode)
-      if ((e.metaKey || e.ctrlKey) && e.key === 'i' && artifactPanelMode === 'edit' && textareaRef.current === document.activeElement) {
+      if (
+        (e.metaKey || e.ctrlKey) &&
+        e.key === 'i' &&
+        artifactPanelMode === 'edit' &&
+        textareaRef.current === document.activeElement
+      ) {
         e.preventDefault();
         const ta = textareaRef.current!;
-        const s = ta.selectionStart, end = ta.selectionEnd;
+        const s = ta.selectionStart,
+          end = ta.selectionEnd;
         const sel = editDraft.slice(s, end);
-        const newText = editDraft.slice(0, s) + '*' + (sel || 'italic') + '*' + editDraft.slice(end);
+        const newText =
+          editDraft.slice(0, s) + '*' + (sel || 'italic') + '*' + editDraft.slice(end);
         setEditDraft(newText);
       }
       // Ctrl+]/[: Next/Previous node
@@ -737,7 +929,14 @@ export default function ArtifactPanel() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [activeArtifactNodeId, showFindReplace, isFullScreen, artifactPanelMode, isSplitView, editDraft]);
+  }, [
+    activeArtifactNodeId,
+    showFindReplace,
+    isFullScreen,
+    artifactPanelMode,
+    isSplitView,
+    editDraft,
+  ]);
 
   // Handle text selection for AI rewrite
   const handleMouseUp = useCallback(() => {
@@ -775,15 +974,14 @@ export default function ArtifactPanel() {
 
   const colors = getNodeColors(node.data.category);
   const hasResult = !!node.data.executionResult;
-  const activeText = artifactPanelTab === 'result'
-    ? (node.data.executionResult || '')
-    : (node.data.content || '');
+  const activeText =
+    artifactPanelTab === 'result' ? node.data.executionResult || '' : node.data.content || '';
   const versions = artifactVersions[activeArtifactNodeId] || [];
   const downstream = getDownstreamNodes(activeArtifactNodeId);
 
   // Navigation: prev/next through executed nodes in topo order
   const executedNodes = getExecutedNodesInOrder();
-  const currentIdx = executedNodes.findIndex(n => n.id === activeArtifactNodeId);
+  const currentIdx = executedNodes.findIndex((n) => n.id === activeArtifactNodeId);
   const hasPrev = currentIdx > 0;
   const hasNext = currentIdx < executedNodes.length - 1;
   const navigateTo = (idx: number) => {
@@ -817,10 +1015,8 @@ export default function ArtifactPanel() {
   };
 
   // Keep save ref current for keyboard shortcut
-  saveRef.current = handleSave; // eslint-disable-line react-hooks/refs
+  saveRef.current = handleSave; // eslint-disable-line react-hooks/immutability
 
-  // Navigate ref for keyboard shortcuts
-  const navigateRef = useRef<((dir: 'prev' | 'next') => void) | null>(null);
   navigateRef.current = (dir) => {
     const idx = dir === 'next' ? currentIdx + 1 : currentIdx - 1;
     if (idx >= 0 && idx < executedNodes.length) navigateTo(idx);
@@ -853,12 +1049,16 @@ export default function ArtifactPanel() {
       agent: false,
     });
     // Re-execute immediate downstream nodes (1 level deep — they'll cascade)
-    const immediateDown = downstream.filter(d => {
+    const immediateDown = downstream.filter((d) => {
       const store = useLifecycleStore.getState();
-      return store.edges.some(e => e.source === activeArtifactNodeId && e.target === d.id);
+      return store.edges.some((e) => e.source === activeArtifactNodeId && e.target === d.id);
     });
     for (const d of immediateDown) {
-      try { await executeNode(d.id); } catch { /* node execution handles its own errors */ }
+      try {
+        await executeNode(d.id);
+      } catch {
+        /* node execution handles its own errors */
+      }
     }
     setIsSyncing(false);
   };
@@ -870,10 +1070,8 @@ export default function ArtifactPanel() {
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: 500, opacity: 0 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      className={`fixed bg-[#0c0c14]/95 backdrop-blur-xl border-l border-white/[0.06] z-[45] flex flex-col ${
-        isFullScreen
-          ? 'inset-0 w-full border-l-0'
-          : 'right-0 top-0 bottom-0'
+      className={`fixed z-[45] flex flex-col border-l border-white/[0.06] bg-[#0c0c14]/95 backdrop-blur-xl ${
+        isFullScreen ? 'inset-0 w-full border-l-0' : 'top-0 right-0 bottom-0'
       }`}
       style={isFullScreen ? undefined : { width: panelWidth }}
     >
@@ -881,51 +1079,53 @@ export default function ArtifactPanel() {
       {!isFullScreen && (
         <div
           onMouseDown={startResize}
-          className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-cyan-500/20 active:bg-cyan-500/30 transition-colors z-10 group"
+          className="group absolute top-0 bottom-0 left-0 z-10 w-1 cursor-col-resize transition-colors hover:bg-cyan-500/20 active:bg-cyan-500/30"
         >
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-white/20">
+          <div className="absolute top-1/2 left-0 -translate-y-1/2 text-white/20 opacity-0 transition-opacity group-hover:opacity-100">
             <GripVertical size={10} />
           </div>
         </div>
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
-        <div className="flex items-center gap-2.5 min-w-0">
+      <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-3">
+        <div className="flex min-w-0 items-center gap-2.5">
           <span style={{ color: colors.primary }}>
             <CategoryIcon category={node.data.category} size={14} />
           </span>
           <div className="min-w-0">
             <button
-              onClick={() => { selectNode(activeArtifactNodeId); }}
-              className="text-[12px] font-semibold text-white/90 hover:text-white transition-colors truncate block"
+              onClick={() => {
+                selectNode(activeArtifactNodeId);
+              }}
+              className="block truncate text-[12px] font-semibold text-white/90 transition-colors hover:text-white"
             >
               {node.data.label}
             </button>
             {node.data.description && (
-              <div className="text-[9.5px] text-white/45 truncate">{node.data.description}</div>
+              <div className="truncate text-[9.5px] text-white/45">{node.data.description}</div>
             )}
           </div>
         </div>
         <div className="flex items-center gap-0.5">
           {/* Prev/Next Navigation */}
           {executedNodes.length > 1 && !artifactReadingMode && (
-            <div className="flex items-center gap-0.5 mr-1">
+            <div className="mr-1 flex items-center gap-0.5">
               <button
                 onClick={() => navigateTo(currentIdx - 1)}
                 disabled={!hasPrev}
-                className="p-1 rounded-lg hover:bg-white/[0.06] text-white/30 hover:text-white/60 transition-colors disabled:opacity-20 disabled:cursor-default"
+                className="rounded-lg p-1 text-white/30 transition-colors hover:bg-white/[0.06] hover:text-white/60 disabled:cursor-default disabled:opacity-20"
                 title="Previous node"
               >
                 <ChevronLeft size={12} />
               </button>
-              <span className="text-[9px] text-white/40 tabular-nums min-w-[28px] text-center">
+              <span className="min-w-[28px] text-center text-[9px] text-white/40 tabular-nums">
                 {currentIdx + 1}/{executedNodes.length}
               </span>
               <button
                 onClick={() => navigateTo(currentIdx + 1)}
                 disabled={!hasNext}
-                className="p-1 rounded-lg hover:bg-white/[0.06] text-white/30 hover:text-white/60 transition-colors disabled:opacity-20 disabled:cursor-default"
+                className="rounded-lg p-1 text-white/30 transition-colors hover:bg-white/[0.06] hover:text-white/60 disabled:cursor-default disabled:opacity-20"
                 title="Next node"
               >
                 <ChevronRight size={12} />
@@ -935,97 +1135,123 @@ export default function ArtifactPanel() {
           {/* Reading Mode */}
           <button
             onClick={() => setArtifactReadingMode(!artifactReadingMode)}
-            className={`p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors ${artifactReadingMode ? 'text-cyan-400/60' : 'text-white/30 hover:text-white/60'}`}
-            title={artifactReadingMode ? 'Exit Reading Mode' : 'Reading Mode — all nodes as document'}
+            className={`rounded-lg p-1.5 transition-colors hover:bg-white/[0.06] ${artifactReadingMode ? 'text-cyan-400/60' : 'text-white/30 hover:text-white/60'}`}
+            title={
+              artifactReadingMode ? 'Exit Reading Mode' : 'Reading Mode — all nodes as document'
+            }
           >
             <BookOpen size={12} />
           </button>
           {/* Find */}
-          <button onClick={() => setShowFindReplace(v => !v)} className={`p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors ${showFindReplace ? 'text-cyan-400/60' : 'text-white/30 hover:text-white/60'}`} title="Find & Replace (⌘F)">
+          <button
+            onClick={() => setShowFindReplace((v) => !v)}
+            className={`rounded-lg p-1.5 transition-colors hover:bg-white/[0.06] ${showFindReplace ? 'text-cyan-400/60' : 'text-white/30 hover:text-white/60'}`}
+            title="Find & Replace (⌘F)"
+          >
             <Search size={12} />
           </button>
           {/* Split View */}
           {!artifactReadingMode && (
-            <button onClick={() => { setIsSplitView(v => !v); if (!isSplitView) setArtifactMode('edit'); }} className={`p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors ${isSplitView ? 'text-cyan-400/60' : 'text-white/30 hover:text-white/60'}`} title="Split View">
+            <button
+              onClick={() => {
+                setIsSplitView((v) => !v);
+                if (!isSplitView) setArtifactMode('edit');
+              }}
+              className={`rounded-lg p-1.5 transition-colors hover:bg-white/[0.06] ${isSplitView ? 'text-cyan-400/60' : 'text-white/30 hover:text-white/60'}`}
+              title="Split View"
+            >
               <Columns2 size={12} />
             </button>
           )}
           {/* Export */}
           <ExportDropdown label={node.data.label} content={activeText} />
           {/* Copy */}
-          <button onClick={handleCopy} className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/30 hover:text-white/60 transition-colors" title="Copy">
+          <button
+            onClick={handleCopy}
+            className="rounded-lg p-1.5 text-white/30 transition-colors hover:bg-white/[0.06] hover:text-white/60"
+            title="Copy"
+          >
             {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
           </button>
           {/* Full Screen */}
-          <button onClick={() => setIsFullScreen(v => !v)} className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/30 hover:text-white/60 transition-colors" title={isFullScreen ? 'Exit Full Screen' : 'Full Screen'}>
+          <button
+            onClick={() => setIsFullScreen((v) => !v)}
+            className="rounded-lg p-1.5 text-white/30 transition-colors hover:bg-white/[0.06] hover:text-white/60"
+            title={isFullScreen ? 'Exit Full Screen' : 'Full Screen'}
+          >
             {isFullScreen ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
           </button>
           {/* Close */}
-          <button onClick={closeArtifactPanel} className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/30 hover:text-white/60 transition-colors">
+          <button
+            onClick={closeArtifactPanel}
+            className="rounded-lg p-1.5 text-white/30 transition-colors hover:bg-white/[0.06] hover:text-white/60"
+          >
             <X size={14} />
           </button>
         </div>
       </div>
 
       {/* Tab Bar + Mode Toggle (hidden in reading mode) */}
-      {!artifactReadingMode && <div className="flex items-center justify-between px-4 py-2 border-b border-white/[0.04]">
-        <div className="flex gap-1">
-          <button
-            onClick={() => setArtifactTab('content')}
-            className={`px-2.5 py-1 rounded-md text-[10px] font-medium transition-colors ${
-              artifactPanelTab === 'content'
-                ? 'bg-white/[0.08] text-white/80'
-                : 'text-white/30 hover:text-white/50'
-            }`}
-          >
-            Content
-          </button>
-          {hasResult && (
+      {!artifactReadingMode && (
+        <div className="flex items-center justify-between border-b border-white/[0.04] px-4 py-2">
+          <div className="flex gap-1">
             <button
-              onClick={() => setArtifactTab('result')}
-              className={`px-2.5 py-1 rounded-md text-[10px] font-medium transition-colors ${
-                artifactPanelTab === 'result'
+              onClick={() => setArtifactTab('content')}
+              className={`rounded-md px-2.5 py-1 text-[10px] font-medium transition-colors ${
+                artifactPanelTab === 'content'
                   ? 'bg-white/[0.08] text-white/80'
                   : 'text-white/30 hover:text-white/50'
               }`}
             >
-              Execution Result
+              Content
             </button>
+            {hasResult && (
+              <button
+                onClick={() => setArtifactTab('result')}
+                className={`rounded-md px-2.5 py-1 text-[10px] font-medium transition-colors ${
+                  artifactPanelTab === 'result'
+                    ? 'bg-white/[0.08] text-white/80'
+                    : 'text-white/30 hover:text-white/50'
+                }`}
+              >
+                Execution Result
+              </button>
+            )}
+          </div>
+          {/* Dirty indicator */}
+          {isDirty && (
+            <div className="flex items-center gap-1 text-[9px] text-amber-400/60">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400/60" />
+              Unsaved
+            </div>
+          )}
+          {/* Hide mode toggle when in split view — both show simultaneously */}
+          {!isSplitView && (
+            <div className="flex gap-0.5 rounded-lg bg-white/[0.04] p-0.5">
+              <button
+                onClick={() => setArtifactMode('preview')}
+                className={`rounded-md p-1 transition-colors ${
+                  artifactPanelMode === 'preview'
+                    ? 'bg-white/[0.1] text-white/70'
+                    : 'text-white/25 hover:text-white/50'
+                }`}
+              >
+                <Eye size={12} />
+              </button>
+              <button
+                onClick={() => setArtifactMode('edit')}
+                className={`rounded-md p-1 transition-colors ${
+                  artifactPanelMode === 'edit'
+                    ? 'bg-white/[0.1] text-white/70'
+                    : 'text-white/25 hover:text-white/50'
+                }`}
+              >
+                <Pencil size={12} />
+              </button>
+            </div>
           )}
         </div>
-        {/* Dirty indicator */}
-        {isDirty && (
-          <div className="flex items-center gap-1 text-[9px] text-amber-400/60">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400/60 animate-pulse" />
-            Unsaved
-          </div>
-        )}
-        {/* Hide mode toggle when in split view — both show simultaneously */}
-        {!isSplitView && (
-          <div className="flex gap-0.5 bg-white/[0.04] rounded-lg p-0.5">
-            <button
-              onClick={() => setArtifactMode('preview')}
-              className={`p-1 rounded-md transition-colors ${
-                artifactPanelMode === 'preview'
-                  ? 'bg-white/[0.1] text-white/70'
-                  : 'text-white/25 hover:text-white/50'
-              }`}
-            >
-              <Eye size={12} />
-            </button>
-            <button
-              onClick={() => setArtifactMode('edit')}
-              className={`p-1 rounded-md transition-colors ${
-                artifactPanelMode === 'edit'
-                  ? 'bg-white/[0.1] text-white/70'
-                  : 'text-white/25 hover:text-white/50'
-              }`}
-            >
-              <Pencil size={12} />
-            </button>
-          </div>
-        )}
-      </div>}
+      )}
 
       {/* Find & Replace Bar */}
       <AnimatePresence>
@@ -1044,19 +1270,29 @@ export default function ArtifactPanel() {
       </AnimatePresence>
 
       {/* Content Area */}
-      <div className={`flex-1 overflow-hidden relative ${isSplitView && !artifactReadingMode ? 'flex' : 'flex flex-col'}`}>
+      <div
+        className={`relative flex-1 overflow-hidden ${isSplitView && !artifactReadingMode ? 'flex' : 'flex flex-col'}`}
+      >
         {artifactReadingMode ? (
-          <ReadingModeContent nodes={nodes} executedNodes={executedNodes} activeNodeId={activeArtifactNodeId} onNavigate={(id) => { setArtifactReadingMode(false); openArtifactPanel(id); }} />
+          <ReadingModeContent
+            nodes={nodes}
+            executedNodes={executedNodes}
+            activeNodeId={activeArtifactNodeId}
+            onNavigate={(id) => {
+              setArtifactReadingMode(false);
+              openArtifactPanel(id);
+            }}
+          />
         ) : isSplitView ? (
           <>
             {/* Split: Editor Left */}
-            <div className="flex-1 flex flex-col border-r border-white/[0.06] overflow-hidden">
+            <div className="flex flex-1 flex-col overflow-hidden border-r border-white/[0.06]">
               <MarkdownToolbar textareaRef={textareaRef} onInsert={setEditDraft} />
               <textarea
                 ref={textareaRef}
                 value={editDraft}
                 onChange={(e) => setEditDraft(e.target.value)}
-                className="flex-1 bg-black/20 p-3 text-[11px] text-white/70 font-mono leading-relaxed resize-none outline-none scrollbar-thin"
+                className="scrollbar-thin flex-1 resize-none bg-black/20 p-3 font-mono text-[11px] leading-relaxed text-white/70 outline-none"
                 placeholder={`Write ${artifactPanelTab === 'result' ? 'execution result' : 'content'} here... (Markdown supported)`}
                 spellCheck={false}
               />
@@ -1064,33 +1300,34 @@ export default function ArtifactPanel() {
             {/* Split: Preview Right */}
             <div className="flex-1 overflow-y-auto px-4 py-3" ref={contentRef}>
               <div
-                className="text-[11px] text-white/60 leading-relaxed select-text"
+                className="text-[11px] leading-relaxed text-white/60 select-text"
                 onMouseUp={handleMouseUp}
               >
-                {editDraft ? renderMarkdown(editDraft) : (
-                  <div className="text-white/20 italic text-center mt-12">Preview will appear here</div>
+                {editDraft ? (
+                  renderMarkdown(editDraft)
+                ) : (
+                  <div className="mt-12 text-center text-white/20 italic">
+                    Preview will appear here
+                  </div>
                 )}
               </div>
             </div>
           </>
         ) : artifactPanelMode === 'preview' ? (
-          <div
-            className="flex-1 overflow-y-auto px-4 py-3"
-            ref={contentRef}
-          >
+          <div className="flex-1 overflow-y-auto px-4 py-3" ref={contentRef}>
             <div
-              className="text-[11px] text-white/60 leading-relaxed select-text"
+              className="text-[11px] leading-relaxed text-white/60 select-text"
               onMouseUp={handleMouseUp}
             >
               {activeText ? (
                 renderMarkdown(activeText)
               ) : (
-                <div className="text-white/20 italic text-center mt-12">
+                <div className="mt-12 text-center text-white/20 italic">
                   No {artifactPanelTab === 'result' ? 'execution result' : 'content'} yet.
                   {artifactPanelTab === 'content' && (
                     <button
                       onClick={() => setArtifactMode('edit')}
-                      className="block mx-auto mt-2 text-cyan-400/50 hover:text-cyan-400/80 transition-colors"
+                      className="mx-auto mt-2 block text-cyan-400/50 transition-colors hover:text-cyan-400/80"
                     >
                       Start writing
                     </button>
@@ -1100,13 +1337,13 @@ export default function ArtifactPanel() {
             </div>
           </div>
         ) : (
-          <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex flex-1 flex-col overflow-hidden">
             <MarkdownToolbar textareaRef={textareaRef} onInsert={setEditDraft} />
             <textarea
               ref={textareaRef}
               value={editDraft}
               onChange={(e) => setEditDraft(e.target.value)}
-              className="flex-1 bg-black/20 mx-4 mt-2 mb-1 border border-white/[0.06] rounded-lg p-3 text-[11px] text-white/70 font-mono leading-relaxed resize-none outline-none focus:border-white/[0.12] transition-colors scrollbar-thin"
+              className="scrollbar-thin mx-4 mt-2 mb-1 flex-1 resize-none rounded-lg border border-white/[0.06] bg-black/20 p-3 font-mono text-[11px] leading-relaxed text-white/70 transition-colors outline-none focus:border-white/[0.12]"
               placeholder={`Write ${artifactPanelTab === 'result' ? 'execution result' : 'content'} here... (Markdown supported)`}
               spellCheck={false}
             />
@@ -1115,14 +1352,14 @@ export default function ArtifactPanel() {
               <div className="flex gap-1.5">
                 <button
                   onClick={() => setArtifactMode('preview')}
-                  className="px-2.5 py-1 rounded-md text-[10px] text-white/30 hover:text-white/50 transition-colors"
+                  className="rounded-md px-2.5 py-1 text-[10px] text-white/30 transition-colors hover:text-white/50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSave}
                   title="Save (Ctrl+S)"
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-medium bg-emerald-500/15 border border-emerald-500/20 text-emerald-400/80 hover:bg-emerald-500/25 transition-colors"
+                  className="flex items-center gap-1 rounded-md border border-emerald-500/20 bg-emerald-500/15 px-2.5 py-1 text-[10px] font-medium text-emerald-400/80 transition-colors hover:bg-emerald-500/25"
                 >
                   <Save size={10} />
                   Save
@@ -1148,30 +1385,28 @@ export default function ArtifactPanel() {
       </div>
 
       {/* Footer: Versions + Downstream + Stats (hidden in reading mode) */}
-      {!artifactReadingMode && <div className="px-4 py-2 space-y-2 border-t border-white/[0.04]">
-        {isSplitView && (
-          <div className="flex items-center justify-between">
-            <EditorStats text={editDraft} />
-            <button
-              onClick={handleSave}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-medium bg-emerald-500/15 border border-emerald-500/20 text-emerald-400/80 hover:bg-emerald-500/25 transition-colors"
-            >
-              <Save size={10} />
-              Save
-            </button>
-          </div>
-        )}
-        <VersionHistory
-          versions={versions}
-          onRestore={(idx) => restoreArtifactVersion(activeArtifactNodeId, idx)}
-          currentContent={activeText}
-        />
-        <DownstreamImpact
-          downstream={downstream}
-          onSync={handleSync}
-          isSyncing={isSyncing}
-        />
-      </div>}
+      {!artifactReadingMode && (
+        <div className="space-y-2 border-t border-white/[0.04] px-4 py-2">
+          {isSplitView && (
+            <div className="flex items-center justify-between">
+              <EditorStats text={editDraft} />
+              <button
+                onClick={handleSave}
+                className="flex items-center gap-1 rounded-md border border-emerald-500/20 bg-emerald-500/15 px-2.5 py-1 text-[10px] font-medium text-emerald-400/80 transition-colors hover:bg-emerald-500/25"
+              >
+                <Save size={10} />
+                Save
+              </button>
+            </div>
+          )}
+          <VersionHistory
+            versions={versions}
+            onRestore={(idx) => restoreArtifactVersion(activeArtifactNodeId, idx)}
+            currentContent={activeText}
+          />
+          <DownstreamImpact downstream={downstream} onSync={handleSync} isSyncing={isSyncing} />
+        </div>
+      )}
     </motion.div>
   );
 }

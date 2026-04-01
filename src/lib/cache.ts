@@ -15,14 +15,14 @@ export async function sha256(input: string): Promise<string> {
     const buf = new TextEncoder().encode(input);
     const hashBuf = await globalThis.crypto.subtle.digest('SHA-256', buf);
     return Array.from(new Uint8Array(hashBuf))
-      .map(b => b.toString(16).padStart(2, '0'))
+      .map((b) => b.toString(16).padStart(2, '0'))
       .join('');
   }
   // Fallback: simple hash for environments without Web Crypto
   let hash = 0;
   for (let i = 0; i < input.length; i++) {
     const char = input.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
+    hash = (hash << 5) - hash + char;
     hash |= 0;
   }
   return Math.abs(hash).toString(16).padStart(8, '0');
@@ -57,20 +57,61 @@ export interface CacheEntry {
   hash: string;
   result: string;
   timestamp: number;
+  expiresAt?: number;
   inputTokensEstimate: number;
   outputTokensEstimate: number;
 }
 
 const MAX_CACHE_SIZE = 200;
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+const STORAGE_KEY = 'lifecycle-cache-v1';
 
-/** In-memory execution cache. Not persisted — cleared on page reload. */
+/** In-memory execution cache with localStorage persistence and TTL. */
 const executionCache = new Map<string, CacheEntry>();
 
+// Load persisted cache on module init
+function loadCache(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const entries: Array<[string, CacheEntry]> = JSON.parse(raw);
+    const now = Date.now();
+    for (const [key, entry] of entries) {
+      if (entry.expiresAt && entry.expiresAt > now) {
+        executionCache.set(key, entry);
+      }
+    }
+  } catch {
+    /* corrupt cache — start fresh */
+  }
+}
+loadCache();
+
+function persistCache(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const entries = [...executionCache.entries()];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  } catch {
+    /* quota exceeded — silent */
+  }
+}
+
 export function getCacheEntry(nodeId: string): CacheEntry | undefined {
-  return executionCache.get(nodeId);
+  const entry = executionCache.get(nodeId);
+  if (!entry) return undefined;
+  // Lazy TTL expiry
+  if (entry.expiresAt && Date.now() > entry.expiresAt) {
+    executionCache.delete(nodeId);
+    persistCache();
+    return undefined;
+  }
+  return entry;
 }
 
 export function setCacheEntry(nodeId: string, entry: CacheEntry): void {
+  if (!entry.expiresAt) entry.expiresAt = Date.now() + CACHE_TTL_MS;
   executionCache.set(nodeId, entry);
   // Evict oldest entries if cache grows too large
   if (executionCache.size > MAX_CACHE_SIZE) {
@@ -79,10 +120,18 @@ export function setCacheEntry(nodeId: string, entry: CacheEntry): void {
       .slice(0, executionCache.size - MAX_CACHE_SIZE);
     for (const [key] of oldest) executionCache.delete(key);
   }
+  persistCache();
 }
 
 export function clearCache(): void {
   executionCache.clear();
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* noop */
+    }
+  }
 }
 
 export function getCacheSize(): number {
@@ -101,8 +150,16 @@ export interface ModelPricing {
 export const MODEL_PRICING: Record<string, ModelPricing> = {
   'deepseek-reasoner': { inputPerMillion: 0.55, outputPerMillion: 2.19, label: 'DeepSeek R1' },
   'deepseek-chat': { inputPerMillion: 0.14, outputPerMillion: 0.28, label: 'DeepSeek V3' },
-  'claude-sonnet-4-20250514': { inputPerMillion: 3.0, outputPerMillion: 15.0, label: 'Claude Sonnet' },
-  'claude-haiku-4-5-20251001': { inputPerMillion: 0.80, outputPerMillion: 4.0, label: 'Claude Haiku' },
+  'claude-sonnet-4-20250514': {
+    inputPerMillion: 3.0,
+    outputPerMillion: 15.0,
+    label: 'Claude Sonnet',
+  },
+  'claude-haiku-4-5-20251001': {
+    inputPerMillion: 0.8,
+    outputPerMillion: 4.0,
+    label: 'Claude Haiku',
+  },
 };
 
 /** Estimate token count from character length (~4 chars per token) */
@@ -119,8 +176,9 @@ export function estimateCost(
   const inputTokens = Math.ceil(inputChars / 4);
   const outputTokens = Math.ceil(outputChars / 4);
   const pricing = MODEL_PRICING[model] || MODEL_PRICING['deepseek-reasoner'];
-  const costUSD = (inputTokens / 1_000_000) * pricing.inputPerMillion
-    + (outputTokens / 1_000_000) * pricing.outputPerMillion;
+  const costUSD =
+    (inputTokens / 1_000_000) * pricing.inputPerMillion +
+    (outputTokens / 1_000_000) * pricing.outputPerMillion;
   return { inputTokens, outputTokens, costUSD };
 }
 
@@ -143,8 +201,9 @@ export function estimateBatchCost(
     totalOutputTokens += outputTokens;
   }
 
-  const totalCostUSD = (totalInputTokens / 1_000_000) * pricing.inputPerMillion
-    + (totalOutputTokens / 1_000_000) * pricing.outputPerMillion;
+  const totalCostUSD =
+    (totalInputTokens / 1_000_000) * pricing.inputPerMillion +
+    (totalOutputTokens / 1_000_000) * pricing.outputPerMillion;
 
   return { totalInputTokens, totalOutputTokens, totalCostUSD };
 }

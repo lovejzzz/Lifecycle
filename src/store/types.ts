@@ -5,14 +5,19 @@
 
 import type { Node, Edge, Connection } from '@xyflow/react';
 import type {
-  NodeData, LifecycleEvent, CIDMessage, NodeCategory, CIDMode,
-  CentralContext, ArtifactContract, SurgicalDiff, Override,
+  NodeData,
+  LifecycleEvent,
+  CIDMessage,
+  NodeCategory,
+  CIDMode,
+  CentralContext,
+  ArtifactContract,
+  SurgicalDiff,
 } from '@/lib/types';
 import type { UsageStats } from '@/lib/cache';
 import type { ProjectMeta } from '@/lib/storage';
 import type { ProactiveSuggestion } from '@/lib/suggestions';
 import type { Optimization } from '@/lib/optimizer';
-import type { ExportFormat } from '@/lib/export';
 
 /**
  * Operation-based undo — stores only the changed nodes/edges, not the full state.
@@ -133,7 +138,11 @@ export interface LifecycleStore {
 
   // Toast notifications
   toasts: Array<{ id: string; message: string; type: 'success' | 'info' | 'warning' | 'error' }>;
-  addToast: (message: string, type?: 'success' | 'info' | 'warning' | 'error', autoDismissMs?: number) => void;
+  addToast: (
+    message: string,
+    type?: 'success' | 'info' | 'warning' | 'error',
+    autoDismissMs?: number,
+  ) => void;
   removeToast: (id: string) => void;
 
   // Chat management
@@ -280,6 +289,16 @@ export interface LifecycleStore {
   _sharedNodeContext: Record<string, unknown>;
   clearSharedNodeContext: () => void;
 
+  // Session cost tracking
+  _sessionCost: { totalTokens: number; estimatedCostUSD: number; callCount: number };
+  trackCost: (inputTokens: number, outputTokens: number, model: string) => void;
+  resetSessionCost: () => void;
+
+  // Execution snapshot for rollback
+  _preExecutionSnapshot: { nodes: Node<NodeData>[]; edges: Edge[] } | null;
+  snapshotBeforeExecution: () => void;
+  rollbackExecution: () => boolean;
+
   // CID learned rules
   cidRules: string[];
   addCIDRule: (rule: string) => string;
@@ -328,7 +347,17 @@ export interface LifecycleStore {
   findBottlenecks: () => string;
 
   // Execution progress tracking
-  executionProgress: { current: number; total: number; currentLabel: string; running: boolean; stage?: number; totalStages?: number; succeeded?: number; failed?: number; skipped?: number } | null;
+  executionProgress: {
+    current: number;
+    total: number;
+    currentLabel: string;
+    running: boolean;
+    stage?: number;
+    totalStages?: number;
+    succeeded?: number;
+    failed?: number;
+    skipped?: number;
+  } | null;
 
   // Elapsed time tracking for node execution
   executionStartTime: number | null;
@@ -356,7 +385,10 @@ export interface LifecycleStore {
   activeArtifactNodeId: string | null;
   artifactPanelTab: 'content' | 'result';
   artifactPanelMode: 'preview' | 'edit';
-  artifactVersions: Record<string, Array<{ content: string; result?: string; timestamp: number; label: string }>>;
+  artifactVersions: Record<
+    string,
+    Array<{ content: string; result?: string; timestamp: number; label: string }>
+  >;
   artifactReadingMode: boolean;
   openArtifactPanel: (nodeId: string) => void;
   closeArtifactPanel: () => void;
@@ -366,7 +398,11 @@ export interface LifecycleStore {
   getExecutedNodesInOrder: () => Array<{ id: string; label: string; category: string }>;
   saveArtifactVersion: (nodeId: string) => void;
   restoreArtifactVersion: (nodeId: string, versionIndex: number) => void;
-  rewriteArtifactSelection: (nodeId: string, selectedText: string, instruction: string) => Promise<string | null>;
+  rewriteArtifactSelection: (
+    nodeId: string,
+    selectedText: string,
+    instruction: string,
+  ) => Promise<string | null>;
   getDownstreamNodes: (nodeId: string) => Array<{ id: string; label: string; category: string }>;
 
   // ── Impact Preview ──
@@ -405,11 +441,27 @@ export interface LifecycleStore {
 
   // ── Note Refinement ──
   refineNote: (nodeId: string) => Promise<void>;
-  applyRefinementSuggestion: (suggestion: { type: 'node'; label: string; category: string; content: string; connectTo?: string; edgeLabel?: string } | { type: 'edge'; from: string; to: string; label: string } | { type: 'clean'; content: string; nodeId: string }) => void;
+  applyRefinementSuggestion: (
+    suggestion:
+      | {
+          type: 'node';
+          label: string;
+          category: string;
+          content: string;
+          connectTo?: string;
+          edgeLabel?: string;
+        }
+      | { type: 'edge'; from: string; to: string; label: string }
+      | { type: 'clean'; content: string; nodeId: string },
+  ) => void;
 
   // ── Central Brain Architecture ──
   centralContext: CentralContext | null;
-  ingestSource: (input: string, contentType: 'text' | 'url' | 'file' | 'conversation', title?: string) => Promise<void>;
+  ingestSource: (
+    input: string,
+    contentType: 'text' | 'url' | 'file' | 'conversation',
+    title?: string,
+  ) => Promise<void>;
   updateSource: (newContent: string) => Promise<void>;
   getUnderstanding: () => CentralContext['understanding'] | null;
   createArtifact: (artifactType: string, customPrompt?: string) => Promise<string | null>;
@@ -418,7 +470,10 @@ export interface LifecycleStore {
   previewSync: () => { nodeId: string; reason: string }[];
   recordOverride: (nodeId: string, field: string, oldVal: string, newVal: string) => void;
   interpretOverride: (overrideId: string) => Promise<string | null>;
-  propagateOverride: (overrideId: string, scope: 'this-node' | 'all-similar' | 'global') => Promise<void>;
+  propagateOverride: (
+    overrideId: string,
+    scope: 'this-node' | 'all-similar' | 'global',
+  ) => Promise<void>;
   forgetOverride: (overrideId: string) => void;
   getArtifactContracts: () => Record<string, ArtifactContract>;
   hasContext: () => boolean;

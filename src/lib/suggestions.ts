@@ -7,7 +7,12 @@ import type { Node, Edge } from '@xyflow/react';
 import type { NodeData } from '@/lib/types';
 
 export type SuggestionPriority = 'high' | 'medium' | 'low';
-export type SuggestionActionType = 'add-node' | 'add-edge' | 'generate-content' | 'run-workflow' | 'command';
+export type SuggestionActionType =
+  | 'add-node'
+  | 'add-edge'
+  | 'generate-content'
+  | 'run-workflow'
+  | 'command';
 
 export interface ProactiveSuggestion {
   id: string;
@@ -33,8 +38,11 @@ export function generateProactiveSuggestions(
 
   const suggestions: ProactiveSuggestion[] = [];
   const connectedIds = new Set<string>();
-  for (const e of edges) { connectedIds.add(e.source); connectedIds.add(e.target); }
-  const nodeById = new Map(nodes.map(n => [n.id, n]));
+  for (const e of edges) {
+    connectedIds.add(e.source);
+    connectedIds.add(e.target);
+  }
+  const _nodeById = new Map(nodes.map((n) => [n.id, n]));
 
   // Build adjacency
   const outgoing = new Map<string, string[]>();
@@ -47,9 +55,11 @@ export function generateProactiveSuggestions(
   }
 
   // ── 1. Missing output node ─────────────────────────────────────────────
-  const hasOutput = nodes.some(n => n.data.category === 'output');
-  const leafNodes = nodes.filter(n => !outgoing.has(n.id) || outgoing.get(n.id)!.length === 0);
-  const nonOutputLeaves = leafNodes.filter(n => n.data.category !== 'output' && n.data.category !== 'note');
+  const hasOutput = nodes.some((n) => n.data.category === 'output');
+  const leafNodes = nodes.filter((n) => !outgoing.has(n.id) || outgoing.get(n.id)!.length === 0);
+  const nonOutputLeaves = leafNodes.filter(
+    (n) => n.data.category !== 'output' && n.data.category !== 'note',
+  );
   if (!hasOutput && nonOutputLeaves.length > 0) {
     const last = nonOutputLeaves[nonOutputLeaves.length - 1];
     suggestions.push({
@@ -80,13 +90,26 @@ export function generateProactiveSuggestions(
   }
 
   // ── 3. Empty content nodes ─────────────────────────────────────────────
-  const contentCategories = new Set(['artifact', 'note', 'policy', 'state', 'review', 'action', 'cid', 'test', 'patch']);
-  const emptyNodes = nodes.filter(n =>
-    contentCategories.has(n.data.category) &&
-    !n.data.content && !n.data.description && !n.data.executionResult
+  const contentCategories = new Set([
+    'artifact',
+    'note',
+    'policy',
+    'state',
+    'review',
+    'action',
+    'cid',
+    'test',
+    'patch',
+  ]);
+  const emptyNodes = nodes.filter(
+    (n) =>
+      contentCategories.has(n.data.category) &&
+      !n.data.content &&
+      !n.data.description &&
+      !n.data.executionResult,
   );
   if (emptyNodes.length > 0 && emptyNodes.length <= 5) {
-    const names = emptyNodes.slice(0, 3).map(n => n.data.label);
+    const names = emptyNodes.slice(0, 3).map((n) => n.data.label);
     suggestions.push({
       id: 'generate-empty',
       priority: 'medium',
@@ -98,11 +121,14 @@ export function generateProactiveSuggestions(
   }
 
   // ── 4. No review gate in a workflow with 4+ nodes ─────────────────────
-  const hasReview = nodes.some(n => n.data.category === 'review');
+  const hasReview = nodes.some((n) => n.data.category === 'review');
   if (!hasReview && nodes.length >= 4) {
     // Find the best place: after artifact/action nodes, before output
-    const artifacts = nodes.filter(n => n.data.category === 'artifact' && (outgoing.get(n.id)?.length ?? 0) > 0);
-    const target = artifacts[artifacts.length - 1] || leafNodes.find(n => n.data.category !== 'output');
+    const artifacts = nodes.filter(
+      (n) => n.data.category === 'artifact' && (outgoing.get(n.id)?.length ?? 0) > 0,
+    );
+    const target =
+      artifacts[artifacts.length - 1] || leafNodes.find((n) => n.data.category !== 'output');
     if (target) {
       suggestions.push({
         id: 'add-review',
@@ -110,24 +136,30 @@ export function generateProactiveSuggestions(
         message: `No review gate — add one after "${target.data.label}" for quality control`,
         chipLabel: `Add review gate`,
         actionType: 'add-node',
-        actionPayload: { label: 'Review Gate', category: 'review', connectAfter: target.data.label },
+        actionPayload: {
+          label: 'Review Gate',
+          category: 'review',
+          connectAfter: target.data.label,
+        },
       });
     }
   }
 
   // ── 5. Linear workflow without parallel branches ───────────────────────
-  const maxFanOut = Math.max(0, ...nodes.map(n => outgoing.get(n.id)?.length ?? 0));
+  const maxFanOut = Math.max(0, ...nodes.map((n) => outgoing.get(n.id)?.length ?? 0));
   if (maxFanOut <= 1 && nodes.length >= 5) {
     // Find a node that could fan out
-    const generators = nodes.filter(n =>
-      ['cid', 'state', 'action'].includes(n.data.category) &&
-      (outgoing.get(n.id)?.length ?? 0) === 1
+    const generators = nodes.filter(
+      (n) =>
+        ['cid', 'state', 'action'].includes(n.data.category) &&
+        (outgoing.get(n.id)?.length ?? 0) === 1,
     );
     if (generators.length > 0) {
       suggestions.push({
         id: 'suggest-parallel',
         priority: 'low',
-        message: 'This workflow is purely linear — consider adding parallel branches for independent tasks',
+        message:
+          'This workflow is purely linear — consider adding parallel branches for independent tasks',
         chipLabel: 'Suggest parallel branches',
         actionType: 'command',
         actionPayload: { command: 'optimize' },
@@ -136,13 +168,13 @@ export function generateProactiveSuggestions(
   }
 
   // ── 6. Unexecuted workflow (all idle) ──────────────────────────────────
-  const allIdle = nodes.every(n => !n.data.executionStatus || n.data.executionStatus === 'idle');
-  const hasContent = nodes.some(n => n.data.content || n.data.description);
+  const allIdle = nodes.every((n) => !n.data.executionStatus || n.data.executionStatus === 'idle');
+  const hasContent = nodes.some((n) => n.data.content || n.data.description);
   if (allIdle && hasContent && nodes.length >= 3) {
     suggestions.push({
       id: 'run-workflow',
       priority: 'high',
-      message: 'Workflow is ready but hasn\'t been executed yet',
+      message: "Workflow is ready but hasn't been executed yet",
       chipLabel: 'Run workflow',
       actionType: 'command',
       actionPayload: { command: 'run workflow' },
@@ -150,18 +182,19 @@ export function generateProactiveSuggestions(
   }
 
   // ── 7. Execution bottlenecks ────────────────────────────────────────────
-  const timedNodes = nodes.filter(n =>
-    n.data._executionDurationMs != null && n.data._executionDurationMs > 0 &&
-    n.data.executionStatus === 'success'
+  const timedNodes = nodes.filter(
+    (n) =>
+      n.data._executionDurationMs != null &&
+      n.data._executionDurationMs > 0 &&
+      n.data.executionStatus === 'success',
   );
   if (timedNodes.length >= 2) {
-    const durations = timedNodes.map(n => n.data._executionDurationMs!).sort((a, b) => a - b);
+    const durations = timedNodes.map((n) => n.data._executionDurationMs!).sort((a, b) => a - b);
     const mid = Math.floor(durations.length / 2);
-    const median = durations.length % 2 === 0
-      ? (durations[mid - 1] + durations[mid]) / 2
-      : durations[mid];
+    const median =
+      durations.length % 2 === 0 ? (durations[mid - 1] + durations[mid]) / 2 : durations[mid];
     const slowest = timedNodes.reduce((a, b) =>
-      (a.data._executionDurationMs ?? 0) > (b.data._executionDurationMs ?? 0) ? a : b
+      (a.data._executionDurationMs ?? 0) > (b.data._executionDurationMs ?? 0) ? a : b,
     );
     const slowMs = slowest.data._executionDurationMs ?? 0;
     if (slowMs > 5000 || (median > 0 && slowMs > median * 2)) {
@@ -177,7 +210,7 @@ export function generateProactiveSuggestions(
   }
 
   // ── 8. Stale nodes after execution ─────────────────────────────────────
-  const staleNodes = nodes.filter(n => n.data.status === 'stale');
+  const staleNodes = nodes.filter((n) => n.data.status === 'stale');
   if (staleNodes.length > 0) {
     suggestions.push({
       id: 'refresh-stale',
@@ -195,8 +228,12 @@ export function generateProactiveSuggestions(
 
   // Categorize suggestions by type for diversity
   const typeMap: Record<string, string> = {
-    'add-output': 'structure', 'add-review': 'structure', 'suggest-parallel': 'structure',
-    'generate-empty': 'content', 'run-workflow': 'execution', 'refresh-stale': 'execution',
+    'add-output': 'structure',
+    'add-review': 'structure',
+    'suggest-parallel': 'structure',
+    'generate-empty': 'content',
+    'run-workflow': 'execution',
+    'refresh-stale': 'execution',
     'bottleneck-optimize': 'performance',
   };
   const diverse: ProactiveSuggestion[] = [];
@@ -232,15 +269,13 @@ export function formatSuggestionsMessage(
 ): { content: string; suggestionChips: string[] } | null {
   if (suggestions.length === 0) return null;
 
-  const header = context === 'post-build'
-    ? '### Suggestions'
-    : '### Next Steps';
+  const header = context === 'post-build' ? '### Suggestions' : '### Next Steps';
 
-  const lines = suggestions.map(s => `- ${s.message}`);
+  const lines = suggestions.map((s) => `- ${s.message}`);
   const content = `${header}\n${lines.join('\n')}`;
 
   // Encode suggestions as "action:id|chipLabel" for CIDPanel to detect
-  const suggestionChips = suggestions.map(s => `action:${s.id}|${s.chipLabel}`);
+  const suggestionChips = suggestions.map((s) => `action:${s.id}|${s.chipLabel}`);
 
   return { content, suggestionChips };
 }

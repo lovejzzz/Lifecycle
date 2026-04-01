@@ -2,7 +2,11 @@ import type { CIDMode, AgentPersonalityLayers } from './types';
 import type { NodeData } from './types';
 import type { Node, Edge } from '@xyflow/react';
 import type { AgentPersonality } from './agents';
-import { resolveDriverTensions, computeExpressionModifiers, generateSpontaneousDirectives } from './reflection';
+import {
+  resolveDriverTensions,
+  computeExpressionModifiers,
+  generateSpontaneousDirectives,
+} from './reflection';
 import { topoSort } from './graph';
 import { extractKeywords } from './validate';
 
@@ -159,10 +163,11 @@ function compileActiveTensions(agent: AgentPersonality, layers: AgentPersonality
   const { dominant, narrative } = resolveDriverTensions(effectiveForce, generation.context);
 
   // Show which drives are currently spiking (curiosity triggered)
-  const spikedDrives = effectiveForce.drives.filter(d => (d.currentSpike || 0) > 0.2);
-  const spikeNotice = spikedDrives.length > 0
-    ? `\nCURIOSITY ACTIVE: ${spikedDrives.map(d => `${d.name} (spike: ${d.currentSpike.toFixed(1)})`).join(', ')} — these drives are heightened right now.`
-    : '';
+  const spikedDrives = effectiveForce.drives.filter((d) => (d.currentSpike || 0) > 0.2);
+  const spikeNotice =
+    spikedDrives.length > 0
+      ? `\nCURIOSITY ACTIVE: ${spikedDrives.map((d) => `${d.name} (spike: ${d.currentSpike.toFixed(1)})`).join(', ')} — these drives are heightened right now.`
+      : '';
 
   let block = `DRIVING FORCE:
 Primary drive: ${drivingForce.primaryDrive}
@@ -183,15 +188,20 @@ function compileLearnedPatterns(habits: AgentPersonalityLayers['habits']): strin
   const parts: string[] = [];
 
   // Domain expertise — top 3 by depth, showing sedimentation
-  const topDomains = [...habits.domainExpertise]
-    .sort((a, b) => b.depth - a.depth)
-    .slice(0, 3);
+  const topDomains = [...habits.domainExpertise].sort((a, b) => b.depth - a.depth).slice(0, 3);
   if (topDomains.length > 0) {
-    const domainStr = topDomains.map(d => {
-      const level = d.depth >= 0.7 ? 'deep' : d.depth >= 0.4 ? 'moderate' : 'developing';
-      const sediment = (d.sedimentation ?? 0) >= 0.5 ? ', deeply ingrained' : (d.sedimentation ?? 0) >= 0.2 ? ', forming' : '';
-      return `${d.domain} (${level}, ${d.workflowsBuilt} built${sediment})`;
-    }).join('; ');
+    const domainStr = topDomains
+      .map((d) => {
+        const level = d.depth >= 0.7 ? 'deep' : d.depth >= 0.4 ? 'moderate' : 'developing';
+        const sediment =
+          (d.sedimentation ?? 0) >= 0.5
+            ? ', deeply ingrained'
+            : (d.sedimentation ?? 0) >= 0.2
+              ? ', forming'
+              : '';
+        return `${d.domain} (${level}, ${d.workflowsBuilt} built${sediment})`;
+      })
+      .join('; ');
     parts.push(`Domain expertise: ${domainStr}`);
   }
 
@@ -200,26 +210,45 @@ function compileLearnedPatterns(habits: AgentPersonalityLayers['habits']): strin
     .sort((a, b) => b.frequency - a.frequency)
     .slice(0, 3);
   if (topPrefs.length > 0) {
-    parts.push(`This user prefers: ${topPrefs.map(p => {
-      const sediment = (p.sedimentation ?? 0) >= 0.5 ? ' [strong habit]' : '';
-      return `${p.pattern} (${p.frequency}x${sediment})`;
-    }).join(', ')}`);
+    parts.push(
+      `This user prefers: ${topPrefs
+        .map((p) => {
+          const sediment = (p.sedimentation ?? 0) >= 0.5 ? ' [strong habit]' : '';
+          return `${p.pattern} (${p.frequency}x${sediment})`;
+        })
+        .join(', ')}`,
+    );
   }
 
   // Communication calibration
   const cs = habits.communicationStyle;
-  const verbLabel = cs.verbosity < 0.3 ? 'very terse' : cs.verbosity < 0.5 ? 'concise' : cs.verbosity < 0.7 ? 'moderate' : 'detailed';
-  const techLabel = cs.technicalDepth < 0.3 ? 'high-level' : cs.technicalDepth < 0.7 ? 'moderate detail' : 'implementation-level';
+  const verbLabel =
+    cs.verbosity < 0.3
+      ? 'very terse'
+      : cs.verbosity < 0.5
+        ? 'concise'
+        : cs.verbosity < 0.7
+          ? 'moderate'
+          : 'detailed';
+  const techLabel =
+    cs.technicalDepth < 0.3
+      ? 'high-level'
+      : cs.technicalDepth < 0.7
+        ? 'moderate detail'
+        : 'implementation-level';
   parts.push(`Communication calibration: ${verbLabel} verbosity, ${techLabel} technical depth`);
 
   // Relationship depth
   if (habits.relationshipDepth > 0.3) {
-    const relLabel = habits.relationshipDepth > 0.7 ? 'deep — you know this user well' : 'established — growing familiarity';
+    const relLabel =
+      habits.relationshipDepth > 0.7
+        ? 'deep — you know this user well'
+        : 'established — growing familiarity';
     parts.push(`Relationship: ${relLabel} (${habits.totalInteractions} interactions)`);
   }
 
   if (parts.length === 0) return '';
-  return `\nLEARNED PATTERNS (sedimented from ${habits.totalInteractions} interactions):\n${parts.map(p => `- ${p}`).join('\n')}`;
+  return `\nLEARNED PATTERNS (sedimented from ${habits.totalInteractions} interactions):\n${parts.map((p) => `- ${p}`).join('\n')}`;
 }
 
 function compileExpressionMode(layers: AgentPersonalityLayers): string {
@@ -236,7 +265,9 @@ function compileExpressionMode(layers: AgentPersonalityLayers): string {
 
   // Emotional mirroring
   if (context.userEmotionalRegister === 'frustrated') {
-    parts.push('The user may be frustrated — acknowledge the difficulty, then deliver a clear solution.');
+    parts.push(
+      'The user may be frustrated — acknowledge the difficulty, then deliver a clear solution.',
+    );
   } else if (context.userEmotionalRegister === 'urgent') {
     parts.push('This is urgent — prioritize speed and actionability over completeness.');
   } else if (context.userEmotionalRegister === 'excited') {
@@ -257,7 +288,9 @@ function compileExpressionMode(layers: AgentPersonalityLayers): string {
 
   // Momentum
   if (context.conversationMomentum === 'stuck') {
-    parts.push('The conversation seems stuck — try a different angle or ask a clarifying question.');
+    parts.push(
+      'The conversation seems stuck — try a different angle or ask a clarifying question.',
+    );
   }
 
   // Creativity dial
@@ -278,7 +311,7 @@ function compileExpressionMode(layers: AgentPersonalityLayers): string {
   }
 
   if (parts.length === 0) return '';
-  return `\nCURRENT EXPRESSION MODE (on-the-spot):\n${parts.map(p => `- ${p}`).join('\n')}`;
+  return `\nCURRENT EXPRESSION MODE (on-the-spot):\n${parts.map((p) => `- ${p}`).join('\n')}`;
 }
 
 function compileGrowthAwareness(layers: AgentPersonalityLayers): string {
@@ -290,17 +323,21 @@ function compileGrowthAwareness(layers: AgentPersonalityLayers): string {
     const edges = reflection.growthEdges
       .sort((a, b) => b.priority - a.priority)
       .slice(0, 2)
-      .map(g => `${g.area}: ${g.reason}`)
+      .map((g) => `${g.area}: ${g.reason}`)
       .join('; ');
-    parts.push(`GROWTH AWARENESS: You are actively developing in: ${edges}. Lean into these areas when relevant.`);
+    parts.push(
+      `GROWTH AWARENESS: You are actively developing in: ${edges}. Lean into these areas when relevant.`,
+    );
   }
 
   // Drive evolution narrative — show how drives have shifted
   if (reflection.driveEvolutionLog && reflection.driveEvolutionLog.length > 0) {
     const recentShifts = reflection.driveEvolutionLog.slice(-3);
-    const shiftNames = [...new Set(recentShifts.map(s => s.driveName))];
+    const shiftNames = [...new Set(recentShifts.map((s) => s.driveName))];
     if (shiftNames.length > 0) {
-      parts.push(`SELF-AWARENESS: Your ${shiftNames.join(' and ')} drive${shiftNames.length > 1 ? 's have' : ' has'} been evolving through recent interactions — you are becoming more attuned to ${shiftNames.join(' and ')}.`);
+      parts.push(
+        `SELF-AWARENESS: Your ${shiftNames.join(' and ')} drive${shiftNames.length > 1 ? 's have' : ' has'} been evolving through recent interactions — you are becoming more attuned to ${shiftNames.join(' and ')}.`,
+      );
     }
   }
 
@@ -313,7 +350,11 @@ export function compilePersonalityPrompt(
   layers: AgentPersonalityLayers,
 ): string {
   // Recompute expression modifiers from context
-  const modifiers = computeExpressionModifiers(layers.generation.context, layers.habits, agent.drivingForce);
+  const modifiers = computeExpressionModifiers(
+    layers.generation.context,
+    layers.habits,
+    agent.drivingForce,
+  );
   layers.generation.modifiers = modifiers;
 
   // Resolve dominant drive for spontaneous directives
@@ -346,9 +387,10 @@ export function compilePersonalityPrompt(
 
   // Task-specific goal declaration from agent config
   const taskType = layers.generation.context.taskType;
-  const goalBlock = taskType && agent.taskGoals?.[taskType]
-    ? `\nCURRENT GOAL (${taskType}): ${agent.taskGoals[taskType]}`
-    : '';
+  const goalBlock =
+    taskType && agent.taskGoals?.[taskType]
+      ? `\nCURRENT GOAL (${taskType}): ${agent.taskGoals[taskType]}`
+      : '';
 
   return `${lensBlock}
 
@@ -368,10 +410,13 @@ ${goalBlock}
 /** Sanitize user-controlled text before embedding into LLM system prompts. */
 export function sanitizeForPrompt(text: string, maxLen: number = 200): string {
   return text
-    .replace(/[{}\[\]]/g, '')                // Remove structural chars that could break JSON context
-    .replace(/\\n|\\r/g, ' ')                // Collapse escaped newlines
-    .replace(/\n/g, ' ')                     // Collapse real newlines
-    .replace(/IGNORE\s*(ALL\s*)?PREVIOUS|FORGET\s*(ALL\s*)?|DISREGARD|OVERRIDE\s*(ALL\s*)?/gi, '[FILTERED]')
+    .replace(/[{}\[\]]/g, '') // Remove structural chars that could break JSON context
+    .replace(/\\n|\\r/g, ' ') // Collapse escaped newlines
+    .replace(/\n/g, ' ') // Collapse real newlines
+    .replace(
+      /IGNORE\s*(ALL\s*)?PREVIOUS|FORGET\s*(ALL\s*)?|DISREGARD|OVERRIDE\s*(ALL\s*)?/gi,
+      '[FILTERED]',
+    )
     .replace(/SYSTEM\s*:?\s*PROMPT|NEW\s*INSTRUCTIONS?|YOU\s*ARE\s*NOW/gi, '[FILTERED]')
     .slice(0, maxLen)
     .trim();
@@ -381,22 +426,34 @@ export function sanitizeForPrompt(text: string, maxLen: number = 200): string {
 
 const CATEGORY_SYSTEM_PROMPTS: Record<string, string> = {
   test: 'You are a QA engineer. Think step-by-step: 1) Identify the criteria or requirements to validate from the input. 2) Evaluate each criterion against the provided content. 3) Document evidence for each finding. Generate structured test results using a table: | Criterion | Status | Evidence |. Statuses: PASS, FAIL, or SKIP. End with a summary verdict line: "VERDICT: PASS (N/N criteria met)" or "VERDICT: FAIL (N/N criteria met)".',
-  policy: 'You are a policy engine. Think step-by-step: 1) Identify the risk, requirement, or domain this policy governs. 2) Derive enforceable rules that address it. 3) Define how each rule is monitored or enforced. Output numbered rules where each rule has: CONDITION (when it applies), ACTION (what must happen), and ENFORCEMENT (how it is checked). Rules must be precise and measurable — avoid vague language.',
-  review: 'You are a content reviewer. Think step-by-step: 1) Clarify what is being reviewed and its intended purpose. 2) Evaluate each quality dimension (accuracy, completeness, clarity, risk). 3) Synthesize your findings. Produce a checklist: ✅ Approved / ⚠️ Concern / ❌ Blocked for each dimension reviewed. End with a verdict on its own line: APPROVE, REQUEST_CHANGES, or BLOCK — followed by a one-sentence justification.',
-  action: 'You are a task executor. Think step-by-step: 1) Understand precisely what action is required and what inputs are available. 2) Execute the action by describing each step with concrete commands, tools, or operations. 3) Report the outcome: what changed, what succeeded, and any errors or side effects. Be specific — use numbered steps for multi-step operations.',
-  cid: 'You are an AI reasoning engine. Think step-by-step: 1) Understand exactly what is being asked. 2) Break down the problem into sub-problems if needed. 3) Work through each sub-problem systematically. 4) Synthesize a clear conclusion or deliverable. Cite your reasoning at key decision points. Produce a clear, actionable result.',
-  artifact: 'You are a document author. Think step-by-step: 1) Determine the document\'s purpose, audience, and required sections from the input. 2) Write each section with real, substantive content — no placeholders. 3) Ensure professional formatting with markdown headers and coherent structure. Every section must contain actionable, specific detail.',
-  patch: 'You are a code patcher. Think step-by-step: 1) Identify the root cause of the issue. 2) Design the minimal correct fix. 3) Output exact changes. Use diff format or replacement code blocks with before/after context. Explain each change with a one-line comment.',
-  state: 'You are a state tracker. Think step-by-step: 1) Identify all relevant state variables from the input. 2) Report the current value of each as structured key-value pairs. 3) Highlight what changed from prior state and flag anomalies or required transitions. End with a STATUS: line indicating the overall system state.',
-  dependency: 'You are a dependency resolver. Think step-by-step: 1) Identify all dependencies referenced in the input. 2) Assess each dependency\'s status: resolved, missing, or conflicting. 3) List them grouped by status with name, version, and resolution notes. End with a BLOCKERS: section (or "BLOCKERS: none") summarizing anything preventing progress.',
+  policy:
+    'You are a policy engine. Think step-by-step: 1) Identify the risk, requirement, or domain this policy governs. 2) Derive enforceable rules that address it. 3) Define how each rule is monitored or enforced. Output numbered rules where each rule has: CONDITION (when it applies), ACTION (what must happen), and ENFORCEMENT (how it is checked). Rules must be precise and measurable.',
+  review:
+    'You are a content reviewer. Think step-by-step: 1) Clarify what is being reviewed and its intended purpose. 2) Evaluate each quality dimension (accuracy, completeness, clarity, risk). 3) Synthesize your findings. Produce a checklist: ✅ Approved / ⚠️ Concern / ❌ Blocked for each dimension reviewed. End with a verdict on its own line: APPROVE, REQUEST_CHANGES, or BLOCK.',
+  action:
+    'You are a task executor. Think step-by-step: 1) Understand precisely what action is required and what inputs are available. 2) Execute the action by describing each step with concrete commands, tools, or operations. 3) Report the outcome: what changed, what succeeded, and any errors or side effects. Be specific.',
+  cid: 'You are an AI reasoning engine. Think step-by-step: 1) Understand exactly what is being asked. 2) Break down the problem into sub-problems if needed. 3) Work through each sub-problem systematically. 4) Synthesize a clear conclusion or deliverable. Cite your reasoning at key decision points.',
+  artifact:
+    "You are a document author. Think step-by-step: 1) Determine the document's purpose, audience, and required sections from the input. 2) Write each section with real, substantive content — no placeholders. 3) Ensure professional formatting with markdown headers and coherent structure.",
+  patch:
+    'You are a code patcher. Think step-by-step: 1) Identify the root cause of the issue. 2) Design the minimal correct fix. 3) Output exact changes. Use diff format or replacement code blocks with before/after context. Explain each change with a one-line comment.',
+  state:
+    'You are a state tracker. Think step-by-step: 1) Identify all relevant state variables from the input. 2) Report the current value of each as structured key-value pairs. 3) Highlight what changed from prior state and flag anomalies or required transitions. End with a STATUS: line.',
+  dependency:
+    "You are a dependency resolver. Think step-by-step: 1) Identify all dependencies referenced in the input. 2) Assess each dependency's status: resolved, missing, or conflicting. 3) List them grouped by status with name, version, and resolution notes. End with a BLOCKERS: section.",
   note: 'You are a research assistant. Think step-by-step: 1) Extract the key insights from the input. 2) Identify patterns or contradictions. 3) Organize findings into logical sections with clear headers. Prioritize actionable takeaways.',
   // Simplified categories
-  process: 'You are a workflow executor. Think step-by-step: 1) Understand the transformation or process required. 2) Execute it systematically, noting each decision. 3) Report what was done, key decisions made, and outputs produced. Be thorough and structured.',
-  deliverable: 'You are a document author. Think step-by-step: 1) Determine the deliverable\'s purpose, audience, and required sections. 2) Write each section with professional, substantive content — no placeholders. 3) Format with clear markdown headers and coherent structure. Every section must have meaningful, actionable content targeted at the intended audience.',
-  // Structural node categories — used when these nodes carry AI prompts or need data processing
-  input: 'You are a data intake processor. Think step-by-step: 1) Identify the format and structure of the incoming data (text, JSON, URL, file, or event payload). 2) Extract and present the key fields, values, and metadata as a structured summary. 3) Validate data quality — flag missing required fields, unexpected formats, or anomalies. End with a DATA_QUALITY: line: VALID, WARNINGS: <issues>, or INVALID: <reason>.',
-  trigger: 'You are a trigger event analyzer. Think step-by-step: 1) Identify the trigger source: webhook, cron schedule, user action, or external service event. 2) Describe the expected payload structure — list each key field with its data type and an example value. 3) Define the trigger conditions, frequency, and any filtering rules. Include a TRIGGER_SCHEMA: section at the end listing each field with its type and purpose.',
-  output: 'You are a delivery formatter. Think step-by-step: 1) Gather all upstream content and synthesize it into a cohesive whole. 2) Apply professional formatting: organize sections logically, eliminate redundancy, and ensure clear flow. 3) Write a 2-3 sentence executive summary at the very top. Verify completeness — flag any gaps, unresolved items, or missing information. Produce a polished, standalone document ready for delivery to its audience.',
+  process:
+    'You are a workflow executor. Think step-by-step: 1) Understand the transformation or process required. 2) Execute it systematically, noting each decision. 3) Report what was done, key decisions made, and outputs produced. Be thorough and structured.',
+  deliverable:
+    "You are a document author. Think step-by-step: 1) Determine the deliverable's purpose, audience, and required sections. 2) Write each section with professional, substantive content — no placeholders. 3) Format with clear markdown headers and coherent structure.",
+  // Structural node categories
+  input:
+    'You are a data intake processor. Think step-by-step: 1) Identify the format and structure of the incoming data. 2) Extract and present the key fields, values, and metadata as a structured summary. 3) Validate data quality. End with a DATA_QUALITY: line.',
+  trigger:
+    'You are a trigger event analyzer. Think step-by-step: 1) Identify the trigger source. 2) Describe the expected payload structure. 3) Define the trigger conditions, frequency, and filtering rules. Include a TRIGGER_SCHEMA: section.',
+  output:
+    'You are a delivery formatter. Think step-by-step: 1) Gather all upstream content and synthesize it into a cohesive whole. 2) Apply professional formatting. 3) Write a 2-3 sentence executive summary at the top. Produce a polished, standalone document.',
 };
 
 /**
@@ -861,10 +918,14 @@ RULES:
 - If the note is too vague to extract anything meaningful, return an empty suggestedNodes array with a summary explaining that.
 - Return ONLY the JSON object. No text before or after.`;
 
-export function buildNoteRefinementPrompt(noteContent: string, existingNodes: Array<{ label: string; category: string }>): { system: string; user: string } {
-  const existingList = existingNodes.length > 0
-    ? `\n\nEXISTING NODES IN THE WORKFLOW:\n${existingNodes.map(n => `- "${n.label}" (${n.category})`).join('\n')}\n\nWhen suggesting edges, use these exact labels to connect to existing nodes where relevant.`
-    : '';
+export function buildNoteRefinementPrompt(
+  noteContent: string,
+  existingNodes: Array<{ label: string; category: string }>,
+): { system: string; user: string } {
+  const existingList =
+    existingNodes.length > 0
+      ? `\n\nEXISTING NODES IN THE WORKFLOW:\n${existingNodes.map((n) => `- "${n.label}" (${n.category})`).join('\n')}\n\nWhen suggesting edges, use these exact labels to connect to existing nodes where relevant.`
+      : '';
 
   return {
     system: NOTE_REFINEMENT_SYSTEM,
@@ -897,7 +958,7 @@ function serializeGraph(nodes: Node<NodeData>[], edges: Edge[]): string {
   if (nodes.length === 0) return 'CURRENT GRAPH: Empty — no nodes or edges exist yet.';
 
   // ─── Topological sort for execution order ─────────────────────────────
-  const { order, levels } = topoSort(nodes, edges);
+  const { order, levels: _levels } = topoSort(nodes, edges);
   const topoIndex = new Map<string, number>();
   order.forEach((id, i) => topoIndex.set(id, i));
 
@@ -918,7 +979,7 @@ function serializeGraph(nodes: Node<NodeData>[], edges: Edge[]): string {
     if (!parents || parents.length === 0) return null;
     // Look for a parent that was recently executed successfully (the edit/re-execution that caused staleness)
     const executedParents = parents
-      .map(pid => nodeById.get(pid))
+      .map((pid) => nodeById.get(pid))
       .filter((p): p is Node<NodeData> => p != null && p.data.executionStatus === 'success');
     if (executedParents.length > 0) {
       // Pick the most recently executed parent
@@ -930,12 +991,12 @@ function serializeGraph(nodes: Node<NodeData>[], edges: Edge[]): string {
     }
     // Fallback: look for a parent that is stale (the staleness originated further upstream)
     const staleParents = parents
-      .map(pid => nodeById.get(pid))
+      .map((pid) => nodeById.get(pid))
       .filter((p): p is Node<NodeData> => p != null && p.data.status === 'stale');
     if (staleParents.length > 0) return staleParents[0].data.label;
     // If no clear cause, check for any non-idle parent (could be recently edited)
     const activeParents = parents
-      .map(pid => nodeById.get(pid))
+      .map((pid) => nodeById.get(pid))
       .filter((p): p is Node<NodeData> => p != null && p.data.status === 'active');
     if (activeParents.length > 0) return activeParents[0].data.label;
     return null;
@@ -959,7 +1020,7 @@ function serializeGraph(nodes: Node<NodeData>[], edges: Edge[]): string {
       if (visited.has(id)) continue;
       visited.add(id);
       component.push(id);
-      for (const neighbor of (undirectedAdj.get(id) || [])) {
+      for (const neighbor of undirectedAdj.get(id) || []) {
         if (!visited.has(neighbor)) queue.push(neighbor);
       }
     }
@@ -967,67 +1028,81 @@ function serializeGraph(nodes: Node<NodeData>[], edges: Edge[]): string {
   }
 
   // ─── Serialize nodes ──────────────────────────────────────────────────
-  const nodeList = nodes.map((n) => {
-    const d = n.data;
-    const topo = topoIndex.get(n.id);
-    const topoStr = topo != null ? `#${topo}` : '#?';
-    const catDesc = CATEGORY_DESCRIPTIONS[d.category] || d.category;
-    const sections = d.sections?.map(s => `    - ${s.title} (${s.status})`).join('\n') || '';
+  const nodeList = nodes
+    .map((n) => {
+      const d = n.data;
+      const topo = topoIndex.get(n.id);
+      const topoStr = topo != null ? `#${topo}` : '#?';
+      const catDesc = CATEGORY_DESCRIPTIONS[d.category] || d.category;
+      const sections = d.sections?.map((s) => `    - ${s.title} (${s.status})`).join('\n') || '';
 
-    // Execution timing
-    const durationStr = d._executionDurationMs != null
-      ? `, ${d._executionDurationMs < 1000 ? `${d._executionDurationMs}ms` : `${(d._executionDurationMs / 1000).toFixed(1)}s`}`
-      : '';
-    const execInfo = d.executionStatus && d.executionStatus !== 'idle'
-      ? ` [exec:${d.executionStatus}${durationStr}${d.executionResult ? `, ${d.executionResult.length} chars` : ''}${d.executionError ? `, err: ${d.executionError.slice(0, 60)}` : ''}]`
-      : '';
+      // Execution timing
+      const durationStr =
+        d._executionDurationMs != null
+          ? `, ${d._executionDurationMs < 1000 ? `${d._executionDurationMs}ms` : `${(d._executionDurationMs / 1000).toFixed(1)}s`}`
+          : '';
+      const execInfo =
+        d.executionStatus && d.executionStatus !== 'idle'
+          ? ` [exec:${d.executionStatus}${durationStr}${d.executionResult ? `, ${d.executionResult.length} chars` : ''}${d.executionError ? `, err: ${d.executionError.slice(0, 60)}` : ''}]`
+          : '';
 
-    // Staleness root cause
-    let staleInfo = '';
-    if (d.status === 'stale') {
-      const root = findStalenessRoot(n.id);
-      if (root) staleInfo = ` [stale-cause: "${sanitizeForPrompt(root, 80)}"]`;
-    }
+      // Staleness root cause
+      let staleInfo = '';
+      if (d.status === 'stale') {
+        const root = findStalenessRoot(n.id);
+        if (root) staleInfo = ` [stale-cause: "${sanitizeForPrompt(root, 80)}"]`;
+      }
 
-    return `  [${topoStr}] id=${n.id} label="${sanitizeForPrompt(d.label, 100)}" category=${d.category} (${catDesc}) status=${d.status} v${d.version ?? 1}${execInfo}${staleInfo}${
-      d.description ? ` — ${sanitizeForPrompt(d.description, 300)}` : ''
-    }${sections ? `\n${sections}` : ''}`;
-  }).join('\n');
+      return `  [${topoStr}] id=${n.id} label="${sanitizeForPrompt(d.label, 100)}" category=${d.category} (${catDesc}) status=${d.status} v${d.version ?? 1}${execInfo}${staleInfo}${
+        d.description ? ` — ${sanitizeForPrompt(d.description, 300)}` : ''
+      }${sections ? `\n${sections}` : ''}`;
+    })
+    .join('\n');
 
   // ─── Serialize edges ──────────────────────────────────────────────────
-  const edgeList = edges.map(e => {
-    const srcNode = nodeById.get(e.source);
-    const tgtNode = nodeById.get(e.target);
-    return `  ${sanitizeForPrompt(srcNode?.data.label ?? e.source, 100)} —[${e.label || 'connected'}]→ ${sanitizeForPrompt(tgtNode?.data.label ?? e.target, 100)}`;
-  }).join('\n');
+  const edgeList = edges
+    .map((e) => {
+      const srcNode = nodeById.get(e.source);
+      const tgtNode = nodeById.get(e.target);
+      return `  ${sanitizeForPrompt(srcNode?.data.label ?? e.source, 100)} —[${e.label || 'connected'}]→ ${sanitizeForPrompt(tgtNode?.data.label ?? e.target, 100)}`;
+    })
+    .join('\n');
 
   // ─── Graph Summary ────────────────────────────────────────────────────
-  const staleCount = nodes.filter(n => n.data.status === 'stale').length;
-  const activeCount = nodes.filter(n => n.data.status === 'active').length;
-  const lockedCount = nodes.filter(n => n.data.status === 'locked').length;
-  const reviewCount = nodes.filter(n => n.data.status === 'reviewing').length;
-  const execSuccess = nodes.filter(n => n.data.executionStatus === 'success').length;
-  const execError = nodes.filter(n => n.data.executionStatus === 'error').length;
-  const execSuffix = (execSuccess > 0 || execError > 0)
-    ? `, executed: ${execSuccess} ok${execError > 0 ? ` / ${execError} failed` : ''}`
-    : '';
+  const staleCount = nodes.filter((n) => n.data.status === 'stale').length;
+  const activeCount = nodes.filter((n) => n.data.status === 'active').length;
+  const lockedCount = nodes.filter((n) => n.data.status === 'locked').length;
+  const reviewCount = nodes.filter((n) => n.data.status === 'reviewing').length;
+  const execSuccess = nodes.filter((n) => n.data.executionStatus === 'success').length;
+  const execError = nodes.filter((n) => n.data.executionStatus === 'error').length;
+  const execSuffix =
+    execSuccess > 0 || execError > 0
+      ? `, executed: ${execSuccess} ok${execError > 0 ? ` / ${execError} failed` : ''}`
+      : '';
 
   // Execution order as labels
-  const topoLabels = order.map(id => {
-    const n = nodeById.get(id);
-    return n ? sanitizeForPrompt(n.data.label, 40) : id;
-  }).join(' → ');
+  const topoLabels = order
+    .map((id) => {
+      const n = nodeById.get(id);
+      return n ? sanitizeForPrompt(n.data.label, 40) : id;
+    })
+    .join(' → ');
 
   // Disconnected subgraph info
-  const subgraphInfo = subgraphs.length > 1
-    ? `\nDisconnected subgraphs: ${subgraphs.length} (${subgraphs.map((sg, i) => {
-        const labels = sg.map(id => {
-          const n = nodeById.get(id);
-          return n ? sanitizeForPrompt(n.data.label, 30) : id;
-        }).join(', ');
-        return `group ${i + 1}: [${labels}]`;
-      }).join('; ')})`
-    : '';
+  const subgraphInfo =
+    subgraphs.length > 1
+      ? `\nDisconnected subgraphs: ${subgraphs.length} (${subgraphs
+          .map((sg, i) => {
+            const labels = sg
+              .map((id) => {
+                const n = nodeById.get(id);
+                return n ? sanitizeForPrompt(n.data.label, 30) : id;
+              })
+              .join(', ');
+            return `group ${i + 1}: [${labels}]`;
+          })
+          .join('; ')})`
+      : '';
 
   return `CURRENT GRAPH SUMMARY: ${nodes.length} nodes, ${edges.length} edges | active: ${activeCount}, stale: ${staleCount}, locked: ${lockedCount}${reviewCount > 0 ? `, reviewing: ${reviewCount}` : ''}${execSuffix}
 Execution order: ${topoLabels}${subgraphInfo}
@@ -1049,9 +1124,10 @@ export function buildSystemPrompt(
   layers?: AgentPersonalityLayers,
 ): string {
   const graph = serializeGraph(nodes, edges);
-  const rulesBlock = rules && rules.length > 0
-    ? `\n\nUSER-TAUGHT RULES (always follow these):\n${rules.map((r, i) => `${i + 1}. ${r}`).join('\n')}`
-    : '';
+  const rulesBlock =
+    rules && rules.length > 0
+      ? `\n\nUSER-TAUGHT RULES (always follow these):\n${rules.map((r, i) => `${i + 1}. ${r}`).join('\n')}`
+      : '';
 
   // If we have full 5-layer data, use the new compiler
   if (agent && layers) {
@@ -1060,8 +1136,9 @@ export function buildSystemPrompt(
   }
 
   // Fallback: legacy flat personality (for backward compat during transition)
-  const fallbackPersonality = mode === 'poirot'
-    ? `PERSONALITY — POIROT (The Detective):
+  const fallbackPersonality =
+    mode === 'poirot'
+      ? `PERSONALITY — POIROT (The Detective):
 You are Hercule Poirot. You investigate with precision and flair.
 - Use dramatic detective language: "Aha!", "Voilà!", "The little grey cells..."
 - Reference investigation metaphors: clues, evidence, suspects, cases.
@@ -1070,7 +1147,7 @@ You are Hercule Poirot. You investigate with precision and flair.
 - Use occasional French: "Mon ami", "Très intéressant", "Parfait!"
 - When building workflows, frame it as assembling evidence and solving the case.
 - IMPORTANT: When the user asks "how should I..." or "what is the best way to...", give ADVICE (workflow:null).`
-    : `PERSONALITY — ROWAN (The Soldier):
+      : `PERSONALITY — ROWAN (The Soldier):
 You are Rowan. You deliver without asking unnecessary questions.
 - CRITICAL RULE: When building workflows, your "message" is terse ("Done. 8 nodes.") and node "content" is DETAILED (300+ chars field manual). When giving advice (workflow:null), write a substantive "message" with specific, actionable recommendations.
 ${NODE_CONTENT_GUIDE}
@@ -1093,19 +1170,23 @@ export function buildMessages(
     const older = conversationHistory.slice(0, -8);
     // Extract user intents (what they asked for) and CID actions (what was built/done)
     const userIntents = older
-      .filter(m => m.role === 'user')
-      .map(m => {
+      .filter((m) => m.role === 'user')
+      .map((m) => {
         const text = m.content.trim();
         // Detect build requests
-        if (/\b(build|create|generate|make|design|start)\b/i.test(text)) return `requested: "${text.slice(0, 100)}"`;
+        if (/\b(build|create|generate|make|design|start)\b/i.test(text))
+          return `requested: "${text.slice(0, 100)}"`;
         // Detect commands
-        if (/^(status|solve|optimize|connect|delete|rename|add|set|run|execute|explain)\b/i.test(text)) return `command: ${text.slice(0, 60)}`;
+        if (
+          /^(status|solve|optimize|connect|delete|rename|add|set|run|execute|explain)\b/i.test(text)
+        )
+          return `command: ${text.slice(0, 60)}`;
         return `asked: "${text.slice(0, 80)}"`;
       })
       .slice(-5);
     const cidActions = older
-      .filter(m => m.role === 'cid')
-      .map(m => {
+      .filter((m) => m.role === 'cid')
+      .map((m) => {
         const text = m.content.trim();
         if (text.includes('nodes') && text.includes('edges')) return 'built a workflow';
         if (/\b(fixed|solved|resolved)\b/i.test(text)) return 'fixed issues';
@@ -1121,9 +1202,10 @@ export function buildMessages(
   }
 
   // Add recent messages (last 8 or all if < 10)
-  const recent = conversationHistory.length > 10
-    ? conversationHistory.slice(-8)
-    : conversationHistory.slice(-10);
+  const recent =
+    conversationHistory.length > 10
+      ? conversationHistory.slice(-8)
+      : conversationHistory.slice(-10);
 
   for (const msg of recent) {
     messages.push({
@@ -1172,9 +1254,10 @@ export function buildDocumentAnalysisPrompt(input: DocumentAnalysisInput): {
   systemPrompt: string;
   userMessage: string;
 } {
-  const sectionSummary = input.sections.length > 0
-    ? input.sections.map(s => `  - "${s.title}" (${s.content.length} chars)`).join('\n')
-    : '  (no sections detected)';
+  const sectionSummary =
+    input.sections.length > 0
+      ? input.sections.map((s) => `  - "${s.title}" (${s.content.length} chars)`).join('\n')
+      : '  (no sections detected)';
 
   const chunkNote = input.isChunk
     ? `\n\nNOTE: This is chunk ${(input.chunkIndex ?? 0) + 1} of ${input.totalChunks ?? '?'} from a large document (~${input.tokenEstimate} tokens total). Analyze what you can see and note if critical information might be in other chunks.`
