@@ -5,7 +5,7 @@ import type { Node, Edge, Connection } from '@xyflow/react';
 import type { NodeData, LifecycleEvent, CIDMessage, NodeCategory, CIDMode, AgentPersonalityLayers, HabitLayer, GenerationLayer, ReflectionLayer, DrivingForceLayer, CentralContext, ArtifactContract, SurgicalDiff, Override } from '@/lib/types';
 import { registerCustomCategory, EDGE_LABEL_COLORS, BUILT_IN_CATEGORIES } from '@/lib/types';
 import { getAgent, getInterviewQuestions, buildEnrichedPrompt, getAdaptiveInterview, shouldSkipRemainingQuestions } from '@/lib/agents';
-import { buildSystemPrompt, buildMessages, getExecutionSystemPrompt, inferEffortFromCategory, buildNoteRefinementPrompt, smartTruncate, buildWorkflowExecutionSummary, buildRelevanceWeightedContext, extractNodeSignal, recordExecutionRun, getExecutionHistory } from '@/lib/prompts';
+import { buildSystemPrompt, buildMessages, getExecutionSystemPrompt, inferEffortFromCategory, buildNoteRefinementPrompt, smartTruncate, buildWorkflowExecutionSummary, buildRelevanceWeightedContext, extractNodeSignal, recordExecutionRun, getExecutionHistory, buildAncestorContextHint } from '@/lib/prompts';
 import type { ExecutionRunSummary } from '@/lib/prompts';
 import type { NoteRefinementResult } from '@/lib/prompts';
 import { classifyEdit } from '@/lib/edits';
@@ -1156,15 +1156,15 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
 
     // JIT context scoping: full results from direct parents, truncated from ancestors
     const directParentIds = new Set(incomingEdges.map(e => e.source));
-    const collectAncestors = (parentIds: Set<string>, depth: number): Array<{ label: string; result: string }> => {
+    const collectAncestors = (parentIds: Set<string>, depth: number): Array<{ label: string; result: string; category?: string }> => {
       if (depth <= 0 || parentIds.size === 0) return [];
       const grandparentEdges = store.edges.filter(e => parentIds.has(e.target) && !directParentIds.has(e.source));
-      const grandparents = new Map<string, { label: string; result: string }>();
+      const grandparents = new Map<string, { label: string; result: string; category?: string }>();
       for (const e of grandparentEdges) {
         const src = store.nodes.find(n => n.id === e.source);
         if (src && !grandparents.has(src.id)) {
           const result = src.data.executionResult || src.data.content || '';
-          grandparents.set(src.id, { label: src.data.label, result: smartTruncate(result, 300) });
+          grandparents.set(src.id, { label: src.data.label, result, category: src.data.category });
         }
       }
       const gpIds = new Set(grandparents.keys());
@@ -1187,9 +1187,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     const directContext = buildRelevanceWeightedContext(directContextInputs, autoPrompt || d.label);
 
     const ancestors = collectAncestors(directParentIds, 2);
-    const ancestorSummary = ancestors.length > 0
-      ? `\n\n## Background context (summarized):\n${ancestors.map(a => `[${a.label}]: ${a.result}`).join('\n')}`
-      : '';
+    const ancestorSummary = buildAncestorContextHint(ancestors);
 
     const inputContext = directContext
       ? `## Direct inputs:\n${directContext}${ancestorSummary}`
@@ -1255,7 +1253,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         // Snapshot shared context at execution time — inject into system prompt so the LLM
         // immediately sees what prior nodes stored without needing a read_context tool call.
         const sharedCtxSnapshot = get()._sharedNodeContext;
-        const systemPrompt = getExecutionSystemPrompt(d.category, d.label, inputContext, downstreamCategories, store.cidMode, Object.keys(sharedCtxSnapshot).length > 0 ? sharedCtxSnapshot : undefined) + toolPromptSuffix;
+        const systemPrompt = getExecutionSystemPrompt(d.category, d.label, inputContext, downstreamCategories, store.cidMode, Object.keys(sharedCtxSnapshot).length > 0 ? sharedCtxSnapshot : undefined, directContextInputs.length) + toolPromptSuffix;
         const effortLevel = d._effortLevel || inferEffortFromCategory(d.category);
         let messages: Array<{ role: 'user' | 'assistant'; content: string }> = [
           { role: 'user', content: `${autoPrompt}\n\n${inputContext}` },

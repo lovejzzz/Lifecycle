@@ -12,6 +12,8 @@ import {
   buildRelevanceWeightedContext,
   extractNodeSignal,
   buildSharedContextHint,
+  buildAncestorContextHint,
+  buildMultiInputCoTScaffold,
 } from '../prompts';
 import type { ContextInput } from '../prompts';
 import { getAgent } from '../agents';
@@ -1184,5 +1186,140 @@ describe('getExecutionSystemPrompt — shared context injection', () => {
     expect(result).toContain('Workflow Run Context');
     expect(result).toContain('plan_id');
     expect(result).toContain('OUTPUT CONTRACT');
+  });
+});
+
+// ── buildAncestorContextHint ─────────────────────────────────────────────────
+
+describe('buildAncestorContextHint', () => {
+  it('returns empty string for empty ancestors array', () => {
+    expect(buildAncestorContextHint([])).toBe('');
+  });
+
+  it('formats ancestor without category as plain truncated text', () => {
+    const result = buildAncestorContextHint([{ label: 'Data Source', result: 'Some output text here.' }]);
+    expect(result).toContain('Background context');
+    expect(result).toContain('Data Source');
+    expect(result).toContain('Some output text');
+  });
+
+  it('includes signal badge when category yields a signal', () => {
+    const result = buildAncestorContextHint([
+      { label: 'Quality Gate', result: 'The work meets all standards. APPROVE', category: 'review' },
+    ]);
+    expect(result).toContain('[VERDICT: APPROVE]');
+    expect(result).toContain('Quality Gate');
+  });
+
+  it('handles multiple ancestors with mixed signal availability', () => {
+    const result = buildAncestorContextHint([
+      { label: 'Review Node', result: 'APPROVE: all good', category: 'review' },
+      { label: 'Data Node', result: 'Some raw data here.', category: 'note' },
+    ]);
+    expect(result).toContain('Review Node');
+    expect(result).toContain('Data Node');
+    expect(result).toContain('[VERDICT: APPROVE]');
+  });
+
+  it('truncates long results to prevent prompt bloat', () => {
+    const longText = 'x'.repeat(500);
+    const result = buildAncestorContextHint([{ label: 'Big Node', result: longText }]);
+    // Without signal: rawBudget is 200 — result should be truncated
+    expect(result.length).toBeLessThan(500);
+  });
+
+  it('truncates more aggressively when signal is present (120 char budget)', () => {
+    const longText = 'The review passed all checks. APPROVE. ' + 'extra content '.repeat(20);
+    const withSignal = buildAncestorContextHint([{ label: 'Rev', result: longText, category: 'review' }]);
+    const withoutSignal = buildAncestorContextHint([{ label: 'Rev', result: longText }]);
+    // With signal active: shorter raw text budget
+    expect(withSignal.length).toBeLessThanOrEqual(withoutSignal.length);
+  });
+
+  it('uses bold label formatting', () => {
+    const result = buildAncestorContextHint([{ label: 'My Node', result: 'some result' }]);
+    expect(result).toContain('**My Node**');
+  });
+});
+
+// ── buildMultiInputCoTScaffold ───────────────────────────────────────────────
+
+describe('buildMultiInputCoTScaffold', () => {
+  it('returns empty string for 0 inputs', () => {
+    expect(buildMultiInputCoTScaffold(0)).toBe('');
+  });
+
+  it('returns empty string for 1 input', () => {
+    expect(buildMultiInputCoTScaffold(1)).toBe('');
+  });
+
+  it('returns empty string for 2 inputs (below threshold)', () => {
+    expect(buildMultiInputCoTScaffold(2)).toBe('');
+  });
+
+  it('returns scaffold for exactly 3 inputs', () => {
+    const result = buildMultiInputCoTScaffold(3);
+    expect(result).toContain('SYNTHESIS GUIDE');
+    expect(result).toContain('3 upstream inputs');
+  });
+
+  it('returns scaffold for 5 inputs', () => {
+    const result = buildMultiInputCoTScaffold(5);
+    expect(result).toContain('5 upstream inputs');
+  });
+
+  it('includes the 4 synthesis steps', () => {
+    const result = buildMultiInputCoTScaffold(4);
+    expect(result).toContain('1)');
+    expect(result).toContain('2)');
+    expect(result).toContain('3)');
+    expect(result).toContain('4)');
+  });
+
+  it('mentions conflicts/tensions in step 1', () => {
+    const result = buildMultiInputCoTScaffold(3);
+    expect(result).toMatch(/conflict|tension/i);
+  });
+});
+
+// ── getExecutionSystemPrompt — directInputCount CoT scaffold ─────────────────
+
+describe('getExecutionSystemPrompt — multi-input CoT scaffold', () => {
+  it('does NOT include SYNTHESIS GUIDE for 2 inputs', () => {
+    const prompt = getExecutionSystemPrompt('cid', 'Analyze', '', undefined, undefined, undefined, 2);
+    expect(prompt).not.toContain('SYNTHESIS GUIDE');
+  });
+
+  it('includes SYNTHESIS GUIDE for 3 inputs', () => {
+    const prompt = getExecutionSystemPrompt('cid', 'Analyze', '', undefined, undefined, undefined, 3);
+    expect(prompt).toContain('SYNTHESIS GUIDE');
+    expect(prompt).toContain('3 upstream inputs');
+  });
+
+  it('includes SYNTHESIS GUIDE for 5 inputs', () => {
+    const prompt = getExecutionSystemPrompt('review', 'Final Review', '', undefined, undefined, undefined, 5);
+    expect(prompt).toContain('SYNTHESIS GUIDE');
+    expect(prompt).toContain('5 upstream inputs');
+  });
+
+  it('omits SYNTHESIS GUIDE when directInputCount is undefined', () => {
+    const prompt = getExecutionSystemPrompt('cid', 'Node', '');
+    expect(prompt).not.toContain('SYNTHESIS GUIDE');
+  });
+
+  it('CoT scaffold appears before Return ONLY instruction', () => {
+    const prompt = getExecutionSystemPrompt('cid', 'Node', '', undefined, undefined, undefined, 4);
+    const coTIndex = prompt.indexOf('SYNTHESIS GUIDE');
+    const returnIndex = prompt.indexOf('Return ONLY');
+    expect(coTIndex).toBeLessThan(returnIndex);
+  });
+
+  it('CoT scaffold appears after shared context hint when both present', () => {
+    const ctx = { myKey: 'myValue' };
+    const prompt = getExecutionSystemPrompt('cid', 'Node', '', undefined, undefined, ctx, 4);
+    const ctxIndex = prompt.indexOf('Workflow Run Context');
+    const coTIndex = prompt.indexOf('SYNTHESIS GUIDE');
+    expect(ctxIndex).toBeGreaterThan(-1);
+    expect(coTIndex).toBeGreaterThan(ctxIndex);
   });
 });

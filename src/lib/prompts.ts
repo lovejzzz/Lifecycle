@@ -512,6 +512,8 @@ export function getExecutionSystemPrompt(
   agentName?: string,
   /** Optional: shared workflow context (stored values + decision outcomes from prior nodes) */
   sharedContext?: Record<string, unknown>,
+  /** Optional: number of direct upstream inputs — triggers multi-input CoT scaffold at ≥3 */
+  directInputCount?: number,
 ): string {
   const categoryPrompt = CATEGORY_SYSTEM_PROMPTS[category] || 'You are a professional content generator. Write detailed, well-structured content.';
   const contextHint = upstreamContext.trim()
@@ -524,7 +526,8 @@ export function getExecutionSystemPrompt(
     ? buildSharedContextHint(sharedContext)
     : '';
   const agentHint = agentName ? (AGENT_EXECUTION_HINTS[agentName.toLowerCase()] ?? '') : '';
-  return `${categoryPrompt}\n\nYou are working on a workflow node called "${sanitizeForPrompt(label, 100)}" (category: ${category}).${contextHint}${downstreamHint}${sharedContextHint}${agentHint} Return ONLY the content as markdown text. Do not wrap in JSON or code blocks.`;
+  const coTScaffold = directInputCount !== undefined ? buildMultiInputCoTScaffold(directInputCount) : '';
+  return `${categoryPrompt}\n\nYou are working on a workflow node called "${sanitizeForPrompt(label, 100)}" (category: ${category}).${contextHint}${downstreamHint}${sharedContextHint}${coTScaffold}${agentHint} Return ONLY the content as markdown text. Do not wrap in JSON or code blocks.`;
 }
 
 /**
@@ -733,6 +736,50 @@ export function buildRelevanceWeightedContext(
       return `${header}\n${truncated}`;
     })
     .join('\n\n---\n\n');
+}
+
+/**
+ * Build a compact ancestor context block using signal extraction.
+ * Ancestor nodes contribute their key outcome signal (e.g. "[VERDICT: APPROVE]")
+ * followed by a tight truncation of their raw output for nuance.
+ * This is more information-dense than raw char-truncation alone.
+ *
+ * @param ancestors  Ancestor nodes with optional category for signal extraction
+ */
+export function buildAncestorContextHint(
+  ancestors: Array<{ label: string; result: string; category?: string }>,
+): string {
+  if (ancestors.length === 0) return '';
+
+  const lines = ancestors.map(({ label, result, category }) => {
+    const signal = category ? extractNodeSignal(result, category) : null;
+    // With a signal, trim raw text more aggressively — the signal captures the key outcome
+    const rawBudget = signal ? 120 : 200;
+    const truncated = smartTruncate(result, rawBudget);
+    return signal
+      ? `- **${label}** ${signal}: ${truncated}`
+      : `- **${label}**: ${truncated}`;
+  });
+
+  return `\n\n## Background context (ancestor nodes):\n${lines.join('\n')}`;
+}
+
+/**
+ * Build a chain-of-thought synthesis scaffold for nodes receiving many upstream inputs.
+ * Injected into system prompts when directInputCount >= 3, helping the LLM
+ * reconcile multiple sources rather than fixating on one.
+ *
+ * @param inputCount  Number of direct upstream inputs for this node
+ */
+export function buildMultiInputCoTScaffold(inputCount: number): string {
+  if (inputCount < 3) return '';
+  return (
+    `\n\nSYNTHESIS GUIDE (${inputCount} upstream inputs): ` +
+    `1) Identify conflicts or tensions between the ${inputCount} input sources. ` +
+    `2) Find shared themes and agreed conclusions. ` +
+    `3) Weigh each source by relevance to your specific task. ` +
+    `4) Form an integrated conclusion that addresses all key inputs without ignoring any.`
+  );
 }
 
 /** Infer effort level from node category for adaptive thinking. */
