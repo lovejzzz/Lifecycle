@@ -515,7 +515,7 @@ function CanvasInner() {
   }, [executionStartTime]);
 
   const [mounted, setMounted] = useState(false);
-   
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -1092,7 +1092,10 @@ function CanvasInner() {
   );
 
   return (
-    <div className="flex h-full w-full overflow-hidden" style={{ flex: '1 1 0%', minHeight: 0 }}>
+    <div
+      className="flex h-full w-full flex-col overflow-hidden md:flex-row"
+      style={{ flex: '1 1 0%', minHeight: 0 }}
+    >
       <div
         style={{ flex: '1 1 0%', minWidth: 0, position: 'relative', height: '100%' }}
         aria-label="Workflow canvas"
@@ -1144,7 +1147,11 @@ function CanvasInner() {
           />
           {!isEmpty && (
             <>
-              <Controls position="bottom-right" showInteractive={false} />
+              <Controls
+                position="bottom-right"
+                showInteractive={false}
+                className="hidden sm:flex"
+              />
               <MiniMap
                 position="top-right"
                 nodeColor={minimapNodeColor}
@@ -1156,6 +1163,7 @@ function CanvasInner() {
                   return 'rgba(255,255,255,0.1)';
                 }}
                 maskColor="rgba(0, 0, 0, 0.75)"
+                className="hidden md:block"
                 style={{ width: 160, height: 100 }}
                 pannable
                 zoomable

@@ -334,6 +334,20 @@ export default function CIDPanel() {
     tokens: number;
   } | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [showInsights, setShowInsights] = useState(false);
+  const insightsRef = useRef<HTMLDivElement>(null);
+
+  // Close insights popover on click outside
+  useEffect(() => {
+    if (!showInsights) return;
+    const handler = (e: MouseEvent) => {
+      if (insightsRef.current && !insightsRef.current.contains(e.target as globalThis.Node)) {
+        setShowInsights(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showInsights]);
 
   const handleFileUpload = async (file: File) => {
     if (isUploading || isProcessing) return;
@@ -1776,7 +1790,7 @@ export default function CIDPanel() {
 
   return (
     <div
-      className="relative flex h-full flex-col border-l border-white/[0.06] bg-[#0c0c14]/95 backdrop-blur-xl max-md:absolute max-md:inset-0 max-md:z-40 max-md:!w-full max-md:border-l-0"
+      className="relative flex h-full flex-col border-l border-white/[0.06] bg-[#0c0c14]/95 backdrop-blur-xl max-md:fixed max-md:right-0 max-md:bottom-0 max-md:left-0 max-md:z-40 max-md:h-[50vh] max-md:max-h-[50vh] max-md:!w-full max-md:rounded-t-xl max-md:border-t max-md:border-l-0 max-md:border-white/[0.06]"
       role="complementary"
       aria-label="CID Agent Panel"
       style={{ width: panelWidth }}
@@ -1883,6 +1897,65 @@ export default function CIDPanel() {
           </div>
         </div>
         <div className="flex items-center gap-0.5">
+          {/* Personality Insights */}
+          <div className="relative" ref={insightsRef}>
+            <button
+              onClick={() => setShowInsights((v) => !v)}
+              title="Personality Insights"
+              className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${showInsights ? 'bg-purple-500/15 text-purple-400/80' : 'text-white/30 hover:bg-white/5 hover:text-white/60'}`}
+            >
+              <Brain size={13} />
+            </button>
+            {showInsights &&
+              (() => {
+                const habits = useLifecycleStore.getState().getHabits();
+                return (
+                  <div className="absolute top-full right-0 z-50 mt-1 w-72 rounded-lg border border-white/10 bg-zinc-900 p-3 shadow-xl">
+                    <h4 className="mb-2 text-[11px] font-medium text-white/60">
+                      Personality Insights
+                    </h4>
+
+                    {/* Domain expertise */}
+                    <div className="mb-2">
+                      <span className="text-[10px] text-white/40">Learned Domains</span>
+                      {habits.domainExpertise
+                        ?.slice(0, 5)
+                        .map((d: { id: string; domain: string; depth: number }) => (
+                          <div key={d.id} className="mt-0.5 flex items-center gap-1.5">
+                            <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/5">
+                              <div
+                                className="h-full rounded-full bg-emerald-500/60"
+                                style={{ width: `${Math.min(d.depth * 100, 100)}%` }}
+                              />
+                            </div>
+                            <span className="w-16 truncate text-[9px] text-white/50">
+                              {d.domain}
+                            </span>
+                          </div>
+                        ))}
+                      {(!habits.domainExpertise || habits.domainExpertise.length === 0) && (
+                        <p className="mt-0.5 text-[9px] text-white/30">No domains learned yet</p>
+                      )}
+                    </div>
+
+                    {/* Communication style */}
+                    <div className="mb-2">
+                      <span className="text-[10px] text-white/40">Communication</span>
+                      <div className="mt-0.5 text-[9px] text-white/50">
+                        Verbosity: {habits.communicationStyle?.verbosity || 'balanced'} · Technical:{' '}
+                        {habits.communicationStyle?.technicalDepth || 'moderate'}
+                      </div>
+                    </div>
+
+                    {/* Interaction count */}
+                    <div className="text-[9px] text-white/30">
+                      {habits.totalInteractions || 0} interactions · Depth:{' '}
+                      {((habits.relationshipDepth || 0) * 100).toFixed(0)}%
+                    </div>
+                  </div>
+                );
+              })()}
+          </div>
           {/* Switch Agent */}
           <button
             onClick={() => setCIDMode(isAmber ? 'rowan' : 'poirot')}

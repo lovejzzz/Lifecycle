@@ -13,6 +13,7 @@ import type {
   CentralContext,
   ArtifactContract,
   SurgicalDiff,
+  HabitLayer,
 } from '@/lib/types';
 import type { UsageStats } from '@/lib/cache';
 import type { ProjectMeta } from '@/lib/storage';
@@ -481,4 +482,7 @@ export interface LifecycleStore {
   forgetOverride: (overrideId: string) => void;
   getArtifactContracts: () => Record<string, ArtifactContract>;
   hasContext: () => boolean;
+
+  // Reflection insights — expose habit layer for current agent
+  getHabits: () => HabitLayer;
 }
