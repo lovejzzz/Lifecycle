@@ -46,6 +46,7 @@ import {
   setCacheEntry,
   createEmptyUsageStats,
   MODEL_PRICING,
+  estimateBatchCost,
 } from '@/lib/cache';
 import { validateOutput, extractKeywords, buildRefinementPrompt } from '@/lib/validate';
 import { callCID, callCIDOnce } from '@/lib/cidClient';
@@ -95,7 +96,9 @@ import type { ExportFormat } from '@/lib/export';
 import {
   listProjects as listStorageProjects,
   saveProject as saveStorageProject,
+  createProject as createStorageProject,
   migrateLegacyProject,
+  notifyTabSync,
 } from '@/lib/storage';
 
 // Store types imported from dedicated file for maintainability
@@ -373,6 +376,7 @@ function flushSave() {
         saveNodes.length,
         state.edges.length,
       );
+      notifyTabSync(store.currentProjectId);
     }
     // Update auto-save indicator timestamp
     useLifecycleStore.setState({ lastSavedAt: Date.now() });
@@ -837,6 +841,9 @@ function refreshGenerationContext(
 }
 
 /** Run reflection on an interaction and apply results — the METACOGNITION engine */
+// Track shown adaptation toasts (once per session per domain)
+const _shownAdaptations = new Set<string>();
+
 function runReflection(mode: CIDMode, userMessage: string, agentResponse: string) {
   const agent = getAgent(mode);
   // Pass drives so reflection can detect curiosity spike patterns and trigger drive reorganization
@@ -855,6 +862,22 @@ function runReflection(mode: CIDMode, userMessage: string, agentResponse: string
 
   const { habits, drives } = applyReflectionActions(actions, loadedHabits[mode], effectiveForce);
   loadedHabits[mode] = habits;
+
+  // Show adaptation toast (once per session per domain)
+  for (const action of actions) {
+    if (action.type === 'strengthen-domain' || action.type === 'add-domain') {
+      const domain =
+        (action as { domain?: string; value?: string }).domain ||
+        (action as { value?: string }).value ||
+        '';
+      if (domain && !_shownAdaptations.has(domain)) {
+        _shownAdaptations.add(domain);
+        useLifecycleStore
+          .getState()
+          .addToast(`CID adapted: learned your ${domain} preferences`, 'info');
+      }
+    }
+  }
 
   // DRIVE EVOLUTION — persist evolved weights (no longer void'd!)
   if (drives.evolvedWeights) {
@@ -977,6 +1000,10 @@ export const useLifecycleStore = create<LifecycleStore>((set, get, api) => ({
   },
   resetSessionCost: () =>
     set({ _sessionCost: { totalTokens: 0, estimatedCostUSD: 0, callCount: 0 } }),
+
+  // Cost budget cap
+  _costBudgetUSD: 1.0,
+  setCostBudget: (usd: number) => set({ _costBudgetUSD: Math.max(0, usd) }),
 
   // Execution snapshot for rollback
   _preExecutionSnapshot: null as { nodes: Node<NodeData>[]; edges: Edge[] } | null,
@@ -2040,6 +2067,27 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     cidLog('executeWorkflow', { nodeCount: nodes.length, edgeCount: edges.length });
     if (nodes.length === 0) return;
     store.snapshotBeforeExecution();
+
+    // Cost budget check
+    const budget = get()._costBudgetUSD;
+    if (budget > 0) {
+      const staleOrActive = nodes.filter(
+        (n) => n.data.status === 'active' || n.data.status === 'stale',
+      );
+      const estimated = estimateBatchCost(
+        staleOrActive.map((n) => ({ promptLength: (n.data.content || '').length + 500 })),
+        store.cidAIModel,
+      );
+      if (estimated.totalCostUSD > budget) {
+        store.addToast(
+          `Estimated cost ~$${estimated.totalCostUSD.toFixed(2)} exceeds budget $${budget.toFixed(2)}. Increase budget or reduce nodes.`,
+          'warning',
+        );
+        set({ isProcessing: false });
+        return;
+      }
+    }
+
     const mode = get().cidMode;
 
     // ── Initialize workflow context for agentic routing ──

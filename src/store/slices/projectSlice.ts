@@ -22,6 +22,7 @@ import {
   createProject as createStorageProject,
   renameProject as renameStorageProject,
 } from '@/lib/storage';
+import type { ProjectMeta } from '@/lib/storage';
 import { NODE_W, createStyledEdge } from '@/lib/graph';
 import { getAgent } from '@/lib/agents';
 import { cidLog } from '../helpers';

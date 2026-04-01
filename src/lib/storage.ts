@@ -39,7 +39,13 @@ export interface StorageBackend {
   readonly kind: 'local' | 'supabase';
   listProjects(): Promise<ProjectMeta[]>;
   loadProject(id: string): Promise<ProjectData | null>;
-  saveProject(id: string, name: string, data: ProjectData, nodeCount: number, edgeCount: number): Promise<void>;
+  saveProject(
+    id: string,
+    name: string,
+    data: ProjectData,
+    nodeCount: number,
+    edgeCount: number,
+  ): Promise<void>;
   deleteProject(id: string): Promise<void>;
   createProject(name: string): Promise<string>;
   renameProject(id: string, newName: string): Promise<void>;
@@ -91,7 +97,13 @@ export class LocalStorageBackend implements StorageBackend {
     }
   }
 
-  async saveProject(id: string, name: string, data: ProjectData, nodeCount: number, edgeCount: number): Promise<void> {
+  async saveProject(
+    id: string,
+    name: string,
+    data: ProjectData,
+    nodeCount: number,
+    edgeCount: number,
+  ): Promise<void> {
     if (typeof window === 'undefined') return;
 
     // Save data
@@ -100,12 +112,21 @@ export class LocalStorageBackend implements StorageBackend {
     } catch {
       // Storage full — try trimming execution results
       try {
-        const trimmed = { ...data, nodes: (data.nodes as Array<{ data?: { executionResult?: string } }>).map(n => {
-          if (n.data?.executionResult && n.data.executionResult.length > 1000) {
-            return { ...n, data: { ...n.data, executionResult: n.data.executionResult.slice(0, 1000) + '\n... (truncated)' } };
-          }
-          return n;
-        })};
+        const trimmed = {
+          ...data,
+          nodes: (data.nodes as Array<{ data?: { executionResult?: string } }>).map((n) => {
+            if (n.data?.executionResult && n.data.executionResult.length > 1000) {
+              return {
+                ...n,
+                data: {
+                  ...n.data,
+                  executionResult: n.data.executionResult.slice(0, 1000) + '\n... (truncated)',
+                },
+              };
+            }
+            return n;
+          }),
+        };
         localStorage.setItem(PROJECT_PREFIX + id, JSON.stringify(trimmed));
       } catch {
         console.warn(`[storage] Failed to save project ${id} — storage quota exceeded`);
@@ -115,7 +136,7 @@ export class LocalStorageBackend implements StorageBackend {
 
     // Update index
     const projects = readIndex();
-    const existing = projects.findIndex(p => p.id === id);
+    const existing = projects.findIndex((p) => p.id === id);
     const meta: ProjectMeta = {
       id,
       name,
@@ -135,7 +156,7 @@ export class LocalStorageBackend implements StorageBackend {
   async deleteProject(id: string): Promise<void> {
     if (typeof window === 'undefined') return;
     localStorage.removeItem(PROJECT_PREFIX + id);
-    const projects = readIndex().filter(p => p.id !== id);
+    const projects = readIndex().filter((p) => p.id !== id);
     writeIndex(projects);
   }
 
@@ -154,7 +175,7 @@ export class LocalStorageBackend implements StorageBackend {
 
   async renameProject(id: string, newName: string): Promise<void> {
     const projects = readIndex();
-    const p = projects.find(x => x.id === id);
+    const p = projects.find((x) => x.id === id);
     if (p) {
       p.name = newName;
       writeIndex(projects);
@@ -190,7 +211,7 @@ export class SupabaseBackend implements StorageBackend {
       return [];
     }
 
-    return (data ?? []).map(row => ({
+    return (data ?? []).map((row) => ({
       id: row.id,
       name: row.name,
       nodeCount: row.node_count,
@@ -211,18 +232,25 @@ export class SupabaseBackend implements StorageBackend {
     return data.data as unknown as ProjectData;
   }
 
-  async saveProject(id: string, name: string, projectData: ProjectData, nodeCount: number, edgeCount: number): Promise<void> {
+  async saveProject(
+    id: string,
+    name: string,
+    projectData: ProjectData,
+    nodeCount: number,
+    edgeCount: number,
+  ): Promise<void> {
     // Upsert project metadata
-    const { error: metaError } = await this.client
-      .from('projects')
-      .upsert({
+    const { error: metaError } = await this.client.from('projects').upsert(
+      {
         id,
         user_id: this.userId,
         name,
         node_count: nodeCount,
         edge_count: edgeCount,
         last_modified: new Date().toISOString(),
-      }, { onConflict: 'id' });
+      },
+      { onConflict: 'id' },
+    );
 
     if (metaError) {
       console.error('[storage:supabase] saveProject meta error', metaError);
@@ -230,13 +258,14 @@ export class SupabaseBackend implements StorageBackend {
     }
 
     // Upsert project data
-    const { error: dataError } = await this.client
-      .from('project_data')
-      .upsert({
+    const { error: dataError } = await this.client.from('project_data').upsert(
+      {
         project_id: id,
         data: projectData as unknown as Record<string, unknown>,
         updated_at: new Date().toISOString(),
-      }, { onConflict: 'project_id' });
+      },
+      { onConflict: 'project_id' },
+    );
 
     if (dataError) {
       console.error('[storage:supabase] saveProject data error', dataError);
@@ -354,7 +383,10 @@ export async function migrateLocalToSupabase(): Promise<number> {
       migrated++;
       console.log(`[storage:migrate] Migrated project "${meta.name}" (${meta.id})`);
     } catch (err) {
-      console.warn(`[storage:migrate] Failed to migrate project "${meta.name}":`, err instanceof Error ? err.message : 'unknown');
+      console.warn(
+        `[storage:migrate] Failed to migrate project "${meta.name}":`,
+        err instanceof Error ? err.message : 'unknown',
+      );
     }
   }
 
@@ -372,14 +404,26 @@ export async function migrateLocalToSupabase(): Promise<number> {
 
 const SYNC_DEBOUNCE_MS = 2000;
 let _syncTimer: ReturnType<typeof setTimeout> | null = null;
-let _pendingSync: { id: string; name: string; data: ProjectData; nodeCount: number; edgeCount: number } | null = null;
+let _pendingSync: {
+  id: string;
+  name: string;
+  data: ProjectData;
+  nodeCount: number;
+  edgeCount: number;
+} | null = null;
 let _syncInFlight = false;
 
 /**
  * Schedule a debounced background sync to Supabase.
  * Only fires when SupabaseBackend is active.
  */
-function scheduleSyncToCloud(id: string, name: string, data: ProjectData, nodeCount: number, edgeCount: number): void {
+function scheduleSyncToCloud(
+  id: string,
+  name: string,
+  data: ProjectData,
+  nodeCount: number,
+  edgeCount: number,
+): void {
   if (_activeBackend.kind !== 'supabase') return;
 
   _pendingSync = { id, name, data, nodeCount, edgeCount };
@@ -392,10 +436,19 @@ function scheduleSyncToCloud(id: string, name: string, data: ProjectData, nodeCo
     _syncInFlight = true;
 
     try {
-      await _activeBackend.saveProject(pending.id, pending.name, pending.data, pending.nodeCount, pending.edgeCount);
+      await _activeBackend.saveProject(
+        pending.id,
+        pending.name,
+        pending.data,
+        pending.nodeCount,
+        pending.edgeCount,
+      );
       console.log(`[storage:sync] Synced project ${pending.id} to cloud`);
     } catch (err) {
-      console.warn('[storage:sync] Background sync failed:', err instanceof Error ? err.message : 'unknown');
+      console.warn(
+        '[storage:sync] Background sync failed:',
+        err instanceof Error ? err.message : 'unknown',
+      );
       // Don't retry automatically — next save will schedule a new sync
     } finally {
       _syncInFlight = false;
@@ -418,9 +471,18 @@ export async function flushSync(): Promise<void> {
   _pendingSync = null;
 
   try {
-    await _activeBackend.saveProject(pending.id, pending.name, pending.data, pending.nodeCount, pending.edgeCount);
+    await _activeBackend.saveProject(
+      pending.id,
+      pending.name,
+      pending.data,
+      pending.nodeCount,
+      pending.edgeCount,
+    );
   } catch (err) {
-    console.warn('[storage:sync] Flush sync failed:', err instanceof Error ? err.message : 'unknown');
+    console.warn(
+      '[storage:sync] Flush sync failed:',
+      err instanceof Error ? err.message : 'unknown',
+    );
   }
 }
 
@@ -470,8 +532,11 @@ export function deleteProject(id: string): void {
   void _localBackend.deleteProject(id);
   // Also delete from cloud if Supabase is active
   if (_activeBackend.kind === 'supabase') {
-    void _activeBackend.deleteProject(id).catch(err => {
-      console.warn('[storage:sync] Cloud delete failed:', err instanceof Error ? err.message : 'unknown');
+    void _activeBackend.deleteProject(id).catch((err) => {
+      console.warn(
+        '[storage:sync] Cloud delete failed:',
+        err instanceof Error ? err.message : 'unknown',
+      );
     });
   }
 }
@@ -493,8 +558,11 @@ export function renameProject(id: string, newName: string): void {
   void _localBackend.renameProject(id, newName);
   // Also rename in cloud if Supabase is active
   if (_activeBackend.kind === 'supabase') {
-    void _activeBackend.renameProject(id, newName).catch(err => {
-      console.warn('[storage:sync] Cloud rename failed:', err instanceof Error ? err.message : 'unknown');
+    void _activeBackend.renameProject(id, newName).catch((err) => {
+      console.warn(
+        '[storage:sync] Cloud rename failed:',
+        err instanceof Error ? err.message : 'unknown',
+      );
     });
   }
 }
@@ -504,6 +572,28 @@ export function renameProject(id: string, newName: string): void {
  * Called once on first load — moves `lifecycle-store` into a named project.
  * Returns the migrated project ID, or null if nothing to migrate.
  */
+// ── Multi-tab Sync ──────────────────────────────────────────────────────────
+let syncChannel: BroadcastChannel | null = null;
+
+export function initTabSync(onProjectChanged: (projectId: string) => void): void {
+  if (typeof window === 'undefined' || typeof BroadcastChannel === 'undefined') return;
+  syncChannel = new BroadcastChannel('lifecycle-sync');
+  syncChannel.onmessage = (event) => {
+    if (event.data?.type === 'project-saved' && event.data.projectId) {
+      onProjectChanged(event.data.projectId);
+    }
+  };
+}
+
+export function notifyTabSync(projectId: string): void {
+  syncChannel?.postMessage({ type: 'project-saved', projectId });
+}
+
+export function destroyTabSync(): void {
+  syncChannel?.close();
+  syncChannel = null;
+}
+
 export function migrateLegacyProject(): string | null {
   if (typeof window === 'undefined') return null;
 

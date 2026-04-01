@@ -294,6 +294,10 @@ export interface LifecycleStore {
   trackCost: (inputTokens: number, outputTokens: number, model: string) => void;
   resetSessionCost: () => void;
 
+  // Cost budget cap
+  _costBudgetUSD: number;
+  setCostBudget: (usd: number) => void;
+
   // Execution snapshot for rollback
   _preExecutionSnapshot: { nodes: Node<NodeData>[]; edges: Edge[] } | null;
   snapshotBeforeExecution: () => void;

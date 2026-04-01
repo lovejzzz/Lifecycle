@@ -8,6 +8,16 @@
 
 import type { AgentTool } from './types';
 
+// Search provider configuration — set SEARCH_API_KEY + SEARCH_PROVIDER env vars for premium search
+type SearchProvider = 'duckduckgo' | 'serper';
+function getSearchConfig(): { provider: SearchProvider; apiKey: string | null } {
+  const apiKey = typeof process !== 'undefined' ? process.env?.SEARCH_API_KEY || null : null;
+  const provider = (
+    typeof process !== 'undefined' ? process.env?.SEARCH_PROVIDER : null
+  ) as SearchProvider | null;
+  return { provider: provider || (apiKey ? 'serper' : 'duckduckgo'), apiKey };
+}
+
 /** Result from executing a tool */
 export interface ToolCallResult {
   tool: string;
@@ -38,8 +48,12 @@ function recordToolCall(result: ToolCallResult): void {
 }
 
 /** Return a snapshot of tool usage analytics */
-export function getToolAnalytics(): Record<string, ToolAnalyticEntry & { avgDurationMs: number; successRate: number }> {
-  const out: Record<string, ToolAnalyticEntry & { avgDurationMs: number; successRate: number }> = {};
+export function getToolAnalytics(): Record<
+  string,
+  ToolAnalyticEntry & { avgDurationMs: number; successRate: number }
+> {
+  const out: Record<string, ToolAnalyticEntry & { avgDurationMs: number; successRate: number }> =
+    {};
   for (const [name, e] of Object.entries(_toolAnalytics)) {
     out[name] = {
       ...e,
@@ -57,8 +71,49 @@ export function formatToolAnalytics(): string {
   if (entries.length === 0) return 'No tool calls recorded yet.';
   const rows = entries
     .sort((a, b) => b[1].calls - a[1].calls)
-    .map(([name, s]) => `- **${name}**: ${s.calls} call${s.calls !== 1 ? 's' : ''}, ${s.successRate}% success, avg ${s.avgDurationMs}ms`);
+    .map(
+      ([name, s]) =>
+        `- **${name}**: ${s.calls} call${s.calls !== 1 ? 's' : ''}, ${s.successRate}% success, avg ${s.avgDurationMs}ms`,
+    );
   return `**Tool Usage Analytics**\n${rows.join('\n')}`;
+}
+
+/** Smart content extraction — strips HTML/JSON before truncating */
+export function smartTruncate(raw: string, maxLen: number = 3000): string {
+  if (raw.length <= maxLen) return raw;
+  // For HTML: try to extract main content
+  if (raw.includes('<html') || raw.includes('<body')) {
+    // Strip script/style tags
+    let clean = raw
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[\s\S]*?<\/style>/gi, '');
+    // Extract article/main content if present
+    const mainMatch = clean.match(/<(?:main|article)[^>]*>([\s\S]*?)<\/(?:main|article)>/i);
+    if (mainMatch) clean = mainMatch[1];
+    // Strip remaining HTML tags
+    clean = clean
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (clean.length <= maxLen) return clean;
+    return clean.slice(0, maxLen) + `\n... (${raw.length - maxLen} chars truncated)`;
+  }
+  // For JSON: pretty-print and truncate
+  try {
+    const parsed = JSON.parse(raw);
+    const pretty = JSON.stringify(parsed, null, 2);
+    if (pretty.length <= maxLen) return pretty;
+    return (
+      pretty.slice(0, maxLen) +
+      `\n... (${Object.keys(parsed).length} total keys, response truncated)`
+    );
+  } catch {
+    /* not JSON */
+  }
+  // Default: plain truncation with size info
+  return (
+    raw.slice(0, maxLen) + `\n... (${raw.length} total chars, ${raw.length - maxLen} truncated)`
+  );
 }
 
 /** Parsed tool call from LLM output */
@@ -95,27 +150,33 @@ export const BUILT_IN_TOOLS: AgentTool[] = [
   },
   {
     name: 'validate_json',
-    description: 'Validate whether a string is valid JSON and report any parse errors. Args: { "text": "string to validate" }',
+    description:
+      'Validate whether a string is valid JSON and report any parse errors. Args: { "text": "string to validate" }',
   },
   {
     name: 'summarize_text',
-    description: 'Summarize a long text to a concise version. Args: { "text": "text to summarize", "max_words": 100 }',
+    description:
+      'Summarize a long text to a concise version. Args: { "text": "text to summarize", "max_words": 100 }',
   },
   {
     name: 'generate_code',
-    description: 'Generate code for a specific task or description. Args: { "task": "what to implement", "language": "python|typescript|javascript|..." }',
+    description:
+      'Generate code for a specific task or description. Args: { "task": "what to implement", "language": "python|typescript|javascript|..." }',
   },
   {
     name: 'compare_texts',
-    description: 'Compare two texts and return a structured diff summary — additions, removals, and key differences. Args: { "text_a": "...", "text_b": "...", "label_a": "Version A", "label_b": "Version B" }',
+    description:
+      'Compare two texts and return a structured diff summary — additions, removals, and key differences. Args: { "text_a": "...", "text_b": "...", "label_a": "Version A", "label_b": "Version B" }',
   },
   {
     name: 'list_context_keys',
-    description: 'List all keys currently stored in the shared workflow context. Useful before calling read_context to discover what data is available. Args: {} (no arguments required)',
+    description:
+      'List all keys currently stored in the shared workflow context. Useful before calling read_context to discover what data is available. Args: {} (no arguments required)',
   },
   {
     name: 'calculate',
-    description: 'Safely evaluate a mathematical expression and return the numeric result. Supports +, -, *, /, %, ^ (power), parentheses, and functions: sqrt, abs, floor, ceil, round, min, max, pow, log, ln, sin, cos, tan. Constants: pi. Args: { "expression": "2 + 2" }',
+    description:
+      'Safely evaluate a mathematical expression and return the numeric result. Supports +, -, *, /, %, ^ (power), parentheses, and functions: sqrt, abs, floor, ceil, round, min, max, pow, log, ln, sin, cos, tan. Constants: pi. Args: { "expression": "2 + 2" }',
   },
 ];
 
@@ -129,30 +190,30 @@ export const BUILT_IN_TOOLS: AgentTool[] = [
 const AGENT_TOOL_PREFERENCES: Record<string, string[]> = {
   rowan: [
     // Speed-first: direct retrieval → compute → code generation → persistence → validation
-    'web_search',     // fast external intel
-    'http_request',   // direct API calls
-    'calculate',      // instant numeric computation — faster than manual math
-    'generate_code',  // produce actionable artifacts
-    'store_context',  // persist mission-critical data for downstream
-    'validate_json',  // quick structural check
-    'read_context',   // retrieve cached context
-    'extract_json',   // structured extraction
+    'web_search', // fast external intel
+    'http_request', // direct API calls
+    'calculate', // instant numeric computation — faster than manual math
+    'generate_code', // produce actionable artifacts
+    'store_context', // persist mission-critical data for downstream
+    'validate_json', // quick structural check
+    'read_context', // retrieve cached context
+    'extract_json', // structured extraction
     'summarize_text', // compress bulky input
-    'compare_texts',  // diff (lower priority — thorough work)
+    'compare_texts', // diff (lower priority — thorough work)
   ],
   poirot: [
     // Thoroughness-first: survey the scene → examine evidence → extract → verify → synthesize
     'list_context_keys', // survey what is already known before reading anything
-    'read_context',      // examine what is already known
-    'extract_json',      // extract structured clues from raw data
-    'compare_texts',     // compare versions, spot discrepancies
-    'validate_json',     // verify data integrity rigorously
-    'calculate',         // numeric verification of quantitative claims
-    'summarize_text',    // synthesize findings concisely
-    'web_search',        // research external evidence when needed
-    'store_context',     // document deductions for downstream nodes
-    'http_request',      // fetch external data as supporting evidence
-    'generate_code',     // generate only as a last step
+    'read_context', // examine what is already known
+    'extract_json', // extract structured clues from raw data
+    'compare_texts', // compare versions, spot discrepancies
+    'validate_json', // verify data integrity rigorously
+    'calculate', // numeric verification of quantitative claims
+    'summarize_text', // synthesize findings concisely
+    'web_search', // research external evidence when needed
+    'store_context', // document deductions for downstream nodes
+    'http_request', // fetch external data as supporting evidence
+    'generate_code', // generate only as a last step
   ],
 };
 
@@ -183,13 +244,16 @@ export function getPreferredTools(agentName: string, tools: AgentTool[]): AgentT
   const prefs = AGENT_TOOL_PREFERENCES[agentName.toLowerCase()];
   if (!prefs || prefs.length === 0) return tools;
 
-  const toolMap = new Map(tools.map(t => [t.name, t]));
+  const toolMap = new Map(tools.map((t) => [t.name, t]));
   const ordered: AgentTool[] = [];
 
   // First: add tools in preference order (skip ones not in the available set)
   for (const name of prefs) {
     const t = toolMap.get(name);
-    if (t) { ordered.push(t); toolMap.delete(name); }
+    if (t) {
+      ordered.push(t);
+      toolMap.delete(name);
+    }
   }
   // Then: append any remaining tools not covered by the preference list
   for (const t of toolMap.values()) ordered.push(t);
@@ -272,9 +336,7 @@ export function buildToolPrompt(tools: AgentTool[], agentName?: string): string 
   if (tools.length === 0) return '';
 
   const orderedTools = agentName ? getPreferredTools(agentName, tools) : tools;
-  const toolDescs = orderedTools
-    .map((t) => `- **${t.name}**: ${t.description}`)
-    .join('\n');
+  const toolDescs = orderedTools.map((t) => `- **${t.name}**: ${t.description}`).join('\n');
 
   const styleHint =
     agentName && AGENT_TOOL_STYLE[agentName.toLowerCase()]
@@ -375,7 +437,10 @@ export function parseToolCalls(text: string): { cleanText: string; toolCalls: Pa
     const call = tryParse(match[1].trim());
     if (call) {
       const key = `${call.name}:${JSON.stringify(call.args)}`;
-      if (!seen.has(key)) { seen.add(key); toolCalls.push(call); }
+      if (!seen.has(key)) {
+        seen.add(key);
+        toolCalls.push(call);
+      }
     }
   }
 
@@ -385,7 +450,10 @@ export function parseToolCalls(text: string): { cleanText: string; toolCalls: Pa
     const call = tryParse(match[1].trim());
     if (call) {
       const key = `${call.name}:${JSON.stringify(call.args)}`;
-      if (!seen.has(key)) { seen.add(key); toolCalls.push(call); }
+      if (!seen.has(key)) {
+        seen.add(key);
+        toolCalls.push(call);
+      }
     }
   }
 
@@ -399,7 +467,10 @@ export function parseToolCalls(text: string): { cleanText: string; toolCalls: Pa
       const call = tryParse(raw);
       if (call) {
         const key = `${call.name}:${JSON.stringify(call.args)}`;
-        if (!seen.has(key)) { seen.add(key); toolCalls.push(call); }
+        if (!seen.has(key)) {
+          seen.add(key);
+          toolCalls.push(call);
+        }
       }
     }
   }
@@ -413,7 +484,10 @@ export function parseToolCalls(text: string): { cleanText: string; toolCalls: Pa
     const call = tryParse(raw);
     if (call) {
       const key = `${call.name}:${JSON.stringify(call.args)}`;
-      if (!seen.has(key)) { seen.add(key); toolCalls.push(call); }
+      if (!seen.has(key)) {
+        seen.add(key);
+        toolCalls.push(call);
+      }
     }
   }
 
@@ -447,10 +521,28 @@ export async function executeTool(
  * Any identifier in user input that isn't in this list (after constant substitution) is rejected.
  */
 const SAFE_MATH_FUNS = [
-  'sqrt', 'abs', 'ceil', 'floor', 'round',
-  'min', 'max', 'pow', 'log10', 'log2', 'log',
-  'ln', 'sin', 'cos', 'tan', 'atan', 'asin', 'acos', 'atan2',
-  'hypot', 'sign', 'trunc',
+  'sqrt',
+  'abs',
+  'ceil',
+  'floor',
+  'round',
+  'min',
+  'max',
+  'pow',
+  'log10',
+  'log2',
+  'log',
+  'ln',
+  'sin',
+  'cos',
+  'tan',
+  'atan',
+  'asin',
+  'acos',
+  'atan2',
+  'hypot',
+  'sign',
+  'trunc',
 ];
 
 /**
@@ -472,9 +564,7 @@ export function safeEval(raw: string): number | null {
   if (!/^[\d\s+\-*/^%().,a-zA-Z_]+$/.test(input)) return null;
 
   // Step 2: substitute known constants and function names
-  let expr = input
-    .replace(/\bpi\b/gi, '3.141592653589793')
-    .replace(/\^/g, '**'); // ^ → ** (exponentiation)
+  let expr = input.replace(/\bpi\b/gi, '3.141592653589793').replace(/\^/g, '**'); // ^ → ** (exponentiation)
 
   // Replace 'ln' before 'log' to avoid partial match
   expr = expr.replace(/\bln\b/g, 'Math.log');
@@ -490,7 +580,7 @@ export function safeEval(raw: string): number | null {
 
   // Step 4: evaluate with only Math in scope
   try {
-    // eslint-disable-next-line no-new-func
+     
     const fn = new Function('Math', `'use strict'; return +(${expr});`);
     const result = fn(Math);
     if (typeof result !== 'number' || !isFinite(result)) return null;
@@ -519,8 +609,35 @@ async function _executeToolImpl(
             success: false,
             durationMs: Date.now() - start,
           };
-        // Use a simple search proxy — in production this would be a proper search API
+        // Use configured search provider
         try {
+          const { provider: searchProvider, apiKey: searchApiKey } = getSearchConfig();
+          if (searchProvider === 'serper' && searchApiKey) {
+            // Premium search via Serper (Google results)
+            const serperRes = await fetch('https://google.serper.dev/search', {
+              method: 'POST',
+              headers: { 'X-API-KEY': searchApiKey, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ q: query, num: 5 }),
+              signal: AbortSignal.timeout(10000),
+            });
+            const serperData = await serperRes.json();
+            const results: string[] = [];
+            if (serperData.answerBox?.snippet)
+              results.push(`Answer: ${serperData.answerBox.snippet}`);
+            if (serperData.organic) {
+              for (const r of serperData.organic.slice(0, 5)) {
+                results.push(`- **${r.title}**: ${r.snippet}\n  ${r.link}`);
+              }
+            }
+            return {
+              tool: call.name,
+              args: call.args,
+              result: results.join('\n') || 'No results found',
+              success: true,
+              durationMs: Date.now() - start,
+            };
+          }
+          // Fallback: DuckDuckGo instant-answer API (free, no auth)
           const res = await fetch(
             `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`,
             {
@@ -537,13 +654,15 @@ async function _executeToolImpl(
           if (data.Infobox?.content) {
             const facts = (data.Infobox.content as Array<{ label: string; value: string }>)
               .slice(0, 5)
-              .filter(f => f.label && f.value)
-              .map(f => `  ${f.label}: ${f.value}`);
+              .filter((f) => f.label && f.value)
+              .map((f) => `  ${f.label}: ${f.value}`);
             if (facts.length > 0) results.push(`Facts:\n${facts.join('\n')}`);
           }
           // Related topics — fallback when no abstract is available
           if (data.RelatedTopics) {
-            for (const topic of (data.RelatedTopics as Array<{ Text?: string; Topics?: Array<{ Text?: string }> }>).slice(0, 5)) {
+            for (const topic of (
+              data.RelatedTopics as Array<{ Text?: string; Topics?: Array<{ Text?: string }> }>
+            ).slice(0, 5)) {
               if (topic.Text) results.push(`- ${topic.Text}`);
               // Some topics are nested groups
               if (topic.Topics) {
@@ -602,8 +721,8 @@ async function _executeToolImpl(
             signal: AbortSignal.timeout(15000),
           });
           const text = await res.text();
-          // Truncate large responses
-          const truncated = text.length > 3000 ? text.slice(0, 3000) + '\n... (truncated)' : text;
+          // Smart content extraction with truncation
+          const truncated = smartTruncate(text);
           return {
             tool: call.name,
             args: call.args,
@@ -697,66 +816,123 @@ async function _executeToolImpl(
 
       case 'validate_json': {
         const text = String(call.args.text || '');
-        if (!text) return { tool: call.name, args: call.args, result: 'Error: missing text argument', success: false, durationMs: Date.now() - start };
+        if (!text)
+          return {
+            tool: call.name,
+            args: call.args,
+            result: 'Error: missing text argument',
+            success: false,
+            durationMs: Date.now() - start,
+          };
         try {
           const parsed = JSON.parse(text);
           const type = Array.isArray(parsed) ? 'array' : typeof parsed;
           const keys = type === 'object' && parsed !== null ? Object.keys(parsed) : [];
-          const summary = type === 'object'
-            ? `Valid JSON object with ${keys.length} key(s): ${keys.slice(0, 10).join(', ')}${keys.length > 10 ? '...' : ''}`
-            : type === 'array'
-              ? `Valid JSON array with ${(parsed as unknown[]).length} element(s)`
-              : `Valid JSON (${type})`;
-          return { tool: call.name, args: call.args, result: summary, success: true, durationMs: Date.now() - start };
+          const summary =
+            type === 'object'
+              ? `Valid JSON object with ${keys.length} key(s): ${keys.slice(0, 10).join(', ')}${keys.length > 10 ? '...' : ''}`
+              : type === 'array'
+                ? `Valid JSON array with ${(parsed as unknown[]).length} element(s)`
+                : `Valid JSON (${type})`;
+          return {
+            tool: call.name,
+            args: call.args,
+            result: summary,
+            success: true,
+            durationMs: Date.now() - start,
+          };
         } catch (err) {
           const msg = err instanceof SyntaxError ? err.message : 'Invalid JSON';
-          return { tool: call.name, args: call.args, result: `Invalid JSON: ${msg}`, success: false, durationMs: Date.now() - start };
+          return {
+            tool: call.name,
+            args: call.args,
+            result: `Invalid JSON: ${msg}`,
+            success: false,
+            durationMs: Date.now() - start,
+          };
         }
       }
 
       case 'summarize_text': {
         const text = String(call.args.text || '');
         const maxWords = Math.max(10, Math.min(500, Number(call.args.max_words ?? 100)));
-        if (!text) return { tool: call.name, args: call.args, result: 'Error: missing text argument', success: false, durationMs: Date.now() - start };
+        if (!text)
+          return {
+            tool: call.name,
+            args: call.args,
+            result: 'Error: missing text argument',
+            success: false,
+            durationMs: Date.now() - start,
+          };
         // Instruct the LLM to perform the summarization in its next iteration
         return {
-          tool: call.name, args: call.args,
+          tool: call.name,
+          args: call.args,
           result: `Summarization task ready. Input: ${text.length} chars. Target: ≤${maxWords} words.\n\nPlease summarize the following text in ≤${maxWords} words in your next response:\n\n${text.slice(0, 4000)}${text.length > 4000 ? '\n... (truncated)' : ''}`,
-          success: true, durationMs: Date.now() - start,
+          success: true,
+          durationMs: Date.now() - start,
         };
       }
 
       case 'generate_code': {
         const task = String(call.args.task || '');
         const language = String(call.args.language || 'typescript');
-        if (!task) return rec({ tool: call.name, args: call.args, result: 'Error: missing task argument', success: false, durationMs: Date.now() - start });
+        if (!task)
+          return rec({
+            tool: call.name,
+            args: call.args,
+            result: 'Error: missing task argument',
+            success: false,
+            durationMs: Date.now() - start,
+          });
         // Instruct the LLM to generate code in its next iteration
         return rec({
-          tool: call.name, args: call.args,
+          tool: call.name,
+          args: call.args,
           result: `Code generation task ready. Language: ${language}. Task: ${task}\n\nPlease write the ${language} code for this task in your next response, using a fenced code block (\`\`\`${language}).`,
-          success: true, durationMs: Date.now() - start,
+          success: true,
+          durationMs: Date.now() - start,
         });
       }
 
       case 'list_context_keys': {
         if (!sharedContext) {
-          return { tool: call.name, args: call.args, result: 'No workflow context available. Context is empty.', success: true, durationMs: Date.now() - start };
+          return {
+            tool: call.name,
+            args: call.args,
+            result: 'No workflow context available. Context is empty.',
+            success: true,
+            durationMs: Date.now() - start,
+          };
         }
         const keys = Object.keys(sharedContext);
         if (keys.length === 0) {
-          return { tool: call.name, args: call.args, result: 'Workflow context is empty — no keys stored yet.', success: true, durationMs: Date.now() - start };
+          return {
+            tool: call.name,
+            args: call.args,
+            result: 'Workflow context is empty — no keys stored yet.',
+            success: true,
+            durationMs: Date.now() - start,
+          };
         }
-        const keyList = keys.map(k => {
-          const val = sharedContext[k];
-          const preview = typeof val === 'string'
-            ? (val.length > 60 ? `"${val.slice(0, 60)}…"` : `"${val}"`)
-            : JSON.stringify(val)?.slice(0, 60) ?? 'null';
-          return `- "${k}": ${preview}`;
-        }).join('\n');
+        const keyList = keys
+          .map((k) => {
+            const val = sharedContext[k];
+            const preview =
+              typeof val === 'string'
+                ? val.length > 60
+                  ? `"${val.slice(0, 60)}…"`
+                  : `"${val}"`
+                : (JSON.stringify(val)?.slice(0, 60) ?? 'null');
+            return `- "${k}": ${preview}`;
+          })
+          .join('\n');
         return {
-          tool: call.name, args: call.args,
+          tool: call.name,
+          args: call.args,
           result: `Workflow context has ${keys.length} key(s):\n${keyList}`,
-          success: true, durationMs: Date.now() - start,
+          success: true,
+          durationMs: Date.now() - start,
         };
       }
 
@@ -765,17 +941,24 @@ async function _executeToolImpl(
         const textB = String(call.args.text_b || '');
         const labelA = String(call.args.label_a || 'Text A');
         const labelB = String(call.args.label_b || 'Text B');
-        if (!textA || !textB) return rec({ tool: call.name, args: call.args, result: 'Error: both text_a and text_b are required', success: false, durationMs: Date.now() - start });
+        if (!textA || !textB)
+          return rec({
+            tool: call.name,
+            args: call.args,
+            result: 'Error: both text_a and text_b are required',
+            success: false,
+            durationMs: Date.now() - start,
+          });
 
         // Compute line-level diff summary
         const linesA = textA.split('\n');
         const linesB = textB.split('\n');
-        const setA = new Set(linesA.map(l => l.trim()).filter(Boolean));
-        const setB = new Set(linesB.map(l => l.trim()).filter(Boolean));
+        const setA = new Set(linesA.map((l) => l.trim()).filter(Boolean));
+        const setB = new Set(linesB.map((l) => l.trim()).filter(Boolean));
 
-        const onlyInA = [...setA].filter(l => !setB.has(l));
-        const onlyInB = [...setB].filter(l => !setA.has(l));
-        const common = [...setA].filter(l => setB.has(l));
+        const onlyInA = [...setA].filter((l) => !setB.has(l));
+        const onlyInB = [...setB].filter((l) => !setA.has(l));
+        const common = [...setA].filter((l) => setB.has(l));
 
         const wordCountA = textA.split(/\s+/).filter(Boolean).length;
         const wordCountB = textB.split(/\s+/).filter(Boolean).length;
@@ -787,34 +970,58 @@ async function _executeToolImpl(
           `- **${labelA}**: ${linesA.length} lines, ${wordCountA} words`,
           `- **${labelB}**: ${linesB.length} lines, ${wordCountB} words (${wordDeltaStr} words)`,
           `- **Common lines**: ${common.length}`,
-          `- **Only in ${labelA}** (${onlyInA.length}): ${onlyInA.slice(0, 3).map(l => `"${l.slice(0, 60)}"`).join(', ')}${onlyInA.length > 3 ? ` … +${onlyInA.length - 3} more` : ''}`,
-          `- **Only in ${labelB}** (${onlyInB.length}): ${onlyInB.slice(0, 3).map(l => `"${l.slice(0, 60)}"`).join(', ')}${onlyInB.length > 3 ? ` … +${onlyInB.length - 3} more` : ''}`,
+          `- **Only in ${labelA}** (${onlyInA.length}): ${onlyInA
+            .slice(0, 3)
+            .map((l) => `"${l.slice(0, 60)}"`)
+            .join(', ')}${onlyInA.length > 3 ? ` … +${onlyInA.length - 3} more` : ''}`,
+          `- **Only in ${labelB}** (${onlyInB.length}): ${onlyInB
+            .slice(0, 3)
+            .map((l) => `"${l.slice(0, 60)}"`)
+            .join(', ')}${onlyInB.length > 3 ? ` … +${onlyInB.length - 3} more` : ''}`,
           '',
           'Please provide a narrative summary of the key differences in your next response.',
         ].join('\n');
 
-        return rec({ tool: call.name, args: call.args, result: summary, success: true, durationMs: Date.now() - start });
+        return rec({
+          tool: call.name,
+          args: call.args,
+          result: summary,
+          success: true,
+          durationMs: Date.now() - start,
+        });
       }
 
       case 'calculate': {
         const expression = String(call.args.expression || '').trim();
         if (!expression) {
-          return { tool: call.name, args: call.args, result: 'Error: missing expression argument', success: false, durationMs: Date.now() - start };
+          return {
+            tool: call.name,
+            args: call.args,
+            result: 'Error: missing expression argument',
+            success: false,
+            durationMs: Date.now() - start,
+          };
         }
         const value = safeEval(expression);
         if (value === null) {
           return {
-            tool: call.name, args: call.args,
+            tool: call.name,
+            args: call.args,
             result: `Could not evaluate: "${expression}". Use only numbers, +, -, *, /, ^, %, (), and functions: sqrt, abs, floor, ceil, round, min, max, pow, log, ln, sin, cos, tan, pi.`,
-            success: false, durationMs: Date.now() - start,
+            success: false,
+            durationMs: Date.now() - start,
           };
         }
         // Format the result: integers stay as integers, floats are trimmed to avoid noise
-        const formatted = Number.isInteger(value) ? String(value) : parseFloat(value.toPrecision(12)).toString();
+        const formatted = Number.isInteger(value)
+          ? String(value)
+          : parseFloat(value.toPrecision(12)).toString();
         return {
-          tool: call.name, args: call.args,
+          tool: call.name,
+          args: call.args,
           result: `${expression} = ${formatted}`,
-          success: true, durationMs: Date.now() - start,
+          success: true,
+          durationMs: Date.now() - start,
         };
       }
 
