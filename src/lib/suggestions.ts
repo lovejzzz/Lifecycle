@@ -222,6 +222,46 @@ export function generateProactiveSuggestions(
     });
   }
 
+  // ── 9. Decision node with too few outgoing branches ─────────────────────
+  // A decision node with 0 or 1 outgoing edges cannot meaningfully route.
+  const decisionNodes = nodes.filter((n) => n.data.category === 'decision');
+  for (const dn of decisionNodes) {
+    const outEdgeCount = edges.filter((e) => e.source === dn.id).length;
+    if (outEdgeCount <= 1) {
+      suggestions.push({
+        id: `decision-needs-branches`,
+        priority: 'high',
+        message: `Decision node "${dn.data.label}" has ${outEdgeCount === 0 ? 'no' : 'only 1'} outgoing branch — add 2+ edges with conditions for routing to work`,
+        chipLabel: `Fix decision branches`,
+        actionType: 'command',
+        actionPayload: { command: `focus ${dn.data.label}` },
+      });
+      break; // one decision warning at a time
+    }
+  }
+
+  // ── 10. Low-confidence decision after execution ──────────────────────────
+  // Surfaces decisions where the LLM was uncertain — the routing may be fragile.
+  const lowConfDecisions = nodes.filter(
+    (n) =>
+      n.data.category === 'decision' &&
+      n.data.executionStatus === 'success' &&
+      n.data.decisionConfidence !== undefined &&
+      n.data.decisionConfidence < 0.5,
+  );
+  if (lowConfDecisions.length > 0) {
+    const dn = lowConfDecisions[0];
+    const confPct = Math.round((dn.data.decisionConfidence ?? 0) * 100);
+    suggestions.push({
+      id: 'low-confidence-decision',
+      priority: 'high',
+      message: `"${dn.data.label}" routed with only ${confPct}% confidence — the decision may be unreliable; consider adding more context upstream`,
+      chipLabel: 'Review decision',
+      actionType: 'command',
+      actionPayload: { command: `focus ${dn.data.label}` },
+    });
+  }
+
   // Sort by priority, then diversify: pick max 1 per category to avoid clustering
   const priorityOrder: Record<SuggestionPriority, number> = { high: 0, medium: 1, low: 2 };
   suggestions.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
@@ -235,6 +275,8 @@ export function generateProactiveSuggestions(
     'run-workflow': 'execution',
     'refresh-stale': 'execution',
     'bottleneck-optimize': 'performance',
+    'decision-needs-branches': 'decision',
+    'low-confidence-decision': 'decision',
   };
   const diverse: ProactiveSuggestion[] = [];
   const seenCategories = new Set<string>();

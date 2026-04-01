@@ -7,18 +7,112 @@
 // ─── Stopwords ───────────────────────────────────────────────────────────────
 
 const STOPWORDS = new Set([
-  'a', 'an', 'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
-  'of', 'with', 'by', 'from', 'is', 'are', 'was', 'were', 'be', 'been',
-  'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
-  'could', 'should', 'may', 'might', 'shall', 'can', 'it', 'its', 'this',
-  'that', 'these', 'those', 'i', 'you', 'he', 'she', 'we', 'they', 'me',
-  'him', 'her', 'us', 'them', 'my', 'your', 'his', 'our', 'their',
-  'what', 'which', 'who', 'whom', 'when', 'where', 'why', 'how',
-  'not', 'no', 'nor', 'if', 'then', 'else', 'so', 'as', 'up', 'out',
-  'about', 'into', 'over', 'after', 'before', 'between', 'under',
-  'again', 'further', 'once', 'here', 'there', 'all', 'each', 'every',
-  'both', 'few', 'more', 'most', 'other', 'some', 'such', 'only',
-  'own', 'same', 'than', 'too', 'very', 'just', 'also',
+  'a',
+  'an',
+  'the',
+  'and',
+  'or',
+  'but',
+  'in',
+  'on',
+  'at',
+  'to',
+  'for',
+  'of',
+  'with',
+  'by',
+  'from',
+  'is',
+  'are',
+  'was',
+  'were',
+  'be',
+  'been',
+  'being',
+  'have',
+  'has',
+  'had',
+  'do',
+  'does',
+  'did',
+  'will',
+  'would',
+  'could',
+  'should',
+  'may',
+  'might',
+  'shall',
+  'can',
+  'it',
+  'its',
+  'this',
+  'that',
+  'these',
+  'those',
+  'i',
+  'you',
+  'he',
+  'she',
+  'we',
+  'they',
+  'me',
+  'him',
+  'her',
+  'us',
+  'them',
+  'my',
+  'your',
+  'his',
+  'our',
+  'their',
+  'what',
+  'which',
+  'who',
+  'whom',
+  'when',
+  'where',
+  'why',
+  'how',
+  'not',
+  'no',
+  'nor',
+  'if',
+  'then',
+  'else',
+  'so',
+  'as',
+  'up',
+  'out',
+  'about',
+  'into',
+  'over',
+  'after',
+  'before',
+  'between',
+  'under',
+  'again',
+  'further',
+  'once',
+  'here',
+  'there',
+  'all',
+  'each',
+  'every',
+  'both',
+  'few',
+  'more',
+  'most',
+  'other',
+  'some',
+  'such',
+  'only',
+  'own',
+  'same',
+  'than',
+  'too',
+  'very',
+  'just',
+  'also',
 ]);
 
 // ─── Keyword Extraction ──────────────────────────────────────────────────────
@@ -29,7 +123,7 @@ export function extractKeywords(text: string): string[] {
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, ' ')
     .split(/\s+/)
-    .filter(w => w.length > 2 && !STOPWORDS.has(w));
+    .filter((w) => w.length > 2 && !STOPWORDS.has(w));
 }
 
 /** Compute keyword overlap score between two texts (0-1) */
@@ -177,7 +271,8 @@ export function validateOutput(
   // 7. Category-specific structural checks
   if (category === 'review' || category === 'test') {
     // Reviews/tests should contain some evaluation language
-    const evalPatterns = /\b(pass|fail|approve|reject|issue|concern|good|bad|correct|incorrect|error|warning|valid|invalid)\b/i;
+    const evalPatterns =
+      /\b(pass|fail|approve|reject|issue|concern|good|bad|correct|incorrect|error|warning|valid|invalid)\b/i;
     if (!evalPatterns.test(trimmed)) {
       warnings.push({
         code: 'missing-evaluation',
@@ -211,6 +306,57 @@ export function validateOutput(
     }
   }
 
+  // 8. Decision nodes must produce DECISION: formatted output for routing
+  if (category === 'decision') {
+    if (!/^DECISION:\s*/im.test(trimmed)) {
+      warnings.push({
+        code: 'missing-decision-format',
+        message: 'Decision output lacks required DECISION: line — downstream routing will not work',
+        severity: 'warning',
+      });
+    }
+  }
+
+  // 9. Artifact/deliverable nodes should have section structure (headings or clear paragraphs)
+  if (category === 'artifact' || category === 'deliverable') {
+    const headingCount = (trimmed.match(/^#{1,3}\s+\S/gm) || []).length;
+    const paragraphBreaks = (trimmed.match(/\n\n/g) || []).length;
+    if (headingCount < 2 && paragraphBreaks < 3) {
+      warnings.push({
+        code: 'missing-structure',
+        message: `${category} lacks section headings — use ## Section Name to organize content`,
+        severity: 'warning',
+      });
+    }
+  }
+
+  // 10. Action nodes should have numbered steps or bullet-point structure
+  if (category === 'action') {
+    const hasNumberedSteps = /^\s*\d+[\.\)]\s+\S/m.test(trimmed);
+    const hasBulletPoints = /^\s*[-*]\s+\S/m.test(trimmed);
+    if (!hasNumberedSteps && !hasBulletPoints) {
+      warnings.push({
+        code: 'missing-steps',
+        message:
+          'Action output lacks numbered steps or bullet points — format as step-by-step instructions',
+        severity: 'warning',
+      });
+    }
+  }
+
+  // 11. Test nodes should end with an explicit VERDICT summary line
+  if (category === 'test') {
+    const hasVerdict =
+      /\bVERDICT\s*:/i.test(trimmed) || /^(?:PASS|FAIL|BLOCK)\s*[:\-–]/im.test(trimmed);
+    if (!hasVerdict) {
+      warnings.push({
+        code: 'missing-verdict',
+        message: 'Test output lacks a final VERDICT: line summarizing the overall result',
+        severity: 'warning',
+      });
+    }
+  }
+
   return warnings;
 }
 
@@ -225,7 +371,7 @@ export function validateOutput(
  * Only 'warning' severity issues (not 'info') should be passed here.
  */
 export function buildRefinementPrompt(warnings: ValidationWarning[]): string {
-  const instructions = warnings.map(w => {
+  const instructions = warnings.map((w) => {
     switch (w.code) {
       case 'too-short':
         return 'Your response is too brief. Expand it with more specific detail, concrete steps, real examples, and complete coverage of the topic.';
@@ -239,6 +385,34 @@ export function buildRefinementPrompt(warnings: ValidationWarning[]): string {
         return 'Frame each rule as a condition: IF <condition> THEN <action> (MUST / SHALL / REQUIRE). Include how each rule is enforced.';
       case 'missing-code':
         return 'Include actual code — show the exact before/after diff or complete replacement code blocks. Prose descriptions alone are not sufficient for a patch node.';
+      case 'missing-decision-format':
+        return (
+          'Your response must use the structured decision format — the routing system depends on it:\n\n' +
+          'DECISION: <chosen option>\n' +
+          'CONFIDENCE: <0.0–1.0>\n' +
+          'REASONING: <one sentence explaining why>\n\n' +
+          'The DECISION: line must appear first, followed immediately by CONFIDENCE: and REASONING:. ' +
+          'No preamble before DECISION:.'
+        );
+      case 'missing-structure':
+        return (
+          'Organize your content with markdown section headings (`## Section Title`). ' +
+          'Every major topic or phase needs its own named heading — avoid unbroken walls of text. ' +
+          'Aim for at least 2–3 distinct sections with substantive content under each heading.'
+        );
+      case 'missing-steps':
+        return (
+          'Format your action as numbered steps: `1. Do X`, `2. Do Y`, etc. ' +
+          'Each step must be concrete and immediately executable. ' +
+          'Use bullet sub-items (`  - detail`) for clarification within steps. ' +
+          'Replace prose paragraphs with direct, sequential instructions.'
+        );
+      case 'missing-verdict':
+        return (
+          'End your test output with an explicit verdict line: `VERDICT: PASS`, `VERDICT: FAIL`, or `VERDICT: BLOCK`. ' +
+          'The verdict must appear on its own line and summarize whether the tested item meets requirements overall. ' +
+          'Brief justification after the verdict keyword is encouraged.'
+        );
       default:
         return w.message;
     }
@@ -246,7 +420,7 @@ export function buildRefinementPrompt(warnings: ValidationWarning[]): string {
 
   return (
     'Your previous response has quality issues that need to be fixed:\n\n' +
-    instructions.map(i => `- ${i}`).join('\n') +
+    instructions.map((i) => `- ${i}`).join('\n') +
     '\n\nRewrite your response to fully address these issues. ' +
     'Return ONLY the improved content — no preamble, no meta-commentary about what changed.'
   );
