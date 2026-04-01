@@ -110,6 +110,10 @@ export const BUILT_IN_TOOLS: AgentTool[] = [
     name: 'list_context_keys',
     description: 'List all keys currently stored in the shared workflow context. Useful before calling read_context to discover what data is available. Args: {} (no arguments required)',
   },
+  {
+    name: 'calculate',
+    description: 'Safely evaluate a mathematical expression and return the numeric result. Supports +, -, *, /, %, ^ (power), parentheses, and functions: sqrt, abs, floor, ceil, round, min, max, pow, log, ln, sin, cos, tan. Constants: pi. Args: { "expression": "2 + 2" }',
+  },
 ];
 
 // ── Agent-Specific Tool Preferences ─────────────────────────────────────────
@@ -121,9 +125,10 @@ export const BUILT_IN_TOOLS: AgentTool[] = [
  */
 const AGENT_TOOL_PREFERENCES: Record<string, string[]> = {
   rowan: [
-    // Speed-first: direct retrieval → code generation → persistence → validation
+    // Speed-first: direct retrieval → compute → code generation → persistence → validation
     'web_search',     // fast external intel
     'http_request',   // direct API calls
+    'calculate',      // instant numeric computation — faster than manual math
     'generate_code',  // produce actionable artifacts
     'store_context',  // persist mission-critical data for downstream
     'validate_json',  // quick structural check
@@ -139,6 +144,7 @@ const AGENT_TOOL_PREFERENCES: Record<string, string[]> = {
     'extract_json',      // extract structured clues from raw data
     'compare_texts',     // compare versions, spot discrepancies
     'validate_json',     // verify data integrity rigorously
+    'calculate',         // numeric verification of quantitative claims
     'summarize_text',    // synthesize findings concisely
     'web_search',        // research external evidence when needed
     'store_context',     // document deductions for downstream nodes
@@ -367,11 +373,25 @@ export function parseToolCalls(text: string): { cleanText: string; toolCalls: Pa
     }
   }
 
+  // Format 4: bare JSON object on its own line (no fence required)
+  // Some models emit: {"tool": "web_search", "args": {...}} on a standalone line.
+  // Heuristic: a line that starts with { and contains "tool" and ends with }.
+  const inlineLineRegex = /^[ \t]*(\{[^\n]*?["']?tool["']?\s*:[^\n]*?\})[ \t]*$/gm;
+  while ((match = inlineLineRegex.exec(text)) !== null) {
+    const raw = match[1].trim();
+    const call = tryParse(raw);
+    if (call) {
+      const key = `${call.name}:${JSON.stringify(call.args)}`;
+      if (!seen.has(key)) { seen.add(key); toolCalls.push(call); }
+    }
+  }
+
   // Remove all tool call blocks from the text to get clean output
   const cleanText = text
     .replace(fencedRegex, '')
     .replace(xmlRegex, '')
     .replace(jsonFenceRegex, '')
+    .replace(inlineLineRegex, '')
     .trim();
 
   return { cleanText, toolCalls };
@@ -387,6 +407,66 @@ export async function executeTool(
   const result = await _executeToolImpl(call, sharedContext);
   recordToolCall(result);
   return result;
+}
+
+// ── Safe Arithmetic Evaluator ────────────────────────────────────────────────
+
+/**
+ * Known math functions exposed to the evaluator.
+ * Any identifier in user input that isn't in this list (after constant substitution) is rejected.
+ */
+const SAFE_MATH_FUNS = [
+  'sqrt', 'abs', 'ceil', 'floor', 'round',
+  'min', 'max', 'pow', 'log10', 'log2', 'log',
+  'ln', 'sin', 'cos', 'tan', 'atan', 'asin', 'acos', 'atan2',
+  'hypot', 'sign', 'trunc',
+];
+
+/**
+ * Evaluate a mathematical expression safely.
+ * Returns a number on success, or null if the expression is invalid / unsafe.
+ *
+ * Safety approach:
+ *   1. Input is restricted to digits, operators, parens, decimal/comma, whitespace, and ASCII identifiers.
+ *   2. All identifiers are replaced with known Math.xxx calls or numeric constants.
+ *   3. After substitution the expression must contain ONLY numeric/operator chars — any residual
+ *      identifier signals an unknown/unsafe token and causes rejection.
+ *   4. new Function is called with only `Math` in scope under 'use strict'.
+ */
+export function safeEval(raw: string): number | null {
+  const input = raw.trim();
+  if (!input) return null;
+
+  // Step 1: whitelist input characters (digits, ops, parens, decimal, comma, whitespace, a-z identifiers)
+  if (!/^[\d\s+\-*/^%().,a-zA-Z_]+$/.test(input)) return null;
+
+  // Step 2: substitute known constants and function names
+  let expr = input
+    .replace(/\bpi\b/gi, '3.141592653589793')
+    .replace(/\^/g, '**'); // ^ → ** (exponentiation)
+
+  // Replace 'ln' before 'log' to avoid partial match
+  expr = expr.replace(/\bln\b/g, 'Math.log');
+  for (const fn of SAFE_MATH_FUNS) {
+    if (fn === 'ln') continue; // already handled
+    expr = expr.replace(new RegExp(`\\b${fn}\\b`, 'g'), `Math.${fn}`);
+  }
+
+  // Step 3: after substitution, strip all `Math.<known>` references, then verify only
+  //         numeric/operator chars remain — any leftover identifier is rejected
+  const stripped = expr.replace(/\bMath\.[a-zA-Z0-9]+\b/g, '0');
+  if (!/^[\d\s+\-*/()%.,]+$/.test(stripped.replace(/\*\*/g, ''))) return null;
+
+  // Step 4: evaluate with only Math in scope
+  try {
+    // eslint-disable-next-line no-new-func
+    const fn = new Function('Math', `'use strict'; return +(${expr});`);
+    const result = fn(Math);
+    if (typeof result !== 'number' || !isFinite(result)) return null;
+    return result;
+  } catch {
+    return null;
+  }
 }
 
 async function _executeToolImpl(
@@ -408,13 +488,33 @@ async function _executeToolImpl(
           });
           const data = await res.json();
           const results: string[] = [];
+          // Answer field — short direct answers (e.g. "What is 2+2?")
+          if (data.Answer) results.push(`Answer: ${data.Answer}`);
+          // Abstract — encyclopedic summary
           if (data.AbstractText) results.push(`Summary: ${data.AbstractText}`);
+          // Infobox — structured key-value facts
+          if (data.Infobox?.content) {
+            const facts = (data.Infobox.content as Array<{ label: string; value: string }>)
+              .slice(0, 5)
+              .filter(f => f.label && f.value)
+              .map(f => `  ${f.label}: ${f.value}`);
+            if (facts.length > 0) results.push(`Facts:\n${facts.join('\n')}`);
+          }
+          // Related topics — fallback when no abstract is available
           if (data.RelatedTopics) {
-            for (const topic of data.RelatedTopics.slice(0, 5)) {
+            for (const topic of (data.RelatedTopics as Array<{ Text?: string; Topics?: Array<{ Text?: string }> }>).slice(0, 5)) {
               if (topic.Text) results.push(`- ${topic.Text}`);
+              // Some topics are nested groups
+              if (topic.Topics) {
+                for (const sub of topic.Topics.slice(0, 3)) {
+                  if (sub.Text) results.push(`  - ${sub.Text}`);
+                }
+              }
             }
           }
-          const output = results.length > 0 ? results.join('\n') : `No results found for "${query}". Try a different search term.`;
+          const output = results.length > 0
+            ? results.join('\n')
+            : `No instant-answer results for "${query}". The DuckDuckGo instant-answer API works best for well-known entities and facts. Consider rephrasing or using http_request for a specific data source.`;
           return { tool: call.name, args: call.args, result: output, success: true, durationMs: Date.now() - start };
         } catch {
           return { tool: call.name, args: call.args, result: `Search failed for "${query}". Network error.`, success: false, durationMs: Date.now() - start };
@@ -573,6 +673,28 @@ async function _executeToolImpl(
         ].join('\n');
 
         return rec({ tool: call.name, args: call.args, result: summary, success: true, durationMs: Date.now() - start });
+      }
+
+      case 'calculate': {
+        const expression = String(call.args.expression || '').trim();
+        if (!expression) {
+          return { tool: call.name, args: call.args, result: 'Error: missing expression argument', success: false, durationMs: Date.now() - start };
+        }
+        const value = safeEval(expression);
+        if (value === null) {
+          return {
+            tool: call.name, args: call.args,
+            result: `Could not evaluate: "${expression}". Use only numbers, +, -, *, /, ^, %, (), and functions: sqrt, abs, floor, ceil, round, min, max, pow, log, ln, sin, cos, tan, pi.`,
+            success: false, durationMs: Date.now() - start,
+          };
+        }
+        // Format the result: integers stay as integers, floats are trimmed to avoid noise
+        const formatted = Number.isInteger(value) ? String(value) : parseFloat(value.toPrecision(12)).toString();
+        return {
+          tool: call.name, args: call.args,
+          result: `${expression} = ${formatted}`,
+          success: true, durationMs: Date.now() - start,
+        };
       }
 
       default:

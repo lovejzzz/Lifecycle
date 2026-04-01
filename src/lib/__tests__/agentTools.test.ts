@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseToolCalls, repairJson, executeTool, buildToolPrompt, getPreferredTools } from '../agentTools';
+import { parseToolCalls, repairJson, executeTool, buildToolPrompt, getPreferredTools, safeEval } from '../agentTools';
 import type { AgentTool } from '../types';
 
 // ── repairJson ───────────────────────────────────────────────────────────────
@@ -409,5 +409,194 @@ describe('getPreferredTools', () => {
     ];
     const result = getPreferredTools('rowan', withExtra);
     expect(result[result.length - 1].name).toBe('custom_tool');
+  });
+
+  it('rowan includes calculate before compare_texts', () => {
+    const tools: AgentTool[] = [
+      { name: 'compare_texts', description: '' },
+      { name: 'calculate', description: '' },
+      { name: 'web_search', description: '' },
+    ];
+    const result = getPreferredTools('rowan', tools);
+    const calcIdx = result.findIndex(t => t.name === 'calculate');
+    const cmpIdx = result.findIndex(t => t.name === 'compare_texts');
+    expect(calcIdx).toBeLessThan(cmpIdx);
+  });
+
+  it('poirot includes calculate before summarize_text', () => {
+    const tools: AgentTool[] = [
+      { name: 'summarize_text', description: '' },
+      { name: 'calculate', description: '' },
+      { name: 'compare_texts', description: '' },
+    ];
+    const result = getPreferredTools('poirot', tools);
+    const calcIdx = result.findIndex(t => t.name === 'calculate');
+    const sumIdx = result.findIndex(t => t.name === 'summarize_text');
+    expect(calcIdx).toBeLessThan(sumIdx);
+  });
+});
+
+// ── safeEval ─────────────────────────────────────────────────────────────────
+
+describe('safeEval', () => {
+  it('evaluates simple addition', () => {
+    expect(safeEval('2 + 2')).toBe(4);
+  });
+
+  it('evaluates multiplication and subtraction', () => {
+    expect(safeEval('10 * 3 - 5')).toBe(25);
+  });
+
+  it('evaluates percentage of a value', () => {
+    expect(safeEval('100 * 0.15')).toBe(15);
+  });
+
+  it('evaluates parenthesized expression', () => {
+    expect(safeEval('(2 + 3) * 4')).toBe(20);
+  });
+
+  it('evaluates exponentiation with ^', () => {
+    expect(safeEval('2 ^ 10')).toBe(1024);
+  });
+
+  it('evaluates sqrt', () => {
+    expect(safeEval('sqrt(16)')).toBe(4);
+  });
+
+  it('evaluates pi constant', () => {
+    const result = safeEval('pi');
+    expect(result).toBeCloseTo(3.14159, 4);
+  });
+
+  it('evaluates floor and ceil', () => {
+    expect(safeEval('floor(3.7)')).toBe(3);
+    expect(safeEval('ceil(3.2)')).toBe(4);
+  });
+
+  it('evaluates min and max with multiple args', () => {
+    expect(safeEval('min(5, 3, 8)')).toBe(3);
+    expect(safeEval('max(5, 3, 8)')).toBe(8);
+  });
+
+  it('evaluates abs of negative number', () => {
+    expect(safeEval('abs(-42)')).toBe(42);
+  });
+
+  it('evaluates round', () => {
+    expect(safeEval('round(2.7)')).toBe(3);
+  });
+
+  it('returns null for empty expression', () => {
+    expect(safeEval('')).toBeNull();
+  });
+
+  it('returns null for unknown identifiers', () => {
+    expect(safeEval('window.open("evil")')).toBeNull();
+  });
+
+  it('returns null for expressions with semicolons', () => {
+    expect(safeEval('1; process.exit(0)')).toBeNull();
+  });
+
+  it('returns null for division by zero (Infinity)', () => {
+    expect(safeEval('1 / 0')).toBeNull();
+  });
+
+  it('returns null for NaN-producing expressions', () => {
+    expect(safeEval('sqrt(-1)')).toBeNull();
+  });
+
+  it('handles decimal numbers', () => {
+    expect(safeEval('1.5 + 2.5')).toBe(4);
+  });
+});
+
+// ── executeTool — calculate ───────────────────────────────────────────────────
+
+describe('executeTool — calculate', () => {
+  it('returns correct result for simple expression', async () => {
+    const result = await executeTool({ name: 'calculate', args: { expression: '2 + 2' } });
+    expect(result.success).toBe(true);
+    expect(result.result).toContain('= 4');
+  });
+
+  it('returns correct result for sqrt expression', async () => {
+    const result = await executeTool({ name: 'calculate', args: { expression: 'sqrt(25)' } });
+    expect(result.success).toBe(true);
+    expect(result.result).toContain('= 5');
+  });
+
+  it('includes the expression in the result string', async () => {
+    const result = await executeTool({ name: 'calculate', args: { expression: '10 * 5' } });
+    expect(result.result).toContain('10 * 5');
+  });
+
+  it('returns error for missing expression', async () => {
+    const result = await executeTool({ name: 'calculate', args: {} });
+    expect(result.success).toBe(false);
+    expect(result.result).toMatch(/missing expression/);
+  });
+
+  it('returns error for invalid/unsafe expression', async () => {
+    const result = await executeTool({ name: 'calculate', args: { expression: 'evil()' } });
+    expect(result.success).toBe(false);
+    expect(result.result).toContain('Could not evaluate');
+  });
+
+  it('records analytics for calculate tool', async () => {
+    await executeTool({ name: 'calculate', args: { expression: '1 + 1' } });
+    const { getToolAnalytics } = await import('../agentTools');
+    const analytics = getToolAnalytics();
+    expect(analytics.calculate).toBeDefined();
+    expect(analytics.calculate.calls).toBeGreaterThan(0);
+  });
+});
+
+// ── parseToolCalls — Format 4: inline JSON ───────────────────────────────────
+
+describe('parseToolCalls — Format 4 inline JSON', () => {
+  it('parses a bare JSON object on its own line', () => {
+    const text = 'I will search for this.\n{"tool": "web_search", "args": {"query": "test"}}\nResults incoming.';
+    const { toolCalls, cleanText } = parseToolCalls(text);
+    expect(toolCalls).toHaveLength(1);
+    expect(toolCalls[0].name).toBe('web_search');
+    expect(toolCalls[0].args.query).toBe('test');
+    expect(cleanText).toContain('I will search');
+    expect(cleanText).toContain('Results incoming');
+    expect(cleanText).not.toContain('"tool"');
+  });
+
+  it('does not parse JSON embedded mid-sentence', () => {
+    // JSON that appears inline within a sentence (not on its own line) should NOT be parsed
+    const text = 'Use this: {"tool": "web_search", "args": {}} to search.';
+    const { toolCalls } = parseToolCalls(text);
+    // mid-sentence inline JSON — the regex requires the { to start the line
+    expect(toolCalls).toHaveLength(0);
+  });
+
+  it('deduplicates inline JSON against fenced format', () => {
+    const call = '{"tool": "validate_json", "args": {"text": "{}"}}';
+    const text = `\`\`\`tool_call\n${call}\n\`\`\`\n${call}`;
+    const { toolCalls } = parseToolCalls(text);
+    expect(toolCalls).toHaveLength(1);
+  });
+
+  it('handles multiple inline JSON tool calls', () => {
+    const text = [
+      'Step 1:',
+      '{"tool": "store_context", "args": {"key": "a", "value": "1"}}',
+      'Step 2:',
+      '{"tool": "read_context", "args": {"key": "a"}}',
+    ].join('\n');
+    const { toolCalls } = parseToolCalls(text);
+    expect(toolCalls).toHaveLength(2);
+    expect(toolCalls[0].name).toBe('store_context');
+    expect(toolCalls[1].name).toBe('read_context');
+  });
+
+  it('ignores bare JSON without a tool field', () => {
+    const text = '{"key": "value", "items": [1, 2, 3]}';
+    const { toolCalls } = parseToolCalls(text);
+    expect(toolCalls).toHaveLength(0);
   });
 });
