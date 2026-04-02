@@ -2845,10 +2845,13 @@ describe('E2E Async Simulation Tests', () => {
         expect(getStore().nodes.find((n) => n.id === id)?.data.status).toBe('active');
       }
 
-      // Step 2: Professor adds homework to Lesson Plan (semantic edit)
+      // Ensure execution locks are released before editing
+      expect(getStore()._executingNodeIds?.size ?? 0).toBe(0);
+
+      // Step 2: Professor adds homework to Lesson Plan (semantic edit — major content change)
       getStore().updateNodeData('prof-2', {
         content:
-          'Lessons derived from syllabus. NEW: Homework assignment on sorting algorithms due Week 3.',
+          'COMPLETELY REWRITTEN: New curriculum design with homework assignments, rubric criteria, project-based assessment, and revised grading policy for Week 3-8.',
       });
       await vi.advanceTimersByTimeAsync(500);
 
@@ -2984,9 +2987,13 @@ describe('E2E Async Simulation Tests', () => {
 
       const statsAfterFirst = { ...getStore()._usageStats };
 
-      // Edit upstream (semantic change)
+      // Ensure execution locks are released before editing
+      expect(getStore()._executingNodeIds?.size ?? 0).toBe(0);
+
+      // Edit upstream (semantic change — major rewrite to ensure stale propagation)
       getStore().updateNodeData('ai-1', {
-        content: 'Completely revised source data with new requirements and constraints.',
+        content:
+          'REWRITTEN: Completely new requirements document with different constraints, stakeholder analysis, and revised acceptance criteria.',
       });
       await vi.advanceTimersByTimeAsync(500);
 
