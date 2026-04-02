@@ -1,5 +1,31 @@
 # Changelog
 
+### 2026-04-02 — Round 72: Agent Memory — Cross-run Execution History Persistence & Pattern Analysis
+
+**Improvement — Persistent Agent Memory across Workflow Executions (Area 6 — Agent Personality & Memory):**
+
+- **localStorage persistence**: `_executionHistory` is now pre-populated from localStorage on module load and persisted after every run via `_saveHistoryToStorage()`. Agents retain knowledge of past workflow runs across page reloads — no more amnesia after refresh.
+
+- **Extended `ExecutionRunSummary`** with two new fields:
+  - `slowNodeLabels: string[]` — node labels whose execution exceeded 20s (written from `executionSlice.ts`)
+  - `validationWarningCount: number` — total self-validation warnings emitted across all nodes in the run
+
+- **`analyzeRunPatterns(history)`** — new pure function that detects actionable patterns across ≥2 runs:
+  - **Recurring failures**: same node label failing in 2+ runs → structural bug, not transient
+  - **Performance trend**: >15% faster = `improving`; >15% slower = `degrading`; else `stable`
+  - **Stable decisions**: same decision branch chosen 2+ times → high-confidence routing
+  - **Chronically slow nodes**: appearing in `slowNodeLabels` across 2+ runs → optimization candidates
+
+- **Improved `getExecutionHistory()`**: when ≥2 runs exist with cross-run patterns, appends a `PATTERNS ACROSS RUNS` section to the agent context block — giving agents institutional memory without requiring user repetition.
+
+- **New utility exports**: `getExecutionHistoryRaw()` (testing), `clearExecutionHistory()` (test isolation + future "forget history" command).
+
+- **`executionSlice.ts`** now populates `slowNodeLabels` (filter by 20s threshold) and `validationWarningCount` (sum of `_validationWarnings.length` per node) before calling `recordExecutionRun()`.
+
+**Files changed:** `src/lib/prompts.ts`, `src/store/slices/executionSlice.ts`, `src/lib/__tests__/prompts.test.ts`
+
+**Test Results:** Build passes. 1544/1545 tests pass (1 pre-existing intermittent timing flake in simulation-e2e.test.ts unrelated to this change). 21 new tests for pattern analysis and history ring buffer.
+
 ### 2026-04-01 — Round 71: Prompt Engineering — Output Length Calibration
 
 **Improvement — Output Length Calibration per Node Category (Prompt Engineering):**
