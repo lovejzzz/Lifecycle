@@ -37,6 +37,7 @@ import {
   getDecisionSystemPrompt,
   parseDecisionOutput,
   decisionMatchesCondition,
+  normalizeDecisionToOption,
 } from '@/lib/decision';
 import { generateProactiveSuggestions, formatSuggestionsMessage } from '@/lib/suggestions';
 import { cidLog } from '../helpers';
@@ -203,17 +204,23 @@ export const createExecutionSlice: StateCreator<LifecycleStore, [], [], Executio
         const _execDuration = Date.now() - _execStart;
         // Parse structured output immediately so fields are available in executeNode context
         const parsed = parseDecisionOutput(output);
+        // Normalize to canonical option name so decisionResult is always a clean label
+        // (e.g. "I'll escalate this" → "escalate") — critical for reliable edge routing
+        const normalizedDecision =
+          normalizeDecisionToOption(parsed.decision, options as string[]) ?? parsed.decision;
         store.updateNodeData(nodeId, {
           executionResult: output,
           executionStatus: 'success',
           _executionDurationMs: _execDuration,
+          decisionResult: normalizedDecision,
+          ...(parsed.confidence !== undefined ? { decisionConfidence: parsed.confidence } : {}),
           ...(parsed.reasoning ? { decisionExplanation: parsed.reasoning } : {}),
           ...(parsed.alternatives?.length ? { decisionAlternatives: parsed.alternatives } : {}),
         });
         cidLog('executeNode:decision', {
           nodeId,
           label: d.label,
-          decision: parsed.decision,
+          decision: normalizedDecision,
           confidence: parsed.confidence,
         });
       } catch (err) {
@@ -1160,7 +1167,24 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
 
             // Use shared parsing utility (handles DECISION/CONFIDENCE/REASONING/ALTERNATIVES)
             const parsed = parseDecisionOutput(output);
-            const { decision, confidence, reasoning, alternatives } = parsed;
+            const { confidence, reasoning, alternatives } = parsed;
+
+            // Collect the canonical option list so we can normalize the raw LLM string.
+            // Prefer decisionOptions stored on the node; fall back to decision-is condition values.
+            const outgoing = edges.filter((e) => e.source === nodeId);
+            const conditionOptions = outgoing
+              .map((e) => {
+                const c = e.data?.condition as EdgeCondition | undefined;
+                return c?.type === 'decision-is' ? c.value : null;
+              })
+              .filter((v): v is string => v !== null);
+            const nodeOptions = (updated.data.decisionOptions || []) as string[];
+            const knownOptions = nodeOptions.length > 0 ? nodeOptions : conditionOptions;
+
+            // Normalize: snap verbose LLM output to a clean canonical label
+            // ("I'll escalate this to management" → "escalate")
+            const decision =
+              normalizeDecisionToOption(parsed.decision, knownOptions) ?? parsed.decision;
 
             store.updateNodeData(nodeId, {
               decisionResult: decision,
@@ -1191,7 +1215,6 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
             });
 
             // Find outgoing edges and skip paths that don't match the decision
-            const outgoing = edges.filter((e) => e.source === nodeId);
             for (const edge of outgoing) {
               const cond = edge.data?.condition as EdgeCondition | undefined;
               if (cond && cond.type === 'decision-is') {

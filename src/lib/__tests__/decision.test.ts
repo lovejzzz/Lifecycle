@@ -4,6 +4,8 @@ import {
   parseDecisionOutput,
   decisionMatchesCondition,
   findBestMatchingOption,
+  scoreDecisionOptions,
+  normalizeDecisionToOption,
 } from '../decision';
 
 // ── getDecisionSystemPrompt ──────────────────────────────────────────────────
@@ -174,5 +176,131 @@ describe('findBestMatchingOption', () => {
   it('prefers exact over fuzzy', () => {
     const opts = ['reject', 'reject all', 'approve'];
     expect(findBestMatchingOption('reject', opts)).toBe('reject');
+  });
+});
+
+// ── scoreDecisionOptions ─────────────────────────────────────────────────────
+
+describe('scoreDecisionOptions', () => {
+  it('assigns score 1.0 for exact match', () => {
+    const scores = scoreDecisionOptions('approve', ['approve', 'reject', 'escalate']);
+    expect(scores[0]).toEqual({ option: 'approve', score: 1.0 });
+  });
+
+  it('assigns score 0.8 for substring containment (decision contains option)', () => {
+    const scores = scoreDecisionOptions('approve this request', ['approve', 'reject']);
+    const approveEntry = scores.find((s) => s.option === 'approve');
+    expect(approveEntry?.score).toBe(0.8);
+  });
+
+  it('assigns score 0.8 for substring containment (option contains decision)', () => {
+    const scores = scoreDecisionOptions('reject', ['reject all changes', 'approve']);
+    const rejectEntry = scores.find((s) => s.option === 'reject all changes');
+    expect(rejectEntry?.score).toBe(0.8);
+  });
+
+  it('assigns score 0.6 for word-overlap (no substring containment)', () => {
+    // "fast track" and "fast-track" don't contain each other (different separator),
+    // but "fast" and "track" appear as shared words → word-overlap → 0.6
+    const scores = scoreDecisionOptions('fast track approval', ['fast-track', 'standard', 'defer']);
+    const entry = scores.find((s) => s.option === 'fast-track');
+    expect(entry?.score).toBe(0.6);
+  });
+
+  it('assigns score 0.0 for no match', () => {
+    const scores = scoreDecisionOptions('defer', ['approve', 'reject']);
+    expect(scores.every((s) => s.score === 0.0)).toBe(true);
+  });
+
+  it('returns all options in result', () => {
+    const opts = ['approve', 'reject', 'escalate'];
+    const scores = scoreDecisionOptions('approve', opts);
+    expect(scores).toHaveLength(3);
+    expect(scores.map((s) => s.option).sort()).toEqual(opts.slice().sort());
+  });
+
+  it('sorts results by descending score', () => {
+    const scores = scoreDecisionOptions('approve', ['reject', 'approve', 'escalate']);
+    expect(scores[0].score).toBeGreaterThanOrEqual(scores[1].score);
+    expect(scores[1].score).toBeGreaterThanOrEqual(scores[2].score);
+  });
+
+  it('preserves original order for tied scores', () => {
+    // Both 'reject' and 'approve' have score 0 against 'defer'
+    const scores = scoreDecisionOptions('defer', ['reject', 'approve']);
+    const zeroScores = scores.filter((s) => s.score === 0);
+    expect(zeroScores.map((s) => s.option)).toEqual(['reject', 'approve']);
+  });
+
+  it('is case-insensitive', () => {
+    const scores = scoreDecisionOptions('APPROVE', ['approve', 'reject']);
+    expect(scores[0]).toEqual({ option: 'approve', score: 1.0 });
+  });
+
+  it('handles empty options array', () => {
+    expect(scoreDecisionOptions('approve', [])).toEqual([]);
+  });
+
+  it('exact match beats substring match', () => {
+    // 'reject' should score 1.0, 'reject all' should score 0.8
+    const scores = scoreDecisionOptions('reject', ['reject all', 'reject', 'approve']);
+    expect(scores[0].option).toBe('reject');
+    expect(scores[0].score).toBe(1.0);
+    expect(scores[1].option).toBe('reject all');
+    expect(scores[1].score).toBe(0.8);
+  });
+});
+
+// ── normalizeDecisionToOption ─────────────────────────────────────────────────
+
+describe('normalizeDecisionToOption', () => {
+  it('returns exact option for exact match', () => {
+    expect(normalizeDecisionToOption('approve', ['approve', 'reject'])).toBe('approve');
+  });
+
+  it('normalizes verbose LLM output to canonical label', () => {
+    // Simulates "I'll escalate this to management" → "escalate"
+    expect(
+      normalizeDecisionToOption("I'll escalate this to management", [
+        'approve',
+        'reject',
+        'escalate',
+      ]),
+    ).toBe('escalate');
+  });
+
+  it('returns canonical casing from options list', () => {
+    // LLM says lowercase, option has mixed case — should return the option as-stored
+    expect(normalizeDecisionToOption('approve', ['Approve', 'Reject'])).toBe('Approve');
+  });
+
+  it('returns null when nothing matches', () => {
+    expect(normalizeDecisionToOption('defer', ['approve', 'reject'])).toBeNull();
+  });
+
+  it('returns null for empty options list', () => {
+    expect(normalizeDecisionToOption('approve', [])).toBeNull();
+  });
+
+  it('prefers exact over substring match', () => {
+    // "reject" exactly matches "reject", not "reject all"
+    expect(normalizeDecisionToOption('reject', ['reject all', 'reject', 'approve'])).toBe('reject');
+  });
+
+  it('handles hyphenated options', () => {
+    expect(normalizeDecisionToOption('fast-track', ['fast-track', 'standard', 'defer'])).toBe(
+      'fast-track',
+    );
+  });
+
+  it('normalizes word-overlap match when no better match exists', () => {
+    expect(normalizeDecisionToOption('the review was rejected', ['approve', 'reject'])).toBe(
+      'reject',
+    );
+  });
+
+  it('handles single-option list', () => {
+    expect(normalizeDecisionToOption('yes', ['yes'])).toBe('yes');
+    expect(normalizeDecisionToOption('no', ['yes'])).toBeNull();
   });
 });

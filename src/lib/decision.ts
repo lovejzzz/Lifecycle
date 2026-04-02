@@ -5,6 +5,7 @@
  * - Building structured prompts for decision nodes (N-way branching)
  * - Parsing structured DECISION / CONFIDENCE / REASONING output
  * - Fuzzy matching decisions to edge conditions
+ * - Scoring and normalizing raw LLM decisions to canonical option names
  */
 
 // ── Prompt generation ─────────────────────────────────────────────────────────
@@ -148,17 +149,65 @@ export function decisionMatchesCondition(decision: string, conditionValue: strin
 }
 
 /**
+ * Score each option against a raw decision string.
+ * Returns options sorted by descending score (stable: ties preserve original order).
+ *
+ * Scoring tiers:
+ *   1.0 — exact match (case-insensitive, trimmed)
+ *   0.8 — substring containment (one string contains the other)
+ *   0.6 — word-overlap (any significant word (>2 chars) from option appears in decision)
+ *   0.0 — no match
+ *
+ * Use this when you need to rank all options rather than just find any match.
+ */
+export function scoreDecisionOptions(
+  decision: string,
+  options: string[],
+): Array<{ option: string; score: number }> {
+  const d = decision.toLowerCase().trim();
+
+  const scored = options.map((option) => {
+    const v = option.toLowerCase().trim();
+
+    if (d === v) return { option, score: 1.0 };
+    if (d.includes(v) || v.includes(d)) return { option, score: 0.8 };
+
+    const dWords = new Set(d.split(/[\s\-_,./]+/).filter((w) => w.length > 2));
+    const vWords = v.split(/[\s\-_,./]+/).filter((w) => w.length > 2);
+    if (vWords.length > 0 && vWords.some((w) => dWords.has(w))) return { option, score: 0.6 };
+
+    return { option, score: 0.0 };
+  });
+
+  // Stable sort: higher scores first, ties preserve original order
+  return scored.sort((a, b) => b.score - a.score);
+}
+
+/**
+ * Normalize a raw LLM decision string to the best-matching canonical option name.
+ *
+ * Returns the matched option (canonical casing from `options`), or null when
+ * nothing scores above zero. Use this to convert verbose LLM output such as
+ * "I'll escalate this to management" into the exact option label "escalate"
+ * so edge routing works reliably.
+ *
+ * @param decision  Raw string from the LLM (may be verbose or paraphrased)
+ * @param options   Canonical option names from the decision node config
+ */
+export function normalizeDecisionToOption(decision: string, options: string[]): string | null {
+  if (options.length === 0) return null;
+  const scored = scoreDecisionOptions(decision, options);
+  const best = scored[0];
+  return best.score > 0 ? best.option : null;
+}
+
+/**
  * Find the best-matching option from a list for a given decision string.
- * Returns the matched option string, or null if nothing matches.
+ * Returns the matched option string (canonical casing), or null if nothing matches.
  *
  * Used for post-hoc validation: ensures the LLM's decision maps to a known option.
+ * Delegates to normalizeDecisionToOption for consistent scoring behaviour.
  */
 export function findBestMatchingOption(decision: string, options: string[]): string | null {
-  // Prefer exact match first
-  const exact = options.find((o) => o.toLowerCase().trim() === decision.toLowerCase().trim());
-  if (exact) return exact;
-
-  // Then substring/word-overlap
-  const fuzzy = options.find((o) => decisionMatchesCondition(decision, o));
-  return fuzzy || null;
+  return normalizeDecisionToOption(decision, options);
 }
