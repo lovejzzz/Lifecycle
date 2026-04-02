@@ -1,5 +1,31 @@
 # Changelog
 
+### 2026-04-02 — Round 75: Decision Node Intelligence — Option Scoring & Normalization
+
+**Improvement — Decision Node Intelligence (Area 2):**
+
+**New `scoreDecisionOptions()` function in `decision.ts`:**
+- Ranks ALL candidate options against a raw LLM decision string with tiered scores:
+  - 1.0 — exact match (case-insensitive)
+  - 0.8 — substring containment (either direction)
+  - 0.6 — word-overlap (significant words >2 chars shared between strings)
+  - 0.0 — no match
+- Stable sort: higher scores first, ties preserve original option order
+- Replaces the previous first-match binary approach with full ranking
+
+**New `normalizeDecisionToOption()` function in `decision.ts`:**
+- Snaps verbose LLM output to the canonical option label: `"I'll escalate this to management"` → `"escalate"`
+- Returns the option with canonical casing (as stored in the options list), or `null` when nothing matches
+- `findBestMatchingOption()` now delegates to this for consistent scoring behaviour
+
+**Two bug fixes in `executionSlice.ts`:**
+- **Bug**: `executeNode` decision path never set `decisionResult` or `decisionConfidence` — standalone decision node execution silently discarded the parsed decision; both fields now set and normalized
+- **Bug**: `executeWorkflow` decision path stored raw verbose LLM strings in `decisionResult`, `workflowContext.decisions`, and shared context; all paths now normalize via `normalizeDecisionToOption` before storing or routing
+
+**Files changed:** `src/lib/decision.ts`, `src/store/slices/executionSlice.ts`, `src/lib/__tests__/decision.test.ts`
+
+**Test Results:** Build passes. 1593/1593 tests pass (20 new tests — 11 for `scoreDecisionOptions`, 9 for `normalizeDecisionToOption`).
+
 ### 2026-04-02 — Round 73: Cross-run Memory Integration — History-Aware Proactive Suggestions
 
 **Improvement — Suggestions Engine Now Cross-Run Memory Aware (Area 6 — Agent Personality & Memory):**
