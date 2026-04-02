@@ -3369,3 +3369,26 @@ Tested and refined the codebase — 5/5 API tests passing. Fixed bugs, removed d
 **Files changed:** `src/lib/prompts.ts`, `src/store/useStore.ts`, `src/lib/__tests__/prompts.test.ts`
 
 **Test Results:** Build passes. 1378/1378 tests pass (12 new tests for agent-aware execution).
+
+### 2026-04-02 — Round 74: Tool Intelligence — extract_json + regex_extract
+
+**Improvement — Tool Intelligence (Area 1):**
+
+**`extract_json` upgraded from no-op to real extraction engine:**
+- Previously: returned a passthrough message saying "The LLM will perform extraction in the next iteration" — i.e., a no-op that consumed a tool call slot without doing anything
+- Now: performs three-strategy extraction locally before touching the LLM
+  1. Strategy 1: parse the entire text as JSON directly
+  2. Strategy 2: extract from fenced ` ```json ``` ` code blocks
+  3. Strategy 3: bracket-matching to find the first embedded `{...}` or `[...]` object
+- Schema keyword filtering: when a schema is provided, picks only matching top-level keys (falls back to all fields when no key matches the schema)
+- Returns failure with an LLM-forwarding hint when no JSON is detected — text + schema passed so the LLM can extract manually in its next turn
+
+**New `regex_extract` tool:**
+- Extracts text matches using a user-supplied regular expression pattern (up to 50 results)
+- Returns capture group 1 when a capturing group is present, otherwise the full match
+- Security guards: rejects patterns >300 chars; rejects nested quantifiers `(a+)+` that risk catastrophic backtracking; strips unknown flags (only `g/i/m/s` allowed); guards zero-length match infinite loops
+- Registered in `BUILT_IN_TOOLS`; added to Rowan preference list (after `calculate` — fast pattern extraction) and Poirot list (after `extract_json` — precise evidence extraction)
+
+**Files changed:** `src/lib/agentTools.ts`, `src/lib/__tests__/agentTools.test.ts`
+
+**Test Results:** Build passes. 1573/1573 tests pass (32 new tests — 16 for extract_json, 16 for regex_extract).
