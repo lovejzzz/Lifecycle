@@ -4,7 +4,8 @@
  */
 
 import type { Node, Edge } from '@xyflow/react';
-import type { NodeData } from '@/lib/types';
+import type { NodeData, EdgeCondition } from '@/lib/types';
+import { analyzeRunPatterns, type ExecutionRunSummary } from '@/lib/prompts';
 
 export type SuggestionPriority = 'high' | 'medium' | 'low';
 export type SuggestionActionType =
@@ -29,10 +30,15 @@ export interface ProactiveSuggestion {
 /**
  * Analyze the graph and return specific, actionable suggestions.
  * Called after workflow generation and after execution.
+ *
+ * @param nodes        Current workflow nodes
+ * @param edges        Current workflow edges
+ * @param runHistory   Optional recent execution history for cross-run memory suggestions
  */
 export function generateProactiveSuggestions(
   nodes: Node<NodeData>[],
   edges: Edge[],
+  runHistory?: ExecutionRunSummary[],
 ): ProactiveSuggestion[] {
   if (nodes.length === 0) return [];
 
@@ -262,6 +268,79 @@ export function generateProactiveSuggestions(
     });
   }
 
+  // ── 11. Decision edges without conditions ────────────────────────────────
+  // A decision node whose outgoing edges lack `decision-is` conditions will
+  // execute ALL downstream branches regardless of the routing outcome.
+  for (const dn of decisionNodes) {
+    const outEdges = edges.filter((e) => e.source === dn.id);
+    if (outEdges.length >= 2) {
+      const unconditioned = outEdges.filter((e) => {
+        const cond = e.data?.condition as EdgeCondition | undefined;
+        return !cond || cond.type !== 'decision-is';
+      });
+      if (unconditioned.length > 0) {
+        suggestions.push({
+          id: `decision-missing-conditions`,
+          priority: 'high',
+          message: `Decision node "${dn.data.label}" has ${unconditioned.length} outgoing edge${unconditioned.length > 1 ? 's' : ''} without "decision-is" conditions — all branches will execute regardless of the routing choice`,
+          chipLabel: `Fix ${dn.data.label} conditions`,
+          actionType: 'command',
+          actionPayload: { command: `focus ${dn.data.label}` },
+        });
+        break; // one at a time
+      }
+    }
+  }
+
+  // ── 12–14. Cross-run memory suggestions ─────────────────────────────────
+  // Leverage execution history to surface patterns invisible in a single run.
+  if (runHistory && runHistory.length >= 2) {
+    const patterns = analyzeRunPatterns(runHistory);
+    if (patterns) {
+      // 12. Recurring failures — same node fails across multiple runs
+      if (patterns.recurringFailures.length > 0) {
+        const label = patterns.recurringFailures[0];
+        const failCount = runHistory.filter((r) => r.failedNodeLabels.includes(label)).length;
+        suggestions.push({
+          id: 'recurring-failure',
+          priority: 'high',
+          message: `"${label}" has failed in ${failCount} of the last ${runHistory.length} run${runHistory.length > 1 ? 's' : ''} — this may be a structural issue, not a transient error`,
+          chipLabel: `Investigate ${label}`,
+          actionType: 'command',
+          actionPayload: { command: `focus ${label}` },
+        });
+      }
+
+      // 13. Performance degradation — runs are taking longer over time
+      if (patterns.performanceTrend === 'degrading') {
+        const latest = runHistory[0];
+        const oldest = runHistory[Math.min(runHistory.length - 1, 3)];
+        const deltaSec = Math.round((latest.durationMs - oldest.durationMs) / 1000);
+        suggestions.push({
+          id: 'performance-degrading',
+          priority: 'medium',
+          message: `Workflow execution time is increasing (+${deltaSec}s over recent runs) — consider splitting slow nodes or reducing prompt size`,
+          chipLabel: 'Show bottlenecks',
+          actionType: 'command',
+          actionPayload: { command: 'bottlenecks' },
+        });
+      }
+
+      // 14. Stable decision — same branch chosen every run; workflow may be over-engineered
+      if (patterns.stableDecisions.length > 0) {
+        const sd = patterns.stableDecisions[0];
+        suggestions.push({
+          id: 'stable-decision',
+          priority: 'low',
+          message: `Decision node "${sd.label}" always routes to "${sd.decision}" (${sd.runCount}× consistent) — this branch may be predictable enough to hardcode`,
+          chipLabel: `Review ${sd.label}`,
+          actionType: 'command',
+          actionPayload: { command: `focus ${sd.label}` },
+        });
+      }
+    }
+  }
+
   // Sort by priority, then diversify: pick max 1 per category to avoid clustering
   const priorityOrder: Record<SuggestionPriority, number> = { high: 0, medium: 1, low: 2 };
   suggestions.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
@@ -276,7 +355,11 @@ export function generateProactiveSuggestions(
     'refresh-stale': 'execution',
     'bottleneck-optimize': 'performance',
     'decision-needs-branches': 'decision',
+    'decision-missing-conditions': 'decision',
     'low-confidence-decision': 'decision',
+    'recurring-failure': 'memory',
+    'performance-degrading': 'memory',
+    'stable-decision': 'memory',
   };
   const diverse: ProactiveSuggestion[] = [];
   const seenCategories = new Set<string>();
