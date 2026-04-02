@@ -173,7 +173,9 @@ export function createServerClient(): SupabaseClient<Database> | null {
 export async function getCurrentUser() {
   const client = getSupabaseClient();
   if (!client) return null;
-  const { data: { user } } = await client.auth.getUser();
+  const {
+    data: { user },
+  } = await client.auth.getUser();
   return user;
 }
 
@@ -183,6 +185,8 @@ export async function getCurrentUser() {
 export async function getSession() {
   const client = getSupabaseClient();
   if (!client) return null;
-  const { data: { session } } = await client.auth.getSession();
+  const {
+    data: { session },
+  } = await client.auth.getSession();
   return session;
 }

@@ -53,7 +53,9 @@ export default function AuthGate({ onAuth, inline }: AuthGateProps) {
     });
 
     // Listen for auth changes (magic link callback, sign out, etc.)
-    const { data: { subscription } } = client.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: { subscription },
+    } = client.auth.onAuthStateChange((_event, session) => {
       const u = session?.user ?? null;
       setUser(u);
       onAuth(u);
@@ -92,7 +94,9 @@ export default function AuthGate({ onAuth, inline }: AuthGateProps) {
 
     const { error: err } = await client.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined },
+      options: {
+        emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
+      },
     });
 
     if (err) {
@@ -140,7 +144,7 @@ export default function AuthGate({ onAuth, inline }: AuthGateProps) {
     if (!isSupabaseConfigured() || !user) {
       return (
         <button
-          className="flex items-center gap-1.5 px-2 py-1 rounded text-xs text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+          className="flex items-center gap-1.5 rounded px-2 py-1 text-xs text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
           title="Not signed in — using local storage"
         >
           <UserX size={14} />
@@ -152,8 +156,8 @@ export default function AuthGate({ onAuth, inline }: AuthGateProps) {
     return (
       <div className="relative">
         <button
-          onClick={() => setShowMenu(v => !v)}
-          className="flex items-center gap-1.5 px-2 py-1 rounded text-xs text-emerald-400 hover:bg-zinc-800 transition-colors"
+          onClick={() => setShowMenu((v) => !v)}
+          className="flex items-center gap-1.5 rounded px-2 py-1 text-xs text-emerald-400 transition-colors hover:bg-zinc-800"
           title={user.email ?? 'Signed in'}
         >
           <User size={14} />
@@ -165,12 +169,12 @@ export default function AuthGate({ onAuth, inline }: AuthGateProps) {
               initial={{ opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -4 }}
-              className="absolute right-0 top-full mt-1 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl p-2 z-50 min-w-[140px]"
+              className="absolute top-full right-0 z-50 mt-1 min-w-[140px] rounded-lg border border-zinc-700 bg-zinc-900 p-2 shadow-xl"
             >
-              <div className="px-2 py-1 text-xs text-zinc-400 truncate">{user.email}</div>
+              <div className="truncate px-2 py-1 text-xs text-zinc-400">{user.email}</div>
               <button
                 onClick={handleSignOut}
-                className="flex items-center gap-2 w-full px-2 py-1.5 text-xs text-red-400 hover:bg-zinc-800 rounded transition-colors"
+                className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs text-red-400 transition-colors hover:bg-zinc-800"
               >
                 <LogOut size={12} />
                 Sign out
@@ -185,7 +189,7 @@ export default function AuthGate({ onAuth, inline }: AuthGateProps) {
   // ── Loading state ───────────────────────────────────────────────────────
   if (initializing) {
     return (
-      <div className="flex items-center justify-center h-screen bg-zinc-950">
+      <div className="flex h-screen items-center justify-center bg-zinc-950">
         <Loader2 className="animate-spin text-zinc-500" size={24} />
       </div>
     );
@@ -199,14 +203,16 @@ export default function AuthGate({ onAuth, inline }: AuthGateProps) {
 
   // ── Full auth gate UI ───────────────────────────────────────────────────
   return (
-    <div className="fixed inset-0 z-[100] bg-zinc-950/90 backdrop-blur-sm flex items-center justify-center">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/90 backdrop-blur-sm">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-6 w-full max-w-sm mx-4"
+        className="mx-4 w-full max-w-sm rounded-xl border border-zinc-700 bg-zinc-900 p-6 shadow-2xl"
       >
-        <h2 className="text-lg font-semibold text-zinc-100 mb-1">Sign in to Lifecycle</h2>
-        <p className="text-xs text-zinc-500 mb-5">Save your workflows to the cloud, or continue locally.</p>
+        <h2 className="mb-1 text-lg font-semibold text-zinc-100">Sign in to Lifecycle</h2>
+        <p className="mb-5 text-xs text-zinc-500">
+          Save your workflows to the cloud, or continue locally.
+        </p>
 
         <AnimatePresence mode="wait">
           {view === 'options' && (
@@ -219,14 +225,14 @@ export default function AuthGate({ onAuth, inline }: AuthGateProps) {
             >
               <button
                 onClick={() => setView('email-login')}
-                className="flex items-center gap-3 w-full px-4 py-2.5 rounded-lg bg-zinc-800 hover:bg-zinc-750 border border-zinc-700 text-sm text-zinc-200 transition-colors"
+                className="hover:bg-zinc-750 flex w-full items-center gap-3 rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-sm text-zinc-200 transition-colors"
               >
                 <Mail size={16} />
                 Continue with email
               </button>
               <button
                 onClick={() => setView('magic-link')}
-                className="flex items-center gap-3 w-full px-4 py-2.5 rounded-lg bg-zinc-800 hover:bg-zinc-750 border border-zinc-700 text-sm text-zinc-200 transition-colors"
+                className="hover:bg-zinc-750 flex w-full items-center gap-3 rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-sm text-zinc-200 transition-colors"
               >
                 <KeyRound size={16} />
                 Magic link (no password)
@@ -234,7 +240,7 @@ export default function AuthGate({ onAuth, inline }: AuthGateProps) {
               <button
                 onClick={handleGoogleOAuth}
                 disabled={loading}
-                className="flex items-center gap-3 w-full px-4 py-2.5 rounded-lg bg-zinc-800 hover:bg-zinc-750 border border-zinc-700 text-sm text-zinc-200 transition-colors disabled:opacity-50"
+                className="hover:bg-zinc-750 flex w-full items-center gap-3 rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-sm text-zinc-200 transition-colors disabled:opacity-50"
               >
                 <Chrome size={16} />
                 Continue with Google
@@ -249,7 +255,7 @@ export default function AuthGate({ onAuth, inline }: AuthGateProps) {
               </div>
               <button
                 onClick={handleAnonymous}
-                className="flex items-center gap-3 w-full px-4 py-2.5 rounded-lg border border-zinc-800 text-sm text-zinc-500 hover:text-zinc-300 hover:border-zinc-700 transition-colors"
+                className="flex w-full items-center gap-3 rounded-lg border border-zinc-800 px-4 py-2.5 text-sm text-zinc-500 transition-colors hover:border-zinc-700 hover:text-zinc-300"
               >
                 <UserX size={16} />
                 Continue without account (local only)
@@ -269,30 +275,33 @@ export default function AuthGate({ onAuth, inline }: AuthGateProps) {
                 type="email"
                 placeholder="Email"
                 value={email}
-                onChange={e => setEmail(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-sm text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:border-emerald-600"
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-500 focus:border-emerald-600 focus:outline-none"
                 autoFocus
               />
               <input
                 type="password"
                 placeholder="Password"
                 value={password}
-                onChange={e => setPassword(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleEmailLogin()}
-                className="w-full px-3 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-sm text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:border-emerald-600"
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleEmailLogin()}
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-500 focus:border-emerald-600 focus:outline-none"
               />
               {error && <p className="text-xs text-red-400">{error}</p>}
               <button
                 onClick={handleEmailLogin}
                 disabled={loading || !email || !password}
-                className="w-full px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-sm text-white font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:opacity-50"
               >
                 {loading && <Loader2 className="animate-spin" size={14} />}
                 Sign in / Sign up
               </button>
               <button
-                onClick={() => { setView('options'); setError(''); }}
-                className="w-full text-xs text-zinc-500 hover:text-zinc-300 transition-colors py-1"
+                onClick={() => {
+                  setView('options');
+                  setError('');
+                }}
+                className="w-full py-1 text-xs text-zinc-500 transition-colors hover:text-zinc-300"
               >
                 Back to options
               </button>
@@ -311,23 +320,26 @@ export default function AuthGate({ onAuth, inline }: AuthGateProps) {
                 type="email"
                 placeholder="Email"
                 value={email}
-                onChange={e => setEmail(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleMagicLink()}
-                className="w-full px-3 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-sm text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:border-emerald-600"
+                onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleMagicLink()}
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-500 focus:border-emerald-600 focus:outline-none"
                 autoFocus
               />
               {error && <p className="text-xs text-red-400">{error}</p>}
               <button
                 onClick={handleMagicLink}
                 disabled={loading || !email}
-                className="w-full px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-sm text-white font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:opacity-50"
               >
                 {loading && <Loader2 className="animate-spin" size={14} />}
                 Send magic link
               </button>
               <button
-                onClick={() => { setView('options'); setError(''); }}
-                className="w-full text-xs text-zinc-500 hover:text-zinc-300 transition-colors py-1"
+                onClick={() => {
+                  setView('options');
+                  setError('');
+                }}
+                className="w-full py-1 text-xs text-zinc-500 transition-colors hover:text-zinc-300"
               >
                 Back to options
               </button>
@@ -340,16 +352,16 @@ export default function AuthGate({ onAuth, inline }: AuthGateProps) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="text-center py-4"
+              className="py-4 text-center"
             >
-              <Mail className="mx-auto text-emerald-400 mb-3" size={32} />
-              <p className="text-sm text-zinc-200 mb-1">Check your email</p>
-              <p className="text-xs text-zinc-500 mb-4">
+              <Mail className="mx-auto mb-3 text-emerald-400" size={32} />
+              <p className="mb-1 text-sm text-zinc-200">Check your email</p>
+              <p className="mb-4 text-xs text-zinc-500">
                 We sent a sign-in link to <strong className="text-zinc-300">{email}</strong>
               </p>
               <button
                 onClick={() => setView('options')}
-                className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+                className="text-xs text-zinc-500 transition-colors hover:text-zinc-300"
               >
                 Back to options
               </button>

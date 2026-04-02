@@ -35,7 +35,8 @@ export interface Optimization {
  * Used to detect near-duplicate node labels.
  */
 export function levenshtein(a: string, b: string): number {
-  const la = a.length, lb = b.length;
+  const la = a.length,
+    lb = b.length;
   if (la === 0) return lb;
   if (lb === 0) return la;
 
@@ -46,9 +47,9 @@ export function levenshtein(a: string, b: string): number {
     for (let j = 1; j <= lb; j++) {
       const cost = a[i - 1] === b[j - 1] ? 0 : 1;
       curr[j] = Math.min(
-        prev[j] + 1,       // deletion
-        curr[j - 1] + 1,   // insertion
-        prev[j - 1] + cost  // substitution
+        prev[j] + 1, // deletion
+        curr[j - 1] + 1, // insertion
+        prev[j - 1] + cost, // substitution
       );
     }
     prev = curr;
@@ -66,7 +67,7 @@ export function analyzeGraphForOptimization(
   if (nodes.length < 2) return [];
 
   const optimizations: Optimization[] = [];
-  const nodeById = new Map(nodes.map(n => [n.id, n]));
+  const nodeById = new Map(nodes.map((n) => [n.id, n]));
 
   // Build adjacency
   const outgoing = new Map<string, string[]>();
@@ -86,7 +87,8 @@ export function analyzeGraphForOptimization(
   const checked = new Set<string>();
   for (let i = 0; i < nodes.length; i++) {
     for (let j = i + 1; j < nodes.length; j++) {
-      const a = nodes[i], b = nodes[j];
+      const a = nodes[i],
+        b = nodes[j];
       const key = `${a.id}:${b.id}`;
       if (checked.has(key)) continue;
       checked.add(key);
@@ -95,10 +97,7 @@ export function analyzeGraphForOptimization(
       // Skip input/output — those are typically intentionally separate
       if (['input', 'output'].includes(a.data.category)) continue;
 
-      const dist = levenshtein(
-        a.data.label.toLowerCase(),
-        b.data.label.toLowerCase()
-      );
+      const dist = levenshtein(a.data.label.toLowerCase(), b.data.label.toLowerCase());
       if (dist < 3) {
         optimizations.push({
           id: `dup-${a.id}-${b.id}`,
@@ -148,14 +147,14 @@ export function analyzeGraphForOptimization(
   for (const node of nodes) {
     if (!visited.has(node.id) && connectedIds.has(node.id)) {
       const comp = bfs(node.id);
-      comp.forEach(id => visited.add(id));
+      comp.forEach((id) => visited.add(id));
       components.push(comp);
     }
   }
 
   // Find main component (largest, or one containing input/output)
   const mainComponent = components.reduce((best, comp) => {
-    const hasIO = [...comp].some(id => {
+    const hasIO = [...comp].some((id) => {
       const n = nodeById.get(id);
       return n && (n.data.category === 'input' || n.data.category === 'output');
     });
@@ -165,8 +164,8 @@ export function analyzeGraphForOptimization(
 
   for (const comp of components) {
     if (comp === mainComponent || comp.size < 2) continue;
-    const compNodes = [...comp].map(id => nodeById.get(id)!).filter(Boolean);
-    const names = compNodes.slice(0, 3).map(n => n.data.label);
+    const compNodes = [...comp].map((id) => nodeById.get(id)!).filter(Boolean);
+    const names = compNodes.slice(0, 3).map((n) => n.data.label);
     optimizations.push({
       id: `orphan-chain-${[...comp][0]}`,
       type: 'orphan-chain',
@@ -178,12 +177,12 @@ export function analyzeGraphForOptimization(
 
   // ── 4. Missing feedback loop ───────────────────────────────────────────────
   // Output nodes with no path back to review/policy nodes
-  const outputNodes = nodes.filter(n => n.data.category === 'output');
-  const reviewPolicyNodes = nodes.filter(n => ['review', 'policy'].includes(n.data.category));
+  const outputNodes = nodes.filter((n) => n.data.category === 'output');
+  const reviewPolicyNodes = nodes.filter((n) => ['review', 'policy'].includes(n.data.category));
   if (outputNodes.length > 0 && reviewPolicyNodes.length > 0) {
     for (const outNode of outputNodes) {
       // Check if any review/policy node has a path to this output
-      const hasReviewUpstream = reviewPolicyNodes.some(rp => {
+      const hasReviewUpstream = reviewPolicyNodes.some((rp) => {
         // BFS from rp to see if we can reach outNode
         const seen = new Set<string>();
         const q = [rp.id];
@@ -256,7 +255,7 @@ export function formatOptimizations(
   const content = `### Optimization Proposals\n\n${lines.join('\n\n')}`;
 
   // Encode as action chips for CIDPanel
-  const suggestionChips = optimizations.slice(0, 3).map(opt => {
+  const suggestionChips = optimizations.slice(0, 3).map((opt) => {
     const shortLabel = {
       'duplicate-nodes': 'Merge duplicates',
       'overloaded-fanout': 'Split bottleneck',

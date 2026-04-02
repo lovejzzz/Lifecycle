@@ -7,7 +7,10 @@ import './globals.css';
 // Falls back gracefully to system-ui when files aren't present
 const inter = localFont({
   src: [
-    { path: '../../node_modules/pdfjs-dist/standard_fonts/LiberationSans-Regular.ttf', weight: '400' },
+    {
+      path: '../../node_modules/pdfjs-dist/standard_fonts/LiberationSans-Regular.ttf',
+      weight: '400',
+    },
     { path: '../../node_modules/pdfjs-dist/standard_fonts/LiberationSans-Bold.ttf', weight: '700' },
   ],
   display: 'swap',
@@ -24,11 +27,7 @@ export const metadata: Metadata = {
   description: 'A transparent, stateful visual workflow system powered by CID Agent',
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark">
       <body className={`${inter.className} antialiased`}>

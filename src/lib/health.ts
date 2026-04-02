@@ -59,14 +59,13 @@ const RELATIVE_SLOW_FACTOR = 2; // 2x median
  * Identifies individually slow nodes and sequential chains of slow nodes
  * that could potentially be parallelized.
  */
-export function detectBottlenecks(
-  nodes: Node<NodeData>[],
-  edges: Edge[],
-): BottleneckReport {
+export function detectBottlenecks(nodes: Node<NodeData>[], edges: Edge[]): BottleneckReport {
   // Collect nodes with valid execution timing
-  const timed = nodes.filter(n =>
-    n.data._executionDurationMs != null && n.data._executionDurationMs > 0 &&
-    n.data.executionStatus === 'success'
+  const timed = nodes.filter(
+    (n) =>
+      n.data._executionDurationMs != null &&
+      n.data._executionDurationMs > 0 &&
+      n.data.executionStatus === 'success',
   );
 
   if (timed.length === 0) {
@@ -74,11 +73,14 @@ export function detectBottlenecks(
   }
 
   // Compute median execution time
-  const sorted = [...timed].sort((a, b) => a.data._executionDurationMs! - b.data._executionDurationMs!);
+  const sorted = [...timed].sort(
+    (a, b) => a.data._executionDurationMs! - b.data._executionDurationMs!,
+  );
   const mid = Math.floor(sorted.length / 2);
-  const medianMs = sorted.length % 2 === 0
-    ? (sorted[mid - 1].data._executionDurationMs! + sorted[mid].data._executionDurationMs!) / 2
-    : sorted[mid].data._executionDurationMs!;
+  const medianMs =
+    sorted.length % 2 === 0
+      ? (sorted[mid - 1].data._executionDurationMs! + sorted[mid].data._executionDurationMs!) / 2
+      : sorted[mid].data._executionDurationMs!;
 
   const relativeThreshold = medianMs * RELATIVE_SLOW_FACTOR;
 
@@ -126,7 +128,7 @@ export function detectBottlenecks(
       if (parents.length !== 1) break;
       const parent = parents[0];
       if (visitedInChain.has(parent) || !slowIds.has(parent)) break;
-      const parentInfo = slowNodes.find(s => s.nodeId === parent);
+      const parentInfo = slowNodes.find((s) => s.nodeId === parent);
       if (!parentInfo) break;
       prefix.unshift(parentInfo);
       current = parent;
@@ -141,7 +143,7 @@ export function detectBottlenecks(
       if (children.length !== 1) break;
       const child = children[0];
       if (visitedInChain.has(child) || !slowIds.has(child)) break;
-      const childInfo = slowNodes.find(s => s.nodeId === child);
+      const childInfo = slowNodes.find((s) => s.nodeId === child);
       if (!childInfo) break;
       chain.push(childInfo);
       current = child;
@@ -161,8 +163,8 @@ export function detectBottlenecks(
       });
 
       chains.push({
-        nodeIds: chain.map(c => c.nodeId),
-        labels: chain.map(c => c.label),
+        nodeIds: chain.map((c) => c.nodeId),
+        labels: chain.map((c) => c.label),
         totalMs: chain.reduce((sum, c) => sum + c.durationMs, 0),
         parallelizable,
       });
@@ -188,7 +190,7 @@ export function assessWorkflowHealth(
   const issues: HealthIssue[] = [];
   const suggestions: HealthSuggestion[] = [];
   let score = 100;
-  const nodeById = new Map(nodes.map(n => [n.id, n]));
+  const nodeById = new Map(nodes.map((n) => [n.id, n]));
 
   // ── 1. Disconnected nodes (orphans) ──────────────────────────────────────
   const connectedIds = new Set<string>();
@@ -196,7 +198,7 @@ export function assessWorkflowHealth(
     connectedIds.add(e.source);
     connectedIds.add(e.target);
   }
-  const orphans = nodes.filter(n => !connectedIds.has(n.id));
+  const orphans = nodes.filter((n) => !connectedIds.has(n.id));
   if (orphans.length > 0) {
     // Scale penalty by workflow size — 1 orphan in 5 nodes is severe, in 50 is minor
     const orphanPenalty = nodes.length >= 20 ? 3 : nodes.length >= 10 ? 5 : 8;
@@ -204,8 +206,11 @@ export function assessWorkflowHealth(
     issues.push({
       id: 'orphan-nodes',
       priority: 'medium',
-      message: `${orphans.length} disconnected node${orphans.length > 1 ? 's' : ''}: ${orphans.map(n => n.data.label).slice(0, 4).join(', ')}${orphans.length > 4 ? '...' : ''}`,
-      nodeIds: orphans.map(n => n.id),
+      message: `${orphans.length} disconnected node${orphans.length > 1 ? 's' : ''}: ${orphans
+        .map((n) => n.data.label)
+        .slice(0, 4)
+        .join(', ')}${orphans.length > 4 ? '...' : ''}`,
+      nodeIds: orphans.map((n) => n.id),
     });
     for (const n of orphans.slice(0, 2)) {
       if (n.data.category === 'output' || n.data.category === 'input') {
@@ -219,7 +224,7 @@ export function assessWorkflowHealth(
   }
 
   // ── 2. Stale nodes with root-cause analysis ─────────────────────────────
-  const staleNodes = nodes.filter(n => n.data.status === 'stale');
+  const staleNodes = nodes.filter((n) => n.data.status === 'stale');
   // Build incoming adjacency for root-cause tracing
   const incomingMap = new Map<string, string[]>();
   for (const e of edges) {
@@ -230,9 +235,9 @@ export function assessWorkflowHealth(
     // Scale penalty by workflow size — 1 orphan in 5 nodes is worse than 1 in 50
     const penaltyPerNode = nodes.length >= 20 ? 5 : nodes.length >= 10 ? 8 : 10;
     score -= staleNodes.length * penaltyPerNode;
-    const longStale = staleNodes.filter(n => {
+    const longStale = staleNodes.filter((n) => {
       const lastUpdated = n.data.lastUpdated ?? 0;
-      return lastUpdated > 0 && (now - lastUpdated) > 5 * 60 * 1000; // >5 min
+      return lastUpdated > 0 && now - lastUpdated > 5 * 60 * 1000; // >5 min
     });
 
     // Root-cause analysis: trace each stale node to its upstream cause
@@ -245,13 +250,17 @@ export function assessWorkflowHealth(
       while (true) {
         visited.add(current);
         const parents = incomingMap.get(current) || [];
-        const staleParent = parents.find(p => !visited.has(p) && nodeById.get(p)?.data.status === 'stale');
+        const staleParent = parents.find(
+          (p) => !visited.has(p) && nodeById.get(p)?.data.status === 'stale',
+        );
         if (staleParent) {
           current = staleParent;
           continue;
         }
         // Found a non-stale parent or a root — this is the likely cause
-        const editedParent = parents.find(p => !visited.has(p) && nodeById.get(p)?.data.status === 'active');
+        const editedParent = parents.find(
+          (p) => !visited.has(p) && nodeById.get(p)?.data.status === 'active',
+        );
         if (editedParent) {
           rootLabel = nodeById.get(editedParent)?.data.label || editedParent;
         } else {
@@ -272,8 +281,11 @@ export function assessWorkflowHealth(
       issues.push({
         id: 'long-stale',
         priority: 'high',
-        message: `${longStale.length} node${longStale.length > 1 ? 's' : ''} stale for over 5 minutes${causeDetails ? ` (cause: ${causeDetails})` : ''}: ${longStale.map(n => n.data.label).slice(0, 3).join(', ')}`,
-        nodeIds: longStale.map(n => n.id),
+        message: `${longStale.length} node${longStale.length > 1 ? 's' : ''} stale for over 5 minutes${causeDetails ? ` (cause: ${causeDetails})` : ''}: ${longStale
+          .map((n) => n.data.label)
+          .slice(0, 3)
+          .join(', ')}`,
+        nodeIds: longStale.map((n) => n.id),
       });
       suggestions.push({
         id: 'refresh-long-stale',
@@ -289,26 +301,40 @@ export function assessWorkflowHealth(
         id: 'stale-nodes',
         priority: 'medium',
         message: `${staleNodes.length} stale node${staleNodes.length > 1 ? 's' : ''}${causeDetails ? ` (caused by: ${causeDetails})` : ''}`,
-        nodeIds: staleNodes.map(n => n.id),
+        nodeIds: staleNodes.map((n) => n.id),
       });
     }
   }
 
   // ── 3. Nodes with no content ─────────────────────────────────────────────
-  const contentCategories = new Set(['artifact', 'note', 'policy', 'state', 'review', 'action', 'cid', 'test', 'patch']);
-  const emptyNodes = nodes.filter(n =>
-    contentCategories.has(n.data.category) &&
-    !n.data.content &&
-    !n.data.description &&
-    !n.data.executionResult
+  const contentCategories = new Set([
+    'artifact',
+    'note',
+    'policy',
+    'state',
+    'review',
+    'action',
+    'cid',
+    'test',
+    'patch',
+  ]);
+  const emptyNodes = nodes.filter(
+    (n) =>
+      contentCategories.has(n.data.category) &&
+      !n.data.content &&
+      !n.data.description &&
+      !n.data.executionResult,
   );
   if (emptyNodes.length > 0) {
     score -= emptyNodes.length * 5;
     issues.push({
       id: 'empty-content',
       priority: 'low',
-      message: `${emptyNodes.length} node${emptyNodes.length > 1 ? 's' : ''} with no content: ${emptyNodes.map(n => n.data.label).slice(0, 3).join(', ')}`,
-      nodeIds: emptyNodes.map(n => n.id),
+      message: `${emptyNodes.length} node${emptyNodes.length > 1 ? 's' : ''} with no content: ${emptyNodes
+        .map((n) => n.data.label)
+        .slice(0, 3)
+        .join(', ')}`,
+      nodeIds: emptyNodes.map((n) => n.id),
     });
     if (emptyNodes.length <= 3) {
       suggestions.push({
@@ -326,10 +352,10 @@ export function assessWorkflowHealth(
     adj.get(e.source)!.push(e.target);
   }
   // Find longest path from each root without hitting a review node
-  const roots = nodes.filter(n => !edges.some(e => e.target === n.id));
+  const roots = nodes.filter((n) => !edges.some((e) => e.target === n.id));
   let maxChainWithoutReview = 0;
   let chainEndLabel = '';
-  for (const root of (roots.length > 0 ? roots : [nodes[0]])) {
+  for (const root of roots.length > 0 ? roots : [nodes[0]]) {
     const visited = new Set<string>();
     const stack: [string, number][] = [[root.id, 0]];
     while (stack.length > 0) {
@@ -343,7 +369,7 @@ export function assessWorkflowHealth(
         maxChainWithoutReview = chainLen;
         chainEndLabel = node?.data.label || id;
       }
-      for (const next of (adj.get(id) || [])) {
+      for (const next of adj.get(id) || []) {
         stack.push([next, isReview ? 0 : depth + 1]);
       }
     }
@@ -362,9 +388,9 @@ export function assessWorkflowHealth(
   }
 
   // ── 5. Missing output nodes ──────────────────────────────────────────────
-  const hasOutput = nodes.some(n => n.data.category === 'output');
-  const leafNodes = nodes.filter(n => !edges.some(e => e.source === n.id));
-  const nonOutputLeaves = leafNodes.filter(n => n.data.category !== 'output');
+  const hasOutput = nodes.some((n) => n.data.category === 'output');
+  const leafNodes = nodes.filter((n) => !edges.some((e) => e.source === n.id));
+  const nonOutputLeaves = leafNodes.filter((n) => n.data.category !== 'output');
   if (!hasOutput && nodes.length >= 3) {
     score -= 10;
     issues.push({
@@ -393,14 +419,17 @@ export function assessWorkflowHealth(
   }
 
   // ── 6. Execution failures ────────────────────────────────────────────────
-  const failedNodes = nodes.filter(n => n.data.executionStatus === 'error');
+  const failedNodes = nodes.filter((n) => n.data.executionStatus === 'error');
   if (failedNodes.length > 0) {
     score -= failedNodes.length * 8;
     issues.push({
       id: 'exec-failures',
       priority: 'high',
-      message: `${failedNodes.length} node${failedNodes.length > 1 ? 's' : ''} with execution errors: ${failedNodes.map(n => n.data.label).slice(0, 3).join(', ')}`,
-      nodeIds: failedNodes.map(n => n.id),
+      message: `${failedNodes.length} node${failedNodes.length > 1 ? 's' : ''} with execution errors: ${failedNodes
+        .map((n) => n.data.label)
+        .slice(0, 3)
+        .join(', ')}`,
+      nodeIds: failedNodes.map((n) => n.id),
     });
     suggestions.push({
       id: 'retry-failed',
@@ -410,7 +439,7 @@ export function assessWorkflowHealth(
   }
 
   // ── 7. No review node at all ─────────────────────────────────────────────
-  const hasReview = nodes.some(n => n.data.category === 'review');
+  const hasReview = nodes.some((n) => n.data.category === 'review');
   if (!hasReview && nodes.length >= 4) {
     score -= 10;
     suggestions.push({
@@ -424,12 +453,14 @@ export function assessWorkflowHealth(
   if (bottlenecks.slowNodes.length > 0) {
     score -= Math.min(15, bottlenecks.slowNodes.length * 3);
     const top = bottlenecks.slowNodes.slice(0, 3);
-    const topLabels = top.map(s => `"${s.label}" (${(s.durationMs / 1000).toFixed(1)}s)`).join(', ');
+    const topLabels = top
+      .map((s) => `"${s.label}" (${(s.durationMs / 1000).toFixed(1)}s)`)
+      .join(', ');
     issues.push({
       id: 'bottleneck-slow-nodes',
-      priority: bottlenecks.slowNodes.some(s => s.durationMs > 10000) ? 'high' : 'medium',
+      priority: bottlenecks.slowNodes.some((s) => s.durationMs > 10000) ? 'high' : 'medium',
       message: `${bottlenecks.slowNodes.length} slow node${bottlenecks.slowNodes.length > 1 ? 's' : ''}: ${topLabels}`,
-      nodeIds: bottlenecks.slowNodes.map(s => s.nodeId),
+      nodeIds: bottlenecks.slowNodes.map((s) => s.nodeId),
     });
   }
   if (bottlenecks.chains.length > 0) {
@@ -495,9 +526,11 @@ export function formatHealthReport(report: HealthReport, agentMode?: 'rowan' | '
 
   if (issues.length === 0 && suggestions.length === 0) {
     parts.push('');
-    parts.push(agentMode === 'poirot'
-      ? 'The case is in excellent order, mon ami. No issues detected.'
-      : 'All clear — no issues detected.');
+    parts.push(
+      agentMode === 'poirot'
+        ? 'The case is in excellent order, mon ami. No issues detected.'
+        : 'All clear — no issues detected.',
+    );
   }
 
   return parts.join('\n');
@@ -507,5 +540,8 @@ export function formatHealthReport(report: HealthReport, agentMode?: 'rowan' | '
  * Compute a stable fingerprint for a set of issues, so we can detect when new issues appear.
  */
 export function issueFingerprint(issues: HealthIssue[]): string {
-  return issues.map(i => i.id).sort().join('|');
+  return issues
+    .map((i) => i.id)
+    .sort()
+    .join('|');
 }

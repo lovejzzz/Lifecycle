@@ -25,7 +25,10 @@ export async function POST(req: NextRequest) {
 
     if (!file || !(file instanceof File)) {
       return NextResponse.json(
-        { error: 'missing_file', message: 'No file uploaded. Include a "file" field in multipart form data.' },
+        {
+          error: 'missing_file',
+          message: 'No file uploaded. Include a "file" field in multipart form data.',
+        },
         { status: 400 },
       );
     }
@@ -33,7 +36,10 @@ export async function POST(req: NextRequest) {
     // Validate file size
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { error: 'file_too_large', message: `File exceeds 10MB limit (${(file.size / 1024 / 1024).toFixed(1)}MB)` },
+        {
+          error: 'file_too_large',
+          message: `File exceeds 10MB limit (${(file.size / 1024 / 1024).toFixed(1)}MB)`,
+        },
         { status: 400 },
       );
     }
@@ -42,7 +48,10 @@ export async function POST(req: NextRequest) {
     const fileType = detectFileType(file.name);
     if (fileType === 'unknown') {
       return NextResponse.json(
-        { error: 'unsupported_type', message: `Unsupported file type: ${file.name}. Supported: PDF, DOCX, TXT, MD, CSV` },
+        {
+          error: 'unsupported_type',
+          message: `Unsupported file type: ${file.name}. Supported: PDF, DOCX, TXT, MD, CSV`,
+        },
         { status: 400 },
       );
     }
@@ -55,13 +64,11 @@ export async function POST(req: NextRequest) {
     const parsed = await parseDocument(buffer, file.name);
 
     // Chunk if large
-    const chunks = parsed.tokenEstimate > CHUNK_THRESHOLD
-      ? chunkDocument(parsed.text)
-      : undefined;
+    const chunks = parsed.tokenEstimate > CHUNK_THRESHOLD ? chunkDocument(parsed.text) : undefined;
 
     console.log(
       `[Upload] ${file.name} (${fileType}) — ${parsed.text.length} chars, ~${parsed.tokenEstimate} tokens, ` +
-      `${parsed.sections.length} sections${chunks ? `, ${chunks.length} chunks` : ''}`
+        `${parsed.sections.length} sections${chunks ? `, ${chunks.length} chunks` : ''}`,
     );
 
     return NextResponse.json({

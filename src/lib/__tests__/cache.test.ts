@@ -71,17 +71,29 @@ describe('buildCacheKey', () => {
 
   it('sorts upstream results for determinism', () => {
     const a = buildCacheKey({
-      nodeId: 'n1', prompt: 'p', upstreamResults: ['b', 'a'], model: 'm', category: 'c',
+      nodeId: 'n1',
+      prompt: 'p',
+      upstreamResults: ['b', 'a'],
+      model: 'm',
+      category: 'c',
     });
     const b = buildCacheKey({
-      nodeId: 'n1', prompt: 'p', upstreamResults: ['a', 'b'], model: 'm', category: 'c',
+      nodeId: 'n1',
+      prompt: 'p',
+      upstreamResults: ['a', 'b'],
+      model: 'm',
+      category: 'c',
     });
     expect(a).toBe(b);
   });
 
   it('handles missing content', () => {
     const key = buildCacheKey({
-      nodeId: 'n1', prompt: 'p', upstreamResults: [], model: 'm', category: 'c',
+      nodeId: 'n1',
+      prompt: 'p',
+      upstreamResults: [],
+      model: 'm',
+      category: 'c',
     });
     expect(key).toBeTruthy();
   });
@@ -102,7 +114,13 @@ describe('cache store', () => {
   });
 
   it('stores and retrieves entries', () => {
-    setCacheEntry('node1', { hash: 'abc', result: 'output', timestamp: Date.now(), inputTokensEstimate: 100, outputTokensEstimate: 200 });
+    setCacheEntry('node1', {
+      hash: 'abc',
+      result: 'output',
+      timestamp: Date.now(),
+      inputTokensEstimate: 100,
+      outputTokensEstimate: 200,
+    });
     const entry = getCacheEntry('node1');
     expect(entry).toBeDefined();
     expect(entry!.hash).toBe('abc');
@@ -114,15 +132,39 @@ describe('cache store', () => {
   });
 
   it('overwrites existing entries', () => {
-    setCacheEntry('node1', { hash: 'v1', result: 'old', timestamp: 1, inputTokensEstimate: 10, outputTokensEstimate: 20 });
-    setCacheEntry('node1', { hash: 'v2', result: 'new', timestamp: 2, inputTokensEstimate: 10, outputTokensEstimate: 20 });
+    setCacheEntry('node1', {
+      hash: 'v1',
+      result: 'old',
+      timestamp: 1,
+      inputTokensEstimate: 10,
+      outputTokensEstimate: 20,
+    });
+    setCacheEntry('node1', {
+      hash: 'v2',
+      result: 'new',
+      timestamp: 2,
+      inputTokensEstimate: 10,
+      outputTokensEstimate: 20,
+    });
     expect(getCacheEntry('node1')!.hash).toBe('v2');
     expect(getCacheSize()).toBe(1);
   });
 
   it('clears all entries', () => {
-    setCacheEntry('a', { hash: 'h', result: 'r', timestamp: 1, inputTokensEstimate: 1, outputTokensEstimate: 1 });
-    setCacheEntry('b', { hash: 'h', result: 'r', timestamp: 2, inputTokensEstimate: 1, outputTokensEstimate: 1 });
+    setCacheEntry('a', {
+      hash: 'h',
+      result: 'r',
+      timestamp: 1,
+      inputTokensEstimate: 1,
+      outputTokensEstimate: 1,
+    });
+    setCacheEntry('b', {
+      hash: 'h',
+      result: 'r',
+      timestamp: 2,
+      inputTokensEstimate: 1,
+      outputTokensEstimate: 1,
+    });
     expect(getCacheSize()).toBe(2);
     clearCache();
     expect(getCacheSize()).toBe(0);
@@ -131,7 +173,13 @@ describe('cache store', () => {
   it('evicts oldest entries when exceeding max size', () => {
     // Fill beyond max (200)
     for (let i = 0; i < 205; i++) {
-      setCacheEntry(`node-${i}`, { hash: `h${i}`, result: `r${i}`, timestamp: i, inputTokensEstimate: 1, outputTokensEstimate: 1 });
+      setCacheEntry(`node-${i}`, {
+        hash: `h${i}`,
+        result: `r${i}`,
+        timestamp: i,
+        inputTokensEstimate: 1,
+        outputTokensEstimate: 1,
+      });
     }
     expect(getCacheSize()).toBe(200);
     // Oldest entries (0-4) should be evicted
@@ -185,10 +233,10 @@ describe('estimateCost', () => {
 
 describe('estimateBatchCost', () => {
   it('sums costs across multiple nodes', () => {
-    const result = estimateBatchCost([
-      { promptLength: 4000 },
-      { promptLength: 8000, expectedOutputLength: 4000 },
-    ], 'deepseek-chat');
+    const result = estimateBatchCost(
+      [{ promptLength: 4000 }, { promptLength: 8000, expectedOutputLength: 4000 }],
+      'deepseek-chat',
+    );
     expect(result.totalInputTokens).toBe(1000 + 2000);
     expect(result.totalOutputTokens).toBe(2000 + 1000); // first defaults to 2x input
     expect(result.totalCostUSD).toBeGreaterThan(0);

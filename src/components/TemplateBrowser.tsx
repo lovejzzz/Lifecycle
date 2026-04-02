@@ -20,49 +20,57 @@ interface TemplateMetadata {
 const BUILT_IN_TEMPLATES: TemplateMetadata[] = [
   {
     name: 'Software Development',
-    nodeCount: 7, edgeCount: 6,
+    nodeCount: 7,
+    edgeCount: 6,
     categories: ['input', 'artifact', 'state', 'review', 'test', 'output'],
     description: 'Full SDLC from requirements through deployment and monitoring',
   },
   {
     name: 'Content Pipeline',
-    nodeCount: 6, edgeCount: 5,
+    nodeCount: 6,
+    edgeCount: 5,
     categories: ['input', 'artifact', 'cid', 'review', 'policy', 'output'],
     description: 'Research to published article with editorial review and SEO',
   },
   {
     name: 'Incident Response',
-    nodeCount: 6, edgeCount: 5,
+    nodeCount: 6,
+    edgeCount: 5,
     categories: ['input', 'state', 'cid', 'action', 'review', 'output'],
     description: 'Alert triage through investigation, resolution, and postmortem',
   },
   {
     name: 'Product Launch',
-    nodeCount: 7, edgeCount: 7,
+    nodeCount: 7,
+    edgeCount: 7,
     categories: ['input', 'artifact', 'cid', 'review', 'output', 'state'],
     description: 'Market research to launch with beta testing and metrics tracking',
   },
   {
     name: 'Chatbot',
-    nodeCount: 7, edgeCount: 6,
+    nodeCount: 7,
+    edgeCount: 6,
     categories: ['input', 'cid', 'state', 'policy', 'action', 'output'],
     description: 'User message to bot reply with intent detection and safety checks',
   },
   {
     name: 'Course Design',
-    nodeCount: 8, edgeCount: 7,
+    nodeCount: 8,
+    edgeCount: 7,
     categories: ['input', 'state', 'artifact', 'output'],
     description: 'Syllabus to full course artifacts — lesson plans, rubrics, quiz bank, FAQ',
   },
   {
     name: 'Lesson Planning',
-    nodeCount: 6, edgeCount: 5,
+    nodeCount: 6,
+    edgeCount: 5,
     categories: ['input', 'state', 'action', 'artifact', 'test', 'review'],
     description: 'Topic to reflection with learning goals, activities, and assessment',
   },
   {
     name: 'Assignment Design',
-    nodeCount: 5, edgeCount: 4,
+    nodeCount: 5,
+    edgeCount: 4,
     categories: ['input', 'state', 'artifact', 'output'],
     description: 'Brief to student guide with rubric and sample solution',
   },
@@ -94,7 +102,10 @@ export default function TemplateBrowser({ isOpen, onClose }: TemplateBrowserProp
   useEffect(() => {
     if (!isOpen) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { e.preventDefault(); onClose(); }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -103,17 +114,34 @@ export default function TemplateBrowser({ isOpen, onClose }: TemplateBrowserProp
   const lowerFilter = filter.toLowerCase();
 
   const filteredBuiltIn = useMemo(
-    () => BUILT_IN_TEMPLATES.filter(t => t.name.toLowerCase().includes(lowerFilter) || t.description.toLowerCase().includes(lowerFilter)),
+    () =>
+      BUILT_IN_TEMPLATES.filter(
+        (t) =>
+          t.name.toLowerCase().includes(lowerFilter) ||
+          t.description.toLowerCase().includes(lowerFilter),
+      ),
     [lowerFilter],
   );
 
   const customEntries = useMemo(() => {
-    const entries: { name: string; nodeCount: number; edgeCount: number; categories: NodeCategory[]; timestamp: number }[] = [];
+    const entries: {
+      name: string;
+      nodeCount: number;
+      edgeCount: number;
+      categories: NodeCategory[];
+      timestamp: number;
+    }[] = [];
     for (const [name, tmpl] of customTemplates) {
-      const cats = [...new Set(tmpl.nodes.map(n => n.data?.category).filter(Boolean))];
-      entries.push({ name, nodeCount: tmpl.nodes.length, edgeCount: tmpl.edges.length, categories: cats, timestamp: tmpl.timestamp });
+      const cats = [...new Set(tmpl.nodes.map((n) => n.data?.category).filter(Boolean))];
+      entries.push({
+        name,
+        nodeCount: tmpl.nodes.length,
+        edgeCount: tmpl.edges.length,
+        categories: cats,
+        timestamp: tmpl.timestamp,
+      });
     }
-    return entries.filter(t => t.name.toLowerCase().includes(lowerFilter));
+    return entries.filter((t) => t.name.toLowerCase().includes(lowerFilter));
   }, [customTemplates, lowerFilter]);
 
   const handleLoad = (name: string, isCustom: boolean) => {
@@ -146,7 +174,7 @@ export default function TemplateBrowser({ isOpen, onClose }: TemplateBrowserProp
 
           {/* Modal */}
           <motion.div
-            className="relative w-full max-w-2xl max-h-[80vh] mx-4 rounded-xl border border-white/[0.08] bg-[#0e0e18] shadow-2xl overflow-hidden flex flex-col"
+            className="relative mx-4 flex max-h-[80vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-white/[0.08] bg-[#0e0e18] shadow-2xl"
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
@@ -156,17 +184,20 @@ export default function TemplateBrowser({ isOpen, onClose }: TemplateBrowserProp
             {/* Header */}
             <div className="flex items-center justify-between px-5 pt-5 pb-3">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 flex items-center justify-center border border-emerald-500/20">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-500/20 bg-gradient-to-br from-emerald-500/20 to-cyan-500/20">
                   <Layers size={15} className="text-emerald-400" />
                 </div>
                 <div>
                   <h2 className="text-[15px] font-semibold text-white/90">Templates</h2>
-                  <p className="text-[10px] text-white/30">{BUILT_IN_TEMPLATES.length} built-in{customEntries.length > 0 ? ` + ${customEntries.length} custom` : ''}</p>
+                  <p className="text-[10px] text-white/30">
+                    {BUILT_IN_TEMPLATES.length} built-in
+                    {customEntries.length > 0 ? ` + ${customEntries.length} custom` : ''}
+                  </p>
                 </div>
               </div>
               <button
                 onClick={onClose}
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/[0.06] transition-colors"
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-white/30 transition-colors hover:bg-white/[0.06] hover:text-white/60"
               >
                 <X size={15} />
               </button>
@@ -174,8 +205,8 @@ export default function TemplateBrowser({ isOpen, onClose }: TemplateBrowserProp
 
             {/* Search */}
             <div className="px-5 pb-3">
-              <div className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2">
-                <Search size={13} className="text-white/25 flex-shrink-0" />
+              <div className="flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2">
+                <Search size={13} className="flex-shrink-0 text-white/25" />
                 <input
                   ref={filterRef}
                   type="text"
@@ -185,7 +216,10 @@ export default function TemplateBrowser({ isOpen, onClose }: TemplateBrowserProp
                   className="flex-1 bg-transparent text-[12px] text-white/80 placeholder-white/35 outline-none"
                 />
                 {filter && (
-                  <button onClick={() => setFilter('')} className="text-white/25 hover:text-white/50">
+                  <button
+                    onClick={() => setFilter('')}
+                    className="text-white/25 hover:text-white/50"
+                  >
                     <X size={11} />
                   </button>
                 )}
@@ -193,12 +227,14 @@ export default function TemplateBrowser({ isOpen, onClose }: TemplateBrowserProp
             </div>
 
             {/* Grid */}
-            <div className="flex-1 overflow-y-auto px-5 pb-5 scrollbar-thin">
+            <div className="scrollbar-thin flex-1 overflow-y-auto px-5 pb-5">
               {/* Built-in templates */}
               {filteredBuiltIn.length > 0 && (
                 <>
-                  <div className="text-[10px] text-white/40 uppercase tracking-widest mb-2">Built-in</div>
-                  <div className="grid grid-cols-2 gap-2.5 mb-4">
+                  <div className="mb-2 text-[10px] tracking-widest text-white/40 uppercase">
+                    Built-in
+                  </div>
+                  <div className="mb-4 grid grid-cols-2 gap-2.5">
                     {filteredBuiltIn.map((tmpl) => (
                       <TemplateCard
                         key={tmpl.name}
@@ -217,7 +253,7 @@ export default function TemplateBrowser({ isOpen, onClose }: TemplateBrowserProp
               {/* Custom templates */}
               {customEntries.length > 0 && (
                 <>
-                  <div className="text-[10px] text-white/40 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                  <div className="mb-2 flex items-center gap-1.5 text-[10px] tracking-widest text-white/40 uppercase">
                     <Users size={9} />
                     Custom
                   </div>
@@ -240,16 +276,30 @@ export default function TemplateBrowser({ isOpen, onClose }: TemplateBrowserProp
 
               {/* No results */}
               {filteredBuiltIn.length === 0 && customEntries.length === 0 && (
-                <div className="text-center py-12 text-white/25 text-[12px]">
+                <div className="py-12 text-center text-[12px] text-white/25">
                   No templates matching &ldquo;{filter}&rdquo;
                 </div>
               )}
             </div>
 
             {/* Footer hint */}
-            <div className="px-5 py-2.5 border-t border-white/[0.06] text-[10px] text-white/20 flex items-center justify-between">
-              <span>Press <kbd className="px-1 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] font-mono text-[9px]">Esc</kbd> to close</span>
-              <span><kbd className="px-1 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] font-mono text-[9px]">{typeof window !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent) ? '\u2318' : 'Ctrl+'}T</kbd> to toggle</span>
+            <div className="flex items-center justify-between border-t border-white/[0.06] px-5 py-2.5 text-[10px] text-white/20">
+              <span>
+                Press{' '}
+                <kbd className="rounded border border-white/[0.08] bg-white/[0.06] px-1 py-0.5 font-mono text-[9px]">
+                  Esc
+                </kbd>{' '}
+                to close
+              </span>
+              <span>
+                <kbd className="rounded border border-white/[0.08] bg-white/[0.06] px-1 py-0.5 font-mono text-[9px]">
+                  {typeof window !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent)
+                    ? '\u2318'
+                    : 'Ctrl+'}
+                  T
+                </kbd>{' '}
+                to toggle
+              </span>
             </div>
           </motion.div>
         </motion.div>
@@ -282,40 +332,47 @@ function TemplateCard({
 
   return (
     <motion.div
-      className="group relative rounded-xl border border-white/[0.10] bg-white/[0.04] p-3.5 hover:bg-white/[0.05] hover:border-white/[0.12] transition-all duration-200 cursor-pointer"
+      className="group relative cursor-pointer rounded-xl border border-white/[0.10] bg-white/[0.04] p-3.5 transition-all duration-200 hover:border-white/[0.12] hover:bg-white/[0.05]"
       onClick={onLoad}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onLoad(); } }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onLoad();
+        }
+      }}
       whileHover={{ scale: 1.01 }}
       whileTap={{ scale: 0.99 }}
     >
       {/* Name */}
-      <div className="flex items-center justify-between mb-1.5">
-        <h3 className="text-[12px] font-semibold text-white/80 group-hover:text-white/95 transition-colors truncate pr-2">
+      <div className="mb-1.5 flex items-center justify-between">
+        <h3 className="truncate pr-2 text-[12px] font-semibold text-white/80 transition-colors group-hover:text-white/95">
           {name}
         </h3>
         {isCustom && (
-          <span className="text-[8px] text-violet-400/50 border border-violet-400/20 rounded px-1 py-0.5 shrink-0">custom</span>
+          <span className="shrink-0 rounded border border-violet-400/20 px-1 py-0.5 text-[8px] text-violet-400/50">
+            custom
+          </span>
         )}
       </div>
 
       {/* Stats */}
-      <div className="flex items-center gap-2 mb-2">
+      <div className="mb-2 flex items-center gap-2">
         <span className="text-[10px] text-white/45">{nodeCount} nodes</span>
         <span className="text-[10px] text-white/15">&middot;</span>
         <span className="text-[10px] text-white/45">{edgeCount} edges</span>
       </div>
 
       {/* Category pills */}
-      <div className="flex flex-wrap gap-1 mb-2.5">
+      <div className="mb-2.5 flex flex-wrap gap-1">
         {uniqueCats.slice(0, 6).map((cat) => {
           const colors = getNodeColors(cat);
           const Icon = getCategoryIcon(cat);
           return (
             <span
               key={cat}
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] border"
+              className="inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[9px]"
               style={{
                 color: colors.primary,
                 borderColor: `${colors.primary}30`,
@@ -328,18 +385,18 @@ function TemplateCard({
           );
         })}
         {uniqueCats.length > 6 && (
-          <span className="text-[8px] text-white/20 px-1 py-0.5">+{uniqueCats.length - 6}</span>
+          <span className="px-1 py-0.5 text-[8px] text-white/20">+{uniqueCats.length - 6}</span>
         )}
       </div>
 
       {/* Description */}
-      <p className="text-[10px] text-white/45 group-hover:text-white/60 transition-colors leading-relaxed line-clamp-2">
+      <p className="line-clamp-2 text-[10px] leading-relaxed text-white/45 transition-colors group-hover:text-white/60">
         {description}
       </p>
 
       {/* Load button (visible on hover) */}
-      <div className="absolute top-3 right-3 opacity-60 group-hover:opacity-100 transition-opacity">
-        <span className="text-[9px] font-medium text-emerald-400/70 bg-emerald-500/10 border border-emerald-500/20 rounded-md px-2 py-1">
+      <div className="absolute top-3 right-3 opacity-60 transition-opacity group-hover:opacity-100">
+        <span className="rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-[9px] font-medium text-emerald-400/70">
           Load
         </span>
       </div>

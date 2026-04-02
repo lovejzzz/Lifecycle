@@ -16,22 +16,27 @@ export type NodeCategory = string;
 // but users see and pick from the simplified set.
 
 export const SIMPLIFIED_CATEGORIES: NodeCategory[] = [
-  'input', 'process', 'deliverable', 'review', 'note', 'decision',
+  'input',
+  'process',
+  'deliverable',
+  'review',
+  'note',
+  'decision',
 ];
 
 /** Map legacy 13-category names to simplified 5-category names */
 export const CATEGORY_SIMPLIFICATION: Record<string, string> = {
   input: 'input',
-  trigger: 'input',        // triggers are a kind of input
-  dependency: 'input',     // dependencies are prerequisites (inputs)
-  state: 'process',        // state management is a process
-  cid: 'process',          // CID actions are processes
-  action: 'process',       // actions are processes
+  trigger: 'input', // triggers are a kind of input
+  dependency: 'input', // dependencies are prerequisites (inputs)
+  state: 'process', // state management is a process
+  cid: 'process', // CID actions are processes
+  action: 'process', // actions are processes
   artifact: 'deliverable', // artifacts are deliverables
-  output: 'deliverable',   // outputs are deliverables (no special treatment)
-  test: 'review',          // tests are a form of review
-  policy: 'review',        // policy checks are a form of review
-  patch: 'process',        // patches are processes
+  output: 'deliverable', // outputs are deliverables (no special treatment)
+  test: 'review', // tests are a form of review
+  policy: 'review', // policy checks are a form of review
+  patch: 'process', // patches are processes
   review: 'review',
   note: 'note',
 };
@@ -43,13 +48,36 @@ export function getSimplifiedCategory(category: string): string {
 
 // The full list includes both simplified and legacy names for backward compatibility
 export const BUILT_IN_CATEGORIES: NodeCategory[] = [
-  'input', 'trigger', 'state', 'artifact', 'note', 'cid', 'action', 'review', 'test', 'policy', 'patch', 'dependency', 'output',
-  'process', 'deliverable', 'decision', // new simplified names + decision
+  'input',
+  'trigger',
+  'state',
+  'artifact',
+  'note',
+  'cid',
+  'action',
+  'review',
+  'test',
+  'policy',
+  'patch',
+  'dependency',
+  'output',
+  'process',
+  'deliverable',
+  'decision', // new simplified names + decision
 ];
 
 export interface LifecycleEvent {
   id: string;
-  type: 'created' | 'edited' | 'regenerated' | 'approved' | 'locked' | 'optimized' | 'refined' | 'propagated' | 'stale';
+  type:
+    | 'created'
+    | 'edited'
+    | 'regenerated'
+    | 'approved'
+    | 'locked'
+    | 'optimized'
+    | 'refined'
+    | 'propagated'
+    | 'stale';
   nodeId?: string;
   message: string;
   timestamp: number;
@@ -66,15 +94,15 @@ export type CIDMode = 'rowan' | 'poirot';
 
 /** How the agent initially perceives and categorizes incoming information */
 export interface InformationFrame {
-  lens: string;                     // 'mission-objective' | 'evidence-case'
-  threatModel: string;              // 'risk-first' | 'opportunity-first' | 'neutral-scan'
-  attentionPriorities: string[];    // what the agent notices first, ordered
+  lens: string; // 'mission-objective' | 'evidence-case'
+  threatModel: string; // 'risk-first' | 'opportunity-first' | 'neutral-scan'
+  attentionPriorities: string[]; // what the agent notices first, ordered
   categorizationSchema: Record<string, string[]>; // buckets for organizing observations
 }
 
 /** When a pattern appears in user input, the agent reframes it through its lens */
 export interface ReframingRule {
-  trigger: string;   // regex-compatible pattern
+  trigger: string; // regex-compatible pattern
   reframeAs: string; // how this agent interprets it
 }
 
@@ -91,12 +119,12 @@ export interface TemperamentLayer {
 // ── Layer 2: Driving Force — COMPETING drives that create genuine tension ──
 
 export interface Drive {
-  name: string;                     // e.g. 'speed', 'thoroughness', 'elegance'
-  weight: number;                   // 0-1, base weight (can be adjusted by reflection)
-  tensionPairs: string[];           // names of drives this conflicts with
-  curiosityTriggers: string[];      // patterns that make this drive spike
+  name: string; // e.g. 'speed', 'thoroughness', 'elegance'
+  weight: number; // 0-1, base weight (can be adjusted by reflection)
+  tensionPairs: string[]; // names of drives this conflicts with
+  curiosityTriggers: string[]; // patterns that make this drive spike
   agencyBoundary: 'act' | 'suggest' | 'ask'; // default posture
-  currentSpike: number;             // 0-1, transient spike from curiosity trigger match (reset per interaction)
+  currentSpike: number; // 0-1, transient spike from curiosity trigger match (reset per interaction)
 }
 
 export interface DrivingForceLayer {
@@ -116,32 +144,32 @@ export interface DrivingForceLayer {
 
 export interface DomainExpertise {
   id: string;
-  domain: string;                   // e.g. 'CI/CD pipelines', 'hiring workflows'
-  depth: number;                    // 0-1, increases with exposure
+  domain: string; // e.g. 'CI/CD pipelines', 'hiring workflows'
+  depth: number; // 0-1, increases with exposure
   lastSeen: number;
-  workflowsBuilt: number;          // how many workflows in this domain
-  sedimentation: number;            // 0-1, how deeply ingrained (high = hard to change/prune)
+  workflowsBuilt: number; // how many workflows in this domain
+  sedimentation: number; // 0-1, how deeply ingrained (high = hard to change/prune)
 }
 
 export interface WorkflowPreference {
-  pattern: string;                  // e.g. 'parallel-branches', 'feedback-loops', 'minimal'
-  frequency: number;                // how often the user builds this way
-  agentAffinity: number;            // how well this agent handles it (learned)
-  sedimentation: number;            // 0-1, how ingrained this preference is
+  pattern: string; // e.g. 'parallel-branches', 'feedback-loops', 'minimal'
+  frequency: number; // how often the user builds this way
+  agentAffinity: number; // how well this agent handles it (learned)
+  sedimentation: number; // 0-1, how ingrained this preference is
 }
 
 export interface CommunicationStyle {
-  verbosity: number;                // 0=terse, 1=verbose — learned from user
-  technicalDepth: number;           // 0=high-level, 1=implementation-detail
-  metaphorUsage: number;            // 0=literal, 1=figurative — per agent personality
+  verbosity: number; // 0=terse, 1=verbose — learned from user
+  technicalDepth: number; // 0=high-level, 1=implementation-detail
+  metaphorUsage: number; // 0=literal, 1=figurative — per agent personality
 }
 
 export interface HabitLayer {
-  domainExpertise: DomainExpertise[];       // max 20
+  domainExpertise: DomainExpertise[]; // max 20
   workflowPreferences: WorkflowPreference[]; // max 10
   communicationStyle: CommunicationStyle;
-  relationshipDepth: number;                // 0-1, increases over interactions
-  totalInteractions: number;                // lifetime count
+  relationshipDepth: number; // 0-1, increases over interactions
+  totalInteractions: number; // lifetime count
   lastUpdated: number;
   // Legacy compat
   interactionPatterns: HabitPattern[];
@@ -170,10 +198,10 @@ export interface GenerationContext {
 }
 
 export interface ExpressionModifiers {
-  verbosityShift: number;       // -1 to +1, applied on top of habit verbosity
-  urgencyLevel: number;         // 0-1
-  creativityDial: number;       // 0-1, higher = more novel suggestions
-  empathyWeight: number;        // 0-1, how much to mirror user emotion
+  verbosityShift: number; // -1 to +1, applied on top of habit verbosity
+  urgencyLevel: number; // 0-1
+  creativityDial: number; // 0-1, higher = more novel suggestions
+  empathyWeight: number; // 0-1, how much to mirror user emotion
 }
 
 export interface GenerationLayer {
@@ -184,44 +212,65 @@ export interface GenerationLayer {
   errorCount: number;
   sessionStartedAt: number;
   // Novel expression fragments — generated on-the-spot, never repeated
-  spontaneousDirectives: string[];   // 0-3 short directives injected into prompt (e.g. "Reference the user's earlier mention of 'tight deadline'")
-  reframedInput?: string;            // The user's message as perceived through the temperament lens
+  spontaneousDirectives: string[]; // 0-3 short directives injected into prompt (e.g. "Reference the user's earlier mention of 'tight deadline'")
+  reframedInput?: string; // The user's message as perceived through the temperament lens
 }
 
 // ── Layer 5: Reflection — Genuine metacognition and self-reorganization ─────
 
 export interface ReflectionAction {
-  type: 'strengthen-domain' | 'add-domain' | 'adjust-drive' | 'update-comm-style' | 'add-preference' | 'prune-stale' | 'grow-edge' | 'add-reframing-rule' | 'reorganize-drives' | 'sediment-habit';
+  type:
+    | 'strengthen-domain'
+    | 'add-domain'
+    | 'adjust-drive'
+    | 'update-comm-style'
+    | 'add-preference'
+    | 'prune-stale'
+    | 'grow-edge'
+    | 'add-reframing-rule'
+    | 'reorganize-drives'
+    | 'sediment-habit';
   description: string;
-  confidence: number;           // 0-1
+  confidence: number; // 0-1
   data: Record<string, unknown>; // action-specific payload
 }
 
 export interface GrowthEdge {
   area: string;
   reason: string;
-  priority: number;             // 0-1
+  priority: number; // 0-1
   identifiedAt: number;
 }
 
 export interface ReflectionLayer {
   pendingActions: ReflectionAction[];
-  growthEdges: GrowthEdge[];     // max 5
+  growthEdges: GrowthEdge[]; // max 5
   lastReflectionAt: number;
   reflectionCount: number;
   performanceSignals: {
-    recentSuccessRate: number;   // 0-1
-    driveBalanceScore: number;   // 0-1, how well drives are serving
+    recentSuccessRate: number; // 0-1
+    driveBalanceScore: number; // 0-1, how well drives are serving
   };
   // Structural reorganization — learned reframing rules added by reflection
-  learnedReframingRules: ReframingRule[];  // max 5, supplements temperament's static rules
+  learnedReframingRules: ReframingRule[]; // max 5, supplements temperament's static rules
   // Drive evolution log — tracks HOW drives have shifted over time
-  driveEvolutionLog: Array<{ driveName: string; oldWeight: number; newWeight: number; reason: string; timestamp: number }>;
+  driveEvolutionLog: Array<{
+    driveName: string;
+    oldWeight: number;
+    newWeight: number;
+    reason: string;
+    timestamp: number;
+  }>;
 }
 
 // Legacy compat
 export interface ReflectionEntry {
-  trigger: 'workflow_complete' | 'error_recovery' | 'session_end' | 'mode_switch' | 'user_correction';
+  trigger:
+    | 'workflow_complete'
+    | 'error_recovery'
+    | 'session_end'
+    | 'mode_switch'
+    | 'user_correction';
   observation: string;
   habitModification: {
     action: 'strengthen' | 'weaken' | 'add' | 'remove';
@@ -245,37 +294,37 @@ export interface AgentPersonalityLayers {
 // Every artifact derives from the Central Context — CID's working memory.
 
 export interface CentralContextSource {
-  content: string;             // Raw input (paste, URL content, file text)
+  content: string; // Raw input (paste, URL content, file text)
   contentType: 'text' | 'url' | 'file' | 'conversation';
-  title?: string;              // Project/content title
-  metadata?: Record<string, string>;  // Extracted metadata
+  title?: string; // Project/content title
+  metadata?: Record<string, string>; // Extracted metadata
   lastUpdated: number;
 }
 
 export interface CentralContextUnderstanding {
-  summary: string;             // 2-3 sentence summary
-  keyEntities: string[];       // People, products, brands, concepts
-  tone: string;                // "professional", "casual", "technical"
-  audience: string;            // Target audience
-  intent: string;              // What the user is trying to achieve
-  constraints: string[];       // Things CID should preserve
+  summary: string; // 2-3 sentence summary
+  keyEntities: string[]; // People, products, brands, concepts
+  tone: string; // "professional", "casual", "technical"
+  audience: string; // Target audience
+  intent: string; // What the user is trying to achieve
+  constraints: string[]; // Things CID should preserve
   suggestedArtifacts: string[]; // What CID thinks it can build
 }
 
 export interface ArtifactDerivedField {
-  field: string;               // e.g., "headline", "body", "cta"
-  sourceMapping: string;       // What part of central context it comes from
-  transform: string;           // How it was transformed
+  field: string; // e.g., "headline", "body", "cta"
+  sourceMapping: string; // What part of central context it comes from
+  transform: string; // How it was transformed
 }
 
 export interface ArtifactContract {
   nodeId: string;
-  artifactType: string;        // "blog-post", "email", "social-thread", etc.
+  artifactType: string; // "blog-post", "email", "social-thread", etc.
   derivedFields: ArtifactDerivedField[];
-  generationPrompt: string;    // The prompt CID used to create this
+  generationPrompt: string; // The prompt CID used to create this
   model: string;
   lastSyncedAt: number;
-  lastSourceHash: string;      // Hash of source content at last sync
+  lastSourceHash: string; // Hash of source content at last sync
   syncStatus: 'current' | 'stale' | 'override' | 'regenerating';
   userEdits: ArtifactUserEdit[];
 }
@@ -285,7 +334,7 @@ export interface ArtifactUserEdit {
   originalValue: string;
   userValue: string;
   timestamp: number;
-  intent?: string;             // CID's interpretation of why user changed it
+  intent?: string; // CID's interpretation of why user changed it
 }
 
 export interface Override {
@@ -295,7 +344,7 @@ export interface Override {
   originalValue: string;
   userValue: string;
   timestamp: number;
-  cidInterpretation?: string;  // "User wants more casual tone in headlines"
+  cidInterpretation?: string; // "User wants more casual tone in headlines"
   propagated: boolean;
   scope: 'this-node' | 'all-similar' | 'global';
 }
@@ -311,7 +360,7 @@ export interface SurgicalDiff {
   nodeId: string;
   changes: SurgicalChange[];
   skipped: { field: string; reason: string }[];
-  confidence: number;          // 0-1
+  confidence: number; // 0-1
 }
 
 export interface CentralContext {
@@ -333,7 +382,14 @@ export interface CIDMessage {
   role: 'user' | 'cid';
   content: string;
   timestamp: number;
-  action?: 'creating' | 'analyzing' | 'optimizing' | 'refining' | 'thinking' | 'investigating' | 'building';
+  action?:
+    | 'creating'
+    | 'analyzing'
+    | 'optimizing'
+    | 'refining'
+    | 'thinking'
+    | 'investigating'
+    | 'building';
   cards?: CIDCard[];
   cardPrompt?: string; // the question the cards answer
   suggestions?: string[]; // clickable follow-up prompt suggestions
@@ -404,24 +460,24 @@ export interface NodeData extends Record<string, unknown> {
   lastUpdated?: number;
   content?: string;
   sections?: { id: string; title: string; status: 'current' | 'stale' | 'regenerating' }[];
-  acceptedFileTypes?: string[];  // e.g. ['.pdf', '.docx', '.txt'] — renders file drop zone on input nodes
-  inputType?: 'text' | 'url' | 'file';  // how the input node accepts data
-  serviceName?: string;  // e.g. 'Google Docs', 'Notion' — service integration label
-  serviceIcon?: string;  // emoji or identifier for the service
-  placeholder?: string;  // placeholder text for input fields
+  acceptedFileTypes?: string[]; // e.g. ['.pdf', '.docx', '.txt'] — renders file drop zone on input nodes
+  inputType?: 'text' | 'url' | 'file'; // how the input node accepts data
+  serviceName?: string; // e.g. 'Google Docs', 'Notion' — service integration label
+  serviceIcon?: string; // emoji or identifier for the service
+  placeholder?: string; // placeholder text for input fields
 
   // Execution fields
   /** @deprecated API keys are now server-side only. This field is stripped on save. */
   apiKey?: string;
-  aiPrompt?: string;         // instruction/prompt for the AI to execute
-  aiModel?: string;          // model to use (default: claude-sonnet-4-20250514)
-  executionResult?: string;  // output from last execution
-  executionStatus?: 'idle' | 'running' | 'success' | 'error';  // current run state
-  executionError?: string;   // error message if execution failed
-  _executionStartedAt?: number;  // Date.now() when execution began (ephemeral)
+  aiPrompt?: string; // instruction/prompt for the AI to execute
+  aiModel?: string; // model to use (default: claude-sonnet-4-20250514)
+  executionResult?: string; // output from last execution
+  executionStatus?: 'idle' | 'running' | 'success' | 'error'; // current run state
+  executionError?: string; // error message if execution failed
+  _executionStartedAt?: number; // Date.now() when execution began (ephemeral)
   _executionDurationMs?: number; // total ms elapsed for this node's execution (ephemeral)
   _effortLevel?: 'low' | 'medium' | 'high' | 'max'; // adaptive thinking effort for AI execution
-  inputValue?: string;       // user-provided input value (text, URL, etc.)
+  inputValue?: string; // user-provided input value (text, URL, etc.)
 
   // Version history — snapshots of content at meaningful change points
   _versionHistory?: Array<{
@@ -435,8 +491,8 @@ export interface NodeData extends Record<string, unknown> {
   _validationWarnings?: Array<{ code: string; message: string; severity: 'info' | 'warning' }>;
 
   // Output format for download-capable output nodes
-  outputFormat?: string;     // e.g. 'pdf', 'docx', 'csv', 'md', 'html'
-  outputMimeType?: string;   // e.g. 'application/pdf'
+  outputFormat?: string; // e.g. 'pdf', 'docx', 'csv', 'md', 'html'
+  outputMimeType?: string; // e.g. 'application/pdf'
   outputFormatLabel?: string; // e.g. 'PDF'
 
   // Central Brain: artifact contract (CID-managed nodes only)
@@ -607,14 +663,18 @@ function hslToRgb(hsl: string): { r: number; g: number; b: number } {
 
 function colorSetFromHex(primary: string): NodeColorSet {
   // Parse hex or use as-is
-  let r = 100, g = 100, b = 200;
+  let r = 100,
+    g = 100,
+    b = 200;
   if (primary.startsWith('#')) {
     r = parseInt(primary.slice(1, 3), 16);
     g = parseInt(primary.slice(3, 5), 16);
     b = parseInt(primary.slice(5, 7), 16);
   } else if (primary.startsWith('hsl')) {
     const rgb = hslToRgb(primary);
-    r = rgb.r; g = rgb.g; b = rgb.b;
+    r = rgb.r;
+    g = rgb.g;
+    b = rgb.b;
     // Convert to hex for primary
     primary = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
   }
@@ -646,9 +706,25 @@ export function getNodeColors(category: string): NodeColorSet {
 
 // Shared category icon mapping — single source of truth
 import {
-  Database, FileText, StickyNote, Bot, CheckCircle2, Shield,
-  GitBranch, Link, LogIn, LogOut, Zap, FlaskConical, Play,
-  Waypoints, ShieldCheck, Flame, Radar, Puzzle, GitFork,
+  Database,
+  FileText,
+  StickyNote,
+  Bot,
+  CheckCircle2,
+  Shield,
+  GitBranch,
+  Link,
+  LogIn,
+  LogOut,
+  Zap,
+  FlaskConical,
+  Play,
+  Waypoints,
+  ShieldCheck,
+  Flame,
+  Radar,
+  Puzzle,
+  GitFork,
 } from 'lucide-react';
 
 export const CATEGORY_ICONS: Record<string, React.ElementType> = {
@@ -681,7 +757,17 @@ export function getCategoryIcon(category: string): React.ElementType {
 }
 
 /** Stable component for rendering a category icon — avoids "component created during render" warnings */
-export function CategoryIcon({ category, size, style, className }: { category: string; size?: number; style?: React.CSSProperties; className?: string }) {
+export function CategoryIcon({
+  category,
+  size,
+  style,
+  className,
+}: {
+  category: string;
+  size?: number;
+  style?: React.CSSProperties;
+  className?: string;
+}) {
   const Icon = CATEGORY_ICONS[category] || Puzzle;
   return React.createElement(Icon, { size, style, className });
 }

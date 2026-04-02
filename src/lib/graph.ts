@@ -18,10 +18,13 @@ export function nodesOverlap(a: { x: number; y: number }, b: { x: number; y: num
 }
 
 /** Find a non-overlapping position for a new node, starting from the desired position */
-export function findFreePosition(desired: { x: number; y: number }, existing: { x: number; y: number }[]): { x: number; y: number } {
+export function findFreePosition(
+  desired: { x: number; y: number },
+  existing: { x: number; y: number }[],
+): { x: number; y: number } {
   let pos = { ...desired };
   let attempts = 0;
-  while (attempts < 50 && existing.some(e => nodesOverlap(pos, e))) {
+  while (attempts < 50 && existing.some((e) => nodesOverlap(pos, e))) {
     const ring = Math.floor(attempts / 4) + 1;
     const dir = attempts % 4;
     if (dir === 0) pos = { x: desired.x + ring * NODE_W, y: desired.y };
@@ -39,8 +42,8 @@ export function resolveOverlap(
   draggedPos: { x: number; y: number },
   allNodes: Node<NodeData>[],
 ): { x: number; y: number } | null {
-  const others = allNodes.filter(n => n.id !== draggedId).map(n => n.position);
-  const overlapping = others.filter(o => nodesOverlap(draggedPos, o));
+  const others = allNodes.filter((n) => n.id !== draggedId).map((n) => n.position);
+  const overlapping = others.filter((o) => nodesOverlap(draggedPos, o));
   if (overlapping.length === 0) return null;
   return findFreePosition(draggedPos, others);
 }
@@ -48,22 +51,33 @@ export function resolveOverlap(
 // ─── Topological Sort ───────────────────────────────────────────────────────
 
 /** Kahn's topological sort — returns ordered node IDs and per-node levels for parallel grouping. */
-export function topoSort(nodes: Node<NodeData>[], edges: Edge[]): { order: string[]; levels: Map<string, number> } {
+export function topoSort(
+  nodes: Node<NodeData>[],
+  edges: Edge[],
+): { order: string[]; levels: Map<string, number> } {
   const inDeg = new Map<string, number>();
   const adj = new Map<string, string[]>();
-  for (const n of nodes) { inDeg.set(n.id, 0); adj.set(n.id, []); }
+  for (const n of nodes) {
+    inDeg.set(n.id, 0);
+    adj.set(n.id, []);
+  }
   for (const e of edges) {
     adj.get(e.source)?.push(e.target);
     inDeg.set(e.target, (inDeg.get(e.target) || 0) + 1);
   }
   const queue: string[] = [];
   const levels = new Map<string, number>();
-  for (const [id, deg] of inDeg) { if (deg === 0) { queue.push(id); levels.set(id, 0); } }
+  for (const [id, deg] of inDeg) {
+    if (deg === 0) {
+      queue.push(id);
+      levels.set(id, 0);
+    }
+  }
   const order: string[] = [];
   while (queue.length > 0) {
     const id = queue.shift()!;
     order.push(id);
-    for (const next of (adj.get(id) || [])) {
+    for (const next of adj.get(id) || []) {
       const newDeg = (inDeg.get(next) || 1) - 1;
       inDeg.set(next, newDeg);
       levels.set(next, Math.max(levels.get(next) || 0, (levels.get(id) || 0) + 1));
@@ -82,22 +96,26 @@ export function getParallelGroups(order: string[], levels: Map<string, number>):
     const level = levels.get(id) ?? 0;
     groups[level].push(id);
   }
-  return groups.filter(g => g.length > 0);
+  return groups.filter((g) => g.length > 0);
 }
 
 /** Walk backward from a target node to collect all upstream dependencies (including itself). */
-export function getUpstreamSubgraph(targetId: string, nodes: Node<NodeData>[], edges: Edge[]): { nodes: Node<NodeData>[]; edges: Edge[] } {
+export function getUpstreamSubgraph(
+  targetId: string,
+  nodes: Node<NodeData>[],
+  edges: Edge[],
+): { nodes: Node<NodeData>[]; edges: Edge[] } {
   const visited = new Set<string>();
   const queue = [targetId];
   while (queue.length > 0) {
     const id = queue.shift()!;
     if (visited.has(id)) continue;
     visited.add(id);
-    edges.filter(e => e.target === id).forEach(e => queue.push(e.source));
+    edges.filter((e) => e.target === id).forEach((e) => queue.push(e.source));
   }
   return {
-    nodes: nodes.filter(n => visited.has(n.id)),
-    edges: edges.filter(e => visited.has(e.source) && visited.has(e.target)),
+    nodes: nodes.filter((n) => visited.has(n.id)),
+    edges: edges.filter((e) => visited.has(e.source) && visited.has(e.target)),
   };
 }
 
@@ -106,7 +124,12 @@ export function getUpstreamSubgraph(targetId: string, nodes: Node<NodeData>[], e
 export const ANIMATED_LABELS = new Set(['monitors', 'watches', 'validates']);
 
 /** Create a styled edge with proper colors, animation, and label. DRY helper. */
-export function createStyledEdge(sourceId: string, targetId: string, label: string, opts?: { animated?: boolean; dashed?: boolean }): Edge {
+export function createStyledEdge(
+  sourceId: string,
+  targetId: string,
+  label: string,
+  opts?: { animated?: boolean; dashed?: boolean },
+): Edge {
   return {
     id: `e-${sourceId}-${targetId}`,
     source: sourceId,
@@ -126,35 +149,74 @@ export function inferEdgeLabel(srcCat?: string, tgtCat?: string): string {
   if (!srcCat || !tgtCat) return 'connects';
   const key = `${srcCat}->${tgtCat}`;
   const EDGE_INFERENCE: Record<string, string> = {
-    'input->state': 'feeds', 'input->artifact': 'feeds', 'input->cid': 'feeds',
-    'input->note': 'feeds', 'input->output': 'feeds',
-    'state->artifact': 'drives', 'state->review': 'triggers', 'state->output': 'outputs',
-    'state->cid': 'feeds', 'state->state': 'updates',
-    'artifact->review': 'validates', 'artifact->output': 'outputs', 'artifact->artifact': 'refines',
-    'artifact->state': 'updates', 'artifact->cid': 'feeds',
-    'note->artifact': 'drives', 'note->state': 'informs', 'note->cid': 'feeds',
+    'input->state': 'feeds',
+    'input->artifact': 'feeds',
+    'input->cid': 'feeds',
+    'input->note': 'feeds',
+    'input->output': 'feeds',
+    'state->artifact': 'drives',
+    'state->review': 'triggers',
+    'state->output': 'outputs',
+    'state->cid': 'feeds',
+    'state->state': 'updates',
+    'artifact->review': 'validates',
+    'artifact->output': 'outputs',
+    'artifact->artifact': 'refines',
+    'artifact->state': 'updates',
+    'artifact->cid': 'feeds',
+    'note->artifact': 'drives',
+    'note->state': 'informs',
+    'note->cid': 'feeds',
     'note->note': 'refines',
-    'cid->state': 'monitors', 'cid->artifact': 'drives', 'cid->review': 'validates',
-    'cid->output': 'outputs', 'cid->cid': 'feeds',
-    'review->output': 'approves', 'review->state': 'approves', 'review->artifact': 'refines',
+    'cid->state': 'monitors',
+    'cid->artifact': 'drives',
+    'cid->review': 'validates',
+    'cid->output': 'outputs',
+    'cid->cid': 'feeds',
+    'review->output': 'approves',
+    'review->state': 'approves',
+    'review->artifact': 'refines',
     'review->cid': 'triggers',
-    'policy->state': 'blocks', 'policy->artifact': 'blocks', 'policy->review': 'requires',
+    'policy->state': 'blocks',
+    'policy->artifact': 'blocks',
+    'policy->review': 'requires',
     'policy->output': 'blocks',
-    'patch->state': 'updates', 'patch->artifact': 'refines', 'patch->review': 'triggers',
-    'dependency->state': 'requires', 'dependency->artifact': 'requires',
-    'trigger->state': 'triggers', 'trigger->cid': 'triggers', 'trigger->action': 'triggers',
-    'trigger->artifact': 'triggers', 'trigger->input': 'feeds',
-    'test->review': 'validates', 'test->output': 'validates', 'test->state': 'validates',
-    'test->artifact': 'validates', 'test->action': 'validates',
-    'action->state': 'updates', 'action->output': 'outputs', 'action->artifact': 'drives',
-    'action->review': 'triggers', 'action->test': 'triggers', 'action->cid': 'feeds',
-    'output->state': 'informs', 'output->cid': 'triggers',
+    'patch->state': 'updates',
+    'patch->artifact': 'refines',
+    'patch->review': 'triggers',
+    'dependency->state': 'requires',
+    'dependency->artifact': 'requires',
+    'trigger->state': 'triggers',
+    'trigger->cid': 'triggers',
+    'trigger->action': 'triggers',
+    'trigger->artifact': 'triggers',
+    'trigger->input': 'feeds',
+    'test->review': 'validates',
+    'test->output': 'validates',
+    'test->state': 'validates',
+    'test->artifact': 'validates',
+    'test->action': 'validates',
+    'action->state': 'updates',
+    'action->output': 'outputs',
+    'action->artifact': 'drives',
+    'action->review': 'triggers',
+    'action->test': 'triggers',
+    'action->cid': 'feeds',
+    'output->state': 'informs',
+    'output->cid': 'triggers',
     // Simplified categories
-    'input->process': 'feeds', 'input->deliverable': 'feeds',
-    'process->process': 'feeds', 'process->deliverable': 'drives', 'process->review': 'triggers',
-    'deliverable->deliverable': 'refines', 'deliverable->review': 'validates', 'deliverable->process': 'feeds',
-    'review->deliverable': 'refines', 'review->process': 'triggers',
-    'note->process': 'informs', 'note->deliverable': 'drives',
+    'input->process': 'feeds',
+    'input->deliverable': 'feeds',
+    'process->process': 'feeds',
+    'process->deliverable': 'drives',
+    'process->review': 'triggers',
+    'deliverable->deliverable': 'refines',
+    'deliverable->review': 'validates',
+    'deliverable->process': 'feeds',
+    'review->deliverable': 'refines',
+    'review->process': 'triggers',
+    'note->process': 'informs',
+    'note->deliverable': 'drives',
   };
   return EDGE_INFERENCE[key] || 'connects';
 }
@@ -164,9 +226,11 @@ export function inferEdgeLabel(srcCat?: string, tgtCat?: string): string {
 /** Fuzzy find a node by name: exact match → includes → reverse includes */
 export function findNodeByName(name: string, nodes: Node<NodeData>[]): Node<NodeData> | undefined {
   const lower = name.toLowerCase().trim();
-  return nodes.find(n => n.data.label.toLowerCase() === lower) ||
-         nodes.find(n => n.data.label.toLowerCase().includes(lower)) ||
-         nodes.find(n => lower.includes(n.data.label.toLowerCase()));
+  return (
+    nodes.find((n) => n.data.label.toLowerCase() === lower) ||
+    nodes.find((n) => n.data.label.toLowerCase().includes(lower)) ||
+    nodes.find((n) => lower.includes(n.data.label.toLowerCase()))
+  );
 }
 
 // ─── Graph Validation ──────────────────────────────────────────────────────
@@ -178,7 +242,7 @@ export function detectCycle(
   options?: { excludeLabels?: string[] },
 ): { hasCycle: boolean; cycleNodes: string[] } {
   const excludeLabels = new Set(options?.excludeLabels || ['refines']);
-  const filteredEdges = edges.filter(e => !excludeLabels.has(e.label || ''));
+  const filteredEdges = edges.filter((e) => !excludeLabels.has(e.label || ''));
 
   const adj = new Map<string, string[]>();
   for (const n of nodes) adj.set(n.id, []);
@@ -191,9 +255,12 @@ export function detectCycle(
   function dfs(nodeId: string): boolean {
     visited.add(nodeId);
     recStack.add(nodeId);
-    for (const neighbor of (adj.get(nodeId) || [])) {
+    for (const neighbor of adj.get(nodeId) || []) {
       if (!visited.has(neighbor)) {
-        if (dfs(neighbor)) { cycleNodes.push(nodeId); return true; }
+        if (dfs(neighbor)) {
+          cycleNodes.push(nodeId);
+          return true;
+        }
       } else if (recStack.has(neighbor)) {
         cycleNodes.push(neighbor, nodeId);
         return true;
@@ -222,11 +289,15 @@ export function validateGraphInvariants(
   edges: Array<{ source: string; target: string; label?: string }>,
 ): GraphValidationResult {
   const issues: GraphValidationResult['issues'] = [];
-  const nodeIds = new Set(nodes.map(n => n.id));
+  const nodeIds = new Set(nodes.map((n) => n.id));
 
   for (const e of edges) {
     if (e.source === e.target) {
-      issues.push({ code: 'self-loop', message: `Edge loops back to itself on node "${e.source}"`, severity: 'error' });
+      issues.push({
+        code: 'self-loop',
+        message: `Edge loops back to itself on node "${e.source}"`,
+        severity: 'error',
+      });
     }
   }
 
@@ -234,17 +305,31 @@ export function validateGraphInvariants(
   for (const e of edges) {
     const key = `${e.source}→${e.target}`;
     if (edgeKeys.has(key)) {
-      issues.push({ code: 'duplicate-edge', message: `Duplicate edge: ${key}`, severity: 'warning' });
+      issues.push({
+        code: 'duplicate-edge',
+        message: `Duplicate edge: ${key}`,
+        severity: 'warning',
+      });
     }
     edgeKeys.add(key);
   }
 
   for (const e of edges) {
-    if (!nodeIds.has(e.source)) issues.push({ code: 'dangling-source', message: `Edge source "${e.source}" not found`, severity: 'error' });
-    if (!nodeIds.has(e.target)) issues.push({ code: 'dangling-target', message: `Edge target "${e.target}" not found`, severity: 'error' });
+    if (!nodeIds.has(e.source))
+      issues.push({
+        code: 'dangling-source',
+        message: `Edge source "${e.source}" not found`,
+        severity: 'error',
+      });
+    if (!nodeIds.has(e.target))
+      issues.push({
+        code: 'dangling-target',
+        message: `Edge target "${e.target}" not found`,
+        severity: 'error',
+      });
   }
 
-  return { valid: issues.filter(i => i.severity === 'error').length === 0, issues };
+  return { valid: issues.filter((i) => i.severity === 'error').length === 0, issues };
 }
 
 // ─── Node Utilities ─────────────────────────────────────────────────────────
@@ -272,7 +357,9 @@ export const CATEGORY_LABELS: Record<NodeCategory, string> = {
 /** Convert markdown text to basic HTML for PDF/HTML export */
 export function markdownToHTML(md: string): string {
   return md
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
     .replace(/^### (.+)$/gm, '<h3>$1</h3>')
     .replace(/^## (.+)$/gm, '<h2>$1</h2>')
     .replace(/^# (.+)$/gm, '<h1>$1</h1>')
@@ -285,10 +372,14 @@ export function markdownToHTML(md: string): string {
     .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
     .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
     .replace(/\n\n/g, '</p><p>')
-    .replace(/^/, '<p>').replace(/$/, '</p>')
-    .replace(/<p><h([123])>/g, '<h$1>').replace(/<\/h([123])><\/p>/g, '</h$1>')
-    .replace(/<p><ul>/g, '<ul>').replace(/<\/ul><\/p>/g, '</ul>')
+    .replace(/^/, '<p>')
+    .replace(/$/, '</p>')
+    .replace(/<p><h([123])>/g, '<h$1>')
+    .replace(/<\/h([123])><\/p>/g, '</h$1>')
+    .replace(/<p><ul>/g, '<ul>')
+    .replace(/<\/ul><\/p>/g, '</ul>')
     .replace(/<p><hr><\/p>/g, '<hr>')
-    .replace(/<p><blockquote>/g, '<blockquote>').replace(/<\/blockquote><\/p>/g, '</blockquote>')
+    .replace(/<p><blockquote>/g, '<blockquote>')
+    .replace(/<\/blockquote><\/p>/g, '</blockquote>')
     .replace(/<p>\s*<\/p>/g, '');
 }

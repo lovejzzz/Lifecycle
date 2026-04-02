@@ -18,7 +18,7 @@
  */
 export function getDecisionSystemPrompt(options: string[]): string {
   const optionsList = options.map((o, i) => `  ${i + 1}. ${o}`).join('\n');
-  const optionNames = options.map(o => `"${o}"`).join(', ');
+  const optionNames = options.map((o) => `"${o}"`).join(', ');
   const multiWay = options.length > 2;
 
   const formatBlock = [
@@ -26,7 +26,9 @@ export function getDecisionSystemPrompt(options: string[]): string {
     'CONFIDENCE: <0.0–1.0>',
     'REASONING: <one concise sentence explaining why>',
     multiWay ? 'ALTERNATIVES: <comma-separated list of other viable options, or "none">' : null,
-  ].filter(Boolean).join('\n');
+  ]
+    .filter(Boolean)
+    .join('\n');
 
   return `You are a decision-making agent. Analyze the input carefully and choose the BEST option from the available choices.
 
@@ -73,7 +75,10 @@ export function parseDecisionOutput(output: string): DecisionParseResult {
   const decisionMatch = text.match(/^DECISION:\s*(.+)/im);
   const rawDecision = decisionMatch
     ? decisionMatch[1].replace(/\s*\(confidence[^)]*\)/i, '').trim()
-    : text.split('\n')[0].replace(/^(?:DECISION|CHOICE|ROUTE|PATH):\s*/i, '').trim();
+    : text
+        .split('\n')[0]
+        .replace(/^(?:DECISION|CHOICE|ROUTE|PATH):\s*/i, '')
+        .trim();
   const decision = rawDecision;
 
   // ── CONFIDENCE ──
@@ -84,7 +89,7 @@ export function parseDecisionOutput(output: string): DecisionParseResult {
     const isPercent = confMatch[2] === '%';
     // Treat as percentage if: explicit % sign OR bare integer > 2 (e.g. "87" without %)
     // Treat as decimal if: value is 0–2 without % (handles 1.5 → clamp to 1.0)
-    const normalized = (isPercent || (raw > 2 && !isPercent)) ? raw / 100 : raw;
+    const normalized = isPercent || (raw > 2 && !isPercent) ? raw / 100 : raw;
     confidence = Math.max(0, Math.min(1, normalized));
   }
 
@@ -103,8 +108,8 @@ export function parseDecisionOutput(output: string): DecisionParseResult {
     if (raw.toLowerCase() !== 'none' && raw.length > 0) {
       alternatives = raw
         .split(/,\s*/)
-        .map(s => s.trim())
-        .filter(s => s.length > 0 && s.toLowerCase() !== 'none');
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0 && s.toLowerCase() !== 'none');
     }
   }
 
@@ -135,9 +140,9 @@ export function decisionMatchesCondition(decision: string, conditionValue: strin
   if (d.includes(v) || v.includes(d)) return true;
 
   // 3. Word-overlap (any significant word from condition appears in decision)
-  const dWords = new Set(d.split(/[\s\-_,./]+/).filter(w => w.length > 2));
-  const vWords = v.split(/[\s\-_,./]+/).filter(w => w.length > 2);
-  if (vWords.length > 0 && vWords.some(w => dWords.has(w))) return true;
+  const dWords = new Set(d.split(/[\s\-_,./]+/).filter((w) => w.length > 2));
+  const vWords = v.split(/[\s\-_,./]+/).filter((w) => w.length > 2);
+  if (vWords.length > 0 && vWords.some((w) => dWords.has(w))) return true;
 
   return false;
 }
@@ -150,10 +155,10 @@ export function decisionMatchesCondition(decision: string, conditionValue: strin
  */
 export function findBestMatchingOption(decision: string, options: string[]): string | null {
   // Prefer exact match first
-  const exact = options.find(o => o.toLowerCase().trim() === decision.toLowerCase().trim());
+  const exact = options.find((o) => o.toLowerCase().trim() === decision.toLowerCase().trim());
   if (exact) return exact;
 
   // Then substring/word-overlap
-  const fuzzy = options.find(o => decisionMatchesCondition(decision, o));
+  const fuzzy = options.find((o) => decisionMatchesCondition(decision, o));
   return fuzzy || null;
 }

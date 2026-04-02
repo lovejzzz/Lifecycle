@@ -3,18 +3,37 @@
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Copy, Trash2, Lock, Unlock, RefreshCw, CheckCircle2,
-  AlertTriangle, Eye, Bot, FileText,
+  Copy,
+  Trash2,
+  Lock,
+  Unlock,
+  RefreshCw,
+  CheckCircle2,
+  AlertTriangle,
+  Eye,
+  Bot,
+  FileText,
 } from 'lucide-react';
 import { useLifecycleStore } from '@/store/useStore';
 
-function ContextMenuContent({ contextMenu, closeContextMenu }: {
+function ContextMenuContent({
+  contextMenu,
+  closeContextMenu,
+}: {
   contextMenu: { nodeId: string; x: number; y: number };
   closeContextMenu: () => void;
 }) {
   const {
-    nodes, deleteNode, lockNode, approveNode, updateNodeStatus, duplicateNode, addEvent,
-    askCIDAboutNode, generateNodeContent, executeNode,
+    nodes,
+    deleteNode,
+    lockNode,
+    approveNode,
+    updateNodeStatus,
+    duplicateNode,
+    addEvent,
+    askCIDAboutNode,
+    generateNodeContent,
+    executeNode,
   } = useLifecycleStore();
   const ref = useRef<HTMLDivElement>(null);
 
@@ -33,25 +52,40 @@ function ContextMenuContent({ contextMenu, closeContextMenu }: {
 
   const { data } = node;
 
-  const items: { label: string; icon: React.ElementType; action: () => void; color?: string; show: boolean }[] = [
+  const items: {
+    label: string;
+    icon: React.ElementType;
+    action: () => void;
+    color?: string;
+    show: boolean;
+  }[] = [
     {
       label: 'Ask CID',
       icon: Bot,
-      action: () => { askCIDAboutNode(node.id); closeContextMenu(); },
+      action: () => {
+        askCIDAboutNode(node.id);
+        closeContextMenu();
+      },
       color: '#10b981',
       show: true,
     },
     {
       label: 'Generate Content',
       icon: FileText,
-      action: () => { generateNodeContent(node.id); closeContextMenu(); },
+      action: () => {
+        generateNodeContent(node.id);
+        closeContextMenu();
+      },
       color: '#06b6d4',
       show: !data.content || data.content.length < 50,
     },
     {
       label: 'Duplicate',
       icon: Copy,
-      action: () => { duplicateNode(node.id); closeContextMenu(); },
+      action: () => {
+        duplicateNode(node.id);
+        closeContextMenu();
+      },
       show: true,
     },
     {
@@ -67,7 +101,10 @@ function ContextMenuContent({ contextMenu, closeContextMenu }: {
     {
       label: 'Approve',
       icon: CheckCircle2,
-      action: () => { approveNode(node.id); closeContextMenu(); },
+      action: () => {
+        approveNode(node.id);
+        closeContextMenu();
+      },
       color: '#10b981',
       show: data.status === 'reviewing',
     },
@@ -76,7 +113,13 @@ function ContextMenuContent({ contextMenu, closeContextMenu }: {
       icon: AlertTriangle,
       action: () => {
         updateNodeStatus(node.id, 'stale');
-        addEvent({ id: `ev-${Date.now()}`, type: 'stale', message: `${data.label} marked stale`, timestamp: Date.now(), nodeId: node.id });
+        addEvent({
+          id: `ev-${Date.now()}`,
+          type: 'stale',
+          message: `${data.label} marked stale`,
+          timestamp: Date.now(),
+          nodeId: node.id,
+        });
         closeContextMenu();
       },
       color: '#f59e0b',
@@ -95,19 +138,28 @@ function ContextMenuContent({ contextMenu, closeContextMenu }: {
     {
       label: 'Lock',
       icon: Lock,
-      action: () => { lockNode(node.id); closeContextMenu(); },
+      action: () => {
+        lockNode(node.id);
+        closeContextMenu();
+      },
       show: !data.locked && data.status !== 'generating',
     },
     {
       label: 'Unlock',
       icon: Unlock,
-      action: () => { updateNodeStatus(node.id, 'active'); closeContextMenu(); },
+      action: () => {
+        updateNodeStatus(node.id, 'active');
+        closeContextMenu();
+      },
       show: !!data.locked,
     },
     {
       label: 'Delete',
       icon: Trash2,
-      action: () => { deleteNode(node.id); closeContextMenu(); },
+      action: () => {
+        deleteNode(node.id);
+        closeContextMenu();
+      },
       color: '#f43f5e',
       show: true,
     },
@@ -122,18 +174,18 @@ function ContextMenuContent({ contextMenu, closeContextMenu }: {
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.92, transition: { duration: 0.1 } }}
       transition={{ duration: 0.12 }}
-      className="fixed z-50 min-w-[160px] rounded-xl border border-white/[0.08] bg-[#0e0e18]/95 backdrop-blur-xl overflow-hidden shadow-2xl"
+      className="fixed z-50 min-w-[160px] overflow-hidden rounded-xl border border-white/[0.08] bg-[#0e0e18]/95 shadow-2xl backdrop-blur-xl"
       style={{ left: contextMenu.x, top: contextMenu.y }}
     >
-      <div className="px-3 py-1.5 border-b border-white/[0.05]">
-        <span className="text-[10px] text-white/30 uppercase tracking-wider">{data.label}</span>
+      <div className="border-b border-white/[0.05] px-3 py-1.5">
+        <span className="text-[10px] tracking-wider text-white/30 uppercase">{data.label}</span>
       </div>
       <div className="py-1">
         {visible.map((item) => (
           <button
             key={item.label}
             onClick={item.action}
-            className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[11px] text-white/60 hover:text-white/90 hover:bg-white/[0.05] transition-colors"
+            className="flex w-full items-center gap-2.5 px-3 py-1.5 text-[11px] text-white/60 transition-colors hover:bg-white/[0.05] hover:text-white/90"
           >
             <item.icon size={12} style={item.color ? { color: item.color } : undefined} />
             <span>{item.label}</span>

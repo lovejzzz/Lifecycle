@@ -3,7 +3,12 @@ import { analyzeGraphForOptimization, formatOptimizations, levenshtein } from '.
 import type { Node, Edge } from '@xyflow/react';
 import type { NodeData } from '../types';
 
-function makeNode(id: string, label: string, category: string, overrides?: Partial<NodeData>): Node<NodeData> {
+function makeNode(
+  id: string,
+  label: string,
+  category: string,
+  overrides?: Partial<NodeData>,
+): Node<NodeData> {
   return {
     id,
     type: 'lifecycleNode',
@@ -52,28 +57,25 @@ describe('analyzeGraphForOptimization', () => {
     ];
     const edges = [makeEdge('1', '3'), makeEdge('2', '3')];
     const opts = analyzeGraphForOptimization(nodes, edges);
-    expect(opts.some(o => o.type === 'duplicate-nodes')).toBe(true);
-    const dup = opts.find(o => o.type === 'duplicate-nodes')!;
+    expect(opts.some((o) => o.type === 'duplicate-nodes')).toBe(true);
+    const dup = opts.find((o) => o.type === 'duplicate-nodes')!;
     expect(dup.mergeTargets).toBeDefined();
   });
 
   it('does not flag input/output as duplicates', () => {
-    const nodes = [
-      makeNode('1', 'Input', 'input'),
-      makeNode('2', 'Input', 'input'),
-    ];
+    const nodes = [makeNode('1', 'Input', 'input'), makeNode('2', 'Input', 'input')];
     const edges = [makeEdge('1', '2')];
     const opts = analyzeGraphForOptimization(nodes, edges);
-    expect(opts.some(o => o.type === 'duplicate-nodes')).toBe(false);
+    expect(opts.some((o) => o.type === 'duplicate-nodes')).toBe(false);
   });
 
   it('detects overloaded fan-out', () => {
     const hub = makeNode('hub', 'Hub', 'cid');
     const targets = Array.from({ length: 5 }, (_, i) => makeNode(`t${i}`, `Target ${i}`, 'action'));
     const nodes = [hub, ...targets];
-    const edges = targets.map(t => makeEdge('hub', t.id));
+    const edges = targets.map((t) => makeEdge('hub', t.id));
     const opts = analyzeGraphForOptimization(nodes, edges);
-    expect(opts.some(o => o.type === 'overloaded-fanout')).toBe(true);
+    expect(opts.some((o) => o.type === 'overloaded-fanout')).toBe(true);
   });
 
   it('detects orphan chains', () => {
@@ -85,7 +87,7 @@ describe('analyzeGraphForOptimization', () => {
     ];
     const edges = [makeEdge('1', '2'), makeEdge('3', '4')]; // Two disconnected components
     const opts = analyzeGraphForOptimization(nodes, edges);
-    expect(opts.some(o => o.type === 'orphan-chain')).toBe(true);
+    expect(opts.some((o) => o.type === 'orphan-chain')).toBe(true);
   });
 
   it('detects missing feedback loop', () => {
@@ -98,7 +100,7 @@ describe('analyzeGraphForOptimization', () => {
     const edges = [makeEdge('1', '2'), makeEdge('2', '3')]; // policy not connected
     const opts = analyzeGraphForOptimization(nodes, edges);
     // Policy is not connected at all, so it can't be upstream of output
-    expect(opts.some(o => o.type === 'missing-feedback')).toBe(true);
+    expect(opts.some((o) => o.type === 'missing-feedback')).toBe(true);
   });
 
   it('no missing-feedback when review is upstream of output', () => {
@@ -109,7 +111,7 @@ describe('analyzeGraphForOptimization', () => {
     ];
     const edges = [makeEdge('1', '2'), makeEdge('2', '3')];
     const opts = analyzeGraphForOptimization(nodes, edges);
-    expect(opts.some(o => o.type === 'missing-feedback')).toBe(false);
+    expect(opts.some((o) => o.type === 'missing-feedback')).toBe(false);
   });
 
   it('detects redundant edges', () => {
@@ -121,7 +123,7 @@ describe('analyzeGraphForOptimization', () => {
     // A→B, B→C, and A→C (redundant since A→B→C exists)
     const edges = [makeEdge('1', '2'), makeEdge('2', '3'), makeEdge('1', '3')];
     const opts = analyzeGraphForOptimization(nodes, edges);
-    expect(opts.some(o => o.type === 'redundant-edge')).toBe(true);
+    expect(opts.some((o) => o.type === 'redundant-edge')).toBe(true);
   });
 });
 
@@ -131,14 +133,16 @@ describe('formatOptimizations', () => {
   });
 
   it('formats optimizations with chips', () => {
-    const opts = [{
-      id: 'dup-1-2',
-      type: 'duplicate-nodes' as const,
-      description: 'Two similar nodes',
-      proposedAction: 'Merge them',
-      affectedNodeIds: ['1', '2'],
-      mergeTargets: ['1', '2'] as [string, string],
-    }];
+    const opts = [
+      {
+        id: 'dup-1-2',
+        type: 'duplicate-nodes' as const,
+        description: 'Two similar nodes',
+        proposedAction: 'Merge them',
+        affectedNodeIds: ['1', '2'],
+        mergeTargets: ['1', '2'] as [string, string],
+      },
+    ];
     const result = formatOptimizations(opts);
     expect(result).not.toBeNull();
     expect(result!.content).toContain('Optimization Proposals');

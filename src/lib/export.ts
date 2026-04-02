@@ -12,18 +12,22 @@ export type ExportFormat = 'md' | 'html' | 'txt';
  */
 export function stripMarkdown(md: string): string {
   return md
-    .replace(/^#{1,6}\s+/gm, '')         // headers
-    .replace(/\*\*(.+?)\*\*/g, '$1')     // bold
-    .replace(/\*(.+?)\*/g, '$1')         // italic
-    .replace(/`([^`]+)`/g, '$1')         // inline code
-    .replace(/```[\s\S]*?```/g, (m) =>   // code blocks — keep content
-      m.replace(/```\w*\n?/g, '').replace(/```/g, ''))
-    .replace(/^[-*]\s+/gm, '• ')         // bullets
-    .replace(/^\d+\.\s+/gm, (m) => m)    // numbered lists (keep as-is)
-    .replace(/^>\s+/gm, '')              // blockquotes
+    .replace(/^#{1,6}\s+/gm, '') // headers
+    .replace(/\*\*(.+?)\*\*/g, '$1') // bold
+    .replace(/\*(.+?)\*/g, '$1') // italic
+    .replace(/`([^`]+)`/g, '$1') // inline code
+    .replace(
+      /```[\s\S]*?```/g,
+      (
+        m, // code blocks — keep content
+      ) => m.replace(/```\w*\n?/g, '').replace(/```/g, ''),
+    )
+    .replace(/^[-*]\s+/gm, '• ') // bullets
+    .replace(/^\d+\.\s+/gm, (m) => m) // numbered lists (keep as-is)
+    .replace(/^>\s+/gm, '') // blockquotes
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // links
-    .replace(/^---$/gm, '')              // horizontal rules
-    .replace(/\n{3,}/g, '\n\n')          // collapse extra newlines
+    .replace(/^---$/gm, '') // horizontal rules
+    .replace(/\n{3,}/g, '\n\n') // collapse extra newlines
     .trim();
 }
 
@@ -79,11 +83,7 @@ export function slugify(text: string): string {
 /**
  * Export content and trigger download in one call.
  */
-export function exportAndDownload(
-  content: string,
-  format: ExportFormat,
-  label: string,
-): void {
+export function exportAndDownload(content: string, format: ExportFormat, label: string): void {
   const blob = exportContent(content, format, label);
   const date = new Date().toISOString().slice(0, 10);
   downloadBlob(blob, `${slugify(label)}-${date}.${format}`);

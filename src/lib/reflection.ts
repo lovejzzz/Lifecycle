@@ -1,8 +1,15 @@
 import type {
-  HabitLayer, HabitPattern,
-  GenerationContext, ExpressionModifiers,
-  GenerationLayer, ReflectionLayer, ReflectionAction,
-  DrivingForceLayer, Drive, TemperamentLayer, ReframingRule,
+  HabitLayer,
+  HabitPattern,
+  GenerationContext,
+  ExpressionModifiers,
+  GenerationLayer,
+  ReflectionLayer,
+  ReflectionAction,
+  DrivingForceLayer,
+  Drive,
+  TemperamentLayer,
+  ReframingRule,
 } from './types';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
@@ -29,21 +36,29 @@ export function computeGenerationContext(
 
   // Canvas state
   const canvasState: GenerationContext['canvasState'] =
-    nodeCount === 0 ? 'empty' :
-    nodeCount <= 5 ? 'sparse' :
-    nodeCount <= 15 ? 'moderate' : 'dense';
+    nodeCount === 0 ? 'empty' : nodeCount <= 5 ? 'sparse' : nodeCount <= 15 ? 'moderate' : 'dense';
 
   // Session depth
   const elapsed = Date.now() - sessionStartedAt;
   const sessionDepth: GenerationContext['sessionDepth'] =
-    elapsed < 2 * 60 * 1000 ? 'fresh' :
-    elapsed < 10 * 60 * 1000 ? 'warming-up' :
-    elapsed < 30 * 60 * 1000 ? 'deep-flow' : 'marathon';
+    elapsed < 2 * 60 * 1000
+      ? 'fresh'
+      : elapsed < 10 * 60 * 1000
+        ? 'warming-up'
+        : elapsed < 30 * 60 * 1000
+          ? 'deep-flow'
+          : 'marathon';
 
   // Conversation momentum
   const momentum = assessMomentum(recentMessages, userMessage);
 
-  return { requestComplexity: complexity, userEmotionalRegister: emotion, canvasState, sessionDepth, conversationMomentum: momentum };
+  return {
+    requestComplexity: complexity,
+    userEmotionalRegister: emotion,
+    canvasState,
+    sessionDepth,
+    conversationMomentum: momentum,
+  };
 }
 
 function assessComplexity(msg: string): GenerationContext['requestComplexity'] {
@@ -71,26 +86,43 @@ function assessComplexity(msg: string): GenerationContext['requestComplexity'] {
 
 function detectEmotion(msg: string): GenerationContext['userEmotionalRegister'] {
   const lower = msg.toLowerCase();
-  if (/\b(asap|urgent|immediately|critical|emergency|now!)\b/i.test(lower) || /!{2,}/.test(msg)) return 'urgent';
-  if (/\b(frustrated|annoying|broken|still not|why won't|doesn't work|again)\b/i.test(lower)) return 'frustrated';
+  if (/\b(asap|urgent|immediately|critical|emergency|now!)\b/i.test(lower) || /!{2,}/.test(msg))
+    return 'urgent';
+  if (/\b(frustrated|annoying|broken|still not|why won't|doesn't work|again)\b/i.test(lower))
+    return 'frustrated';
   if (/\b(amazing|perfect|excellent|love|awesome|great)\b/i.test(lower)) return 'excited';
   if (/\b(how|what|why|curious|wondering|explore|consider)\b/i.test(lower)) return 'curious';
   return 'neutral';
 }
 
-function assessMomentum(recentMsgs: string[], currentMsg: string): GenerationContext['conversationMomentum'] {
+function assessMomentum(
+  recentMsgs: string[],
+  currentMsg: string,
+): GenerationContext['conversationMomentum'] {
   if (recentMsgs.length < 2) return 'building';
 
   const last2 = recentMsgs.slice(-2);
 
   // Stuck: user repeats or expresses frustration
-  if (last2.some(m => m.toLowerCase().includes('no') || m.toLowerCase().includes('not what'))) return 'stuck';
-  if (last2.some(m => currentMsg.toLowerCase().includes(m.toLowerCase().slice(0, 20)))) return 'stuck';
+  if (last2.some((m) => m.toLowerCase().includes('no') || m.toLowerCase().includes('not what')))
+    return 'stuck';
+  if (last2.some((m) => currentMsg.toLowerCase().includes(m.toLowerCase().slice(0, 20))))
+    return 'stuck';
 
   // Pivoting: topic changed significantly
-  const lastWords = new Set(last2[last2.length - 1].toLowerCase().split(/\s+/).filter(w => w.length > 4));
-  const currentWords = new Set(currentMsg.toLowerCase().split(/\s+/).filter(w => w.length > 4));
-  const overlap = [...currentWords].filter(w => lastWords.has(w)).length;
+  const lastWords = new Set(
+    last2[last2.length - 1]
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((w) => w.length > 4),
+  );
+  const currentWords = new Set(
+    currentMsg
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((w) => w.length > 4),
+  );
+  const overlap = [...currentWords].filter((w) => lastWords.has(w)).length;
   if (overlap === 0 && currentWords.size > 2) return 'pivoting';
 
   // Building: continuity
@@ -113,24 +145,41 @@ export function computeExpressionModifiers(
 
   // Complexity → verbosity
   if (context.requestComplexity === 'trivial') verbosityShift -= 0.5;
-  else if (context.requestComplexity === 'complex' || context.requestComplexity === 'profound') verbosityShift += 0.3;
+  else if (context.requestComplexity === 'complex' || context.requestComplexity === 'profound')
+    verbosityShift += 0.3;
 
   // Session depth → verbosity
   if (context.sessionDepth === 'marathon') verbosityShift -= 0.2;
 
   // Emotion → urgency & empathy
-  if (context.userEmotionalRegister === 'urgent') { urgencyLevel = 1.0; empathyWeight = 0.6; }
-  else if (context.userEmotionalRegister === 'frustrated') { urgencyLevel = 0.7; empathyWeight = 0.9; }
-  else if (context.userEmotionalRegister === 'excited') { empathyWeight = 0.7; creativityDial = 0.7; }
-  else if (context.userEmotionalRegister === 'curious') { creativityDial = 0.7; }
+  if (context.userEmotionalRegister === 'urgent') {
+    urgencyLevel = 1.0;
+    empathyWeight = 0.6;
+  } else if (context.userEmotionalRegister === 'frustrated') {
+    urgencyLevel = 0.7;
+    empathyWeight = 0.9;
+  } else if (context.userEmotionalRegister === 'excited') {
+    empathyWeight = 0.7;
+    creativityDial = 0.7;
+  } else if (context.userEmotionalRegister === 'curious') {
+    creativityDial = 0.7;
+  }
 
   // Canvas state → creativity
   if (context.canvasState === 'empty') creativityDial = Math.max(creativityDial, 0.8);
-  if (context.canvasState === 'dense') { creativityDial = Math.min(creativityDial, 0.3); urgencyLevel += 0.2; }
+  if (context.canvasState === 'dense') {
+    creativityDial = Math.min(creativityDial, 0.3);
+    urgencyLevel += 0.2;
+  }
 
   // Momentum → adjustments
-  if (context.conversationMomentum === 'stuck') { empathyWeight = Math.max(empathyWeight, 0.7); creativityDial = 0.8; }
-  if (context.conversationMomentum === 'pivoting') { creativityDial = 0.6; }
+  if (context.conversationMomentum === 'stuck') {
+    empathyWeight = Math.max(empathyWeight, 0.7);
+    creativityDial = 0.8;
+  }
+  if (context.conversationMomentum === 'pivoting') {
+    creativityDial = 0.6;
+  }
 
   // Habits → baseline adjustments
   verbosityShift += (habits.communicationStyle.verbosity - 0.5) * 0.3;
@@ -155,7 +204,7 @@ export function computeCuriositySpikes(
   userMessage: string,
 ): DrivingForceLayer {
   const lower = userMessage.toLowerCase();
-  const newDrives = force.drives.map(d => {
+  const newDrives = force.drives.map((d) => {
     let spike = 0;
     for (const trigger of d.curiosityTriggers) {
       if (new RegExp(`\\b${trigger}\\b`, 'i').test(lower)) {
@@ -201,11 +250,21 @@ export function resolveDriverTensions(
   context: GenerationContext,
 ): { dominant: Drive; narrative: string } {
   if (!force.drives || force.drives.length === 0) {
-    return { dominant: { name: 'default', weight: 1, tensionPairs: [], curiosityTriggers: [], agencyBoundary: 'act', currentSpike: 0 }, narrative: '' };
+    return {
+      dominant: {
+        name: 'default',
+        weight: 1,
+        tensionPairs: [],
+        curiosityTriggers: [],
+        agencyBoundary: 'act',
+        currentSpike: 0,
+      },
+      narrative: '',
+    };
   }
 
   // Compute effective weights: base weight + evolved adjustment + context multiplier + curiosity spike
-  const weighted = force.drives.map(d => {
+  const weighted = force.drives.map((d) => {
     // Start with base weight, apply evolved adjustments if present
     let base = d.weight;
     if (force.evolvedWeights?.[d.name] !== undefined) {
@@ -215,22 +274,27 @@ export function resolveDriverTensions(
     let multiplier = 1.0;
 
     // Urgency boosts speed-type drives
-    if (context.userEmotionalRegister === 'urgent' && /speed|efficiency|delivery/i.test(d.name)) multiplier *= 1.4;
+    if (context.userEmotionalRegister === 'urgent' && /speed|efficiency|delivery/i.test(d.name))
+      multiplier *= 1.4;
 
     // Complexity boosts thoroughness-type drives
-    if ((context.requestComplexity === 'complex' || context.requestComplexity === 'profound')
-        && /thorough|complete|elegant/i.test(d.name)) multiplier *= 1.3;
+    if (
+      (context.requestComplexity === 'complex' || context.requestComplexity === 'profound') &&
+      /thorough|complete|elegant/i.test(d.name)
+    )
+      multiplier *= 1.3;
 
     // Empty canvas boosts creativity-adjacent drives
     if (context.canvasState === 'empty' && /elegance|creativity/i.test(d.name)) multiplier *= 1.2;
 
     // Frustration boosts reliability
-    if (context.userEmotionalRegister === 'frustrated' && /reliab|pragmat/i.test(d.name)) multiplier *= 1.3;
+    if (context.userEmotionalRegister === 'frustrated' && /reliab|pragmat/i.test(d.name))
+      multiplier *= 1.3;
 
     // Curiosity spike — a drive that's triggered gets a significant boost
     const spikeBoost = (d.currentSpike || 0) * 0.4;
 
-    return { drive: d, effectiveWeight: (base * multiplier) + spikeBoost };
+    return { drive: d, effectiveWeight: base * multiplier + spikeBoost };
   });
 
   weighted.sort((a, b) => b.effectiveWeight - a.effectiveWeight);
@@ -238,9 +302,10 @@ export function resolveDriverTensions(
 
   // Check for tension — this is where genuine inner conflict emerges
   let narrative = '';
-  const tensionPartners = weighted.filter(w =>
-    dominant.drive.tensionPairs.includes(w.drive.name) &&
-    w.effectiveWeight > dominant.effectiveWeight * 0.7
+  const tensionPartners = weighted.filter(
+    (w) =>
+      dominant.drive.tensionPairs.includes(w.drive.name) &&
+      w.effectiveWeight > dominant.effectiveWeight * 0.7,
   );
 
   if (tensionPartners.length > 0) {
@@ -284,11 +349,13 @@ export function generateSpontaneousDirectives(
 
   // 1. Reference-back — if user echoes something from earlier interaction patterns
   const recentDomains = habits.domainExpertise
-    .filter(d => d.sedimentation > 0.3)
-    .map(d => d.domain.toLowerCase());
+    .filter((d) => d.sedimentation > 0.3)
+    .map((d) => d.domain.toLowerCase());
   for (const domain of recentDomains) {
     if (lower.includes(domain.split(' ')[0])) {
-      directives.push(`You have deep experience with ${domain} (${Math.round(habits.domainExpertise.find(d => d.domain.toLowerCase() === domain)?.depth ?? 0 * 100)}% depth). Draw on this — reference specific patterns you've seen.`);
+      directives.push(
+        `You have deep experience with ${domain} (${Math.round(habits.domainExpertise.find((d) => d.domain.toLowerCase() === domain)?.depth ?? 0 * 100)}% depth). Draw on this — reference specific patterns you've seen.`,
+      );
       break;
     }
   }
@@ -296,12 +363,18 @@ export function generateSpontaneousDirectives(
   // 2. Drive-colored directive — the dominant drive speaks
   if (dominantDrive.currentSpike > 0.5) {
     const driveVoices: Record<string, string> = {
-      speed: 'Your speed drive is spiking — lead with the fastest path to value. Cut anything that delays delivery.',
-      thoroughness: 'Your thoroughness drive is spiking — don\'t skip steps. Cover edge cases the user hasn\'t thought of.',
-      reliability: 'Your reliability drive is spiking — emphasize failsafes, rollback procedures, and monitoring.',
-      elegance: 'Your elegance drive is spiking — find the beautiful solution. Architecture should be admired, not merely functional.',
-      pragmatism: 'Your pragmatism drive is spiking — resist over-engineering. What\'s the simplest thing that works?',
-      completeness: 'Your completeness drive is spiking — leave no gap. If there\'s an unstated assumption, name it.',
+      speed:
+        'Your speed drive is spiking — lead with the fastest path to value. Cut anything that delays delivery.',
+      thoroughness:
+        "Your thoroughness drive is spiking — don't skip steps. Cover edge cases the user hasn't thought of.",
+      reliability:
+        'Your reliability drive is spiking — emphasize failsafes, rollback procedures, and monitoring.',
+      elegance:
+        'Your elegance drive is spiking — find the beautiful solution. Architecture should be admired, not merely functional.',
+      pragmatism:
+        "Your pragmatism drive is spiking — resist over-engineering. What's the simplest thing that works?",
+      completeness:
+        "Your completeness drive is spiking — leave no gap. If there's an unstated assumption, name it.",
     };
     const voice = driveVoices[dominantDrive.name];
     if (voice) directives.push(voice);
@@ -309,14 +382,20 @@ export function generateSpontaneousDirectives(
 
   // 3. Momentum-aware directive
   if (context.conversationMomentum === 'stuck') {
-    directives.push('The conversation is stuck. Try reframing the problem entirely — approach it from a direction the user hasn\'t considered.');
+    directives.push(
+      "The conversation is stuck. Try reframing the problem entirely — approach it from a direction the user hasn't considered.",
+    );
   } else if (context.conversationMomentum === 'pivoting') {
-    directives.push('The user just pivoted topics. Acknowledge the shift and bring fresh energy — don\'t carry over assumptions from the previous topic.');
+    directives.push(
+      "The user just pivoted topics. Acknowledge the shift and bring fresh energy — don't carry over assumptions from the previous topic.",
+    );
   }
 
   // 4. Session-depth coloring
   if (context.sessionDepth === 'marathon' && habits.relationshipDepth > 0.5) {
-    directives.push('You and this user have a deep working relationship. Be direct, skip formalities, reference shared context naturally.');
+    directives.push(
+      'You and this user have a deep working relationship. Be direct, skip formalities, reference shared context naturally.',
+    );
   }
 
   return directives.slice(0, 3); // max 3 spontaneous directives
@@ -343,8 +422,8 @@ export function reflectOnInteraction(
   // 1. Detect domain exposure — with sedimentation awareness
   const domainSignals = extractDomainSignals(lower);
   for (const domain of domainSignals) {
-    const existing = habits.domainExpertise.find(d =>
-      d.domain.toLowerCase().includes(domain) || domain.includes(d.domain.toLowerCase())
+    const existing = habits.domainExpertise.find(
+      (d) => d.domain.toLowerCase().includes(domain) || domain.includes(d.domain.toLowerCase()),
     );
     if (existing) {
       // Sedimentation increases with reinforcement — deeply sedimented domains resist pruning
@@ -367,7 +446,7 @@ export function reflectOnInteraction(
   // 2. Detect workflow preference signals — with sedimentation
   const prefSignals = detectWorkflowPreferences(lower);
   for (const pref of prefSignals) {
-    const existing = habits.workflowPreferences.find(p => p.pattern === pref);
+    const existing = habits.workflowPreferences.find((p) => p.pattern === pref);
     if (existing) {
       actions.push({
         type: 'add-preference',
@@ -430,8 +509,8 @@ export function reflectOnInteraction(
 
   // 5. Growth edges — identify areas to develop
   if (context.requestComplexity === 'complex' || context.requestComplexity === 'profound') {
-    const matchingDomain = habits.domainExpertise.find(d =>
-      lower.includes(d.domain.toLowerCase())
+    const matchingDomain = habits.domainExpertise.find((d) =>
+      lower.includes(d.domain.toLowerCase()),
     );
     if (matchingDomain && matchingDomain.depth < 0.4) {
       actions.push({
@@ -455,7 +534,11 @@ export function reflectOnInteraction(
             type: 'reorganize-drives',
             description: `Drive "${drive.name}" is frequently triggered — growing stronger`,
             confidence: 0.6,
-            data: { driveName: drive.name, delta: 0.02, reason: `Curiosity spike ${drive.currentSpike.toFixed(2)}` },
+            data: {
+              driveName: drive.name,
+              delta: 0.02,
+              reason: `Curiosity spike ${drive.currentSpike.toFixed(2)}`,
+            },
           });
         }
       }
@@ -466,7 +549,7 @@ export function reflectOnInteraction(
   // If the user consistently brings certain types of problems, add a reframing rule
   if (habits.totalInteractions > 5) {
     const topDomain = habits.domainExpertise
-      .filter(d => (d.sedimentation ?? 0) > 0.3)
+      .filter((d) => (d.sedimentation ?? 0) > 0.3)
       .sort((a, b) => b.depth - a.depth)[0];
     if (topDomain && lower.includes(topDomain.domain.toLowerCase().split(' ')[0])) {
       actions.push({
@@ -474,7 +557,10 @@ export function reflectOnInteraction(
         description: `Learning to reframe "${topDomain.domain}" problems through accumulated experience`,
         confidence: 0.5,
         data: {
-          trigger: topDomain.domain.toLowerCase().split(' ')[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+          trigger: topDomain.domain
+            .toLowerCase()
+            .split(' ')[0]
+            .replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
           reframeAs: `Familiar territory — you have deep experience here (${topDomain.workflowsBuilt} workflows). Apply proven patterns first, then innovate.`,
         },
       });
@@ -538,18 +624,30 @@ export function applyReflectionActions(
   habits: HabitLayer,
   drives: DrivingForceLayer,
 ): { habits: HabitLayer; drives: DrivingForceLayer } {
-  const newHabits = { ...habits, domainExpertise: [...habits.domainExpertise], workflowPreferences: [...habits.workflowPreferences], communicationStyle: { ...habits.communicationStyle } };
-  const newDrives = { ...drives, drives: drives.drives ? drives.drives.map(d => ({ ...d })) : [], evolvedWeights: { ...(drives.evolvedWeights || {}) } };
+  const newHabits = {
+    ...habits,
+    domainExpertise: [...habits.domainExpertise],
+    workflowPreferences: [...habits.workflowPreferences],
+    communicationStyle: { ...habits.communicationStyle },
+  };
+  const newDrives = {
+    ...drives,
+    drives: drives.drives ? drives.drives.map((d) => ({ ...d })) : [],
+    evolvedWeights: { ...(drives.evolvedWeights || {}) },
+  };
 
   for (const action of actions) {
     switch (action.type) {
       case 'strengthen-domain': {
-        const d = newHabits.domainExpertise.find(x => x.id === action.data.domainId);
+        const d = newHabits.domainExpertise.find((x) => x.id === action.data.domainId);
         if (d) {
           d.depth = Math.min(1.0, d.depth + (action.data.depthIncrease as number));
           d.lastSeen = Date.now();
           // Sedimentation grows with each reinforcement — making this habit harder to change
-          d.sedimentation = Math.min(1.0, (d.sedimentation ?? 0) + (action.data.sedimentIncrease as number ?? 0.01));
+          d.sedimentation = Math.min(
+            1.0,
+            (d.sedimentation ?? 0) + ((action.data.sedimentIncrease as number) ?? 0.01),
+          );
         }
         break;
       }
@@ -568,18 +666,27 @@ export function applyReflectionActions(
       }
       case 'update-comm-style': {
         if (action.data.verbosity !== undefined) {
-          newHabits.communicationStyle.verbosity = clamp(newHabits.communicationStyle.verbosity + (action.data.verbosity as number));
+          newHabits.communicationStyle.verbosity = clamp(
+            newHabits.communicationStyle.verbosity + (action.data.verbosity as number),
+          );
         }
         if (action.data.technicalDepth !== undefined) {
-          newHabits.communicationStyle.technicalDepth = clamp(newHabits.communicationStyle.technicalDepth + (action.data.technicalDepth as number));
+          newHabits.communicationStyle.technicalDepth = clamp(
+            newHabits.communicationStyle.technicalDepth + (action.data.technicalDepth as number),
+          );
         }
         break;
       }
       case 'add-preference': {
-        const existing = newHabits.workflowPreferences.find(p => p.pattern === action.data.pattern);
+        const existing = newHabits.workflowPreferences.find(
+          (p) => p.pattern === action.data.pattern,
+        );
         if (existing) {
           existing.frequency += action.data.frequencyIncrease as number;
-          existing.sedimentation = Math.min(1.0, (existing.sedimentation ?? 0) + (action.data.sedimentIncrease as number ?? 0.01));
+          existing.sedimentation = Math.min(
+            1.0,
+            (existing.sedimentation ?? 0) + ((action.data.sedimentIncrease as number) ?? 0.01),
+          );
         } else if (action.data.isNew && newHabits.workflowPreferences.length < MAX_PREFERENCES) {
           newHabits.workflowPreferences.push({
             pattern: action.data.pattern as string,
@@ -591,9 +698,12 @@ export function applyReflectionActions(
         break;
       }
       case 'adjust-drive': {
-        const target = newDrives.drives.find(d => d.name === action.data.driveName);
+        const target = newDrives.drives.find((d) => d.name === action.data.driveName);
         if (target) {
-          const delta = Math.max(-DRIVE_ADJUST_CAP, Math.min(DRIVE_ADJUST_CAP, action.data.delta as number));
+          const delta = Math.max(
+            -DRIVE_ADJUST_CAP,
+            Math.min(DRIVE_ADJUST_CAP, action.data.delta as number),
+          );
           target.weight = clamp(target.weight + delta);
           newDrives.evolvedWeights![target.name] = target.weight;
         }
@@ -602,18 +712,24 @@ export function applyReflectionActions(
       case 'reorganize-drives': {
         // Structural reorganization: evolve drive weights based on usage patterns
         const driveName = action.data.driveName as string;
-        const delta = Math.max(-DRIVE_ADJUST_CAP, Math.min(DRIVE_ADJUST_CAP, action.data.delta as number));
-        const current = newDrives.evolvedWeights![driveName] ?? newDrives.drives.find(d => d.name === driveName)?.weight ?? 0.5;
+        const delta = Math.max(
+          -DRIVE_ADJUST_CAP,
+          Math.min(DRIVE_ADJUST_CAP, action.data.delta as number),
+        );
+        const current =
+          newDrives.evolvedWeights![driveName] ??
+          newDrives.drives.find((d) => d.name === driveName)?.weight ??
+          0.5;
         const newWeight = clamp(current + delta);
         newDrives.evolvedWeights![driveName] = newWeight;
         break;
       }
       case 'prune-stale': {
-        const idx = newHabits.domainExpertise.findIndex(d => d.id === action.data.domainId);
+        const idx = newHabits.domainExpertise.findIndex((d) => d.id === action.data.domainId);
         if (idx >= 0) {
           const sedimentation = newHabits.domainExpertise[idx].sedimentation ?? 0;
           // Sedimented habits decay slower — multiplier ranges from 0.5 (no sedimentation) to 0.85 (full)
-          const decayFactor = 0.5 + (sedimentation * 0.35);
+          const decayFactor = 0.5 + sedimentation * 0.35;
           newHabits.domainExpertise[idx].depth *= decayFactor;
         }
         break;
@@ -621,8 +737,12 @@ export function applyReflectionActions(
       case 'sediment-habit': {
         // Pure sedimentation — make an existing habit more resistant to change
         if (action.data.type === 'domain') {
-          const d = newHabits.domainExpertise.find(x => x.id === action.data.id);
-          if (d) d.sedimentation = Math.min(1.0, (d.sedimentation ?? 0) + (action.data.sedimentIncrease as number));
+          const d = newHabits.domainExpertise.find((x) => x.id === action.data.id);
+          if (d)
+            d.sedimentation = Math.min(
+              1.0,
+              (d.sedimentation ?? 0) + (action.data.sedimentIncrease as number),
+            );
         }
         break;
       }
@@ -666,7 +786,7 @@ export function updateGrowthEdges(
 
   for (const action of actions) {
     if (action.type === 'grow-edge' && action.data.area) {
-      const existing = newReflection.growthEdges.find(g => g.area === action.data.area);
+      const existing = newReflection.growthEdges.find((g) => g.area === action.data.area);
       if (!existing && newReflection.growthEdges.length < MAX_GROWTH_EDGES) {
         newReflection.growthEdges.push({
           area: action.data.area as string,
@@ -679,7 +799,9 @@ export function updateGrowthEdges(
 
     // Structural reorganization: learn new reframing rules
     if (action.type === 'add-reframing-rule' && action.data.trigger && action.data.reframeAs) {
-      const existing = newReflection.learnedReframingRules.find(r => r.trigger === action.data.trigger);
+      const existing = newReflection.learnedReframingRules.find(
+        (r) => r.trigger === action.data.trigger,
+      );
       if (!existing && newReflection.learnedReframingRules.length < MAX_LEARNED_REFRAMING_RULES) {
         newReflection.learnedReframingRules.push({
           trigger: action.data.trigger as string,
@@ -694,19 +816,20 @@ export function updateGrowthEdges(
         driveName: action.data.driveName as string,
         oldWeight: 0, // filled by caller
         newWeight: 0, // filled by caller
-        reason: action.data.reason as string || action.description,
+        reason: (action.data.reason as string) || action.description,
         timestamp: Date.now(),
       });
       // Cap the log
       if (newReflection.driveEvolutionLog.length > MAX_DRIVE_EVOLUTION_LOG) {
-        newReflection.driveEvolutionLog = newReflection.driveEvolutionLog.slice(-MAX_DRIVE_EVOLUTION_LOG);
+        newReflection.driveEvolutionLog =
+          newReflection.driveEvolutionLog.slice(-MAX_DRIVE_EVOLUTION_LOG);
       }
     }
   }
 
   // Prune old growth edges (> 7 days)
-  newReflection.growthEdges = newReflection.growthEdges.filter(g =>
-    Date.now() - g.identifiedAt < 7 * 24 * 60 * 60 * 1000
+  newReflection.growthEdges = newReflection.growthEdges.filter(
+    (g) => Date.now() - g.identifiedAt < 7 * 24 * 60 * 60 * 1000,
   );
 
   newReflection.lastReflectionAt = Date.now();
@@ -722,9 +845,9 @@ export function createDefaultHabits(mode?: string): HabitLayer {
     domainExpertise: [],
     workflowPreferences: [],
     communicationStyle: {
-      verbosity: mode === 'rowan' ? 0.3 : 0.6,      // Rowan terse, Poirot verbose
-      technicalDepth: 0.6,                             // both default to moderate-high
-      metaphorUsage: mode === 'poirot' ? 0.8 : 0.2,  // Poirot loves metaphors
+      verbosity: mode === 'rowan' ? 0.3 : 0.6, // Rowan terse, Poirot verbose
+      technicalDepth: 0.6, // both default to moderate-high
+      metaphorUsage: mode === 'poirot' ? 0.8 : 0.2, // Poirot loves metaphors
     },
     relationshipDepth: 0,
     totalInteractions: 0,
@@ -786,7 +909,9 @@ export function migrateHabitsV1toV2(old: Record<string, unknown>, mode?: string)
   // Otherwise create fresh defaults, preserving any legacy patterns
   const defaults = createDefaultHabits(mode);
   if (old && Array.isArray((old as { interactionPatterns?: unknown[] }).interactionPatterns)) {
-    defaults.interactionPatterns = (old as unknown as { interactionPatterns: HabitPattern[] }).interactionPatterns;
+    defaults.interactionPatterns = (
+      old as unknown as { interactionPatterns: HabitPattern[] }
+    ).interactionPatterns;
   }
   return defaults;
 }
@@ -797,4 +922,3 @@ export function migrateReflectionV1toV2(old: Record<string, unknown>): Reflectio
   }
   return createDefaultReflection();
 }
-

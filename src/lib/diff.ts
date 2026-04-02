@@ -49,22 +49,21 @@ export function computeDiff(oldText: string, newText: string): DiffLine[] {
       if (oldLines[i - 1] === newLines[j - 1]) {
         dp[i * (n + 1) + j] = dp[(i - 1) * (n + 1) + (j - 1)] + 1;
       } else {
-        dp[i * (n + 1) + j] = Math.max(
-          dp[(i - 1) * (n + 1) + j],
-          dp[i * (n + 1) + (j - 1)]
-        );
+        dp[i * (n + 1) + j] = Math.max(dp[(i - 1) * (n + 1) + j], dp[i * (n + 1) + (j - 1)]);
       }
     }
   }
 
   // Backtrack to produce diff
   const result: DiffLine[] = [];
-  let i = m, j = n;
+  let i = m,
+    j = n;
 
   while (i > 0 || j > 0) {
     if (i > 0 && j > 0 && oldLines[i - 1] === newLines[j - 1]) {
       result.push({ type: 'unchanged', content: oldLines[i - 1], oldLineNum: i, newLineNum: j });
-      i--; j--;
+      i--;
+      j--;
     } else if (j > 0 && (i === 0 || dp[i * (n + 1) + (j - 1)] >= dp[(i - 1) * (n + 1) + j])) {
       result.push({ type: 'added', content: newLines[j - 1], newLineNum: j });
       j--;
@@ -81,7 +80,9 @@ export function computeDiff(oldText: string, newText: string): DiffLine[] {
  * Compute a summary of the diff (counts of each line type).
  */
 export function diffSummary(lines: DiffLine[]): DiffSummary {
-  let added = 0, removed = 0, unchanged = 0;
+  let added = 0,
+    removed = 0,
+    unchanged = 0;
   for (const line of lines) {
     if (line.type === 'added') added++;
     else if (line.type === 'removed') removed++;

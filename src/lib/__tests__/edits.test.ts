@@ -58,7 +58,8 @@ describe('classifyEdit', () => {
 
   it('classifies major additions as semantic', () => {
     const old = 'Short intro';
-    const neu = 'Short intro. We will also cover advanced topics including quantum mechanics, thermodynamics, and electromagnetic theory with practical lab assignments.';
+    const neu =
+      'Short intro. We will also cover advanced topics including quantum mechanics, thermodynamics, and electromagnetic theory with practical lab assignments.';
     const result = classifyEdit(old, neu, label, undefined, category, undefined);
     expect(result.type).toBe('semantic');
     expect(result.shouldPropagate).toBe(true);
@@ -73,7 +74,14 @@ describe('classifyEdit', () => {
   // ─── Structural edits ─────────────────────────────────────────────────
 
   it('classifies label change as structural', () => {
-    const result = classifyEdit('content', undefined, 'Old Label', 'New Label', category, undefined);
+    const result = classifyEdit(
+      'content',
+      undefined,
+      'Old Label',
+      'New Label',
+      category,
+      undefined,
+    );
     expect(result.type).toBe('structural');
     expect(result.shouldPropagate).toBe(true);
   });
@@ -159,7 +167,8 @@ describe('classifyEdit', () => {
 
   it('adding learning objectives forces semantic', () => {
     const old = 'This course covers programming fundamentals in Python';
-    const neu = 'This course covers programming fundamentals in Python. Learning objectives: understand variables, control flow, and functions';
+    const neu =
+      'This course covers programming fundamentals in Python. Learning objectives: understand variables, control flow, and functions';
     const result = classifyEdit(old, neu, label, undefined, category, undefined);
     expect(result.type).toBe('semantic');
     expect(result.shouldPropagate).toBe(true);
@@ -167,7 +176,8 @@ describe('classifyEdit', () => {
 
   it('adding rubric criteria forces semantic', () => {
     const old = 'Students submit their final project by the end of the semester';
-    const neu = 'Students submit their final project with a rubric covering creativity, technical depth, and presentation quality';
+    const neu =
+      'Students submit their final project with a rubric covering creativity, technical depth, and presentation quality';
     const result = classifyEdit(old, neu, label, undefined, category, undefined);
     expect(result.type).toBe('semantic');
   });
@@ -182,7 +192,8 @@ describe('classifyEdit', () => {
 
   it('adding deadline information forces semantic', () => {
     const old = 'Complete the assignment on data structures and algorithms';
-    const neu = 'Complete the assignment on data structures and algorithms. Due date: March 15, 2026 at 11:59 PM';
+    const neu =
+      'Complete the assignment on data structures and algorithms. Due date: March 15, 2026 at 11:59 PM';
     const result = classifyEdit(old, neu, label, undefined, category, undefined);
     expect(result.type).toBe('semantic');
   });
@@ -191,15 +202,18 @@ describe('classifyEdit', () => {
 
   it('adding an example to existing content is local', () => {
     const old = 'Cover data structures: arrays, linked lists, trees, and graphs';
-    const neu = 'Cover data structures: arrays, linked lists, trees, and graphs. For example, binary search trees are commonly used in database indexing.';
+    const neu =
+      'Cover data structures: arrays, linked lists, trees, and graphs. For example, binary search trees are commonly used in database indexing.';
     const result = classifyEdit(old, neu, label, undefined, category, undefined);
     expect(result.type).toBe('local');
     expect(result.shouldPropagate).toBe(false);
   });
 
   it('professor rewords rubric criteria without changing them → local', () => {
-    const old = 'Excellent (A): Shows deep understanding of algorithms\nGood (B): Shows understanding\nFair (C): Shows basic understanding';
-    const neu = 'Excellent (A): Demonstrates deep understanding of algorithms\nGood (B): Demonstrates understanding\nFair (C): Demonstrates basic understanding';
+    const old =
+      'Excellent (A): Shows deep understanding of algorithms\nGood (B): Shows understanding\nFair (C): Shows basic understanding';
+    const neu =
+      'Excellent (A): Demonstrates deep understanding of algorithms\nGood (B): Demonstrates understanding\nFair (C): Demonstrates basic understanding';
     const result = classifyEdit(old, neu, label, undefined, category, undefined);
     expect(result.type).toBe('local');
     expect(result.shouldPropagate).toBe(false);
@@ -216,8 +230,10 @@ describe('classifyEdit', () => {
   });
 
   it('replacing entire course description is semantic', () => {
-    const old = 'An introductory course in web development covering HTML, CSS, JavaScript, and React framework basics';
-    const neu = 'An advanced course in distributed systems covering consensus protocols, replication, and fault tolerance';
+    const old =
+      'An introductory course in web development covering HTML, CSS, JavaScript, and React framework basics';
+    const neu =
+      'An advanced course in distributed systems covering consensus protocols, replication, and fault tolerance';
     const result = classifyEdit(old, neu, label, undefined, category, undefined);
     expect(result.type).toBe('semantic');
     expect(result.reason).toMatch(/major|significant/i);
@@ -252,7 +268,14 @@ describe('classifyEdit', () => {
   });
 
   it('non-empty to empty is semantic', () => {
-    const result = classifyEdit('Existing content about algorithms', '', label, undefined, category, undefined);
+    const result = classifyEdit(
+      'Existing content about algorithms',
+      '',
+      label,
+      undefined,
+      category,
+      undefined,
+    );
     expect(result.type).toBe('semantic');
   });
 });

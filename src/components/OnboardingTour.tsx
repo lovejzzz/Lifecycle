@@ -82,36 +82,30 @@ export default function OnboardingTour() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 0.95 }}
               transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-              className="bg-[#1a1a2e] rounded-xl max-w-md w-full mx-4 p-8 shadow-2xl border border-white/[0.06] relative"
+              className="relative mx-4 w-full max-w-md rounded-xl border border-white/[0.06] bg-[#1a1a2e] p-8 shadow-2xl"
             >
               {/* Icon */}
-              <div className="flex justify-center mb-6">
-                <div className="w-14 h-14 rounded-full bg-white/[0.06] border border-white/[0.08] flex items-center justify-center">
+              <div className="mb-6 flex justify-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.06]">
                   <Icon size={26} className="text-cyan-400" />
                 </div>
               </div>
 
               {/* Title */}
-              <h2 className="text-lg font-semibold text-white text-center mb-3">
-                {current.title}
-              </h2>
+              <h2 className="mb-3 text-center text-lg font-semibold text-white">{current.title}</h2>
 
               {/* Description */}
-              <p className="text-sm text-white/60 text-center leading-relaxed mb-8">
+              <p className="mb-8 text-center text-sm leading-relaxed text-white/60">
                 {current.description}
               </p>
 
               {/* Step dots */}
-              <div className="flex justify-center gap-2 mb-6">
+              <div className="mb-6 flex justify-center gap-2">
                 {STEPS.map((_, i) => (
                   <div
                     key={i}
-                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                      i === step
-                        ? 'bg-cyan-400 w-6'
-                        : i < step
-                          ? 'bg-cyan-400/40'
-                          : 'bg-white/15'
+                    className={`h-2 w-2 rounded-full transition-all duration-300 ${
+                      i === step ? 'w-6 bg-cyan-400' : i < step ? 'bg-cyan-400/40' : 'bg-white/15'
                     }`}
                   />
                 ))}
@@ -121,8 +115,8 @@ export default function OnboardingTour() {
               <div className="flex items-center justify-between">
                 {step > 0 ? (
                   <button
-                    onClick={() => setStep(s => s - 1)}
-                    className="flex items-center gap-1 text-xs text-white/40 hover:text-white/70 transition-colors"
+                    onClick={() => setStep((s) => s - 1)}
+                    className="flex items-center gap-1 text-xs text-white/40 transition-colors hover:text-white/70"
                   >
                     <ChevronLeft size={14} />
                     Back
@@ -136,10 +130,10 @@ export default function OnboardingTour() {
                     if (isLast) {
                       close();
                     } else {
-                      setStep(s => s + 1);
+                      setStep((s) => s + 1);
                     }
                   }}
-                  className="flex items-center gap-1.5 px-5 py-2 rounded-lg bg-cyan-500/20 text-cyan-300 text-sm font-medium hover:bg-cyan-500/30 transition-colors border border-cyan-500/20"
+                  className="flex items-center gap-1.5 rounded-lg border border-cyan-500/20 bg-cyan-500/20 px-5 py-2 text-sm font-medium text-cyan-300 transition-colors hover:bg-cyan-500/30"
                 >
                   {isLast ? 'Get Started' : 'Next'}
                   {!isLast && <ChevronRight size={14} />}
@@ -147,10 +141,10 @@ export default function OnboardingTour() {
               </div>
 
               {/* Skip tour */}
-              <div className="flex justify-center mt-4">
+              <div className="mt-4 flex justify-center">
                 <button
                   onClick={close}
-                  className="text-[11px] text-white/25 hover:text-white/50 transition-colors"
+                  className="text-[11px] text-white/25 transition-colors hover:text-white/50"
                 >
                   Skip tour
                 </button>

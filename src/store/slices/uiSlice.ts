@@ -35,7 +35,11 @@ export interface UISlice {
 
   // Toasts
   toasts: Array<{ id: string; message: string; type: 'success' | 'info' | 'warning' | 'error' }>;
-  addToast: (message: string, type?: 'success' | 'info' | 'warning' | 'error', autoDismissMs?: number) => void;
+  addToast: (
+    message: string,
+    type?: 'success' | 'info' | 'warning' | 'error',
+    autoDismissMs?: number,
+  ) => void;
   removeToast: (id: string) => void;
 
   // Auto-save indicator
@@ -63,12 +67,13 @@ export const createUISlice: StateCreator<LifecycleStore, [], [], UISlice> = (set
     set({ selectedNodeId: id, multiSelectedIds: new Set() });
     if (id) get().addBreadcrumb(id);
   },
-  toggleMultiSelect: (id) => set((s) => {
-    const next = new Set(s.multiSelectedIds);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    return { multiSelectedIds: next, selectedNodeId: id };
-  }),
+  toggleMultiSelect: (id) =>
+    set((s) => {
+      const next = new Set(s.multiSelectedIds);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return { multiSelectedIds: next, selectedNodeId: id };
+    }),
   clearMultiSelect: () => set({ multiSelectedIds: new Set() }),
 
   // Panels
@@ -95,14 +100,14 @@ export const createUISlice: StateCreator<LifecycleStore, [], [], UISlice> = (set
   addToast: (message, type = 'info', autoDismissMs) => {
     const id = `toast-${Date.now()}`;
     const dismissMs = autoDismissMs ?? (type === 'error' ? 8000 : 3500);
-    set(s => ({ toasts: [...s.toasts.slice(-4), { id, message, type }] }));
+    set((s) => ({ toasts: [...s.toasts.slice(-4), { id, message, type }] }));
     if (dismissMs > 0) {
       setTimeout(() => {
-        set(s => ({ toasts: s.toasts.filter(t => t.id !== id) }));
+        set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }));
       }, dismissMs);
     }
   },
-  removeToast: (id) => set(s => ({ toasts: s.toasts.filter(t => t.id !== id) })),
+  removeToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
 
   // Auto-save
   lastSavedAt: 0,
@@ -110,8 +115,8 @@ export const createUISlice: StateCreator<LifecycleStore, [], [], UISlice> = (set
   // Breadcrumbs
   breadcrumbs: [],
   addBreadcrumb: (nodeId: string) => {
-    set(s => {
-      const filtered = s.breadcrumbs.filter(id => id !== nodeId);
+    set((s) => {
+      const filtered = s.breadcrumbs.filter((id) => id !== nodeId);
       return { breadcrumbs: [...filtered, nodeId].slice(-8) };
     });
   },
@@ -123,10 +128,11 @@ export const createUISlice: StateCreator<LifecycleStore, [], [], UISlice> = (set
 
   // Pinned messages
   pinnedMessageIds: new Set<string>(),
-  togglePinMessage: (id) => set(s => {
-    const next = new Set(s.pinnedMessageIds);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    return { pinnedMessageIds: next };
-  }),
+  togglePinMessage: (id) =>
+    set((s) => {
+      const next = new Set(s.pinnedMessageIds);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return { pinnedMessageIds: next };
+    }),
 });

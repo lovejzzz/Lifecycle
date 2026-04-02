@@ -29,15 +29,13 @@ function DiffLineRow({ line }: { line: DiffLine }) {
 
   return (
     <div className={`flex font-mono text-[10px] leading-[18px] ${colors[line.type]}`}>
-      <span className="w-7 text-right pr-1.5 text-white/30 select-none shrink-0">
+      <span className="w-7 shrink-0 pr-1.5 text-right text-white/30 select-none">
         {lineNum ?? ''}
       </span>
-      <span className="w-3 text-center select-none shrink-0 text-white/20">
+      <span className="w-3 shrink-0 text-center text-white/20 select-none">
         {prefix[line.type]}
       </span>
-      <span className="flex-1 px-1 whitespace-pre-wrap break-all">
-        {line.content || '\u00a0'}
-      </span>
+      <span className="flex-1 px-1 break-all whitespace-pre-wrap">{line.content || '\u00a0'}</span>
     </div>
   );
 }
@@ -56,25 +54,23 @@ export default function DiffView({
   const displayLines = truncated ? lines.slice(0, maxLines) : lines;
 
   if (summary.identical) {
-    return (
-      <div className="text-[10px] text-white/25 italic px-3 py-2">
-        No changes detected
-      </div>
-    );
+    return <div className="px-3 py-2 text-[10px] text-white/25 italic">No changes detected</div>;
   }
 
   return (
-    <div className={`rounded-lg border border-white/[0.06] overflow-hidden ${compact ? '' : 'max-h-[400px]'}`}>
+    <div
+      className={`overflow-hidden rounded-lg border border-white/[0.06] ${compact ? '' : 'max-h-[400px]'}`}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-1.5 bg-white/[0.02] border-b border-white/[0.06]">
-        <span className="text-[9px] text-white/30 font-medium tracking-wide uppercase">
+      <div className="flex items-center justify-between border-b border-white/[0.06] bg-white/[0.02] px-3 py-1.5">
+        <span className="text-[9px] font-medium tracking-wide text-white/30 uppercase">
           Changes: {formatDiffSummary(summary)}
         </span>
         <div className="flex items-center gap-1.5">
           {onRevert && (
             <button
               onClick={onRevert}
-              className="flex items-center gap-1 px-2 py-0.5 rounded text-[9px] text-rose-400/60 bg-rose-500/[0.06] border border-rose-500/10 hover:bg-rose-500/[0.12] transition-colors"
+              className="flex items-center gap-1 rounded border border-rose-500/10 bg-rose-500/[0.06] px-2 py-0.5 text-[9px] text-rose-400/60 transition-colors hover:bg-rose-500/[0.12]"
               title="Revert to previous version"
             >
               <Undo2 size={8} />
@@ -84,7 +80,7 @@ export default function DiffView({
           {onAccept && (
             <button
               onClick={onAccept}
-              className="flex items-center gap-1 px-2 py-0.5 rounded text-[9px] text-emerald-400/60 bg-emerald-500/[0.06] border border-emerald-500/10 hover:bg-emerald-500/[0.12] transition-colors"
+              className="flex items-center gap-1 rounded border border-emerald-500/10 bg-emerald-500/[0.06] px-2 py-0.5 text-[9px] text-emerald-400/60 transition-colors hover:bg-emerald-500/[0.12]"
               title="Accept changes"
             >
               <Check size={8} />
@@ -100,7 +96,7 @@ export default function DiffView({
           <DiffLineRow key={i} line={line} />
         ))}
         {truncated && (
-          <div className="text-[9px] text-white/20 text-center py-1 bg-white/[0.02]">
+          <div className="bg-white/[0.02] py-1 text-center text-[9px] text-white/20">
             ... {lines.length - maxLines} more lines
           </div>
         )}

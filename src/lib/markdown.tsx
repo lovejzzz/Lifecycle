@@ -19,7 +19,14 @@ export function inlineFormat(
     const codeMatch = remaining.match(/^([\s\S]*?)`([^`]+)`([\s\S]*)/);
     if (codeMatch) {
       if (codeMatch[1]) parts.push(<React.Fragment key={key++}>{codeMatch[1]}</React.Fragment>);
-      parts.push(<code key={key++} className="bg-white/[0.08] px-1 py-px rounded text-[10px] font-mono text-cyan-300/80">{codeMatch[2]}</code>);
+      parts.push(
+        <code
+          key={key++}
+          className="rounded bg-white/[0.08] px-1 py-px font-mono text-[10px] text-cyan-300/80"
+        >
+          {codeMatch[2]}
+        </code>,
+      );
       remaining = codeMatch[3];
       continue;
     }
@@ -27,7 +34,17 @@ export function inlineFormat(
     const linkMatch = remaining.match(/^([\s\S]*?)\[([^\]]+)\]\((https?:\/\/[^)]+)\)([\s\S]*)/);
     if (linkMatch) {
       if (linkMatch[1]) parts.push(<React.Fragment key={key++}>{linkMatch[1]}</React.Fragment>);
-      parts.push(<a key={key++} href={linkMatch[3]} target="_blank" rel="noopener noreferrer" className="text-cyan-400/80 hover:text-cyan-300 underline underline-offset-2 decoration-cyan-400/30">{linkMatch[2]}</a>);
+      parts.push(
+        <a
+          key={key++}
+          href={linkMatch[3]}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-cyan-400/80 underline decoration-cyan-400/30 underline-offset-2 hover:text-cyan-300"
+        >
+          {linkMatch[2]}
+        </a>,
+      );
       remaining = linkMatch[4];
       continue;
     }
@@ -35,7 +52,11 @@ export function inlineFormat(
     const boldMatch = remaining.match(/^([\s\S]*?)\*\*([^*]+)\*\*([\s\S]*)/);
     if (boldMatch) {
       if (boldMatch[1]) parts.push(<React.Fragment key={key++}>{boldMatch[1]}</React.Fragment>);
-      parts.push(<strong key={key++} className="font-semibold text-white/85">{boldMatch[2]}</strong>);
+      parts.push(
+        <strong key={key++} className="font-semibold text-white/85">
+          {boldMatch[2]}
+        </strong>,
+      );
       remaining = boldMatch[3];
       continue;
     }
@@ -43,7 +64,11 @@ export function inlineFormat(
     const italicMatch = remaining.match(/^([\s\S]*?)(?:\*([^*]+)\*|_([^_]+)_)([\s\S]*)/);
     if (italicMatch) {
       if (italicMatch[1]) parts.push(<React.Fragment key={key++}>{italicMatch[1]}</React.Fragment>);
-      parts.push(<em key={key++} className="italic text-white/65">{italicMatch[2] || italicMatch[3]}</em>);
+      parts.push(
+        <em key={key++} className="text-white/65 italic">
+          {italicMatch[2] || italicMatch[3]}
+        </em>,
+      );
       remaining = italicMatch[4];
       continue;
     }
@@ -51,7 +76,11 @@ export function inlineFormat(
     const strikeMatch = remaining.match(/^([\s\S]*?)~~([^~]+)~~([\s\S]*)/);
     if (strikeMatch) {
       if (strikeMatch[1]) parts.push(<React.Fragment key={key++}>{strikeMatch[1]}</React.Fragment>);
-      parts.push(<del key={key++} className="line-through text-white/35">{strikeMatch[2]}</del>);
+      parts.push(
+        <del key={key++} className="text-white/35 line-through">
+          {strikeMatch[2]}
+        </del>,
+      );
       remaining = strikeMatch[3];
       continue;
     }
@@ -61,12 +90,13 @@ export function inlineFormat(
       for (const [name, id] of nodeNames) {
         const idx = remaining.toLowerCase().indexOf(name.toLowerCase());
         if (idx !== -1) {
-          if (idx > 0) parts.push(<React.Fragment key={key++}>{remaining.slice(0, idx)}</React.Fragment>);
+          if (idx > 0)
+            parts.push(<React.Fragment key={key++}>{remaining.slice(0, idx)}</React.Fragment>);
           parts.push(
             <button
               key={key++}
               onClick={() => onNodeClick(id)}
-              className="text-cyan-400/80 hover:text-cyan-300 underline underline-offset-2 decoration-cyan-400/30 hover:decoration-cyan-400/60 transition-colors"
+              className="text-cyan-400/80 underline decoration-cyan-400/30 underline-offset-2 transition-colors hover:text-cyan-300 hover:decoration-cyan-400/60"
             >
               {remaining.slice(idx, idx + name.length)}
             </button>,
@@ -99,7 +129,10 @@ export function renderMarkdown(
     if (line.startsWith('```')) {
       if (inCodeBlock) {
         elements.push(
-          <pre key={`code-${i}`} className="bg-black/30 rounded-lg px-3 py-2 my-1.5 text-[10px] font-mono text-emerald-300/70 overflow-x-auto whitespace-pre">
+          <pre
+            key={`code-${i}`}
+            className="my-1.5 overflow-x-auto rounded-lg bg-black/30 px-3 py-2 font-mono text-[10px] whitespace-pre text-emerald-300/70"
+          >
             {codeLines.join('\n')}
           </pre>,
         );
@@ -110,19 +143,34 @@ export function renderMarkdown(
       }
       return;
     }
-    if (inCodeBlock) { codeLines.push(line); return; }
+    if (inCodeBlock) {
+      codeLines.push(line);
+      return;
+    }
 
     // Headers
     if (line.startsWith('### ')) {
-      elements.push(<div key={i} className="text-[11px] font-bold text-white/80 mt-2 mb-0.5">{line.slice(4)}</div>);
+      elements.push(
+        <div key={i} className="mt-2 mb-0.5 text-[11px] font-bold text-white/80">
+          {line.slice(4)}
+        </div>,
+      );
       return;
     }
     if (line.startsWith('## ')) {
-      elements.push(<div key={i} className="text-[12px] font-bold text-white/85 mt-2 mb-0.5">{line.slice(3)}</div>);
+      elements.push(
+        <div key={i} className="mt-2 mb-0.5 text-[12px] font-bold text-white/85">
+          {line.slice(3)}
+        </div>,
+      );
       return;
     }
     if (line.startsWith('# ')) {
-      elements.push(<div key={i} className="text-[13px] font-bold text-white/90 mt-3 mb-1">{line.slice(2)}</div>);
+      elements.push(
+        <div key={i} className="mt-3 mb-1 text-[13px] font-bold text-white/90">
+          {line.slice(2)}
+        </div>,
+      );
       return;
     }
 
@@ -131,12 +179,14 @@ export function renderMarkdown(
     if (taskMatch) {
       const checked = taskMatch[1].toLowerCase() === 'x';
       elements.push(
-        <div key={i} className="flex items-start gap-2 ml-1 group">
-          <span className={`mt-0.5 w-3.5 h-3.5 flex-shrink-0 rounded border flex items-center justify-center text-[9px] ${
-            checked
-              ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'
-              : 'bg-white/[0.04] border-white/[0.15] text-transparent'
-          }`}>
+        <div key={i} className="group ml-1 flex items-start gap-2">
+          <span
+            className={`mt-0.5 flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded border text-[9px] ${
+              checked
+                ? 'border-emerald-500/40 bg-emerald-500/20 text-emerald-400'
+                : 'border-white/[0.15] bg-white/[0.04] text-transparent'
+            }`}
+          >
             {checked && '✓'}
           </span>
           <span className={checked ? 'text-white/40 line-through' : ''}>
@@ -150,8 +200,8 @@ export function renderMarkdown(
     // List items
     if (/^[-*•]\s/.test(line)) {
       elements.push(
-        <div key={i} className="flex gap-1.5 ml-1">
-          <span className="text-white/30 mt-px">•</span>
+        <div key={i} className="ml-1 flex gap-1.5">
+          <span className="mt-px text-white/30">•</span>
           <span>{inlineFormat(line.replace(/^[-*•]\s/, ''), nodeNames, onNodeClick)}</span>
         </div>,
       );
@@ -160,8 +210,8 @@ export function renderMarkdown(
     if (/^\d+\.\s/.test(line)) {
       const num = line.match(/^(\d+)\./)?.[1];
       elements.push(
-        <div key={i} className="flex gap-1.5 ml-1">
-          <span className="text-white/30 font-mono text-[10px] mt-px">{num}.</span>
+        <div key={i} className="ml-1 flex gap-1.5">
+          <span className="mt-px font-mono text-[10px] text-white/30">{num}.</span>
           <span>{inlineFormat(line.replace(/^\d+\.\s/, ''), nodeNames, onNodeClick)}</span>
         </div>,
       );
@@ -170,14 +220,14 @@ export function renderMarkdown(
 
     // Horizontal rule
     if (/^---+$/.test(line.trim()) || /^\*\*\*+$/.test(line.trim())) {
-      elements.push(<hr key={i} className="border-white/[0.08] my-2" />);
+      elements.push(<hr key={i} className="my-2 border-white/[0.08]" />);
       return;
     }
 
     // Blockquote
     if (line.startsWith('> ')) {
       elements.push(
-        <div key={i} className="border-l-2 border-cyan-500/40 pl-2.5 ml-1 text-white/50 italic">
+        <div key={i} className="ml-1 border-l-2 border-cyan-500/40 pl-2.5 text-white/50 italic">
           {inlineFormat(line.slice(2), nodeNames, onNodeClick)}
         </div>,
       );
@@ -193,19 +243,41 @@ export function renderMarkdown(
         j++;
       }
       if (tableLines.length >= 2) {
-        const parseRow = (r: string) => r.split('|').slice(1, -1).map(c => c.trim());
+        const parseRow = (r: string) =>
+          r
+            .split('|')
+            .slice(1, -1)
+            .map((c) => c.trim());
         const isSeparator = (r: string) => /^\|[\s\-:|]+\|$/.test(r.trim());
         const headerRow = parseRow(tableLines[0]);
-        const dataRows = tableLines.slice(1).filter(r => !isSeparator(r)).map(parseRow);
+        const dataRows = tableLines
+          .slice(1)
+          .filter((r) => !isSeparator(r))
+          .map(parseRow);
         elements.push(
-          <div key={i} className="overflow-x-auto my-1.5">
-            <table className="text-[10px] border-collapse w-full">
+          <div key={i} className="my-1.5 overflow-x-auto">
+            <table className="w-full border-collapse text-[10px]">
               <thead>
-                <tr>{headerRow.map((h, hi) => <th key={hi} className="border border-white/[0.08] px-2 py-1 text-left text-white/70 bg-white/[0.04] font-semibold">{h}</th>)}</tr>
+                <tr>
+                  {headerRow.map((h, hi) => (
+                    <th
+                      key={hi}
+                      className="border border-white/[0.08] bg-white/[0.04] px-2 py-1 text-left font-semibold text-white/70"
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
               </thead>
               <tbody>
                 {dataRows.map((row, ri) => (
-                  <tr key={ri}>{row.map((c, ci) => <td key={ci} className="border border-white/[0.06] px-2 py-1 text-white/50">{inlineFormat(c, nodeNames, onNodeClick)}</td>)}</tr>
+                  <tr key={ri}>
+                    {row.map((c, ci) => (
+                      <td key={ci} className="border border-white/[0.06] px-2 py-1 text-white/50">
+                        {inlineFormat(c, nodeNames, onNodeClick)}
+                      </td>
+                    ))}
+                  </tr>
                 ))}
               </tbody>
             </table>
@@ -218,7 +290,10 @@ export function renderMarkdown(
     if (line === '\x00TABLE_CONSUMED') return;
 
     // Empty line = spacing
-    if (!line.trim()) { elements.push(<div key={i} className="h-1.5" />); return; }
+    if (!line.trim()) {
+      elements.push(<div key={i} className="h-1.5" />);
+      return;
+    }
 
     // Regular paragraph
     elements.push(<div key={i}>{inlineFormat(line, nodeNames, onNodeClick)}</div>);

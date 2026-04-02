@@ -146,7 +146,9 @@ describe('buildNodesFromPrompt', () => {
   const uidFn = () => `node-${++counter}`;
   const logFn = () => {};
 
-  beforeEach(() => { counter = 0; });
+  beforeEach(() => {
+    counter = 0;
+  });
 
   it('builds basic workflow with input, state, artifacts, review, monitor, output', () => {
     const { nodes, edges, events } = buildNodesFromPrompt('Build a content pipeline', uidFn, logFn);
@@ -154,7 +156,7 @@ describe('buildNodesFromPrompt', () => {
     expect(edges.length).toBeGreaterThanOrEqual(4);
     expect(events.length).toBeGreaterThanOrEqual(5);
 
-    const categories = nodes.map(n => n.data.category);
+    const categories = nodes.map((n) => n.data.category);
     expect(categories).toContain('input');
     expect(categories).toContain('state');
     expect(categories).toContain('artifact');
@@ -165,42 +167,44 @@ describe('buildNodesFromPrompt', () => {
 
   it('creates extraction node for service inputs', () => {
     const { nodes } = buildNodesFromPrompt('Import from Notion and make a summary', uidFn, logFn);
-    const inputNode = nodes.find(n => n.data.category === 'input');
+    const inputNode = nodes.find((n) => n.data.category === 'input');
     expect(inputNode!.data.label).toContain('Notion');
     expect(inputNode!.data.inputType).toBe('url');
 
-    const extractNode = nodes.find(n => n.data.category === 'cid' && n.data.label.includes('Fetch'));
+    const extractNode = nodes.find(
+      (n) => n.data.category === 'cid' && n.data.label.includes('Fetch'),
+    );
     expect(extractNode).toBeDefined();
     expect(extractNode!.data.label).toContain('Notion');
   });
 
   it('creates extraction node for file inputs', () => {
     const { nodes } = buildNodesFromPrompt('Upload a PDF and create a lesson plan', uidFn, logFn);
-    const inputNode = nodes.find(n => n.data.category === 'input');
+    const inputNode = nodes.find((n) => n.data.category === 'input');
     expect(inputNode!.data.inputType).toBe('file');
 
-    const extractNode = nodes.find(n => n.data.label.includes('Parse'));
+    const extractNode = nodes.find((n) => n.data.label.includes('Parse'));
     expect(extractNode).toBeDefined();
   });
 
   it('creates document upload input for transform/parse prompts without service', () => {
     const { nodes } = buildNodesFromPrompt('Convert my files into a report', uidFn, logFn);
-    const inputNode = nodes.find(n => n.data.category === 'input');
+    const inputNode = nodes.find((n) => n.data.category === 'input');
     expect(inputNode!.data.inputType).toBe('file');
     expect(inputNode!.data.label).toBe('Document Upload');
   });
 
   it('creates research notes node for note-related prompts', () => {
     const { nodes } = buildNodesFromPrompt('Research ideas about AI', uidFn, logFn);
-    const noteNode = nodes.find(n => n.data.category === 'note');
+    const noteNode = nodes.find((n) => n.data.category === 'note');
     expect(noteNode).toBeDefined();
     expect(noteNode!.data.label).toBe('Research Notes');
   });
 
   it('generates lesson plan sections for education prompts', () => {
     const { nodes } = buildNodesFromPrompt('Create a lesson plan for biology', uidFn, logFn);
-    const artifacts = nodes.filter(n => n.data.category === 'artifact');
-    const lessonPlan = artifacts.find(n => n.data.label === 'Lesson Plan');
+    const artifacts = nodes.filter((n) => n.data.category === 'artifact');
+    const lessonPlan = artifacts.find((n) => n.data.label === 'Lesson Plan');
     expect(lessonPlan).toBeDefined();
     expect(lessonPlan!.data.sections!.length).toBe(5);
     expect(lessonPlan!.data.sections![0].title).toBe('Learning Objectives');
@@ -208,7 +212,7 @@ describe('buildNodesFromPrompt', () => {
 
   it('generates course syllabus sections', () => {
     const { nodes } = buildNodesFromPrompt('Build a course syllabus', uidFn, logFn);
-    const syllabus = nodes.find(n => n.data.label === 'Course Syllabus');
+    const syllabus = nodes.find((n) => n.data.label === 'Course Syllabus');
     expect(syllabus).toBeDefined();
     expect(syllabus!.data.sections!.length).toBe(4);
     expect(syllabus!.data.sections![1].title).toBe('Weekly Schedule');
@@ -216,122 +220,134 @@ describe('buildNodesFromPrompt', () => {
 
   it('generates learning objectives artifact for lesson prompts', () => {
     const { nodes } = buildNodesFromPrompt('Create a lesson plan with objectives', uidFn, logFn);
-    const lo = nodes.find(n => n.data.label === 'Learning Objectives');
+    const lo = nodes.find((n) => n.data.label === 'Learning Objectives');
     expect(lo).toBeDefined();
     expect(lo!.data.sections![0].title).toBe('Knowledge Goals');
   });
 
   it('generates fallback artifact names from meaningful words', () => {
     const { nodes } = buildNodesFromPrompt('Build a widget tracker system', uidFn, logFn);
-    const artifacts = nodes.filter(n => n.data.category === 'artifact');
+    const artifacts = nodes.filter((n) => n.data.category === 'artifact');
     expect(artifacts.length).toBeGreaterThan(0);
     // Should derive names from meaningful words
-    expect(artifacts.some(n => n.data.label.includes('Document'))).toBe(true);
+    expect(artifacts.some((n) => n.data.label.includes('Document'))).toBe(true);
   });
 
   it('generates default artifact names for very generic prompts', () => {
     const { nodes } = buildNodesFromPrompt('Build this', uidFn, logFn);
-    const artifacts = nodes.filter(n => n.data.category === 'artifact');
+    const artifacts = nodes.filter((n) => n.data.category === 'artifact');
     expect(artifacts.length).toBeGreaterThanOrEqual(2);
-    expect(artifacts.some(n => n.data.label === 'Core Document')).toBe(true);
+    expect(artifacts.some((n) => n.data.label === 'Core Document')).toBe(true);
   });
 
   it('sets output format when detected', () => {
     const { nodes } = buildNodesFromPrompt('Create a report and export to pdf', uidFn, logFn);
-    const output = nodes.find(n => n.data.category === 'output');
+    const output = nodes.find((n) => n.data.category === 'output');
     expect(output!.data.outputFormat).toBe('pdf');
     expect(output!.data.label).toContain('PDF');
   });
 
   it('sets output service when detected', () => {
-    const { nodes } = buildNodesFromPrompt('Create a summary and send to Google Sheets', uidFn, logFn);
-    const output = nodes.find(n => n.data.category === 'output');
+    const { nodes } = buildNodesFromPrompt(
+      'Create a summary and send to Google Sheets',
+      uidFn,
+      logFn,
+    );
+    const output = nodes.find((n) => n.data.category === 'output');
     expect(output!.data.serviceName).toBe('Google Sheets');
     expect(output!.data.label).toContain('Google Sheets');
   });
 
   it('sets transformation-based output label', () => {
     const { nodes } = buildNodesFromPrompt('Create a blog post about React', uidFn, logFn);
-    const output = nodes.find(n => n.data.category === 'output');
+    const output = nodes.find((n) => n.data.category === 'output');
     expect(output!.data.label).toContain('Blog Post');
   });
 
   it('connects all artifact nodes to review gate', () => {
-    const { nodes, edges } = buildNodesFromPrompt('Create a PRD and tech architecture', uidFn, logFn);
-    const artifacts = nodes.filter(n => n.data.category === 'artifact');
-    const review = nodes.find(n => n.data.category === 'review');
+    const { nodes, edges } = buildNodesFromPrompt(
+      'Create a PRD and tech architecture',
+      uidFn,
+      logFn,
+    );
+    const artifacts = nodes.filter((n) => n.data.category === 'artifact');
+    const review = nodes.find((n) => n.data.category === 'review');
     for (const a of artifacts) {
-      expect(edges.some(e => e.source === a.id && e.target === review!.id)).toBe(true);
+      expect(edges.some((e) => e.source === a.id && e.target === review!.id)).toBe(true);
     }
   });
 
   it('creates proper edge chain from input to output', () => {
     const { nodes, edges } = buildNodesFromPrompt('Build a workflow', uidFn, logFn);
     // Every non-input node should be a target of at least one edge
-    const inputNode = nodes.find(n => n.data.category === 'input');
+    const inputNode = nodes.find((n) => n.data.category === 'input');
     for (const n of nodes) {
       if (n.id === inputNode!.id) continue;
-      expect(edges.some(e => e.target === n.id)).toBe(true);
+      expect(edges.some((e) => e.target === n.id)).toBe(true);
     }
   });
 
   it('detects PRD artifact via transformation', () => {
     const { nodes } = buildNodesFromPrompt('I need a PRD for this project', uidFn, logFn);
-    const labels = nodes.filter(n => n.data.category === 'artifact').map(n => n.data.label);
+    const labels = nodes.filter((n) => n.data.category === 'artifact').map((n) => n.data.label);
     expect(labels).toContain('PRD');
   });
 
   it('detects specification artifact via transformation', () => {
     const { nodes } = buildNodesFromPrompt('Write a technical architecture spec', uidFn, logFn);
-    const labels = nodes.filter(n => n.data.category === 'artifact').map(n => n.data.label);
+    const labels = nodes.filter((n) => n.data.category === 'artifact').map((n) => n.data.label);
     expect(labels).toContain('Specification');
   });
 
   it('detects marketing plan artifact via transformation', () => {
     const { nodes } = buildNodesFromPrompt('Create a marketing plan for launch', uidFn, logFn);
-    const labels = nodes.filter(n => n.data.category === 'artifact').map(n => n.data.label);
+    const labels = nodes.filter((n) => n.data.category === 'artifact').map((n) => n.data.label);
     expect(labels).toContain('Marketing Plan');
   });
 
   it('detects budget artifact via transformation', () => {
     const { nodes } = buildNodesFromPrompt('Plan the budget for next quarter', uidFn, logFn);
-    const labels = nodes.filter(n => n.data.category === 'artifact').map(n => n.data.label);
+    const labels = nodes.filter((n) => n.data.category === 'artifact').map((n) => n.data.label);
     expect(labels).toContain('Budget Plan');
   });
 
   it('generates multiple artifacts for comma-and-separated prompts', () => {
-    const { nodes, edges } = buildNodesFromPrompt('Create lesson plans, rubrics, and quizzes', uidFn, logFn);
-    const artifacts = nodes.filter(n => n.data.category === 'artifact');
-    const labels = artifacts.map(n => n.data.label);
+    const { nodes, edges } = buildNodesFromPrompt(
+      'Create lesson plans, rubrics, and quizzes',
+      uidFn,
+      logFn,
+    );
+    const artifacts = nodes.filter((n) => n.data.category === 'artifact');
+    const labels = artifacts.map((n) => n.data.label);
     expect(labels).toContain('Lesson Plan');
     expect(labels).toContain('Rubric');
     expect(labels).toContain('Assessment'); // "quizzes" maps to Assessment
 
     // All artifacts should connect to the state node upstream
-    const stateNode = nodes.find(n => n.data.category === 'state');
+    const stateNode = nodes.find((n) => n.data.category === 'state');
     for (const a of artifacts) {
-      expect(edges.some(e => e.source === stateNode!.id && e.target === a.id)).toBe(true);
+      expect(edges.some((e) => e.source === stateNode!.id && e.target === a.id)).toBe(true);
     }
 
     // All artifacts should connect to the review gate downstream
-    const review = nodes.find(n => n.data.category === 'review');
+    const review = nodes.find((n) => n.data.category === 'review');
     for (const a of artifacts) {
-      expect(edges.some(e => e.source === a.id && e.target === review!.id)).toBe(true);
+      expect(edges.some((e) => e.source === a.id && e.target === review!.id)).toBe(true);
     }
   });
 
   it('generates two artifacts for "and"-separated prompt', () => {
     const { nodes } = buildNodesFromPrompt('Build a blog post and email newsletter', uidFn, logFn);
-    const artifacts = nodes.filter(n => n.data.category === 'artifact');
-    const labels = artifacts.map(n => n.data.label);
+    const artifacts = nodes.filter((n) => n.data.category === 'artifact');
+    const labels = artifacts.map((n) => n.data.label);
     expect(labels).toContain('Blog Post');
     expect(labels).toContain('Email Draft');
   });
 
   it('still generates single artifact for simple prompt', () => {
     const { nodes } = buildNodesFromPrompt('Make a rubric', uidFn, logFn);
-    const artifacts = nodes.filter(n => n.data.category === 'artifact');
-    const labels = artifacts.map(n => n.data.label);
+    const artifacts = nodes.filter((n) => n.data.category === 'artifact');
+    const labels = artifacts.map((n) => n.data.label);
     expect(labels).toContain('Rubric');
     // Should also get Learning Objectives as education supplement
     expect(labels).toContain('Learning Objectives');

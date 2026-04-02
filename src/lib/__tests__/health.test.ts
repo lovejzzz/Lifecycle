@@ -1,10 +1,20 @@
 import { describe, it, expect } from 'vitest';
-import { assessWorkflowHealth, issueFingerprint, formatHealthReport, detectBottlenecks } from '../health';
+import {
+  assessWorkflowHealth,
+  issueFingerprint,
+  formatHealthReport,
+  detectBottlenecks,
+} from '../health';
 import type { HealthReport } from '../health';
 import type { Node, Edge } from '@xyflow/react';
 import type { NodeData } from '../types';
 
-function makeNode(id: string, label: string, category: string, overrides?: Partial<NodeData>): Node<NodeData> {
+function makeNode(
+  id: string,
+  label: string,
+  category: string,
+  overrides?: Partial<NodeData>,
+): Node<NodeData> {
   return {
     id,
     type: 'lifecycleNode',
@@ -38,7 +48,7 @@ describe('assessWorkflowHealth', () => {
     ];
     const edges = [makeEdge('1', '3')];
     const report = assessWorkflowHealth(nodes, edges);
-    expect(report.issues.some(i => i.id === 'orphan-nodes')).toBe(true);
+    expect(report.issues.some((i) => i.id === 'orphan-nodes')).toBe(true);
     expect(report.score).toBeLessThan(100);
   });
 
@@ -49,19 +59,22 @@ describe('assessWorkflowHealth', () => {
     ];
     const edges = [makeEdge('1', '2')];
     const report = assessWorkflowHealth(nodes, edges);
-    expect(report.issues.some(i => i.id === 'stale-nodes')).toBe(true);
+    expect(report.issues.some((i) => i.id === 'stale-nodes')).toBe(true);
   });
 
   it('detects long-stale nodes (>5min)', () => {
     const now = Date.now();
     const nodes = [
       makeNode('1', 'Input', 'input'),
-      makeNode('2', 'Old Stale', 'artifact', { status: 'stale', lastUpdated: now - 10 * 60 * 1000 }),
+      makeNode('2', 'Old Stale', 'artifact', {
+        status: 'stale',
+        lastUpdated: now - 10 * 60 * 1000,
+      }),
     ];
     const edges = [makeEdge('1', '2')];
     const report = assessWorkflowHealth(nodes, edges, now);
-    expect(report.issues.some(i => i.id === 'long-stale')).toBe(true);
-    expect(report.suggestions.some(s => s.action === 'refresh stale')).toBe(true);
+    expect(report.issues.some((i) => i.id === 'long-stale')).toBe(true);
+    expect(report.suggestions.some((s) => s.action === 'refresh stale')).toBe(true);
   });
 
   it('detects empty content nodes', () => {
@@ -71,7 +84,7 @@ describe('assessWorkflowHealth', () => {
     ];
     const edges = [makeEdge('1', '2')];
     const report = assessWorkflowHealth(nodes, edges);
-    expect(report.issues.some(i => i.id === 'empty-content')).toBe(true);
+    expect(report.issues.some((i) => i.id === 'empty-content')).toBe(true);
   });
 
   it('detects missing output node', () => {
@@ -82,7 +95,7 @@ describe('assessWorkflowHealth', () => {
     ];
     const edges = [makeEdge('1', '2'), makeEdge('2', '3')];
     const report = assessWorkflowHealth(nodes, edges);
-    expect(report.issues.some(i => i.id === 'no-output')).toBe(true);
+    expect(report.issues.some((i) => i.id === 'no-output')).toBe(true);
   });
 
   it('detects execution failures', () => {
@@ -92,8 +105,8 @@ describe('assessWorkflowHealth', () => {
     ];
     const edges = [makeEdge('1', '2')];
     const report = assessWorkflowHealth(nodes, edges);
-    expect(report.issues.some(i => i.id === 'exec-failures')).toBe(true);
-    expect(report.suggestions.some(s => s.action === 'retry failed')).toBe(true);
+    expect(report.issues.some((i) => i.id === 'exec-failures')).toBe(true);
+    expect(report.suggestions.some((s) => s.action === 'retry failed')).toBe(true);
   });
 
   it('detects long chains without review gates', () => {
@@ -106,11 +119,14 @@ describe('assessWorkflowHealth', () => {
       makeNode('6', 'Step5', 'output'),
     ];
     const edges = [
-      makeEdge('1', '2'), makeEdge('2', '3'), makeEdge('3', '4'),
-      makeEdge('4', '5'), makeEdge('5', '6'),
+      makeEdge('1', '2'),
+      makeEdge('2', '3'),
+      makeEdge('3', '4'),
+      makeEdge('4', '5'),
+      makeEdge('5', '6'),
     ];
     const report = assessWorkflowHealth(nodes, edges);
-    expect(report.issues.some(i => i.id === 'no-review-gate')).toBe(true);
+    expect(report.issues.some((i) => i.id === 'no-review-gate')).toBe(true);
   });
 
   it('does not flag review gate issue if review exists in chain', () => {
@@ -123,11 +139,14 @@ describe('assessWorkflowHealth', () => {
       makeNode('6', 'Output', 'output'),
     ];
     const edges = [
-      makeEdge('1', '2'), makeEdge('2', '3'), makeEdge('3', '4'),
-      makeEdge('4', '5'), makeEdge('5', '6'),
+      makeEdge('1', '2'),
+      makeEdge('2', '3'),
+      makeEdge('3', '4'),
+      makeEdge('4', '5'),
+      makeEdge('5', '6'),
     ];
     const report = assessWorkflowHealth(nodes, edges);
-    expect(report.issues.some(i => i.id === 'no-review-gate')).toBe(false);
+    expect(report.issues.some((i) => i.id === 'no-review-gate')).toBe(false);
   });
 });
 
@@ -143,7 +162,9 @@ describe('issueFingerprint', () => {
   });
 
   it('produces different fingerprint for different issues', () => {
-    const fp1 = issueFingerprint([{ id: 'orphan-nodes', priority: 'medium' as const, message: '' }]);
+    const fp1 = issueFingerprint([
+      { id: 'orphan-nodes', priority: 'medium' as const, message: '' },
+    ]);
     const fp2 = issueFingerprint([{ id: 'stale-nodes', priority: 'high' as const, message: '' }]);
     expect(fp1).not.toBe(fp2);
   });
@@ -227,7 +248,8 @@ describe('formatHealthReport', () => {
       score: 50,
       issues: [{ id: 'x', priority: 'low', message: 'X' }],
       suggestions: Array.from({ length: 6 }, (_, i) => ({
-        id: `s${i}`, message: `Suggestion ${i}`,
+        id: `s${i}`,
+        message: `Suggestion ${i}`,
       })),
     };
     const result = formatHealthReport(report);
@@ -261,10 +283,7 @@ describe('formatHealthReport', () => {
 
 describe('detectBottlenecks', () => {
   it('returns empty report when no nodes have timing data', () => {
-    const nodes = [
-      makeNode('1', 'Input', 'input'),
-      makeNode('2', 'Action', 'action'),
-    ];
+    const nodes = [makeNode('1', 'Input', 'input'), makeNode('2', 'Action', 'action')];
     const edges = [makeEdge('1', '2')];
     const report = detectBottlenecks(nodes, edges);
     expect(report.slowNodes).toHaveLength(0);
@@ -304,7 +323,10 @@ describe('detectBottlenecks', () => {
   it('ignores nodes with error status', () => {
     const nodes = [
       makeNode('1', 'Fast', 'action', { _executionDurationMs: 1000, executionStatus: 'success' }),
-      makeNode('2', 'Errored', 'artifact', { _executionDurationMs: 8000, executionStatus: 'error' }),
+      makeNode('2', 'Errored', 'artifact', {
+        _executionDurationMs: 8000,
+        executionStatus: 'error',
+      }),
     ];
     const edges = [makeEdge('1', '2')];
     const report = detectBottlenecks(nodes, edges);
@@ -314,7 +336,10 @@ describe('detectBottlenecks', () => {
   it('detects sequential chains of slow nodes', () => {
     const nodes = [
       makeNode('1', 'SlowA', 'action', { _executionDurationMs: 6000, executionStatus: 'success' }),
-      makeNode('2', 'SlowB', 'artifact', { _executionDurationMs: 7000, executionStatus: 'success' }),
+      makeNode('2', 'SlowB', 'artifact', {
+        _executionDurationMs: 7000,
+        executionStatus: 'success',
+      }),
       makeNode('3', 'SlowC', 'cid', { _executionDurationMs: 8000, executionStatus: 'success' }),
     ];
     const edges = [makeEdge('1', '2'), makeEdge('2', '3')];
@@ -357,7 +382,7 @@ describe('assessWorkflowHealth — bottleneck integration', () => {
     ];
     const edges = [makeEdge('1', '2'), makeEdge('2', '3')];
     const report = assessWorkflowHealth(nodes, edges);
-    expect(report.issues.some(i => i.id === 'bottleneck-slow-nodes')).toBe(true);
+    expect(report.issues.some((i) => i.id === 'bottleneck-slow-nodes')).toBe(true);
     expect(report.bottlenecks).toBeDefined();
     expect(report.bottlenecks!.slowNodes.length).toBeGreaterThan(0);
     expect(report.score).toBeLessThan(100);
@@ -366,17 +391,25 @@ describe('assessWorkflowHealth — bottleneck integration', () => {
   it('suggests parallelization for sequential slow chains', () => {
     const nodes = [
       makeNode('1', 'SlowA', 'action', { _executionDurationMs: 6000, executionStatus: 'success' }),
-      makeNode('2', 'SlowB', 'artifact', { _executionDurationMs: 7000, executionStatus: 'success' }),
+      makeNode('2', 'SlowB', 'artifact', {
+        _executionDurationMs: 7000,
+        executionStatus: 'success',
+      }),
     ];
     const edges = [makeEdge('1', '2')];
     const report = assessWorkflowHealth(nodes, edges);
-    expect(report.suggestions.some(s => s.id === 'parallelize-chain' || s.id === 'optimize-chain')).toBe(true);
+    expect(
+      report.suggestions.some((s) => s.id === 'parallelize-chain' || s.id === 'optimize-chain'),
+    ).toBe(true);
   });
 
   it('does not include bottleneck report when no slow nodes', () => {
     const nodes = [
       makeNode('1', 'Fast', 'action', { _executionDurationMs: 500, executionStatus: 'success' }),
-      makeNode('2', 'AlsoFast', 'artifact', { _executionDurationMs: 600, executionStatus: 'success' }),
+      makeNode('2', 'AlsoFast', 'artifact', {
+        _executionDurationMs: 600,
+        executionStatus: 'success',
+      }),
     ];
     const edges = [makeEdge('1', '2')];
     const report = assessWorkflowHealth(nodes, edges);

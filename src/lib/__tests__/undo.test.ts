@@ -47,13 +47,15 @@ function stripExecution(node: TestNode): TestNode {
 }
 
 function computeUndoOp(
-  beforeNodes: TestNode[], afterNodes: TestNode[],
-  beforeEdges: TestEdge[], afterEdges: TestEdge[],
+  beforeNodes: TestNode[],
+  afterNodes: TestNode[],
+  beforeEdges: TestEdge[],
+  afterEdges: TestEdge[],
 ): UndoOp | null {
-  const bNodeMap = new Map(beforeNodes.map(n => [n.id, stripExecution(n)]));
-  const aNodeMap = new Map(afterNodes.map(n => [n.id, stripExecution(n)]));
-  const bEdgeMap = new Map(beforeEdges.map(e => [e.id, e]));
-  const aEdgeMap = new Map(afterEdges.map(e => [e.id, e]));
+  const bNodeMap = new Map(beforeNodes.map((n) => [n.id, stripExecution(n)]));
+  const aNodeMap = new Map(afterNodes.map((n) => [n.id, stripExecution(n)]));
+  const bEdgeMap = new Map(beforeEdges.map((e) => [e.id, e]));
+  const aEdgeMap = new Map(afterEdges.map((e) => [e.id, e]));
 
   const changedBeforeNodes = new Map<string, TestNode>();
   const changedAfterNodes = new Map<string, TestNode>();
@@ -69,8 +71,11 @@ function computeUndoOp(
     if (!aNode) {
       deletedNodeIds.push(id);
       changedBeforeNodes.set(id, bNode);
-    } else if (JSON.stringify(bNode.data) !== JSON.stringify(aNode.data) ||
-               bNode.position.x !== aNode.position.x || bNode.position.y !== aNode.position.y) {
+    } else if (
+      JSON.stringify(bNode.data) !== JSON.stringify(aNode.data) ||
+      bNode.position.x !== aNode.position.x ||
+      bNode.position.y !== aNode.position.y
+    ) {
       changedBeforeNodes.set(id, bNode);
       changedAfterNodes.set(id, aNode);
     }
@@ -98,17 +103,30 @@ function computeUndoOp(
     }
   }
 
-  const totalChanges = changedBeforeNodes.size + changedAfterNodes.size +
-    changedBeforeEdges.size + changedAfterEdges.size;
-  if (totalChanges === 0 && deletedNodeIds.length === 0 && createdNodeIds.length === 0 &&
-      deletedEdgeIds.length === 0 && createdEdgeIds.length === 0) {
+  const totalChanges =
+    changedBeforeNodes.size +
+    changedAfterNodes.size +
+    changedBeforeEdges.size +
+    changedAfterEdges.size;
+  if (
+    totalChanges === 0 &&
+    deletedNodeIds.length === 0 &&
+    createdNodeIds.length === 0 &&
+    deletedEdgeIds.length === 0 &&
+    createdEdgeIds.length === 0
+  ) {
     return null;
   }
 
   return {
-    beforeNodes: changedBeforeNodes, afterNodes: changedAfterNodes,
-    beforeEdges: changedBeforeEdges, afterEdges: changedAfterEdges,
-    deletedNodeIds, createdNodeIds, deletedEdgeIds, createdEdgeIds,
+    beforeNodes: changedBeforeNodes,
+    afterNodes: changedAfterNodes,
+    beforeEdges: changedBeforeEdges,
+    afterEdges: changedAfterEdges,
+    deletedNodeIds,
+    createdNodeIds,
+    deletedEdgeIds,
+    createdEdgeIds,
   };
 }
 
@@ -117,7 +135,7 @@ function applyUndo(op: UndoOp, nodes: TestNode[], edges: TestEdge[]) {
   let newEdges = [...edges];
   if (op.createdNodeIds.length > 0) {
     const created = new Set(op.createdNodeIds);
-    newNodes = newNodes.filter(n => !created.has(n.id));
+    newNodes = newNodes.filter((n) => !created.has(n.id));
   }
   for (const id of op.deletedNodeIds) {
     const before = op.beforeNodes.get(id);
@@ -125,12 +143,17 @@ function applyUndo(op: UndoOp, nodes: TestNode[], edges: TestEdge[]) {
   }
   for (const [id, beforeNode] of op.beforeNodes) {
     if (op.deletedNodeIds.includes(id)) continue;
-    const idx = newNodes.findIndex(n => n.id === id);
-    if (idx >= 0) newNodes[idx] = { ...newNodes[idx], ...beforeNode, data: { ...newNodes[idx].data, ...beforeNode.data } };
+    const idx = newNodes.findIndex((n) => n.id === id);
+    if (idx >= 0)
+      newNodes[idx] = {
+        ...newNodes[idx],
+        ...beforeNode,
+        data: { ...newNodes[idx].data, ...beforeNode.data },
+      };
   }
   if (op.createdEdgeIds.length > 0) {
     const created = new Set(op.createdEdgeIds);
-    newEdges = newEdges.filter(e => !created.has(e.id));
+    newEdges = newEdges.filter((e) => !created.has(e.id));
   }
   for (const id of op.deletedEdgeIds) {
     const before = op.beforeEdges.get(id);
@@ -138,7 +161,7 @@ function applyUndo(op: UndoOp, nodes: TestNode[], edges: TestEdge[]) {
   }
   for (const [id, beforeEdge] of op.beforeEdges) {
     if (op.deletedEdgeIds.includes(id)) continue;
-    const idx = newEdges.findIndex(e => e.id === id);
+    const idx = newEdges.findIndex((e) => e.id === id);
     if (idx >= 0) newEdges[idx] = beforeEdge;
   }
   return { nodes: newNodes, edges: newEdges };
@@ -149,7 +172,7 @@ function applyRedo(op: UndoOp, nodes: TestNode[], edges: TestEdge[]) {
   let newEdges = [...edges];
   if (op.deletedNodeIds.length > 0) {
     const deleted = new Set(op.deletedNodeIds);
-    newNodes = newNodes.filter(n => !deleted.has(n.id));
+    newNodes = newNodes.filter((n) => !deleted.has(n.id));
   }
   for (const id of op.createdNodeIds) {
     const after = op.afterNodes.get(id);
@@ -157,12 +180,17 @@ function applyRedo(op: UndoOp, nodes: TestNode[], edges: TestEdge[]) {
   }
   for (const [id, afterNode] of op.afterNodes) {
     if (op.createdNodeIds.includes(id)) continue;
-    const idx = newNodes.findIndex(n => n.id === id);
-    if (idx >= 0) newNodes[idx] = { ...newNodes[idx], ...afterNode, data: { ...newNodes[idx].data, ...afterNode.data } };
+    const idx = newNodes.findIndex((n) => n.id === id);
+    if (idx >= 0)
+      newNodes[idx] = {
+        ...newNodes[idx],
+        ...afterNode,
+        data: { ...newNodes[idx].data, ...afterNode.data },
+      };
   }
   if (op.deletedEdgeIds.length > 0) {
     const deleted = new Set(op.deletedEdgeIds);
-    newEdges = newEdges.filter(e => !deleted.has(e.id));
+    newEdges = newEdges.filter((e) => !deleted.has(e.id));
   }
   for (const id of op.createdEdgeIds) {
     const after = op.afterEdges.get(id);
@@ -170,7 +198,7 @@ function applyRedo(op: UndoOp, nodes: TestNode[], edges: TestEdge[]) {
   }
   for (const [id, afterEdge] of op.afterEdges) {
     if (op.createdEdgeIds.includes(id)) continue;
-    const idx = newEdges.findIndex(e => e.id === id);
+    const idx = newEdges.findIndex((e) => e.id === id);
     if (idx >= 0) newEdges[idx] = afterEdge;
   }
   return { nodes: newNodes, edges: newEdges };
@@ -179,7 +207,9 @@ function applyRedo(op: UndoOp, nodes: TestNode[], edges: TestEdge[]) {
 // Helper to make test nodes
 function mkNode(id: string, label: string, opts: Partial<NodeData> = {}): TestNode {
   return {
-    id, position: { x: 0, y: 0 }, type: 'lifecycleNode',
+    id,
+    position: { x: 0, y: 0 },
+    type: 'lifecycleNode',
     data: { label, category: 'action', content: '', status: 'idle', ...opts },
   };
 }
@@ -261,7 +291,7 @@ describe('undo/redo operations', () => {
       const op = computeUndoOp([n1, n2], [n1], [], [])!;
       const result = applyUndo(op, [n1], []);
       expect(result.nodes).toHaveLength(2);
-      expect(result.nodes.find(n => n.id === 'n2')).toBeTruthy();
+      expect(result.nodes.find((n) => n.id === 'n2')).toBeTruthy();
     });
 
     it('reverses node data changes', () => {
@@ -336,15 +366,15 @@ describe('undo/redo operations', () => {
       // Undo from after state
       const undone = applyUndo(op, afterNodes, afterEdges);
       expect(undone.nodes).toHaveLength(2);
-      expect(undone.nodes.find(n => n.id === 'n1')!.data.content).toBe('hello');
-      expect(undone.nodes.find(n => n.id === 'n3')).toBeUndefined();
+      expect(undone.nodes.find((n) => n.id === 'n1')!.data.content).toBe('hello');
+      expect(undone.nodes.find((n) => n.id === 'n3')).toBeUndefined();
       expect(undone.edges).toHaveLength(1);
 
       // Redo from undone state
       const redone = applyRedo(op, undone.nodes, undone.edges);
       expect(redone.nodes).toHaveLength(3);
-      expect(redone.nodes.find(n => n.id === 'n1')!.data.content).toBe('modified');
-      expect(redone.nodes.find(n => n.id === 'n3')).toBeTruthy();
+      expect(redone.nodes.find((n) => n.id === 'n1')!.data.content).toBe('modified');
+      expect(redone.nodes.find((n) => n.id === 'n3')).toBeTruthy();
       expect(redone.edges).toHaveLength(2);
     });
 
@@ -361,7 +391,7 @@ describe('undo/redo operations', () => {
 
       // Undo op2: should revert rename
       const afterUndoOp2 = applyUndo(op2, [n1Renamed, n2], []);
-      expect(afterUndoOp2.nodes.find(n => n.id === 'n1')!.data.label).toBe('A');
+      expect(afterUndoOp2.nodes.find((n) => n.id === 'n1')!.data.label).toBe('A');
 
       // Undo op1: should remove n2
       const afterUndoOp1 = applyUndo(op1, afterUndoOp2.nodes, []);
@@ -373,7 +403,7 @@ describe('undo/redo operations', () => {
   describe('memory efficiency', () => {
     it('stores only changed nodes, not all nodes', () => {
       const nodes = Array.from({ length: 100 }, (_, i) => mkNode(`n${i}`, `Node ${i}`));
-      const afterNodes = nodes.map(n => n.id === 'n5' ? mkNode('n5', 'Changed') : n);
+      const afterNodes = nodes.map((n) => (n.id === 'n5' ? mkNode('n5', 'Changed') : n));
       const op = computeUndoOp(nodes, afterNodes, [], [])!;
       // Only n5 should be in the diff, not all 100 nodes
       expect(op.beforeNodes.size).toBe(1);

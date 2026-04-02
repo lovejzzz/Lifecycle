@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { stripMarkdown, exportContent, compileDocument, slugify, type CompiledSection } from '../export';
+import {
+  stripMarkdown,
+  exportContent,
+  compileDocument,
+  slugify,
+  type CompiledSection,
+} from '../export';
 
 describe('stripMarkdown', () => {
   it('removes headers', () => {

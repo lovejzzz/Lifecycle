@@ -122,10 +122,10 @@ export default function BatchToolbar() {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 24, scale: 0.95 }}
           transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
-          className={`absolute bottom-16 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2.5 rounded-full border border-white/[0.1] bg-[#0e0e18]/95 backdrop-blur-xl shadow-xl transition-all ${leftPanelOpen ? 'left-[calc(50%+160px)]' : 'left-1/2'}`}
+          className={`absolute bottom-16 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/[0.1] bg-[#0e0e18]/95 px-4 py-2.5 shadow-xl backdrop-blur-xl transition-all ${leftPanelOpen ? 'left-[calc(50%+160px)]' : 'left-1/2'}`}
         >
           {/* Selection count */}
-          <span className="text-[11px] text-white/50 font-semibold tracking-wide tabular-nums">
+          <span className="text-[11px] font-semibold tracking-wide text-white/50 tabular-nums">
             {count} selected
           </span>
 
@@ -136,7 +136,7 @@ export default function BatchToolbar() {
             <button
               key={label}
               onClick={handler}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full ${bg} border ${border} text-[10px] font-medium ${bgHover} transition-colors cursor-pointer`}
+              className={`flex items-center gap-1.5 rounded-full px-2.5 py-1.5 ${bg} border ${border} text-[10px] font-medium ${bgHover} cursor-pointer transition-colors`}
               style={{ color }}
               title={label}
             >
@@ -150,7 +150,7 @@ export default function BatchToolbar() {
           {/* Deselect */}
           <button
             onClick={clearMultiSelect}
-            className="flex items-center gap-1 px-2 py-1.5 rounded-full text-[10px] text-white/30 hover:text-white/60 hover:bg-white/[0.05] transition-colors cursor-pointer"
+            className="flex cursor-pointer items-center gap-1 rounded-full px-2 py-1.5 text-[10px] text-white/30 transition-colors hover:bg-white/[0.05] hover:text-white/60"
             title="Deselect all"
           >
             <X size={12} strokeWidth={2} />

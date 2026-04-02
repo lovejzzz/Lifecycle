@@ -3,7 +3,11 @@
 import React, { useState, useCallback, useEffect, createContext, useContext } from 'react';
 import AuthGate from './AuthGate';
 import { isSupabaseConfigured } from '@/lib/supabase';
-import { activateSupabaseBackend, activateLocalBackend, migrateLocalToSupabase } from '@/lib/storage';
+import {
+  activateSupabaseBackend,
+  activateLocalBackend,
+  migrateLocalToSupabase,
+} from '@/lib/storage';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 // ── Auth context ────────────────────────────────────────────────────────────

@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { getAgent, getInterviewQuestions, buildEnrichedPrompt, detectPromptSignals, shouldSkipRemainingQuestions, getAdaptiveInterview } from '../agents';
+import {
+  getAgent,
+  getInterviewQuestions,
+  buildEnrichedPrompt,
+  detectPromptSignals,
+  shouldSkipRemainingQuestions,
+  getAdaptiveInterview,
+} from '../agents';
 import type { Node } from '@xyflow/react';
 import type { NodeData } from '../types';
 
@@ -117,37 +124,37 @@ describe('agents', () => {
       ] as unknown as Node<NodeData>[];
       const qs = getInterviewQuestions('Add more steps', existingNodes);
       expect(qs[0].key).toBe('intent');
-      expect(qs[0].cards.some(c => c.id === 'extend')).toBe(true);
+      expect(qs[0].cards.some((c) => c.id === 'extend')).toBe(true);
     });
 
     it('adds launch question for product launch prompts', () => {
       const qs = getInterviewQuestions('Launch a new product');
-      const launchQ = qs.find(q => q.key === 'launch');
+      const launchQ = qs.find((q) => q.key === 'launch');
       expect(launchQ).toBeDefined();
-      expect(launchQ!.cards.some(c => c.id === 'b2b')).toBe(true);
+      expect(launchQ!.cards.some((c) => c.id === 'b2b')).toBe(true);
     });
 
     it('adds research question for research prompts', () => {
       const qs = getInterviewQuestions('Conduct user research');
-      const researchQ = qs.find(q => q.key === 'research');
+      const researchQ = qs.find((q) => q.key === 'research');
       expect(researchQ).toBeDefined();
     });
 
     it('adds pipeline question for CI/CD prompts', () => {
       const qs = getInterviewQuestions('Build a CI/CD pipeline');
-      const pipelineQ = qs.find(q => q.key === 'pipeline');
+      const pipelineQ = qs.find((q) => q.key === 'pipeline');
       expect(pipelineQ).toBeDefined();
     });
 
     it('adds deliverable question for generic prompts', () => {
       const qs = getInterviewQuestions('Create a workflow for my team');
-      const deliverableQ = qs.find(q => q.key === 'deliverable');
+      const deliverableQ = qs.find((q) => q.key === 'deliverable');
       expect(deliverableQ).toBeDefined();
     });
 
     it('always includes priority question', () => {
       const qs = getInterviewQuestions('anything');
-      expect(qs.some(q => q.key === 'priority')).toBe(true);
+      expect(qs.some((q) => q.key === 'priority')).toBe(true);
     });
 
     it('skips stage question when extending', () => {
@@ -155,7 +162,7 @@ describe('agents', () => {
         { id: 'n1', data: { label: 'A', category: 'input', status: 'active' } },
       ] as unknown as Node<NodeData>[];
       const qs = getInterviewQuestions('extend', existingNodes);
-      expect(qs.every(q => q.key !== 'stage')).toBe(true);
+      expect(qs.every((q) => q.key !== 'stage')).toBe(true);
     });
   });
 
@@ -195,7 +202,7 @@ describe('agents', () => {
 
     it('enriches launch prompts with audience context', () => {
       const qs = getInterviewQuestions('Launch a product');
-      const launchIdx = qs.findIndex(q => q.key === 'launch');
+      const launchIdx = qs.findIndex((q) => q.key === 'launch');
       if (launchIdx >= 0) {
         const answers = { [`q${launchIdx}`]: 'b2b' };
         const result = buildEnrichedPrompt('Launch a product', answers, qs);
@@ -205,7 +212,7 @@ describe('agents', () => {
 
     it('enriches research prompts with type context', () => {
       const qs = getInterviewQuestions('Do research analysis');
-      const researchIdx = qs.findIndex(q => q.key === 'research');
+      const researchIdx = qs.findIndex((q) => q.key === 'research');
       if (researchIdx >= 0) {
         const answers = { [`q${researchIdx}`]: 'competitive' };
         const result = buildEnrichedPrompt('Do research analysis', answers, qs);
@@ -273,7 +280,9 @@ describe('agents', () => {
     });
 
     it('detects multiple signals from a rich prompt', () => {
-      const signals = detectPromptSignals('Solo developer, need to ship fast, hard deadline by end of week');
+      const signals = detectPromptSignals(
+        'Solo developer, need to ship fast, hard deadline by end of week',
+      );
       expect(signals.detected.scale).toBe('solo');
       expect(signals.detected.priority).toBe('speed');
       expect(signals.detected.constraints).toBe('deadline');
@@ -283,8 +292,8 @@ describe('agents', () => {
   describe('shouldSkipRemainingQuestions', () => {
     it('returns true when scale and priority are both answered', () => {
       const qs = getInterviewQuestions('Build something');
-      const scaleIdx = qs.findIndex(q => q.key === 'scale');
-      const priorityIdx = qs.findIndex(q => q.key === 'priority');
+      const scaleIdx = qs.findIndex((q) => q.key === 'scale');
+      const priorityIdx = qs.findIndex((q) => q.key === 'priority');
       const answers: Record<string, string> = {};
       if (scaleIdx >= 0) answers[`q${scaleIdx}`] = 'solo';
       if (priorityIdx >= 0) answers[`q${priorityIdx}`] = 'speed';
@@ -293,7 +302,7 @@ describe('agents', () => {
 
     it('returns false when only scale is answered', () => {
       const qs = getInterviewQuestions('Build something');
-      const scaleIdx = qs.findIndex(q => q.key === 'scale');
+      const scaleIdx = qs.findIndex((q) => q.key === 'scale');
       const answers: Record<string, string> = {};
       if (scaleIdx >= 0) answers[`q${scaleIdx}`] = 'solo';
       expect(shouldSkipRemainingQuestions(answers, qs)).toBe(false);
@@ -311,13 +320,10 @@ describe('agents', () => {
       const allQs = getInterviewQuestions('Solo developer building fast');
       // Should have fewer questions since scale and priority are detected
       expect(questions.length).toBeLessThan(allQs.length);
+      expect(preAnswers).toHaveProperty(`q${allQs.findIndex((q) => q.key === 'scale')}`, 'solo');
       expect(preAnswers).toHaveProperty(
-        `q${allQs.findIndex(q => q.key === 'scale')}`,
-        'solo'
-      );
-      expect(preAnswers).toHaveProperty(
-        `q${allQs.findIndex(q => q.key === 'priority')}`,
-        'speed'
+        `q${allQs.findIndex((q) => q.key === 'priority')}`,
+        'speed',
       );
     });
 
@@ -349,7 +355,12 @@ describe('agents', () => {
     });
 
     it('works for rowan mode', () => {
-      const { questions } = getAdaptiveInterview('Solo project, ship fast', undefined, undefined, 'rowan');
+      const { questions } = getAdaptiveInterview(
+        'Solo project, ship fast',
+        undefined,
+        undefined,
+        'rowan',
+      );
       const allQs = getInterviewQuestions('Solo project, ship fast', undefined, undefined, 'rowan');
       expect(questions.length).toBeLessThan(allQs.length);
     });

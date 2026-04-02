@@ -1,17 +1,35 @@
 import { describe, it, expect } from 'vitest';
 import {
-  nodesOverlap, findFreePosition, topoSort, inferEdgeLabel,
-  findNodeByName, detectCycle, validateGraphInvariants,
-  getParallelGroups, getUpstreamSubgraph,
-  NODE_W, NODE_H,
+  nodesOverlap,
+  findFreePosition,
+  topoSort,
+  inferEdgeLabel,
+  findNodeByName,
+  detectCycle,
+  validateGraphInvariants,
+  getParallelGroups,
+  getUpstreamSubgraph,
+  NODE_W,
+  NODE_H,
 } from '../graph';
 import type { Node, Edge } from '@xyflow/react';
 import type { NodeData } from '../types';
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
-function mkNode(id: string, label = id, category = 'action' as const, x = 0, y = 0): Node<NodeData> {
-  return { id, type: 'lifecycleNode', position: { x, y }, data: { label, category, status: 'active' } };
+function mkNode(
+  id: string,
+  label = id,
+  category = 'action' as const,
+  x = 0,
+  y = 0,
+): Node<NodeData> {
+  return {
+    id,
+    type: 'lifecycleNode',
+    position: { x, y },
+    data: { label, category, status: 'active' },
+  };
 }
 
 function mkEdge(source: string, target: string, label = 'drives'): Edge {
@@ -48,9 +66,13 @@ describe('findFreePosition', () => {
   });
 
   it('handles multiple existing nodes', () => {
-    const existing = [{ x: 0, y: 0 }, { x: NODE_W, y: 0 }, { x: 0, y: NODE_H }];
+    const existing = [
+      { x: 0, y: 0 },
+      { x: NODE_W, y: 0 },
+      { x: 0, y: NODE_H },
+    ];
     const pos = findFreePosition({ x: 0, y: 0 }, existing);
-    expect(existing.every(e => !nodesOverlap(pos, e))).toBe(true);
+    expect(existing.every((e) => !nodesOverlap(pos, e))).toBe(true);
   });
 });
 
@@ -133,7 +155,11 @@ describe('inferEdgeLabel', () => {
 // ─── findNodeByName ────────────────────────────────────────────────────────
 
 describe('findNodeByName', () => {
-  const nodes = [mkNode('1', 'Data Intake'), mkNode('2', 'Review Gate'), mkNode('3', 'Final Output')];
+  const nodes = [
+    mkNode('1', 'Data Intake'),
+    mkNode('2', 'Review Gate'),
+    mkNode('3', 'Final Output'),
+  ];
 
   it('finds exact match (case-insensitive)', () => {
     expect(findNodeByName('data intake', nodes)?.id).toBe('1');
@@ -234,7 +260,7 @@ describe('validateGraphInvariants', () => {
     const edges = [{ source: 'a', target: 'a' }];
     const { valid, issues } = validateGraphInvariants(nodes, edges);
     expect(valid).toBe(false);
-    expect(issues.some(i => i.code === 'self-loop')).toBe(true);
+    expect(issues.some((i) => i.code === 'self-loop')).toBe(true);
   });
 
   it('detects duplicate edges', () => {
@@ -244,7 +270,7 @@ describe('validateGraphInvariants', () => {
       { source: 'a', target: 'b' },
     ];
     const { issues } = validateGraphInvariants(nodes, edges);
-    expect(issues.some(i => i.code === 'duplicate-edge')).toBe(true);
+    expect(issues.some((i) => i.code === 'duplicate-edge')).toBe(true);
   });
 
   it('detects dangling source', () => {
@@ -252,7 +278,7 @@ describe('validateGraphInvariants', () => {
     const edges = [{ source: 'x', target: 'b' }];
     const { valid, issues } = validateGraphInvariants(nodes, edges);
     expect(valid).toBe(false);
-    expect(issues.some(i => i.code === 'dangling-source')).toBe(true);
+    expect(issues.some((i) => i.code === 'dangling-source')).toBe(true);
   });
 
   it('detects dangling target', () => {
@@ -260,7 +286,7 @@ describe('validateGraphInvariants', () => {
     const edges = [{ source: 'a', target: 'z' }];
     const { valid, issues } = validateGraphInvariants(nodes, edges);
     expect(valid).toBe(false);
-    expect(issues.some(i => i.code === 'dangling-target')).toBe(true);
+    expect(issues.some((i) => i.code === 'dangling-target')).toBe(true);
   });
 
   it('treats duplicate edges as warnings (still valid)', () => {
@@ -311,7 +337,7 @@ describe('getUpstreamSubgraph', () => {
     const nodes = [mkNode('A'), mkNode('B'), mkNode('C'), mkNode('D')];
     const edges = [mkEdge('A', 'B'), mkEdge('B', 'C'), mkEdge('A', 'D')];
     const sub = getUpstreamSubgraph('C', nodes, edges);
-    expect(sub.nodes.map(n => n.id).sort()).toEqual(['A', 'B', 'C']);
+    expect(sub.nodes.map((n) => n.id).sort()).toEqual(['A', 'B', 'C']);
     expect(sub.edges).toHaveLength(2); // A→B, B→C
   });
 
@@ -319,7 +345,7 @@ describe('getUpstreamSubgraph', () => {
     const nodes = [mkNode('A'), mkNode('B')];
     const edges = [mkEdge('A', 'B')];
     const sub = getUpstreamSubgraph('A', nodes, edges);
-    expect(sub.nodes.map(n => n.id)).toEqual(['A']);
+    expect(sub.nodes.map((n) => n.id)).toEqual(['A']);
     expect(sub.edges).toHaveLength(0);
   });
 });

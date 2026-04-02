@@ -2,9 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Play, X, Send, Loader2, RotateCcw, ChevronRight, Sparkles,
-} from 'lucide-react';
+import { Play, X, Send, Loader2, RotateCcw, ChevronRight, Sparkles } from 'lucide-react';
 import { useLifecycleStore } from '@/store/useStore';
 import { getAgent } from '@/lib/agents';
 import { renderMarkdown } from '@/lib/markdown';
@@ -19,10 +17,8 @@ interface PreviewMessage {
 }
 
 export default function PreviewPanel() {
-  const {
-    nodes, edges, showPreviewPanel, togglePreviewPanel, cidMode,
-    executeNode, cidAIModel,
-  } = useLifecycleStore();
+  const { nodes, edges, showPreviewPanel, togglePreviewPanel, cidMode, executeNode, cidAIModel } =
+    useLifecycleStore();
 
   const [messages, setMessages] = useState<PreviewMessage[]>([]);
   const [input, setInput] = useState('');
@@ -46,8 +42,8 @@ export default function PreviewPanel() {
   }, [showPreviewPanel]);
 
   // Find input and output nodes for the workflow
-  const inputNode = nodes.find(n => n.data.category === 'input');
-  const outputNode = nodes.find(n => n.data.category === 'output');
+  const inputNode = nodes.find((n) => n.data.category === 'input');
+  const outputNode = nodes.find((n) => n.data.category === 'output');
 
   // Get topological order of nodes for execution
   const getExecutionOrder = useCallback(() => {
@@ -61,12 +57,12 @@ export default function PreviewPanel() {
       adj.get(e.source)?.push(e.target);
       inDegree.set(e.target, (inDegree.get(e.target) || 0) + 1);
     }
-    const queue = nodes.filter(n => (inDegree.get(n.id) || 0) === 0).map(n => n.id);
+    const queue = nodes.filter((n) => (inDegree.get(n.id) || 0) === 0).map((n) => n.id);
     const order: string[] = [];
     while (queue.length > 0) {
       const current = queue.shift()!;
       order.push(current);
-      for (const next of (adj.get(current) || [])) {
+      for (const next of adj.get(current) || []) {
         const newDeg = (inDegree.get(next) || 1) - 1;
         inDegree.set(next, newDeg);
         if (newDeg === 0) queue.push(next);
@@ -85,7 +81,7 @@ export default function PreviewPanel() {
       content: trimmed,
       timestamp: Date.now(),
     };
-    setMessages(prev => [...prev, userMsg]);
+    setMessages((prev) => [...prev, userMsg]);
     setInput('');
     setIsRunning(true);
 
@@ -105,7 +101,7 @@ export default function PreviewPanel() {
       const workflowStart = Date.now();
 
       for (const nodeId of order) {
-        const node = useLifecycleStore.getState().nodes.find(n => n.id === nodeId);
+        const node = useLifecycleStore.getState().nodes.find((n) => n.id === nodeId);
         if (!node) continue;
 
         // Skip note nodes
@@ -122,8 +118,11 @@ export default function PreviewPanel() {
         try {
           await executeNode(nodeId);
           // Check if this node errored
-          const updated = useLifecycleStore.getState().nodes.find(n => n.id === nodeId);
-          trace.push({ name: node.data.label, durationMs: updated?.data._executionDurationMs ?? null });
+          const updated = useLifecycleStore.getState().nodes.find((n) => n.id === nodeId);
+          trace.push({
+            name: node.data.label,
+            durationMs: updated?.data._executionDurationMs ?? null,
+          });
           if (updated?.data.executionStatus === 'error') {
             errors.push(`${node.data.label}: ${updated.data.executionError || 'failed'}`);
           }
@@ -139,28 +138,33 @@ export default function PreviewPanel() {
       // Find the best response to display
       const store = useLifecycleStore.getState();
       const executedNodes = order
-        .map(id => store.nodes.find(n => n.id === id))
+        .map((id) => store.nodes.find((n) => n.id === id))
         .filter((n): n is NonNullable<typeof n> => !!n && !!n.data.executionResult);
 
       // Collect ALL output nodes (supports multi-output workflows)
-      const outputNodes = executedNodes.filter(n => n.data.category === 'output');
-      const lastCidNode = [...executedNodes].reverse().find(n => n.data.category === 'cid');
+      const outputNodes = executedNodes.filter((n) => n.data.category === 'output');
+      const lastCidNode = [...executedNodes].reverse().find((n) => n.data.category === 'cid');
 
       let botResponse = '';
 
       if (outputNodes.length > 1) {
         // Multi-output workflow: show each output with its label as header
-        botResponse = outputNodes.map(n => {
-          const result = n.data.executionResult || '(no output)';
-          return `### ${n.data.label}\n\n${result}`;
-        }).join('\n\n---\n\n');
+        botResponse = outputNodes
+          .map((n) => {
+            const result = n.data.executionResult || '(no output)';
+            return `### ${n.data.label}\n\n${result}`;
+          })
+          .join('\n\n---\n\n');
       } else if (outputNodes.length === 1) {
         const outNode = outputNodes[0];
         botResponse = outNode.data.executionResult || '';
         // If output is verbose passthrough, prefer last CID node's cleaner response
-        if (lastCidNode && outNode.data.executionResult
-          && lastCidNode.data.executionResult
-          && outNode.data.executionResult.length > lastCidNode.data.executionResult.length * 3) {
+        if (
+          lastCidNode &&
+          outNode.data.executionResult &&
+          lastCidNode.data.executionResult &&
+          outNode.data.executionResult.length > lastCidNode.data.executionResult.length * 3
+        ) {
           botResponse = lastCidNode.data.executionResult;
         }
       } else {
@@ -170,9 +174,10 @@ export default function PreviewPanel() {
       }
 
       if (!botResponse && errors.length > 0) {
-        botResponse = `Workflow execution had errors:\n${errors.map(e => `- ${e}`).join('\n')}`;
+        botResponse = `Workflow execution had errors:\n${errors.map((e) => `- ${e}`).join('\n')}`;
       } else if (!botResponse) {
-        botResponse = 'No output generated. Check that your workflow nodes are connected and an API key is configured.';
+        botResponse =
+          'No output generated. Check that your workflow nodes are connected and an API key is configured.';
       }
 
       const botMsg: PreviewMessage = {
@@ -183,7 +188,7 @@ export default function PreviewPanel() {
         nodeTrace: trace,
         totalDurationMs,
       };
-      setMessages(prev => [...prev, botMsg]);
+      setMessages((prev) => [...prev, botMsg]);
     } catch (err) {
       const errMsg: PreviewMessage = {
         id: `prev-${Date.now()}-err`,
@@ -191,7 +196,7 @@ export default function PreviewPanel() {
         content: `Execution error: ${err instanceof Error ? err.message : 'Unknown error'}`,
         timestamp: Date.now(),
       };
-      setMessages(prev => [...prev, errMsg]);
+      setMessages((prev) => [...prev, errMsg]);
     } finally {
       setIsRunning(false);
       setActiveNodeId(null);
@@ -207,7 +212,7 @@ export default function PreviewPanel() {
   if (!showPreviewPanel) return null;
 
   const hasWorkflow = nodes.length >= 2;
-  const activeNode = nodes.find(n => n.id === activeNodeId);
+  const activeNode = nodes.find((n) => n.id === activeNodeId);
 
   return (
     <motion.div
@@ -215,34 +220,39 @@ export default function PreviewPanel() {
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: 400, opacity: 0 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      className="fixed right-0 top-0 bottom-0 w-[380px] bg-[#0c0c14]/95 backdrop-blur-xl border-l border-white/[0.06] z-40 flex flex-col"
+      className="fixed top-0 right-0 bottom-0 z-40 flex w-[380px] flex-col border-l border-white/[0.06] bg-[#0c0c14]/95 backdrop-blur-xl"
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
+      <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-3">
         <div className="flex items-center gap-2">
-          <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${
-            agent.accent === 'amber'
-              ? 'bg-amber-500/15 border border-amber-500/20'
-              : 'bg-emerald-500/15 border border-emerald-500/20'
-          }`}>
-            <Play size={10} className={agent.accent === 'amber' ? 'text-amber-400' : 'text-emerald-400'} />
+          <div
+            className={`flex h-6 w-6 items-center justify-center rounded-lg ${
+              agent.accent === 'amber'
+                ? 'border border-amber-500/20 bg-amber-500/15'
+                : 'border border-emerald-500/20 bg-emerald-500/15'
+            }`}
+          >
+            <Play
+              size={10}
+              className={agent.accent === 'amber' ? 'text-amber-400' : 'text-emerald-400'}
+            />
           </div>
           <div>
             <span className="text-[12px] font-semibold text-white/90">Preview</span>
-            <span className="text-[9px] text-white/30 ml-2">Test your workflow</span>
+            <span className="ml-2 text-[9px] text-white/30">Test your workflow</span>
           </div>
         </div>
         <div className="flex items-center gap-1">
           <button
             onClick={handleReset}
-            className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/30 hover:text-white/60 transition-colors"
+            className="rounded-lg p-1.5 text-white/30 transition-colors hover:bg-white/[0.06] hover:text-white/60"
             title="Reset conversation"
           >
             <RotateCcw size={12} />
           </button>
           <button
             onClick={togglePreviewPanel}
-            className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/30 hover:text-white/60 transition-colors"
+            className="rounded-lg p-1.5 text-white/30 transition-colors hover:bg-white/[0.06] hover:text-white/60"
           >
             <X size={14} />
           </button>
@@ -256,72 +266,92 @@ export default function PreviewPanel() {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="px-4 py-2 border-b border-white/[0.04] bg-white/[0.02] overflow-hidden"
+            className="overflow-hidden border-b border-white/[0.04] bg-white/[0.02] px-4 py-2"
           >
             <div className="flex items-center gap-2 text-[10px]">
-              <Loader2 size={10} className="text-cyan-400 animate-spin" />
+              <Loader2 size={10} className="animate-spin text-cyan-400" />
               <span className="text-white/40">Running</span>
-              <span className="text-cyan-400/70 font-medium">{activeNode.data.label}</span>
+              <span className="font-medium text-cyan-400/70">{activeNode.data.label}</span>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 scrollbar-thin">
+      <div className="scrollbar-thin flex-1 space-y-3 overflow-y-auto px-4 py-4">
         {!hasWorkflow ? (
-          <div className="flex flex-col items-center justify-center h-full text-center gap-3">
+          <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
             <Sparkles size={24} className="text-white/20" />
-            <div className="text-[11px] text-white/30 leading-relaxed max-w-[240px]">
-              Build a workflow with at least an <span className="text-emerald-400/50">input</span> and <span className="text-emerald-400/50">output</span> node, then preview it here.
+            <div className="max-w-[240px] text-[11px] leading-relaxed text-white/30">
+              Build a workflow with at least an <span className="text-emerald-400/50">input</span>{' '}
+              and <span className="text-emerald-400/50">output</span> node, then preview it here.
             </div>
           </div>
         ) : messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center gap-3">
+          <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
             <Play size={24} className="text-white/20" />
-            <div className="text-[11px] text-white/30 leading-relaxed max-w-[240px]">
+            <div className="max-w-[240px] text-[11px] leading-relaxed text-white/30">
               Send a message to test your workflow end-to-end.
               {inputNode && (
-                <span className="block mt-1 text-white/25">
+                <span className="mt-1 block text-white/25">
                   Input: <span className="text-cyan-400/40">{inputNode.data.label}</span>
-                  {outputNode && <> &rarr; Output: <span className="text-cyan-400/40">{outputNode.data.label}</span></>}
+                  {outputNode && (
+                    <>
+                      {' '}
+                      &rarr; Output:{' '}
+                      <span className="text-cyan-400/40">{outputNode.data.label}</span>
+                    </>
+                  )}
                 </span>
               )}
             </div>
           </div>
         ) : (
           messages.map((msg, idx) => (
-            <div key={`${msg.id}-${idx}`} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[85%] rounded-xl px-3 py-2 ${
-                msg.role === 'user'
-                  ? agent.accent === 'amber'
-                    ? 'bg-amber-500/10 border border-amber-500/15 text-white/80'
-                    : 'bg-emerald-500/10 border border-emerald-500/15 text-white/80'
-                  : msg.role === 'system'
-                    ? 'bg-rose-500/10 border border-rose-500/15 text-rose-300/70'
-                    : 'bg-white/[0.04] border border-white/[0.06] text-white/70'
-              }`}>
+            <div
+              key={`${msg.id}-${idx}`}
+              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              <div
+                className={`max-w-[85%] rounded-xl px-3 py-2 ${
+                  msg.role === 'user'
+                    ? agent.accent === 'amber'
+                      ? 'border border-amber-500/15 bg-amber-500/10 text-white/80'
+                      : 'border border-emerald-500/15 bg-emerald-500/10 text-white/80'
+                    : msg.role === 'system'
+                      ? 'border border-rose-500/15 bg-rose-500/10 text-rose-300/70'
+                      : 'border border-white/[0.06] bg-white/[0.04] text-white/70'
+                }`}
+              >
                 <div className="text-[11px] leading-relaxed">
                   {msg.role === 'user' ? msg.content : renderMarkdown(msg.content)}
                 </div>
                 {msg.nodeTrace && msg.nodeTrace.length > 0 && (
-                  <div className="mt-2 pt-1.5 border-t border-white/[0.04]">
+                  <div className="mt-2 border-t border-white/[0.04] pt-1.5">
                     <div className="flex flex-wrap gap-1">
                       {msg.nodeTrace.map((t, i) => (
-                        <span key={i} className="flex items-center gap-0.5 text-[8px] text-white/30">
+                        <span
+                          key={i}
+                          className="flex items-center gap-0.5 text-[8px] text-white/30"
+                        >
                           {i > 0 && <ChevronRight size={7} className="text-white/20" />}
                           {t.name}
                           {t.durationMs != null && t.durationMs > 0 && (
-                            <span className="text-white/20 font-mono ml-0.5">
-                              {t.durationMs < 1000 ? `${t.durationMs}ms` : `${(t.durationMs / 1000).toFixed(1)}s`}
+                            <span className="ml-0.5 font-mono text-white/20">
+                              {t.durationMs < 1000
+                                ? `${t.durationMs}ms`
+                                : `${(t.durationMs / 1000).toFixed(1)}s`}
                             </span>
                           )}
                         </span>
                       ))}
                     </div>
                     {msg.totalDurationMs != null && (
-                      <div className="text-[7px] text-white/25 mt-1 font-mono">
-                        Total: {msg.totalDurationMs < 1000 ? `${msg.totalDurationMs}ms` : `${(msg.totalDurationMs / 1000).toFixed(1)}s`}
+                      <div className="mt-1 font-mono text-[7px] text-white/25">
+                        Total:{' '}
+                        {msg.totalDurationMs < 1000
+                          ? `${msg.totalDurationMs}ms`
+                          : `${(msg.totalDurationMs / 1000).toFixed(1)}s`}
                       </div>
                     )}
                   </div>
@@ -333,10 +363,12 @@ export default function PreviewPanel() {
 
         {isRunning && (
           <div className="flex justify-start">
-            <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl px-3 py-2">
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] px-3 py-2">
               <div className="flex items-center gap-2">
-                <Loader2 size={11} className="text-white/30 animate-spin" />
-                <span className="text-[10px] text-white/30">Running {nodes.length}-node workflow…</span>
+                <Loader2 size={11} className="animate-spin text-white/30" />
+                <span className="text-[10px] text-white/30">
+                  Running {nodes.length}-node workflow…
+                </span>
               </div>
             </div>
           </div>
@@ -346,25 +378,32 @@ export default function PreviewPanel() {
       </div>
 
       {/* Input */}
-      <div className="px-4 py-3 border-t border-white/[0.06]">
-        <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-colors ${
-          agent.accent === 'amber'
-            ? 'border-amber-500/15 bg-amber-500/[0.03] focus-within:border-amber-500/30'
-            : 'border-emerald-500/15 bg-emerald-500/[0.03] focus-within:border-emerald-500/30'
-        }`}>
+      <div className="border-t border-white/[0.06] px-4 py-3">
+        <div
+          className={`flex items-center gap-2 rounded-xl border px-3 py-2 transition-colors ${
+            agent.accent === 'amber'
+              ? 'border-amber-500/15 bg-amber-500/[0.03] focus-within:border-amber-500/30'
+              : 'border-emerald-500/15 bg-emerald-500/[0.03] focus-within:border-emerald-500/30'
+          }`}
+        >
           <input
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
             placeholder={hasWorkflow ? 'Type a message to test...' : 'Build a workflow first...'}
             disabled={!hasWorkflow || isRunning}
-            className="flex-1 bg-transparent text-[11px] text-white/80 placeholder:text-white/20 outline-none disabled:opacity-40"
+            className="flex-1 bg-transparent text-[11px] text-white/80 outline-none placeholder:text-white/20 disabled:opacity-40"
           />
           <button
             onClick={handleSend}
             disabled={!input.trim() || isRunning || !hasWorkflow}
-            className={`p-1.5 rounded-lg transition-colors disabled:opacity-20 ${
+            className={`rounded-lg p-1.5 transition-colors disabled:opacity-20 ${
               agent.accent === 'amber'
                 ? 'text-amber-400/60 hover:bg-amber-500/10'
                 : 'text-emerald-400/60 hover:bg-emerald-500/10'
@@ -373,12 +412,15 @@ export default function PreviewPanel() {
             {isRunning ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
           </button>
         </div>
-        <div className="flex items-center justify-between mt-1.5 px-1">
+        <div className="mt-1.5 flex items-center justify-between px-1">
           <span className="text-[8px] text-white/25">
             {nodes.length} nodes &middot; {edges.length} edges &middot; {cidAIModel}
           </span>
           {messages.length > 0 && (
-            <button onClick={handleReset} className="text-[8px] text-white/25 hover:text-white/40 transition-colors">
+            <button
+              onClick={handleReset}
+              className="text-[8px] text-white/25 transition-colors hover:text-white/40"
+            >
               Clear chat
             </button>
           )}

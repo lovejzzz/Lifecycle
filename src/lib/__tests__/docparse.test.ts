@@ -84,29 +84,31 @@ describe('detectSections', () => {
     const text = '1. Introduction\nSome intro text.\n\n2. Background\nSome background.';
     const sections = detectSections(text);
     expect(sections.length).toBeGreaterThanOrEqual(2);
-    const titles = sections.map(s => s.title);
+    const titles = sections.map((s) => s.title);
     // Titles may keep the numbering prefix (e.g. "1. Introduction")
-    expect(titles.some(t => t.includes('Introduction'))).toBe(true);
-    expect(titles.some(t => t.includes('Background'))).toBe(true);
+    expect(titles.some((t) => t.includes('Introduction'))).toBe(true);
+    expect(titles.some((t) => t.includes('Background'))).toBe(true);
   });
 
   it('detects markdown headings', () => {
     const text = '# Overview\nWelcome.\n\n## Goals\nLearn stuff.\n\n## Schedule\nWeek by week.';
     const sections = detectSections(text);
-    const titles = sections.map(s => s.title);
+    const titles = sections.map((s) => s.title);
     expect(titles).toContain('Overview');
     expect(titles).toContain('Goals');
     expect(titles).toContain('Schedule');
   });
 
   it('detects common syllabus sections (case-insensitive)', () => {
-    const text = 'Course Description\nThis course covers...\n\nGrading\n80% exams, 20% homework.\n\nSchedule\nWeek 1: Intro.';
+    const text =
+      'Course Description\nThis course covers...\n\nGrading\n80% exams, 20% homework.\n\nSchedule\nWeek 1: Intro.';
     const sections = detectSections(text);
     expect(sections.length).toBeGreaterThanOrEqual(2);
   });
 
   it('detects week/module patterns', () => {
-    const text = 'Week 1\nIntro to the course.\n\nWeek 2\nAdvanced topics.\n\nWeek 3\nFinal review.';
+    const text =
+      'Week 1\nIntro to the course.\n\nWeek 2\nAdvanced topics.\n\nWeek 3\nFinal review.';
     const sections = detectSections(text);
     expect(sections.length).toBeGreaterThanOrEqual(3);
   });
@@ -156,7 +158,7 @@ describe('chunkDocument', () => {
     const paragraph = 'Word '.repeat(100) + '\n\n';
     const text = paragraph.repeat(3);
     const chunks = chunkDocument(text, 100); // 100 tokens = 400 chars
-    const reassembled = chunks.map(c => c.text).join('');
+    const reassembled = chunks.map((c) => c.text).join('');
     expect(reassembled).toBe(text);
   });
 
