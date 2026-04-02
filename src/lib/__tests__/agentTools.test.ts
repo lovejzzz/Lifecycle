@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { parseToolCalls, repairJson, executeTool, buildToolPrompt, getPreferredTools, safeEval, isBlockedUrl } from '../agentTools';
+import {
+  parseToolCalls,
+  repairJson,
+  executeTool,
+  buildToolPrompt,
+  getPreferredTools,
+  safeEval,
+  isBlockedUrl,
+} from '../agentTools';
 import type { AgentTool } from '../types';
 
 // ── repairJson ───────────────────────────────────────────────────────────────
@@ -59,7 +67,8 @@ describe('repairJson', () => {
 
 describe('parseToolCalls', () => {
   it('parses a fenced tool_call block', () => {
-    const text = 'Some text\n```tool_call\n{"tool":"web_search","args":{"query":"test"}}\n```\nMore text';
+    const text =
+      'Some text\n```tool_call\n{"tool":"web_search","args":{"query":"test"}}\n```\nMore text';
     const { toolCalls, cleanText } = parseToolCalls(text);
     expect(toolCalls).toHaveLength(1);
     expect(toolCalls[0].name).toBe('web_search');
@@ -70,7 +79,8 @@ describe('parseToolCalls', () => {
   });
 
   it('parses an XML tool_call tag', () => {
-    const text = 'Before\n<tool_call>{"tool":"validate_json","args":{"text":"{}"}}</tool_call>\nAfter';
+    const text =
+      'Before\n<tool_call>{"tool":"validate_json","args":{"text":"{}"}}</tool_call>\nAfter';
     const { toolCalls, cleanText } = parseToolCalls(text);
     expect(toolCalls).toHaveLength(1);
     expect(toolCalls[0].name).toBe('validate_json');
@@ -115,7 +125,8 @@ describe('parseToolCalls', () => {
   });
 
   it('parses a ```json fenced block containing a tool field', () => {
-    const text = 'Here is the call:\n```json\n{"tool":"web_search","args":{"query":"test"}}\n```\nDone.';
+    const text =
+      'Here is the call:\n```json\n{"tool":"web_search","args":{"query":"test"}}\n```\nDone.';
     const { toolCalls, cleanText } = parseToolCalls(text);
     expect(toolCalls).toHaveLength(1);
     expect(toolCalls[0].name).toBe('web_search');
@@ -177,7 +188,10 @@ describe('executeTool — validate_json', () => {
 
 describe('executeTool — summarize_text', () => {
   it('queues summarization task', async () => {
-    const result = await executeTool({ name: 'summarize_text', args: { text: 'Long text here', max_words: 50 } });
+    const result = await executeTool({
+      name: 'summarize_text',
+      args: { text: 'Long text here', max_words: 50 },
+    });
     expect(result.success).toBe(true);
     expect(result.result).toContain('≤50 words');
     expect(result.result).toContain('Long text here');
@@ -189,7 +203,10 @@ describe('executeTool — summarize_text', () => {
   });
 
   it('clamps max_words to [10, 500]', async () => {
-    const result = await executeTool({ name: 'summarize_text', args: { text: 'x', max_words: 9999 } });
+    const result = await executeTool({
+      name: 'summarize_text',
+      args: { text: 'x', max_words: 9999 },
+    });
     expect(result.result).toContain('≤500 words');
   });
 });
@@ -198,7 +215,10 @@ describe('executeTool — summarize_text', () => {
 
 describe('executeTool — generate_code', () => {
   it('queues code generation task', async () => {
-    const result = await executeTool({ name: 'generate_code', args: { task: 'sort an array', language: 'python' } });
+    const result = await executeTool({
+      name: 'generate_code',
+      args: { task: 'sort an array', language: 'python' },
+    });
     expect(result.success).toBe(true);
     expect(result.result).toContain('python');
     expect(result.result).toContain('sort an array');
@@ -273,7 +293,10 @@ describe('executeTool — list_context_keys', () => {
 describe('buildToolPrompt', () => {
   const tools: AgentTool[] = [
     { name: 'web_search', description: 'Search the web. Args: { "query": "..." }' },
-    { name: 'store_context', description: 'Store a value. Args: { "key": "name", "value": "data" }' },
+    {
+      name: 'store_context',
+      description: 'Store a value. Args: { "key": "name", "value": "data" }',
+    },
   ];
 
   it('returns empty string for empty tool list', () => {
@@ -362,7 +385,7 @@ describe('getPreferredTools', () => {
 
   it('returns all tools unchanged for unknown agent', () => {
     const result = getPreferredTools('unknown', allTools);
-    expect(result.map(t => t.name)).toEqual(allTools.map(t => t.name));
+    expect(result.map((t) => t.name)).toEqual(allTools.map((t) => t.name));
   });
 
   it('rowan puts web_search first', () => {
@@ -372,8 +395,8 @@ describe('getPreferredTools', () => {
 
   it('rowan puts generate_code before compare_texts', () => {
     const result = getPreferredTools('rowan', allTools);
-    const genIdx = result.findIndex(t => t.name === 'generate_code');
-    const cmpIdx = result.findIndex(t => t.name === 'compare_texts');
+    const genIdx = result.findIndex((t) => t.name === 'generate_code');
+    const cmpIdx = result.findIndex((t) => t.name === 'compare_texts');
     expect(genIdx).toBeLessThan(cmpIdx);
   });
 
@@ -384,8 +407,8 @@ describe('getPreferredTools', () => {
 
   it('poirot puts compare_texts before web_search', () => {
     const result = getPreferredTools('poirot', allTools);
-    const cmpIdx = result.findIndex(t => t.name === 'compare_texts');
-    const searchIdx = result.findIndex(t => t.name === 'web_search');
+    const cmpIdx = result.findIndex((t) => t.name === 'compare_texts');
+    const searchIdx = result.findIndex((t) => t.name === 'web_search');
     expect(cmpIdx).toBeLessThan(searchIdx);
   });
 
@@ -397,8 +420,8 @@ describe('getPreferredTools', () => {
   });
 
   it('is case-insensitive for agent name', () => {
-    const lower = getPreferredTools('rowan', allTools).map(t => t.name);
-    const upper = getPreferredTools('Rowan', allTools).map(t => t.name);
+    const lower = getPreferredTools('rowan', allTools).map((t) => t.name);
+    const upper = getPreferredTools('Rowan', allTools).map((t) => t.name);
     expect(lower).toEqual(upper);
   });
 
@@ -418,8 +441,8 @@ describe('getPreferredTools', () => {
       { name: 'web_search', description: '' },
     ];
     const result = getPreferredTools('rowan', tools);
-    const calcIdx = result.findIndex(t => t.name === 'calculate');
-    const cmpIdx = result.findIndex(t => t.name === 'compare_texts');
+    const calcIdx = result.findIndex((t) => t.name === 'calculate');
+    const cmpIdx = result.findIndex((t) => t.name === 'compare_texts');
     expect(calcIdx).toBeLessThan(cmpIdx);
   });
 
@@ -430,8 +453,8 @@ describe('getPreferredTools', () => {
       { name: 'compare_texts', description: '' },
     ];
     const result = getPreferredTools('poirot', tools);
-    const calcIdx = result.findIndex(t => t.name === 'calculate');
-    const sumIdx = result.findIndex(t => t.name === 'summarize_text');
+    const calcIdx = result.findIndex((t) => t.name === 'calculate');
+    const sumIdx = result.findIndex((t) => t.name === 'summarize_text');
     expect(calcIdx).toBeLessThan(sumIdx);
   });
 });
@@ -556,7 +579,8 @@ describe('executeTool — calculate', () => {
 
 describe('parseToolCalls — Format 4 inline JSON', () => {
   it('parses a bare JSON object on its own line', () => {
-    const text = 'I will search for this.\n{"tool": "web_search", "args": {"query": "test"}}\nResults incoming.';
+    const text =
+      'I will search for this.\n{"tool": "web_search", "args": {"query": "test"}}\nResults incoming.';
     const { toolCalls, cleanText } = parseToolCalls(text);
     expect(toolCalls).toHaveLength(1);
     expect(toolCalls[0].name).toBe('web_search');
@@ -637,4 +661,181 @@ describe('isBlockedUrl — SSRF protection', () => {
       expect(isBlockedUrl(url)).toBe(false);
     });
   }
+});
+
+// ── executeTool — extract_json ────────────────────────────────────────────────
+
+describe('executeTool — extract_json', () => {
+  it('extracts fields from a valid JSON string', async () => {
+    const text = '{"name": "Alice", "score": 95, "status": "pass"}';
+    const result = await executeTool({ name: 'extract_json', args: { text } });
+    expect(result.success).toBe(true);
+    expect(result.result).toContain('Alice');
+    expect(result.result).toContain('score');
+  });
+
+  it('filters to schema-matching keys', async () => {
+    const text = '{"name": "Alice", "score": 95, "status": "pass", "notes": "good"}';
+    const result = await executeTool({
+      name: 'extract_json',
+      args: { text, schema: 'score, status' },
+    });
+    expect(result.success).toBe(true);
+    expect(result.result).toContain('score');
+    expect(result.result).toContain('status');
+    expect(result.result).not.toContain('"notes"');
+    expect(result.result).not.toContain('"name"');
+  });
+
+  it('returns all fields when schema keywords match nothing', async () => {
+    const text = '{"foo": 1, "bar": 2}';
+    const result = await executeTool({
+      name: 'extract_json',
+      args: { text, schema: 'xyz_unrelated' },
+    });
+    expect(result.success).toBe(true);
+    // Falls back to all fields when no schema match
+    expect(result.result).toContain('foo');
+    expect(result.result).toContain('bar');
+  });
+
+  it('extracts JSON from a code-fenced block', async () => {
+    const text = 'Here is the result:\n```json\n{"verdict": "approve", "score": 0.9}\n```\nDone.';
+    const result = await executeTool({ name: 'extract_json', args: { text } });
+    expect(result.success).toBe(true);
+    expect(result.result).toContain('verdict');
+    expect(result.result).toContain('approve');
+  });
+
+  it('extracts JSON embedded in prose via bracket matching', async () => {
+    const text = 'The analysis returned {"status": "ok", "count": 42} as its result.';
+    const result = await executeTool({ name: 'extract_json', args: { text } });
+    expect(result.success).toBe(true);
+    expect(result.result).toContain('status');
+    expect(result.result).toContain('42');
+  });
+
+  it('returns failure with LLM forwarding hint when no JSON found', async () => {
+    const text = 'This is plain text with no JSON at all.';
+    const result = await executeTool({
+      name: 'extract_json',
+      args: { text, schema: 'name, score' },
+    });
+    expect(result.success).toBe(false);
+    expect(result.result).toContain('name, score');
+    expect(result.result).toContain('plain text');
+  });
+
+  it('returns error for missing text argument', async () => {
+    const result = await executeTool({ name: 'extract_json', args: {} });
+    expect(result.success).toBe(false);
+    expect(result.result).toMatch(/missing text/i);
+  });
+
+  it('reports field count in result', async () => {
+    const text = '{"a": 1, "b": 2, "c": 3}';
+    const result = await executeTool({ name: 'extract_json', args: { text } });
+    expect(result.result).toContain('3 fields');
+  });
+});
+
+// ── executeTool — regex_extract ───────────────────────────────────────────────
+
+describe('executeTool — regex_extract', () => {
+  it('extracts all numbers from text', async () => {
+    const result = await executeTool({
+      name: 'regex_extract',
+      args: { pattern: '\\d+', text: 'I have 3 cats and 12 dogs and 1 fish.' },
+    });
+    expect(result.success).toBe(true);
+    expect(result.result).toContain('3 matches');
+    expect(result.result).toContain('3');
+    expect(result.result).toContain('12');
+    expect(result.result).toContain('1');
+  });
+
+  it('extracts capture group 1 when present', async () => {
+    const result = await executeTool({
+      name: 'regex_extract',
+      args: { pattern: 'score=(\\d+)', text: 'score=95 and score=80' },
+    });
+    expect(result.success).toBe(true);
+    // Should return '95' and '80', not 'score=95'
+    expect(result.result).toContain('95');
+    expect(result.result).toContain('80');
+    expect(result.result).not.toContain('score=95');
+  });
+
+  it('reports no matches when pattern does not match', async () => {
+    const result = await executeTool({
+      name: 'regex_extract',
+      args: { pattern: 'xyz_not_present', text: 'hello world' },
+    });
+    expect(result.success).toBe(true);
+    expect(result.result).toMatch(/no matches/i);
+  });
+
+  it('is case-insensitive with i flag', async () => {
+    const result = await executeTool({
+      name: 'regex_extract',
+      args: { pattern: 'hello', text: 'Hello World HELLO', flags: 'gi' },
+    });
+    expect(result.success).toBe(true);
+    expect(result.result).toContain('2 matches');
+  });
+
+  it('returns error for missing pattern', async () => {
+    const result = await executeTool({
+      name: 'regex_extract',
+      args: { text: 'some text' },
+    });
+    expect(result.success).toBe(false);
+    expect(result.result).toMatch(/missing pattern/i);
+  });
+
+  it('returns error for missing text', async () => {
+    const result = await executeTool({
+      name: 'regex_extract',
+      args: { pattern: '\\d+' },
+    });
+    expect(result.success).toBe(false);
+    expect(result.result).toMatch(/missing text/i);
+  });
+
+  it('rejects patterns that are too long', async () => {
+    const result = await executeTool({
+      name: 'regex_extract',
+      args: { pattern: 'a'.repeat(301), text: 'test' },
+    });
+    expect(result.success).toBe(false);
+    expect(result.result).toMatch(/too long/i);
+  });
+
+  it('rejects patterns with nested quantifiers', async () => {
+    const result = await executeTool({
+      name: 'regex_extract',
+      args: { pattern: '(a+)+', text: 'aaaa' },
+    });
+    expect(result.success).toBe(false);
+    expect(result.result).toMatch(/catastrophic/i);
+  });
+
+  it('returns error for invalid regex syntax', async () => {
+    const result = await executeTool({
+      name: 'regex_extract',
+      args: { pattern: '[unclosed', text: 'test' },
+    });
+    expect(result.success).toBe(false);
+    expect(result.result).toMatch(/invalid regex/i);
+  });
+
+  it('strips unknown flags, keeps safe flags', async () => {
+    // flags 'gx' — 'x' is not safe, should be stripped; 'g' kept
+    const result = await executeTool({
+      name: 'regex_extract',
+      args: { pattern: '\\w+', text: 'hello world', flags: 'gx' },
+    });
+    // Should still work — unsafe flags are silently removed
+    expect(result.success).toBe(true);
+  });
 });

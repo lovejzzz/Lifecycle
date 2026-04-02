@@ -178,6 +178,11 @@ export const BUILT_IN_TOOLS: AgentTool[] = [
     description:
       'Safely evaluate a mathematical expression and return the numeric result. Supports +, -, *, /, %, ^ (power), parentheses, and functions: sqrt, abs, floor, ceil, round, min, max, pow, log, ln, sin, cos, tan. Constants: pi. Args: { "expression": "2 + 2" }',
   },
+  {
+    name: 'regex_extract',
+    description:
+      'Extract text matches using a regular expression pattern. Returns all matches (up to 50). If the pattern has a capture group, returns group 1. Args: { "pattern": "\\\\d+", "text": "...", "flags": "g" }',
+  },
 ];
 
 // ── Agent-Specific Tool Preferences ─────────────────────────────────────────
@@ -193,6 +198,7 @@ const AGENT_TOOL_PREFERENCES: Record<string, string[]> = {
     'web_search', // fast external intel
     'http_request', // direct API calls
     'calculate', // instant numeric computation — faster than manual math
+    'regex_extract', // fast pattern-based extraction from text
     'generate_code', // produce actionable artifacts
     'store_context', // persist mission-critical data for downstream
     'validate_json', // quick structural check
@@ -206,6 +212,7 @@ const AGENT_TOOL_PREFERENCES: Record<string, string[]> = {
     'list_context_keys', // survey what is already known before reading anything
     'read_context', // examine what is already known
     'extract_json', // extract structured clues from raw data
+    'regex_extract', // precise pattern extraction for numbers, codes, identifiers
     'compare_texts', // compare versions, spot discrepancies
     'validate_json', // verify data integrity rigorously
     'calculate', // numeric verification of quantitative claims
@@ -580,7 +587,6 @@ export function safeEval(raw: string): number | null {
 
   // Step 4: evaluate with only Math in scope
   try {
-     
     const fn = new Function('Math', `'use strict'; return +(${expr});`);
     const result = fn(Math);
     if (typeof result !== 'number' || !isFinite(result)) return null;
@@ -743,16 +749,112 @@ async function _executeToolImpl(
 
       case 'extract_json': {
         const text = String(call.args.text || '');
-        const schema = String(call.args.schema || 'extract key-value pairs');
-        // This tool is a no-op in terms of execution — the LLM will do the extraction
-        // in its next iteration using the schema instruction
-        return {
+        const schema = String(call.args.schema || '');
+
+        if (!text)
+          return rec({
+            tool: call.name,
+            args: call.args,
+            result: 'Error: missing text argument',
+            success: false,
+            durationMs: Date.now() - start,
+          });
+
+        // Helper: try to parse a string as JSON, returning null on failure
+        const tryParseJson = (s: string): unknown => {
+          try {
+            return JSON.parse(s);
+          } catch {
+            return null;
+          }
+        };
+
+        let found: unknown = null;
+
+        // Strategy 1: entire text is valid JSON
+        found = tryParseJson(text.trim());
+
+        // Strategy 2: code-fenced block (```json ... ``` or ``` ... ```)
+        if (found === null) {
+          const fenceMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+          if (fenceMatch) found = tryParseJson(fenceMatch[1].trim());
+        }
+
+        // Strategy 3: bracket-matching — find the first top-level { } or [ ]
+        if (found === null) {
+          for (const [open, close] of [
+            ['{', '}'],
+            ['[', ']'],
+          ] as [string, string][]) {
+            const startIdx = text.indexOf(open);
+            if (startIdx === -1) continue;
+            let depth = 0;
+            let endIdx = -1;
+            for (let i = startIdx; i < text.length; i++) {
+              if (text[i] === open) depth++;
+              else if (text[i] === close) {
+                depth--;
+                if (depth === 0) {
+                  endIdx = i;
+                  break;
+                }
+              }
+            }
+            if (endIdx !== -1) {
+              const p = tryParseJson(text.slice(startIdx, endIdx + 1));
+              if (p !== null) {
+                found = p;
+                break;
+              }
+            }
+          }
+        }
+
+        if (found === null || typeof found !== 'object') {
+          // No extractable JSON — forward text + schema to LLM for manual extraction
+          const hint = schema
+            ? `No JSON detected. Please extract the following fields from the text: ${schema}\n\nText (${text.length} chars):\n${text.slice(0, 2000)}${text.length > 2000 ? '\n… (truncated)' : ''}`
+            : `No valid JSON found in the provided text (${text.length} chars).`;
+          return rec({
+            tool: call.name,
+            args: call.args,
+            result: hint,
+            success: false,
+            durationMs: Date.now() - start,
+          });
+        }
+
+        // If schema keywords provided, pick only matching top-level keys
+        const schemaKeywords = schema
+          ? schema
+              .split(/[\s,;:|]+/)
+              .map((s) => s.toLowerCase().trim())
+              .filter((s) => s.length > 1)
+          : [];
+
+        const obj = found as Record<string, unknown>;
+        let selected: Record<string, unknown>;
+        if (schemaKeywords.length > 0) {
+          selected = {};
+          for (const [k, v] of Object.entries(obj)) {
+            const kl = k.toLowerCase();
+            if (schemaKeywords.some((kw) => kl === kw || kl.includes(kw) || kw.includes(kl))) {
+              selected[k] = v;
+            }
+          }
+          if (Object.keys(selected).length === 0) selected = obj; // no keys matched — return all
+        } else {
+          selected = obj;
+        }
+
+        const count = Object.keys(selected).length;
+        return rec({
           tool: call.name,
           args: call.args,
-          result: `Extraction task queued. Schema: ${schema}. Text length: ${text.length} chars. The LLM will perform extraction in the next iteration.`,
+          result: `Extracted ${count} field${count !== 1 ? 's' : ''}${schema ? ` matching "${schema}"` : ''}:\n\n${JSON.stringify(selected, null, 2)}`,
           success: true,
           durationMs: Date.now() - start,
-        };
+        });
       }
 
       case 'store_context': {
@@ -1023,6 +1125,96 @@ async function _executeToolImpl(
           success: true,
           durationMs: Date.now() - start,
         };
+      }
+
+      case 'regex_extract': {
+        const pattern = String(call.args.pattern || '');
+        const text = String(call.args.text || '');
+        const flagsRaw = String(call.args.flags ?? 'g').toLowerCase();
+
+        if (!pattern)
+          return rec({
+            tool: call.name,
+            args: call.args,
+            result: 'Error: missing pattern argument',
+            success: false,
+            durationMs: Date.now() - start,
+          });
+        if (!text)
+          return rec({
+            tool: call.name,
+            args: call.args,
+            result: 'Error: missing text argument',
+            success: false,
+            durationMs: Date.now() - start,
+          });
+
+        // Security: reject patterns that are too long
+        if (pattern.length > 300)
+          return rec({
+            tool: call.name,
+            args: call.args,
+            result: 'Error: pattern too long (max 300 chars)',
+            success: false,
+            durationMs: Date.now() - start,
+          });
+
+        // Security: reject patterns with nested quantifiers (catastrophic backtracking)
+        if (/\([^)]*[+*][^)]*\)[+*?{]/.test(pattern))
+          return rec({
+            tool: call.name,
+            args: call.args,
+            result: 'Error: pattern rejected — nested quantifiers risk catastrophic backtracking',
+            success: false,
+            durationMs: Date.now() - start,
+          });
+
+        // Only allow safe flags: g (global), i (case-insensitive), m (multiline), s (dotAll)
+        const safeFlags = [...new Set([...flagsRaw].filter((f) => 'gims'.includes(f)))].join('');
+        const flags = safeFlags.includes('g') ? safeFlags : safeFlags + 'g';
+
+        let regex: RegExp;
+        try {
+          regex = new RegExp(pattern, flags);
+        } catch (e) {
+          return rec({
+            tool: call.name,
+            args: call.args,
+            result: `Error: invalid regex pattern — ${e instanceof Error ? e.message : 'parse error'}`,
+            success: false,
+            durationMs: Date.now() - start,
+          });
+        }
+
+        const MAX_MATCHES = 50;
+        const matches: string[] = [];
+        let m: RegExpExecArray | null;
+
+        while ((m = regex.exec(text)) !== null && matches.length < MAX_MATCHES) {
+          // Prefer first capture group when present, otherwise full match
+          matches.push(m[1] !== undefined ? m[1] : m[0]);
+          // Guard against infinite loops on zero-length matches
+          if (m[0].length === 0) regex.lastIndex++;
+        }
+
+        if (matches.length === 0)
+          return rec({
+            tool: call.name,
+            args: call.args,
+            result: `No matches found for pattern /${pattern}/ in the provided text.`,
+            success: true,
+            durationMs: Date.now() - start,
+          });
+
+        const truncated = matches.length === MAX_MATCHES;
+        const lines = matches.map((v, i) => `${i + 1}. ${v}`).join('\n');
+        return rec({
+          tool: call.name,
+          args: call.args,
+          result: `Found ${matches.length} match${matches.length !== 1 ? 'es' : ''}${truncated ? ` (first ${MAX_MATCHES})` : ''}:\n\n${lines}`,
+          success: true,
+          durationMs: Date.now() - start,
+        });
       }
 
       default:
