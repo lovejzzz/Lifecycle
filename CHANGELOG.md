@@ -1,5 +1,20 @@
 # Changelog
 
+### 2026-04-02 — Round 73: Cross-run Memory Integration — History-Aware Proactive Suggestions
+
+**Improvement — Suggestions Engine Now Cross-Run Memory Aware (Area 6 — Agent Personality & Memory):**
+- `generateProactiveSuggestions()` accepts a new optional `runHistory: ExecutionRunSummary[]` parameter
+- **Suggestion 11 — Decision edges without conditions**: Detects when a decision node has 2+ outgoing edges but none have `decision-is` conditions — ALL branches execute regardless of routing outcome (routing silently broken)
+- **Suggestion 12 — Recurring failures**: Surfaces nodes that failed in 2+ recent runs as high-priority suggestions ("structural issue, not transient error") — leverages `analyzeRunPatterns` from cross-run memory
+- **Suggestion 13 — Performance degradation**: Warns when run durations are trending upward >15% across recent executions, points to bottlenecks command
+- **Suggestion 14 — Stable decisions**: Low-priority nudge when a decision node always routes the same way across 2+ consecutive runs — suggests the branch may be over-engineered
+- Updated `typeMap` diversity filter: all cross-run suggestions share the `'memory'` category, so they compete as a group (max 1 memory suggestion per output) rather than crowding out structural/execution suggestions
+- First connection between `analyzeRunPatterns()` (prompts.ts) and the suggestions pipeline — cross-run analysis now feeds user-visible intelligence
+
+**Files changed:** `src/lib/suggestions.ts`, `src/lib/__tests__/suggestions.test.ts`
+
+**Test Results:** 1553/1555 tests pass (22 new suggestions tests; 2 pre-existing simulation-e2e failures unrelated to this change).
+
 ### 2026-04-02 — Round 72: Agent Memory — Cross-run Execution History Persistence & Pattern Analysis
 
 **Improvement — Persistent Agent Memory across Workflow Executions (Area 6 — Agent Personality & Memory):**
