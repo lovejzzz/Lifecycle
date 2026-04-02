@@ -462,20 +462,30 @@ const CATEGORY_SYSTEM_PROMPTS: Record<string, string> = {
  */
 function buildDownstreamFormatHint(categories: string[]): string {
   const hints: string[] = [];
-  if (categories.some(c => c === 'review')) {
-    hints.push('Structure your output for reviewability — use clear sections and include a brief summary of key decisions at the end.');
+  if (categories.some((c) => c === 'review')) {
+    hints.push(
+      'Structure your output for reviewability — use clear sections and include a brief summary of key decisions at the end.',
+    );
   }
-  if (categories.some(c => c === 'test')) {
-    hints.push('Include explicit testable success criteria and expected outcomes that can be validated programmatically.');
+  if (categories.some((c) => c === 'test')) {
+    hints.push(
+      'Include explicit testable success criteria and expected outcomes that can be validated programmatically.',
+    );
   }
-  if (categories.some(c => c === 'state')) {
-    hints.push('Include structured state values and transitions (key: value format) that can be tracked downstream.');
+  if (categories.some((c) => c === 'state')) {
+    hints.push(
+      'Include structured state values and transitions (key: value format) that can be tracked downstream.',
+    );
   }
-  if (categories.some(c => c === 'action')) {
-    hints.push('Include specific, executable steps with concrete commands or operations that downstream actions can reference directly.');
+  if (categories.some((c) => c === 'action')) {
+    hints.push(
+      'Include specific, executable steps with concrete commands or operations that downstream actions can reference directly.',
+    );
   }
-  if (categories.some(c => c === 'artifact' || c === 'deliverable')) {
-    hints.push('Produce comprehensive, standalone content with all sections complete — it will be delivered as a document.');
+  if (categories.some((c) => c === 'artifact' || c === 'deliverable')) {
+    hints.push(
+      'Produce comprehensive, standalone content with all sections complete — it will be delivered as a document.',
+    );
   }
   if (hints.length === 0) return '';
   return `\n\nOUTPUT CONTRACT (downstream: ${categories.join(', ')}): ${hints.join(' ')}`;
@@ -572,23 +582,29 @@ export function buildSharedContextHint(
 export function buildOutputLengthHint(category: string): string {
   const hints: Record<string, string> = {
     // Concise — structural/passthrough nodes that track state or events
-    input:       'Target 50-150 words. Report what data was received — brief and structured.',
-    trigger:     'Target 50-150 words. Describe the trigger event and payload — concise and factual.',
-    dependency:  'Target 100-200 words. List dependencies with their status — no prose.',
-    state:       'Target 100-250 words. Use key-value pairs for state variables. Do not write an essay.',
+    input: 'Target 50-150 words. Report what data was received — brief and structured.',
+    trigger: 'Target 50-150 words. Describe the trigger event and payload — concise and factual.',
+    dependency: 'Target 100-200 words. List dependencies with their status — no prose.',
+    state: 'Target 100-250 words. Use key-value pairs for state variables. Do not write an essay.',
     // Medium — structured reports with defined sections and clear verdicts
-    patch:       'Target 150-350 words. Focus on the minimal correct change. Use diff format or before/after blocks.',
-    review:      'Target 200-400 words. Produce a checklist then a single APPROVE / REQUEST_CHANGES / BLOCK verdict.',
-    test:        'Target 200-500 words. Use a test results table (Criterion | Status | Evidence). End with one VERDICT line.',
-    policy:      'Target 200-400 words. Numbered rules — each needs CONDITION, ACTION, and ENFORCEMENT.',
-    note:        'Target 200-400 words. Organized insight sections — prioritize actionable takeaways.',
-    action:      'Target 200-400 words. Step-by-step with concrete commands. Report outcome at the end.',
+    patch:
+      'Target 150-350 words. Focus on the minimal correct change. Use diff format or before/after blocks.',
+    review:
+      'Target 200-400 words. Produce a checklist then a single APPROVE / REQUEST_CHANGES / BLOCK verdict.',
+    test: 'Target 200-500 words. Use a test results table (Criterion | Status | Evidence). End with one VERDICT line.',
+    policy: 'Target 200-400 words. Numbered rules — each needs CONDITION, ACTION, and ENFORCEMENT.',
+    note: 'Target 200-400 words. Organized insight sections — prioritize actionable takeaways.',
+    action: 'Target 200-400 words. Step-by-step with concrete commands. Report outcome at the end.',
     // Comprehensive — full documents, deep reasoning, polished deliverables
-    cid:         'Target 300-700 words. Think through each sub-problem. Provide a clear, well-supported conclusion.',
-    process:     'Target 300-600 words. Report each step performed, key decisions made, and outputs produced.',
-    artifact:    'Target 600-1200 words. Write a complete, standalone document. Every section must be substantive — no placeholders.',
-    deliverable: 'Target 600-1200 words. Produce a polished, audience-ready document. Every section complete.',
-    output:      'Target 400-1000 words. Synthesize all upstream content into a cohesive deliverable. Open with an executive summary.',
+    cid: 'Target 300-700 words. Think through each sub-problem. Provide a clear, well-supported conclusion.',
+    process:
+      'Target 300-600 words. Report each step performed, key decisions made, and outputs produced.',
+    artifact:
+      'Target 600-1200 words. Write a complete, standalone document. Every section must be substantive — no placeholders.',
+    deliverable:
+      'Target 600-1200 words. Produce a polished, audience-ready document. Every section complete.',
+    output:
+      'Target 400-1000 words. Synthesize all upstream content into a cohesive deliverable. Open with an executive summary.',
   };
 
   const hint = hints[category];
@@ -610,18 +626,23 @@ export function getExecutionSystemPrompt(
   /** Optional: number of direct upstream inputs — triggers multi-input CoT scaffold at ≥3 */
   directInputCount?: number,
 ): string {
-  const categoryPrompt = CATEGORY_SYSTEM_PROMPTS[category] || 'You are a professional content generator. Write detailed, well-structured content.';
+  const categoryPrompt =
+    CATEGORY_SYSTEM_PROMPTS[category] ||
+    'You are a professional content generator. Write detailed, well-structured content.';
   const contextHint = upstreamContext.trim()
     ? '\n\nUpstream workflow data is provided in the user message under "Direct inputs" and "Background context". Use it as your primary source material — do not ignore it.'
     : '';
-  const downstreamHint = downstreamCategories && downstreamCategories.length > 0
-    ? buildDownstreamFormatHint(downstreamCategories)
-    : '';
-  const sharedContextHint = sharedContext && Object.keys(sharedContext).length > 0
-    ? buildSharedContextHint(sharedContext)
-    : '';
+  const downstreamHint =
+    downstreamCategories && downstreamCategories.length > 0
+      ? buildDownstreamFormatHint(downstreamCategories)
+      : '';
+  const sharedContextHint =
+    sharedContext && Object.keys(sharedContext).length > 0
+      ? buildSharedContextHint(sharedContext)
+      : '';
   const agentHint = agentName ? (AGENT_EXECUTION_HINTS[agentName.toLowerCase()] ?? '') : '';
-  const coTScaffold = directInputCount !== undefined ? buildMultiInputCoTScaffold(directInputCount) : '';
+  const coTScaffold =
+    directInputCount !== undefined ? buildMultiInputCoTScaffold(directInputCount) : '';
   const outputLengthHint = buildOutputLengthHint(category);
   return `${categoryPrompt}\n\nYou are working on a workflow node called "${sanitizeForPrompt(label, 100)}" (category: ${category}).${contextHint}${downstreamHint}${sharedContextHint}${coTScaffold}${outputLengthHint}${agentHint} Return ONLY the content as markdown text. Do not wrap in JSON or code blocks.`;
 }
@@ -701,7 +722,10 @@ export function extractNodeSignal(output: string, category: string): string | nu
       const m = text.match(/^DECISION:\s*(.+)/im);
       if (m) {
         // Strip confidence annotation if present: "approve (confidence: 0.9)"
-        const val = m[1].replace(/\s*\(confidence[^)]*\)/i, '').trim().slice(0, 60);
+        const val = m[1]
+          .replace(/\s*\(confidence[^)]*\)/i, '')
+          .trim()
+          .slice(0, 60);
         return `[DECISION: ${val}]`;
       }
       return null;
@@ -744,7 +768,8 @@ export function extractNodeSignal(output: string, category: string): string | nu
     }
 
     case 'patch': {
-      if (/\b(?:applied|patched|fixed|resolved|success(?:ful(?:ly)?)?)\b/i.test(text)) return '[PATCH: applied]';
+      if (/\b(?:applied|patched|fixed|resolved|success(?:ful(?:ly)?)?)\b/i.test(text))
+        return '[PATCH: applied]';
       if (/\b(?:failed|error|could\s+not|unable)\b/i.test(text)) return '[PATCH: failed]';
       return null;
     }
@@ -795,24 +820,26 @@ export function buildRelevanceWeightedContext(
   if (inputs.length === 1) {
     const { label, relationship, content, category } = inputs[0];
     const signal = category ? extractNodeSignal(content, category) : null;
-    const header = signal ? `## From "${label}" (${relationship}) ${signal}` : `## From "${label}" (${relationship})`;
+    const header = signal
+      ? `## From "${label}" (${relationship}) ${signal}`
+      : `## From "${label}" (${relationship})`;
     return `${header}\n${smartTruncate(content, totalBudget)}`;
   }
 
   // Score each input by keyword overlap with the task prompt
   const taskKws = new Set(extractKeywords(taskPrompt));
 
-  const scores = inputs.map(inp => {
+  const scores = inputs.map((inp) => {
     if (!inp.content || taskKws.size === 0) return 0.5; // neutral when no task signal
     const inputKws = extractKeywords(inp.content);
-    const overlap = inputKws.filter(w => taskKws.has(w)).length;
+    const overlap = inputKws.filter((w) => taskKws.has(w)).length;
     // Normalize: what fraction of task keywords appear in this input?
     return overlap / taskKws.size;
   });
 
   // Guarantee a minimum score so no source is completely starved
   const MIN_SCORE = 0.1;
-  const adjusted = scores.map(s => Math.max(s, MIN_SCORE));
+  const adjusted = scores.map((s) => Math.max(s, MIN_SCORE));
   const totalScore = adjusted.reduce((a, b) => a + b, 0);
 
   // Reserve a minimum allocation per input, distribute remainder by relevance
@@ -820,15 +847,15 @@ export function buildRelevanceWeightedContext(
   const reserved = inputs.length * MIN_ALLOC;
   const distributable = Math.max(0, totalBudget - reserved);
 
-  const allocations = adjusted.map(s =>
-    MIN_ALLOC + Math.floor((s / totalScore) * distributable),
-  );
+  const allocations = adjusted.map((s) => MIN_ALLOC + Math.floor((s / totalScore) * distributable));
 
   return inputs
     .map(({ label, relationship, content, category }, i) => {
       const truncated = smartTruncate(content, allocations[i]);
       const signal = category ? extractNodeSignal(content, category) : null;
-      const header = signal ? `## From "${label}" (${relationship}) ${signal}` : `## From "${label}" (${relationship})`;
+      const header = signal
+        ? `## From "${label}" (${relationship}) ${signal}`
+        : `## From "${label}" (${relationship})`;
       return `${header}\n${truncated}`;
     })
     .join('\n\n---\n\n');
@@ -852,9 +879,7 @@ export function buildAncestorContextHint(
     // With a signal, trim raw text more aggressively — the signal captures the key outcome
     const rawBudget = signal ? 120 : 200;
     const truncated = smartTruncate(result, rawBudget);
-    return signal
-      ? `- **${label}** ${signal}: ${truncated}`
-      : `- **${label}**: ${truncated}`;
+    return signal ? `- **${label}** ${signal}: ${truncated}` : `- **${label}**: ${truncated}`;
   });
 
   return `\n\n## Background context (ancestor nodes):\n${lines.join('\n')}`;
@@ -1336,17 +1361,160 @@ export interface ExecutionRunSummary {
   toolCallCount: number;
   /** Keys stored in shared context during this run */
   contextKeysStored: string[];
+  /** Labels of nodes that took longer than the slow-node threshold (default 20s) */
+  slowNodeLabels?: string[];
+  /** Total validation warnings emitted across all nodes in this run */
+  validationWarningCount?: number;
 }
 
-const MAX_EXECUTION_HISTORY = 5;
-/** Module-level ring buffer of recent execution summaries */
-const _executionHistory: ExecutionRunSummary[] = [];
+// ── Cross-run Pattern Analysis ────────────────────────────────────────────────
 
-/** Prepend a completed run summary to the in-memory history ring. */
+/** Detected patterns across multiple workflow runs. */
+export interface RunPatternAnalysis {
+  /** Node labels that failed in 2+ of the tracked runs — likely structural issues */
+  recurringFailures: string[];
+  /** Whether run duration is improving, degrading, or stable across recent runs */
+  performanceTrend: 'improving' | 'degrading' | 'stable';
+  /** Decisions that have been made consistently (same choice ≥2 runs) — highly confident branches */
+  stableDecisions: Array<{ label: string; decision: string; runCount: number }>;
+  /** Node labels that appeared as slow in 2+ runs — candidate for optimization */
+  consistentlySlowNodes: string[];
+}
+
+/**
+ * Analyze patterns across multiple execution runs to surface actionable insights.
+ * Returns null when there are fewer than 2 runs (insufficient data).
+ *
+ * Detects:
+ * - Recurring failure nodes (same label fails across runs → structural bug, not transient)
+ * - Performance trajectory (durations trending up or down)
+ * - Stable high-confidence decisions (same branch chosen repeatedly)
+ * - Chronically slow nodes (appear in slowNodeLabels across runs)
+ */
+export function analyzeRunPatterns(history: ExecutionRunSummary[]): RunPatternAnalysis | null {
+  if (history.length < 2) return null;
+
+  // ── Recurring failures ──
+  const failureCounts = new Map<string, number>();
+  for (const run of history) {
+    for (const label of run.failedNodeLabels) {
+      failureCounts.set(label, (failureCounts.get(label) ?? 0) + 1);
+    }
+  }
+  const recurringFailures = [...failureCounts.entries()]
+    .filter(([, count]) => count >= 2)
+    .sort((a, b) => b[1] - a[1])
+    .map(([label]) => label);
+
+  // ── Performance trend ──
+  // Use up to 4 most recent runs, ordered oldest→newest for slope detection
+  const durationSample = history
+    .slice(0, 4)
+    .reverse()
+    .map((r) => r.durationMs);
+  let performanceTrend: RunPatternAnalysis['performanceTrend'] = 'stable';
+  if (durationSample.length >= 2) {
+    const first = durationSample[0];
+    const last = durationSample[durationSample.length - 1];
+    const changePct = (last - first) / (first || 1);
+    // >15% faster = improving; >15% slower = degrading; else stable
+    if (changePct < -0.15) performanceTrend = 'improving';
+    else if (changePct > 0.15) performanceTrend = 'degrading';
+  }
+
+  // ── Stable decisions ──
+  // Count how many runs chose the same option for each decision node label
+  const decisionVotes = new Map<string, Map<string, number>>();
+  for (const run of history) {
+    for (const d of run.decisions) {
+      if (!decisionVotes.has(d.label)) decisionVotes.set(d.label, new Map());
+      const votes = decisionVotes.get(d.label)!;
+      votes.set(d.decision, (votes.get(d.decision) ?? 0) + 1);
+    }
+  }
+  const stableDecisions: RunPatternAnalysis['stableDecisions'] = [];
+  for (const [label, votes] of decisionVotes.entries()) {
+    const [topDecision, topCount] = [...votes.entries()].sort((a, b) => b[1] - a[1])[0];
+    if (topCount >= 2) {
+      stableDecisions.push({ label, decision: topDecision, runCount: topCount });
+    }
+  }
+  stableDecisions.sort((a, b) => b.runCount - a.runCount);
+
+  // ── Consistently slow nodes ──
+  const slowCounts = new Map<string, number>();
+  for (const run of history) {
+    for (const label of run.slowNodeLabels ?? []) {
+      slowCounts.set(label, (slowCounts.get(label) ?? 0) + 1);
+    }
+  }
+  const consistentlySlowNodes = [...slowCounts.entries()]
+    .filter(([, count]) => count >= 2)
+    .sort((a, b) => b[1] - a[1])
+    .map(([label]) => label);
+
+  return { recurringFailures, performanceTrend, stableDecisions, consistentlySlowNodes };
+}
+
+// ── localStorage persistence (client-side only) ───────────────────────────────
+
+const STORAGE_KEY = 'lifecycle_exec_history';
+const MAX_EXECUTION_HISTORY = 10;
+
+function _loadHistoryFromStorage(): ExecutionRunSummary[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed as ExecutionRunSummary[];
+  } catch {
+    // Corrupt storage — ignore and start fresh
+  }
+  return [];
+}
+
+function _saveHistoryToStorage(history: ExecutionRunSummary[]): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+  } catch {
+    // Storage quota exceeded or unavailable — fail silently
+  }
+}
+
+/** Module-level ring buffer of recent execution summaries. Pre-populated from localStorage. */
+const _executionHistory: ExecutionRunSummary[] = _loadHistoryFromStorage();
+
+/** Prepend a completed run summary to the history ring and persist to localStorage. */
 export function recordExecutionRun(summary: ExecutionRunSummary): void {
   _executionHistory.unshift(summary);
   if (_executionHistory.length > MAX_EXECUTION_HISTORY) {
     _executionHistory.splice(MAX_EXECUTION_HISTORY);
+  }
+  _saveHistoryToStorage(_executionHistory);
+}
+
+/**
+ * Expose the raw execution history (primarily for testing).
+ * Returns a shallow copy so callers cannot mutate the ring buffer.
+ */
+export function getExecutionHistoryRaw(): ExecutionRunSummary[] {
+  return [..._executionHistory];
+}
+
+/**
+ * Clear the in-memory history and remove it from localStorage.
+ * Used in tests and for explicit "forget history" commands.
+ */
+export function clearExecutionHistory(): void {
+  _executionHistory.splice(0);
+  if (typeof window !== 'undefined') {
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
   }
 }
 
@@ -1354,8 +1522,9 @@ export function recordExecutionRun(summary: ExecutionRunSummary): void {
  * Format recent execution history as a compact block for injection into
  * the CID chat system prompt. Returns '' if no runs have been recorded.
  *
- * Agents use this to answer "what happened in the last run?" or "why did
- * that decision go that way?" without requiring user repetition.
+ * When ≥3 runs exist, appends a PATTERNS section surfacing recurring failures,
+ * performance trends, and stable decisions so agents can reference institutional
+ * knowledge without the user having to repeat themselves.
  */
 export function getExecutionHistory(): string {
   if (_executionHistory.length === 0) return '';
@@ -1363,21 +1532,33 @@ export function getExecutionHistory(): string {
   const lines = recent.map((run, i) => {
     const ago = Math.round((Date.now() - run.timestamp) / 60000);
     const agoStr = ago < 2 ? 'just now' : `${ago}m ago`;
-    const dur = run.durationMs < 1000 ? `${run.durationMs}ms` : `${(run.durationMs / 1000).toFixed(1)}s`;
-    const statusStr = run.failed > 0
-      ? `${run.succeeded}✓ ${run.failed}✗${run.skipped > 0 ? ` ${run.skipped}○` : ''}`
-      : `${run.succeeded}✓ all clear`;
-    const parts: string[] = [`${i + 1}. [${agoStr}] ${run.totalNodes} nodes — ${statusStr} in ${dur}`];
+    const dur =
+      run.durationMs < 1000 ? `${run.durationMs}ms` : `${(run.durationMs / 1000).toFixed(1)}s`;
+    const statusStr =
+      run.failed > 0
+        ? `${run.succeeded}✓ ${run.failed}✗${run.skipped > 0 ? ` ${run.skipped}○` : ''}`
+        : `${run.succeeded}✓ all clear`;
+    const parts: string[] = [
+      `${i + 1}. [${agoStr}] ${run.totalNodes} nodes — ${statusStr} in ${dur}`,
+    ];
     if (run.decisions.length > 0) {
-      const dstr = run.decisions.map(d => {
-        const conf = d.confidence !== undefined ? ` (${Math.round(d.confidence * 100)}% conf)` : '';
-        const reason = d.reasoning ? ` — "${d.reasoning.slice(0, 60)}${d.reasoning.length > 60 ? '…' : ''}"` : '';
-        return `${d.label}→"${d.decision}"${conf}${reason}`;
-      }).join('; ');
+      const dstr = run.decisions
+        .map((d) => {
+          const conf =
+            d.confidence !== undefined ? ` (${Math.round(d.confidence * 100)}% conf)` : '';
+          const reason = d.reasoning
+            ? ` — "${d.reasoning.slice(0, 60)}${d.reasoning.length > 60 ? '…' : ''}"`
+            : '';
+          return `${d.label}→"${d.decision}"${conf}${reason}`;
+        })
+        .join('; ');
       parts.push(`   Decisions: ${dstr}`);
     }
     if (run.failedNodeLabels.length > 0) {
       parts.push(`   Failed: ${run.failedNodeLabels.join(', ')}`);
+    }
+    if (run.slowNodeLabels && run.slowNodeLabels.length > 0) {
+      parts.push(`   Slow nodes: ${run.slowNodeLabels.join(', ')}`);
     }
     if (run.toolCallCount > 0) {
       parts.push(`   Tool calls: ${run.toolCallCount}`);
@@ -1388,7 +1569,41 @@ export function getExecutionHistory(): string {
     return parts.join('\n');
   });
   const plural = _executionHistory.length !== 1 ? 's' : '';
-  return `\n\nEXECUTION HISTORY (${_executionHistory.length} recent run${plural}):\n${lines.join('\n')}`;
+  let block = `\n\nEXECUTION HISTORY (${_executionHistory.length} recent run${plural}):\n${lines.join('\n')}`;
+
+  // ── Pattern analysis (requires ≥3 data points) ──
+  const patterns = analyzeRunPatterns(_executionHistory);
+  if (patterns) {
+    const patternParts: string[] = [];
+    if (patterns.recurringFailures.length > 0) {
+      patternParts.push(
+        `⚠ Recurring failures: ${patterns.recurringFailures.join(', ')} (failed in multiple runs — likely a structural issue)`,
+      );
+    }
+    if (patterns.performanceTrend !== 'stable') {
+      const emoji = patterns.performanceTrend === 'improving' ? '↑' : '↓';
+      patternParts.push(
+        `${emoji} Performance trend: ${patterns.performanceTrend} over recent runs`,
+      );
+    }
+    if (patterns.stableDecisions.length > 0) {
+      const decStr = patterns.stableDecisions
+        .slice(0, 3)
+        .map((d) => `${d.label}→"${d.decision}" (${d.runCount}× consistent)`)
+        .join('; ');
+      patternParts.push(`✓ Stable decisions: ${decStr}`);
+    }
+    if (patterns.consistentlySlowNodes.length > 0) {
+      patternParts.push(
+        `🐢 Chronically slow: ${patterns.consistentlySlowNodes.join(', ')} (slow across multiple runs — consider optimizing)`,
+      );
+    }
+    if (patternParts.length > 0) {
+      block += `\n\nPATTERNS ACROSS RUNS:\n${patternParts.map((p) => `- ${p}`).join('\n')}`;
+    }
+  }
+
+  return block;
 }
 
 // ─── Workflow Execution Context (for CID chat awareness) ────────────────────
@@ -1416,10 +1631,11 @@ export function buildWorkflowExecutionSummary(
   // meaningful AI output. Focus on nodes that actually ran LLM generation.
   const PASSTHROUGH = new Set(['input', 'trigger', 'dependency']);
   const executedNodes = nodes
-    .filter(n =>
-      n.data.executionStatus === 'success' &&
-      n.data.executionResult &&
-      !PASSTHROUGH.has(n.data.category),
+    .filter(
+      (n) =>
+        n.data.executionStatus === 'success' &&
+        n.data.executionResult &&
+        !PASSTHROUGH.has(n.data.category),
     )
     // Most recently executed first, then by label for stable ordering
     .sort((a, b) => {
@@ -1429,7 +1645,7 @@ export function buildWorkflowExecutionSummary(
     .slice(0, 6); // Limit to 6 most recent to keep prompt size bounded
 
   if (executedNodes.length > 0) {
-    const resultLines = executedNodes.map(n => {
+    const resultLines = executedNodes.map((n) => {
       const preview = smartTruncate(n.data.executionResult!, 200);
       return `- **${sanitizeForPrompt(n.data.label, 60)}** [${n.data.category}]: ${preview}`;
     });
@@ -1440,12 +1656,15 @@ export function buildWorkflowExecutionSummary(
 
   // ── Decision node outcomes ──
   // Surface any decision results with confidence so CID can reference them
-  const decisionNodes = nodes.filter(n => n.data.category === 'decision' && n.data.decisionResult);
+  const decisionNodes = nodes.filter(
+    (n) => n.data.category === 'decision' && n.data.decisionResult,
+  );
   if (decisionNodes.length > 0) {
-    const decLines = decisionNodes.map(n => {
-      const conf = n.data.decisionConfidence !== undefined
-        ? ` (${Math.round(n.data.decisionConfidence * 100)}% confidence)`
-        : '';
+    const decLines = decisionNodes.map((n) => {
+      const conf =
+        n.data.decisionConfidence !== undefined
+          ? ` (${Math.round(n.data.decisionConfidence * 100)}% confidence)`
+          : '';
       const reasoning = n.data.decisionExplanation
         ? ` — "${smartTruncate(n.data.decisionExplanation, 80)}"`
         : '';
@@ -1459,10 +1678,13 @@ export function buildWorkflowExecutionSummary(
 
   // ── Failed nodes ──
   // Show errors so CID can proactively suggest fixes
-  const failedNodes = nodes.filter(n => n.data.executionStatus === 'error' && n.data.executionError);
+  const failedNodes = nodes.filter(
+    (n) => n.data.executionStatus === 'error' && n.data.executionError,
+  );
   if (failedNodes.length > 0) {
-    const errLines = failedNodes.map(n =>
-      `- **${sanitizeForPrompt(n.data.label, 60)}**: ${smartTruncate(n.data.executionError!, 100)}`
+    const errLines = failedNodes.map(
+      (n) =>
+        `- **${sanitizeForPrompt(n.data.label, 60)}**: ${smartTruncate(n.data.executionError!, 100)}`,
     );
     parts.push(`FAILED NODES (${failedNodes.length}):\n${errLines.join('\n')}`);
   }
@@ -1475,7 +1697,8 @@ export function buildWorkflowExecutionSummary(
       const truncated = raw.length > 120 ? raw.slice(0, 117) + '...' : raw;
       return `- **${sanitizeForPrompt(k, 40)}**: ${truncated}`;
     });
-    const moreNote = ctxEntries.length > 8 ? `\n  _(${ctxEntries.length - 8} more entries omitted)_` : '';
+    const moreNote =
+      ctxEntries.length > 8 ? `\n  _(${ctxEntries.length - 8} more entries omitted)_` : '';
     parts.push(
       `SHARED WORKFLOW CONTEXT (${ctxEntries.length} entr${ctxEntries.length !== 1 ? 'ies' : 'y'} stored via tool calls):\n${ctxLines.join('\n')}${moreNote}`,
     );

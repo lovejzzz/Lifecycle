@@ -1328,6 +1328,20 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         /* analytics unavailable */
       }
 
+      // Identify slow nodes (> 20s wall-clock) for pattern tracking across runs
+      const SLOW_NODE_THRESHOLD_MS = 20_000;
+      const slowNodeLabels = finalNodes
+        .filter(
+          (n) =>
+            order.includes(n.id) && (n.data._executionDurationMs ?? 0) > SLOW_NODE_THRESHOLD_MS,
+        )
+        .map((n) => n.data.label);
+
+      // Count total validation warnings across all executed nodes
+      const validationWarningCount = finalNodes
+        .filter((n) => order.includes(n.id))
+        .reduce((sum, n) => sum + (n.data._validationWarnings?.length ?? 0), 0);
+
       const runSummary: ExecutionRunSummary = {
         sessionId: workflowContext.sessionId,
         timestamp: Date.now(),
@@ -1340,6 +1354,8 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         failedNodeLabels: failedNames,
         toolCallCount,
         contextKeysStored: sharedCtxKeys,
+        slowNodeLabels,
+        validationWarningCount,
       };
       recordExecutionRun(runSummary);
       cidLog('executeWorkflow:memory', {

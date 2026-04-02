@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
   sanitizeForPrompt,
   getExecutionSystemPrompt,
@@ -15,10 +15,19 @@ import {
   buildAncestorContextHint,
   buildMultiInputCoTScaffold,
   buildOutputLengthHint,
+  analyzeRunPatterns,
+  recordExecutionRun,
+  getExecutionHistory,
+  getExecutionHistoryRaw,
+  clearExecutionHistory,
 } from '../prompts';
-import type { ContextInput } from '../prompts';
+import type { ContextInput, ExecutionRunSummary } from '../prompts';
 import { getAgent } from '../agents';
-import { createDefaultHabits, createDefaultGeneration, createDefaultReflection } from '../reflection';
+import {
+  createDefaultHabits,
+  createDefaultGeneration,
+  createDefaultReflection,
+} from '../reflection';
 import type { Node, Edge } from '@xyflow/react';
 import type { NodeData, AgentPersonalityLayers } from '../types';
 
@@ -185,12 +194,33 @@ describe('buildNoteRefinementPrompt', () => {
 
 describe('buildSystemPrompt', () => {
   const mkNodes = (): Node<NodeData>[] => [
-    { id: 'n1', type: 'lifecycleNode', position: { x: 0, y: 0 }, data: { label: 'Input', category: 'input', status: 'active', version: 1, lastUpdated: Date.now() } },
-    { id: 'n2', type: 'lifecycleNode', position: { x: 200, y: 0 }, data: { label: 'Process', category: 'cid', status: 'generating', description: 'AI processing', version: 1, lastUpdated: Date.now() } },
+    {
+      id: 'n1',
+      type: 'lifecycleNode',
+      position: { x: 0, y: 0 },
+      data: {
+        label: 'Input',
+        category: 'input',
+        status: 'active',
+        version: 1,
+        lastUpdated: Date.now(),
+      },
+    },
+    {
+      id: 'n2',
+      type: 'lifecycleNode',
+      position: { x: 200, y: 0 },
+      data: {
+        label: 'Process',
+        category: 'cid',
+        status: 'generating',
+        description: 'AI processing',
+        version: 1,
+        lastUpdated: Date.now(),
+      },
+    },
   ];
-  const mkEdges = (): Edge[] => [
-    { id: 'e1', source: 'n1', target: 'n2', label: 'feeds' },
-  ];
+  const mkEdges = (): Edge[] => [{ id: 'e1', source: 'n1', target: 'n2', label: 'feeds' }];
 
   it('includes shared capabilities', () => {
     const result = buildSystemPrompt('rowan', [], []);
@@ -295,7 +325,14 @@ describe('compilePersonalityPrompt', () => {
   it('includes learned patterns when habits have data', () => {
     const agent = getAgent('rowan');
     const habits = createDefaultHabits('rowan');
-    habits.domainExpertise.push({ id: 'd1', domain: 'frontend', depth: 0.8, lastSeen: Date.now(), workflowsBuilt: 10, sedimentation: 0.6 });
+    habits.domainExpertise.push({
+      id: 'd1',
+      domain: 'frontend',
+      depth: 0.8,
+      lastSeen: Date.now(),
+      workflowsBuilt: 10,
+      sedimentation: 0.6,
+    });
     habits.totalInteractions = 50;
     habits.relationshipDepth = 0.5;
     const layers: AgentPersonalityLayers = {
@@ -338,8 +375,19 @@ describe('compilePersonalityPrompt', () => {
   it('includes growth awareness from reflection', () => {
     const agent = getAgent('rowan');
     const reflection = createDefaultReflection();
-    reflection.growthEdges.push({ area: 'security', reason: 'developing', priority: 0.7, identifiedAt: Date.now() });
-    reflection.driveEvolutionLog.push({ driveName: 'speed', oldWeight: 0.5, newWeight: 0.55, reason: 'spike', timestamp: Date.now() });
+    reflection.growthEdges.push({
+      area: 'security',
+      reason: 'developing',
+      priority: 0.7,
+      identifiedAt: Date.now(),
+    });
+    reflection.driveEvolutionLog.push({
+      driveName: 'speed',
+      oldWeight: 0.5,
+      newWeight: 0.55,
+      reason: 'spike',
+      timestamp: Date.now(),
+    });
     const layers: AgentPersonalityLayers = {
       temperament: agent.temperament,
       drivingForce: agent.drivingForce,
@@ -763,7 +811,7 @@ describe('buildWorkflowExecutionSummary', () => {
     );
     const result = buildWorkflowExecutionSummary(nodes, {});
     // Should contain at most 6 node labels
-    const matches = (result.match(/\*\*Node \d+\*\*/g) ?? []);
+    const matches = result.match(/\*\*Node \d+\*\*/g) ?? [];
     expect(matches.length).toBeLessThanOrEqual(6);
   });
 
@@ -806,7 +854,7 @@ describe('buildWorkflowExecutionSummary', () => {
     for (let i = 0; i < 12; i++) ctx[`key${i}`] = `val${i}`;
     const result = buildWorkflowExecutionSummary([], ctx);
     // 8 entries shown
-    const keyMatches = (result.match(/\*\*key\d+\*\*/g) ?? []);
+    const keyMatches = result.match(/\*\*key\d+\*\*/g) ?? [];
     expect(keyMatches.length).toBe(8);
     // "more entries omitted" note present
     expect(result).toContain('more entries omitted');
@@ -852,9 +900,7 @@ describe('buildRelevanceWeightedContext', () => {
 
   it('single input: applies budget truncation when content exceeds limit', () => {
     const long = 'x'.repeat(20000);
-    const inputs: ContextInput[] = [
-      { label: 'Node', relationship: 'drives', content: long },
-    ];
+    const inputs: ContextInput[] = [{ label: 'Node', relationship: 'drives', content: long }];
     const result = buildRelevanceWeightedContext(inputs, 'task', 500);
     expect(result.length).toBeLessThan(600); // truncated
     expect(result).toContain('truncated');
@@ -906,7 +952,11 @@ describe('buildRelevanceWeightedContext', () => {
         content: 'cooking recipe soup ingredients boil simmer stir pot kitchen',
       },
     ];
-    const result = buildRelevanceWeightedContext(inputs, 'implement authentication security login', 2000);
+    const result = buildRelevanceWeightedContext(
+      inputs,
+      'implement authentication security login',
+      2000,
+    );
     const authSection = result.split('---')[0] ?? '';
     const unrelSection = result.split('---')[1] ?? '';
     // Auth section should be at least as long as the unrelated one (more budget allocated)
@@ -915,8 +965,16 @@ describe('buildRelevanceWeightedContext', () => {
 
   it('guarantees minimum allocation — low-relevance sources are not completely dropped', () => {
     const inputs: ContextInput[] = [
-      { label: 'Main', relationship: 'drives', content: 'main relevant content about billing payments invoices' },
-      { label: 'Side', relationship: 'feeds', content: 'xyz123 unrelated random words zygote quasar' },
+      {
+        label: 'Main',
+        relationship: 'drives',
+        content: 'main relevant content about billing payments invoices',
+      },
+      {
+        label: 'Side',
+        relationship: 'feeds',
+        content: 'xyz123 unrelated random words zygote quasar',
+      },
     ];
     const result = buildRelevanceWeightedContext(inputs, 'billing payments', 2000);
     // The "Side" section must still appear despite low relevance
@@ -939,7 +997,12 @@ describe('buildRelevanceWeightedContext', () => {
 
   it('includes signal badge in header when category is provided', () => {
     const inputs: ContextInput[] = [
-      { label: 'Code Review', relationship: 'validates', content: 'All checks pass.\n\nAPPROVE', category: 'review' },
+      {
+        label: 'Code Review',
+        relationship: 'validates',
+        content: 'All checks pass.\n\nAPPROVE',
+        category: 'review',
+      },
     ];
     const result = buildRelevanceWeightedContext(inputs, 'deploy to production', 2000);
     expect(result).toContain('[VERDICT: APPROVE]');
@@ -961,7 +1024,9 @@ describe('buildRelevanceWeightedContext', () => {
 describe('extractNodeSignal', () => {
   // ── review ──
   it('returns APPROVE verdict for review node', () => {
-    expect(extractNodeSignal('The content looks good.\n\nAPPROVE', 'review')).toBe('[VERDICT: APPROVE]');
+    expect(extractNodeSignal('The content looks good.\n\nAPPROVE', 'review')).toBe(
+      '[VERDICT: APPROVE]',
+    );
   });
 
   it('returns BLOCK verdict when BLOCK appears', () => {
@@ -969,12 +1034,16 @@ describe('extractNodeSignal', () => {
   });
 
   it('returns REQUEST_CHANGES verdict', () => {
-    expect(extractNodeSignal('Minor issues. REQUEST_CHANGES', 'review')).toBe('[VERDICT: REQUEST_CHANGES]');
+    expect(extractNodeSignal('Minor issues. REQUEST_CHANGES', 'review')).toBe(
+      '[VERDICT: REQUEST_CHANGES]',
+    );
   });
 
   it('prefers BLOCK over APPROVE when both present', () => {
     // BLOCK check comes first in implementation
-    expect(extractNodeSignal('Could APPROVE after fixing. BLOCK for now.', 'review')).toBe('[VERDICT: BLOCK]');
+    expect(extractNodeSignal('Could APPROVE after fixing. BLOCK for now.', 'review')).toBe(
+      '[VERDICT: BLOCK]',
+    );
   });
 
   it('returns null when no verdict found in review', () => {
@@ -983,11 +1052,15 @@ describe('extractNodeSignal', () => {
 
   // ── decision ──
   it('extracts decision value from DECISION: line', () => {
-    expect(extractNodeSignal('DECISION: approve\nCONFIDENCE: 0.9\nREASONING: Looks good', 'decision')).toBe('[DECISION: approve]');
+    expect(
+      extractNodeSignal('DECISION: approve\nCONFIDENCE: 0.9\nREASONING: Looks good', 'decision'),
+    ).toBe('[DECISION: approve]');
   });
 
   it('strips confidence annotation from decision', () => {
-    expect(extractNodeSignal('DECISION: reject (confidence: 0.85)\nREASONING: Not ready', 'decision')).toBe('[DECISION: reject]');
+    expect(
+      extractNodeSignal('DECISION: reject (confidence: 0.85)\nREASONING: Not ready', 'decision'),
+    ).toBe('[DECISION: reject]');
   });
 
   it('returns null when no DECISION: line found', () => {
@@ -1018,19 +1091,25 @@ describe('extractNodeSignal', () => {
   });
 
   it('extracts actual blockers', () => {
-    const signal = extractNodeSignal('BLOCKERS: missing lodash@4.x, conflicting react versions', 'dependency');
+    const signal = extractNodeSignal(
+      'BLOCKERS: missing lodash@4.x, conflicting react versions',
+      'dependency',
+    );
     expect(signal).toContain('[BLOCKERS:');
     expect(signal).toContain('missing lodash');
   });
 
   // ── state ──
   it('extracts STATUS line', () => {
-    expect(extractNodeSignal('System metrics:\nCPU: 45%\n\nSTATUS: healthy', 'state')).toBe('[STATUS: healthy]');
+    expect(extractNodeSignal('System metrics:\nCPU: 45%\n\nSTATUS: healthy', 'state')).toBe(
+      '[STATUS: healthy]',
+    );
   });
 
   // ── policy ──
   it('counts numbered rules in policy output', () => {
-    const output = '1. All users must authenticate.\n2. Passwords must be 12+ chars.\n3. MFA required for admin.';
+    const output =
+      '1. All users must authenticate.\n2. Passwords must be 12+ chars.\n3. MFA required for admin.';
     expect(extractNodeSignal(output, 'policy')).toBe('[RULES: 3 defined]');
   });
 
@@ -1040,11 +1119,15 @@ describe('extractNodeSignal', () => {
 
   // ── patch ──
   it('returns applied for patch with "fixed"', () => {
-    expect(extractNodeSignal('Bug fixed: null pointer in auth.ts line 42', 'patch')).toBe('[PATCH: applied]');
+    expect(extractNodeSignal('Bug fixed: null pointer in auth.ts line 42', 'patch')).toBe(
+      '[PATCH: applied]',
+    );
   });
 
   it('returns failed for patch with "error"', () => {
-    expect(extractNodeSignal('Error: unable to apply diff due to conflict', 'patch')).toBe('[PATCH: failed]');
+    expect(extractNodeSignal('Error: unable to apply diff due to conflict', 'patch')).toBe(
+      '[PATCH: failed]',
+    );
   });
 
   // ── unknown / edge cases ──
@@ -1141,7 +1224,9 @@ describe('buildSharedContextHint', () => {
 
 describe('getExecutionSystemPrompt — shared context injection', () => {
   it('injects shared context when provided', () => {
-    const result = getExecutionSystemPrompt('cid', 'Analyzer', '', undefined, undefined, { deployment_env: 'staging' });
+    const result = getExecutionSystemPrompt('cid', 'Analyzer', '', undefined, undefined, {
+      deployment_env: 'staging',
+    });
     expect(result).toContain('Workflow Run Context');
     expect(result).toContain('deployment_env');
     expect(result).toContain('staging');
@@ -1167,7 +1252,9 @@ describe('getExecutionSystemPrompt — shared context injection', () => {
   });
 
   it('places shared context hint before the Return ONLY instruction', () => {
-    const result = getExecutionSystemPrompt('test', 'My Tests', '', undefined, undefined, { key: 'val' });
+    const result = getExecutionSystemPrompt('test', 'My Tests', '', undefined, undefined, {
+      key: 'val',
+    });
     const ctxIdx = result.indexOf('Workflow Run Context');
     const returnIdx = result.indexOf('Return ONLY');
     expect(ctxIdx).toBeGreaterThan(-1);
@@ -1176,14 +1263,18 @@ describe('getExecutionSystemPrompt — shared context injection', () => {
   });
 
   it('works alongside agent style hints', () => {
-    const result = getExecutionSystemPrompt('review', 'Code Review', '', undefined, 'rowan', { verdict: 'pending' });
+    const result = getExecutionSystemPrompt('review', 'Code Review', '', undefined, 'rowan', {
+      verdict: 'pending',
+    });
     expect(result).toContain('Workflow Run Context');
     expect(result).toContain('ROWAN EXECUTION STYLE');
     expect(result).toContain('verdict');
   });
 
   it('works with downstream hints and shared context together', () => {
-    const result = getExecutionSystemPrompt('cid', 'Planner', '', ['review', 'test'], undefined, { plan_id: 'p42' });
+    const result = getExecutionSystemPrompt('cid', 'Planner', '', ['review', 'test'], undefined, {
+      plan_id: 'p42',
+    });
     expect(result).toContain('Workflow Run Context');
     expect(result).toContain('plan_id');
     expect(result).toContain('OUTPUT CONTRACT');
@@ -1198,7 +1289,9 @@ describe('buildAncestorContextHint', () => {
   });
 
   it('formats ancestor without category as plain truncated text', () => {
-    const result = buildAncestorContextHint([{ label: 'Data Source', result: 'Some output text here.' }]);
+    const result = buildAncestorContextHint([
+      { label: 'Data Source', result: 'Some output text here.' },
+    ]);
     expect(result).toContain('Background context');
     expect(result).toContain('Data Source');
     expect(result).toContain('Some output text');
@@ -1206,7 +1299,11 @@ describe('buildAncestorContextHint', () => {
 
   it('includes signal badge when category yields a signal', () => {
     const result = buildAncestorContextHint([
-      { label: 'Quality Gate', result: 'The work meets all standards. APPROVE', category: 'review' },
+      {
+        label: 'Quality Gate',
+        result: 'The work meets all standards. APPROVE',
+        category: 'review',
+      },
     ]);
     expect(result).toContain('[VERDICT: APPROVE]');
     expect(result).toContain('Quality Gate');
@@ -1231,7 +1328,9 @@ describe('buildAncestorContextHint', () => {
 
   it('truncates more aggressively when signal is present (120 char budget)', () => {
     const longText = 'The review passed all checks. APPROVE. ' + 'extra content '.repeat(20);
-    const withSignal = buildAncestorContextHint([{ label: 'Rev', result: longText, category: 'review' }]);
+    const withSignal = buildAncestorContextHint([
+      { label: 'Rev', result: longText, category: 'review' },
+    ]);
     const withoutSignal = buildAncestorContextHint([{ label: 'Rev', result: longText }]);
     // With signal active: shorter raw text budget
     expect(withSignal.length).toBeLessThanOrEqual(withoutSignal.length);
@@ -1287,18 +1386,42 @@ describe('buildMultiInputCoTScaffold', () => {
 
 describe('getExecutionSystemPrompt — multi-input CoT scaffold', () => {
   it('does NOT include SYNTHESIS GUIDE for 2 inputs', () => {
-    const prompt = getExecutionSystemPrompt('cid', 'Analyze', '', undefined, undefined, undefined, 2);
+    const prompt = getExecutionSystemPrompt(
+      'cid',
+      'Analyze',
+      '',
+      undefined,
+      undefined,
+      undefined,
+      2,
+    );
     expect(prompt).not.toContain('SYNTHESIS GUIDE');
   });
 
   it('includes SYNTHESIS GUIDE for 3 inputs', () => {
-    const prompt = getExecutionSystemPrompt('cid', 'Analyze', '', undefined, undefined, undefined, 3);
+    const prompt = getExecutionSystemPrompt(
+      'cid',
+      'Analyze',
+      '',
+      undefined,
+      undefined,
+      undefined,
+      3,
+    );
     expect(prompt).toContain('SYNTHESIS GUIDE');
     expect(prompt).toContain('3 upstream inputs');
   });
 
   it('includes SYNTHESIS GUIDE for 5 inputs', () => {
-    const prompt = getExecutionSystemPrompt('review', 'Final Review', '', undefined, undefined, undefined, 5);
+    const prompt = getExecutionSystemPrompt(
+      'review',
+      'Final Review',
+      '',
+      undefined,
+      undefined,
+      undefined,
+      5,
+    );
     expect(prompt).toContain('SYNTHESIS GUIDE');
     expect(prompt).toContain('5 upstream inputs');
   });
@@ -1372,7 +1495,23 @@ describe('buildOutputLengthHint', () => {
   });
 
   it('returns hint for all known structured categories', () => {
-    const knownCategories = ['input', 'trigger', 'dependency', 'state', 'patch', 'review', 'test', 'policy', 'note', 'action', 'cid', 'process', 'artifact', 'deliverable', 'output'];
+    const knownCategories = [
+      'input',
+      'trigger',
+      'dependency',
+      'state',
+      'patch',
+      'review',
+      'test',
+      'policy',
+      'note',
+      'action',
+      'cid',
+      'process',
+      'artifact',
+      'deliverable',
+      'output',
+    ];
     for (const cat of knownCategories) {
       expect(buildOutputLengthHint(cat)).not.toBe('');
     }
@@ -1399,7 +1538,15 @@ describe('buildOutputLengthHint', () => {
   });
 
   it('output length hint appears after CoT scaffold when both present', () => {
-    const prompt = getExecutionSystemPrompt('cid', 'Analyzer', '', undefined, undefined, undefined, 4);
+    const prompt = getExecutionSystemPrompt(
+      'cid',
+      'Analyzer',
+      '',
+      undefined,
+      undefined,
+      undefined,
+      4,
+    );
     const coTIdx = prompt.indexOf('SYNTHESIS GUIDE');
     const lengthIdx = prompt.indexOf('OUTPUT LENGTH');
     expect(coTIdx).toBeGreaterThan(-1);
@@ -1414,5 +1561,205 @@ describe('buildOutputLengthHint', () => {
     expect(lengthIdx).toBeGreaterThan(-1);
     expect(agentIdx).toBeGreaterThan(-1);
     expect(lengthIdx).toBeLessThan(agentIdx);
+  });
+});
+
+// ── Helper factory for ExecutionRunSummary ───────────────────────────────────
+
+function makeRun(overrides: Partial<ExecutionRunSummary> = {}): ExecutionRunSummary {
+  return {
+    sessionId: 'test-session',
+    timestamp: Date.now(),
+    totalNodes: 5,
+    succeeded: 5,
+    failed: 0,
+    skipped: 0,
+    durationMs: 10_000,
+    decisions: [],
+    failedNodeLabels: [],
+    toolCallCount: 0,
+    contextKeysStored: [],
+    slowNodeLabels: [],
+    validationWarningCount: 0,
+    ...overrides,
+  };
+}
+
+// ── analyzeRunPatterns ────────────────────────────────────────────────────────
+
+describe('analyzeRunPatterns', () => {
+  it('returns null when fewer than 2 runs', () => {
+    expect(analyzeRunPatterns([])).toBeNull();
+    expect(analyzeRunPatterns([makeRun()])).toBeNull();
+  });
+
+  it('detects recurring failure when same node fails in 2+ runs', () => {
+    const runs = [
+      makeRun({ failedNodeLabels: ['Data Fetch', 'Parse JSON'] }),
+      makeRun({ failedNodeLabels: ['Data Fetch'] }),
+      makeRun({ failedNodeLabels: [] }),
+    ];
+    const result = analyzeRunPatterns(runs)!;
+    expect(result.recurringFailures).toContain('Data Fetch');
+    expect(result.recurringFailures).not.toContain('Parse JSON'); // only failed once
+  });
+
+  it('reports stable performance trend (< 15% change)', () => {
+    const runs = [
+      makeRun({ durationMs: 10_000 }),
+      makeRun({ durationMs: 10_500 }),
+      makeRun({ durationMs: 10_200 }),
+    ].reverse(); // reverse so order is oldest→newest after analyzeRunPatterns reversal
+    const result = analyzeRunPatterns(runs)!;
+    expect(result.performanceTrend).toBe('stable');
+  });
+
+  it('detects improving performance trend (> 15% faster)', () => {
+    // Oldest run slow, newest run fast — analyzeRunPatterns slices and reverses
+    const runs = [
+      makeRun({ durationMs: 5_000 }), // newest (index 0)
+      makeRun({ durationMs: 7_000 }),
+      makeRun({ durationMs: 10_000 }), // oldest (index 2)
+    ];
+    const result = analyzeRunPatterns(runs)!;
+    expect(result.performanceTrend).toBe('improving');
+  });
+
+  it('detects degrading performance trend (> 15% slower)', () => {
+    const runs = [
+      makeRun({ durationMs: 15_000 }), // newest
+      makeRun({ durationMs: 12_000 }),
+      makeRun({ durationMs: 10_000 }), // oldest
+    ];
+    const result = analyzeRunPatterns(runs)!;
+    expect(result.performanceTrend).toBe('degrading');
+  });
+
+  it('detects stable decisions (same choice in 2+ runs)', () => {
+    const runs = [
+      makeRun({ decisions: [{ label: 'Quality Gate', decision: 'approve', confidence: 0.9 }] }),
+      makeRun({ decisions: [{ label: 'Quality Gate', decision: 'approve', confidence: 0.85 }] }),
+      makeRun({ decisions: [{ label: 'Quality Gate', decision: 'reject' }] }),
+    ];
+    const result = analyzeRunPatterns(runs)!;
+    const qg = result.stableDecisions.find((d) => d.label === 'Quality Gate');
+    expect(qg).toBeDefined();
+    expect(qg!.decision).toBe('approve');
+    expect(qg!.runCount).toBe(2);
+  });
+
+  it('returns no stable decisions when all choices differ', () => {
+    const runs = [
+      makeRun({ decisions: [{ label: 'Gate', decision: 'approve' }] }),
+      makeRun({ decisions: [{ label: 'Gate', decision: 'reject' }] }),
+    ];
+    const result = analyzeRunPatterns(runs)!;
+    expect(result.stableDecisions).toHaveLength(0);
+  });
+
+  it('detects consistently slow nodes appearing in 2+ runs', () => {
+    const runs = [
+      makeRun({ slowNodeLabels: ['Heavy Analysis', 'Data Transform'] }),
+      makeRun({ slowNodeLabels: ['Heavy Analysis'] }),
+      makeRun({ slowNodeLabels: ['Data Transform'] }),
+    ];
+    const result = analyzeRunPatterns(runs)!;
+    // Both appeared in 2 runs
+    expect(result.consistentlySlowNodes).toContain('Heavy Analysis');
+    expect(result.consistentlySlowNodes).toContain('Data Transform');
+  });
+
+  it('does not flag slow nodes appearing in only one run', () => {
+    const runs = [makeRun({ slowNodeLabels: ['One-time Slow'] }), makeRun({ slowNodeLabels: [] })];
+    const result = analyzeRunPatterns(runs)!;
+    expect(result.consistentlySlowNodes).toHaveLength(0);
+  });
+
+  it('orders recurring failures by frequency (most frequent first)', () => {
+    const runs = [
+      makeRun({ failedNodeLabels: ['A', 'B', 'C'] }),
+      makeRun({ failedNodeLabels: ['A', 'B'] }),
+      makeRun({ failedNodeLabels: ['A'] }),
+    ];
+    const result = analyzeRunPatterns(runs)!;
+    expect(result.recurringFailures[0]).toBe('A'); // fails 3× — most frequent
+    expect(result.recurringFailures[1]).toBe('B'); // fails 2×
+    expect(result.recurringFailures).not.toContain('C'); // only 1× — not recurring
+  });
+});
+
+// ── recordExecutionRun / clearExecutionHistory / getExecutionHistoryRaw ───────
+
+describe('execution history ring buffer', () => {
+  beforeEach(() => {
+    clearExecutionHistory();
+  });
+
+  it('starts empty after clearExecutionHistory', () => {
+    expect(getExecutionHistoryRaw()).toHaveLength(0);
+  });
+
+  it('records a run and makes it retrievable', () => {
+    const run = makeRun({ sessionId: 'abc-123', succeeded: 3, failed: 1 });
+    recordExecutionRun(run);
+    const raw = getExecutionHistoryRaw();
+    expect(raw).toHaveLength(1);
+    expect(raw[0].sessionId).toBe('abc-123');
+    expect(raw[0].failed).toBe(1);
+  });
+
+  it('prepends new runs (newest first)', () => {
+    recordExecutionRun(makeRun({ sessionId: 'first' }));
+    recordExecutionRun(makeRun({ sessionId: 'second' }));
+    const raw = getExecutionHistoryRaw();
+    expect(raw[0].sessionId).toBe('second');
+    expect(raw[1].sessionId).toBe('first');
+  });
+
+  it('caps history at 10 entries', () => {
+    for (let i = 0; i < 12; i++) {
+      recordExecutionRun(makeRun({ sessionId: `run-${i}` }));
+    }
+    expect(getExecutionHistoryRaw()).toHaveLength(10);
+  });
+
+  it('getExecutionHistory returns empty string when no runs', () => {
+    expect(getExecutionHistory()).toBe('');
+  });
+
+  it('getExecutionHistory includes run status summary', () => {
+    recordExecutionRun(makeRun({ succeeded: 4, failed: 1, failedNodeLabels: ['Parser'] }));
+    const history = getExecutionHistory();
+    expect(history).toContain('EXECUTION HISTORY');
+    expect(history).toContain('4✓');
+    expect(history).toContain('1✗');
+    expect(history).toContain('Failed: Parser');
+  });
+
+  it('getExecutionHistory includes slow nodes when present', () => {
+    recordExecutionRun(makeRun({ slowNodeLabels: ['Data Fetch'] }));
+    const history = getExecutionHistory();
+    expect(history).toContain('Slow nodes: Data Fetch');
+  });
+
+  it('getExecutionHistory appends PATTERNS section when ≥2 runs with recurring failures', () => {
+    recordExecutionRun(makeRun({ failedNodeLabels: ['Flaky Node'] }));
+    recordExecutionRun(makeRun({ failedNodeLabels: ['Flaky Node'] }));
+    const history = getExecutionHistory();
+    expect(history).toContain('PATTERNS ACROSS RUNS');
+    expect(history).toContain('Recurring failures');
+    expect(history).toContain('Flaky Node');
+  });
+
+  it('getExecutionHistory shows decision info when decisions present', () => {
+    recordExecutionRun(
+      makeRun({
+        decisions: [{ label: 'Risk Gate', decision: 'approve', confidence: 0.92 }],
+      }),
+    );
+    const history = getExecutionHistory();
+    expect(history).toContain('Risk Gate');
+    expect(history).toContain('approve');
+    expect(history).toContain('92%');
   });
 });
