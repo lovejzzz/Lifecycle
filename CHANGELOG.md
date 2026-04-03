@@ -1,5 +1,34 @@
 # Changelog
 
+### 2026-04-03 — Round 77: Routing Intelligence — show-history/clear-history Routes + add-node Bug Fix
+
+**Improvement — Routing & Intent (Area 4):**
+
+**Bug fix — `add-node` missed "create a [category] node called X":**
+- `create a decision node called Gate` previously routed to `generate` because the `add-node` pattern came AFTER the `generate` pattern in the PATTERNS array, and both match on the verb "create"
+- Added a high-priority `add-node` pattern placed before `generate` that matches `(add|create|new|make) (a|an|the)? <word>? (node)? (called|named) <name>`
+- Handles optional article ("a", "an", "the") and optional trailing "node" suffix on category names
+- Existing generate cases unaffected: "create a hiring pipeline" (no "called/named") still routes to `generate` ✓
+
+**New `show-history` route — surface the cross-run memory system:**
+- Round 72 added persistent execution history but there was no command route to view it
+- Now matches: "history", "run history", "execution history", "agent history", "show history", "show run history", "past runs", "show agent memory"
+- Pattern placed before generic `list`/`show` catch-alls; confidence: high
+
+**New `clear-history` route — reset agent memory:**
+- Matches: "clear history", "wipe history", "reset agent memory", "forget memory", "clear agent memory"
+- Confidence: high
+
+**Benchmark expanded: 146 → 163 cases (+17), 100% accuracy maintained:**
+- 5 new `add-node` cases with article + "node" suffix ("add a review node called X")
+- 7 new `show-history` cases across phrasings
+- 5 new `clear-history` cases
+- 10 new high-confidence assertions in the confidence test suite
+
+**Files changed:** `src/lib/routing.ts`, `src/lib/__tests__/routing-benchmark.test.ts`
+
+**Test Results:** TypeScript clean. 1607/1607 tests pass (17 new benchmark tests).
+
 ### 2026-04-03 — Round 76: Decision Node Intelligence — Context, Personality & Confidence Retry
 
 **Improvement — Decision Node Intelligence (Area 2):**
