@@ -437,6 +437,77 @@ const BENCHMARK: BenchmarkCase[] = [
   { prompt: 'wipe history', expected: 'clear-history', context: 'PM starting fresh' },
   { prompt: 'forget memory', expected: 'clear-history', context: 'professor resetting agent' },
   { prompt: 'clear agent memory', expected: 'clear-history', context: 'PM clearing history' },
+
+  // ── Round 78: remove-tool (must NOT misroute to delete) ──
+  {
+    prompt: 'remove the web_search tool from Research',
+    expected: 'remove-tool',
+    context: 'PM removing a tool from a node',
+  },
+  {
+    prompt: 'delete the http_request tool from Quiz Bank',
+    expected: 'remove-tool',
+    context: 'professor removing unused tool',
+  },
+  {
+    prompt: 'disable the extract_json tool on Rubric',
+    expected: 'remove-tool',
+    context: 'PM disabling a tool',
+  },
+  {
+    prompt: 'detach the tool from the Research node',
+    expected: 'remove-tool',
+    context: 'PM detaching a tool',
+  },
+
+  // ── Round 78: show-condition ──
+  {
+    prompt: 'show condition on edge from Rubric to Review',
+    expected: 'show-condition',
+    context: 'PM inspecting edge guard',
+  },
+  {
+    prompt: 'view the edge condition for the Lesson Plan connection',
+    expected: 'show-condition',
+    context: 'professor viewing guards',
+  },
+  {
+    prompt: 'what condition is on the Rubric edge',
+    expected: 'show-condition',
+    context: 'PM checking condition',
+  },
+  {
+    prompt: 'show edge conditions',
+    expected: 'show-condition',
+    context: 'PM listing all edge conditions',
+  },
+
+  // ── Round 78: show-tools natural language variants ──
+  {
+    prompt: 'what tools does the Research node have',
+    expected: 'show-tools',
+    context: 'PM checking node tool config',
+  },
+  {
+    prompt: 'which tools does Quiz Bank use',
+    expected: 'show-tools',
+    context: 'professor inspecting tools',
+  },
+  {
+    prompt: 'show tools on Rubric',
+    expected: 'show-tools',
+    context: 'PM viewing node tools',
+  },
+  {
+    prompt: 'list tools for the Research node',
+    expected: 'show-tools',
+    context: 'PM listing node tools',
+  },
+  {
+    prompt: 'tools on Research',
+    expected: 'show-tools',
+    context: 'PM quick tools check on node',
+  },
 ];
 
 // ─── Benchmark Runner ───────────────────────────────────────────────────────
@@ -512,6 +583,11 @@ describe('Routing Confidence Levels', () => {
     { prompt: 'configure retry for Quiz Bank', route: 'configure-retry' },
     { prompt: 'set condition on edge from Rubric to Review', route: 'set-condition' },
     { prompt: 'show tools', route: 'show-tools' },
+    { prompt: 'what tools does the Research node have', route: 'show-tools' },
+    { prompt: 'remove the web_search tool from Research', route: 'remove-tool' },
+    { prompt: 'disable the extract_json tool on Rubric', route: 'remove-tool' },
+    { prompt: 'show condition on edge from Rubric to Review', route: 'show-condition' },
+    { prompt: 'show edge conditions', route: 'show-condition' },
     // History / memory routes
     { prompt: 'history', route: 'show-history' },
     { prompt: 'run history', route: 'show-history' },

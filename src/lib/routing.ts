@@ -88,7 +88,9 @@ export type CommandRoute =
   | 'forget-override' // remove an override
   | 'update-source' // update/change the source material
   | 'add-tool' // add/enable a tool on a node
+  | 'remove-tool' // remove/disable a tool from a node
   | 'set-condition' // set condition on an edge
+  | 'show-condition' // view/inspect conditions on an edge
   | 'configure-retry' // configure retry/fallback for a node
   | 'show-tools' // list tools available / on a node
   | 'llm-fallback'; // anything else → send to LLM
@@ -154,16 +156,41 @@ addPattern(
   'add-node',
   'high',
 );
-// Show tools: "show tools", "list tools", "tools"
+// Show tools: "show tools", "list tools", "tools", "what tools does Node X have/use?"
 addPattern(
-  (s) => /^(?:show|list)\s+(?:(?:available|all)\s+)?tools?\s*$/i.test(s) || /^tools?\s*$/i.test(s),
+  (s) =>
+    /^(?:show|list)\s+(?:(?:available|all)\s+)?tools?\s*$/i.test(s) ||
+    /^tools?\s*$/i.test(s) ||
+    /^(?:what|which)\s+tools?\s+(?:does|is|are)\s+/i.test(s) ||
+    /^(?:show|list|view)\s+tools?\s+(?:on|for|in)\s+/i.test(s) ||
+    /^tools?\s+(?:on|for|in)\s+/i.test(s),
   'show-tools',
+  'high',
+);
+// Remove tool from node (MUST come before delete — "remove web_search from Research" ≠ delete node)
+addPattern(
+  (s) =>
+    /^(?:remove|delete|disable|detach|unattach)\s+(?:the\s+)?(?:\w+\s+)?tool\s+(?:from|on)\s+/i.test(
+      s,
+    ) || /^(?:remove|disable)\s+\w+\s+(?:from|on)\s+.+\s+(?:node|tool)/i.test(s),
+  'remove-tool',
   'high',
 );
 // Set edge condition: "set condition on edge from X to Y", "add condition for Rubric→Review"
 addPattern(
   (s) => /^(?:set|add|configure)\s+(?:a\s+)?(?:condition|guard|filter)\s+(?:on|for|to)\s+/i.test(s),
   'set-condition',
+  'high',
+);
+// Show/view edge condition: "show condition on edge X→Y", "view the edge condition", "what condition is on..."
+addPattern(
+  (s) =>
+    /^(?:show|view|display|get|check)\s+(?:the\s+)?(?:edge\s+)?(?:condition|guard|filter)\s+(?:on|for|between|from)\s+/i.test(
+      s,
+    ) ||
+    /^(?:what|which)\s+(?:condition|guard|filter)\s+(?:is|are)\s+(?:on|for)\s+/i.test(s) ||
+    /^(?:show|view)\s+(?:edge\s+)?conditions?\s*$/i.test(s),
+  'show-condition',
   'high',
 );
 // Configure retry: "configure retry for Node X", "set up retries on Quiz Bank"
