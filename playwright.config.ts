@@ -13,9 +13,9 @@ export default defineConfig({
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
   ],
   webServer: {
-    command: 'npm run dev',
+    command: process.env.CI ? 'npm run build && npm run start' : 'npm run dev',
     port: 3000,
-    timeout: 30000,
-    reuseExistingServer: true,
+    timeout: process.env.CI ? 120000 : 30000,
+    reuseExistingServer: !process.env.CI,
   },
 });
