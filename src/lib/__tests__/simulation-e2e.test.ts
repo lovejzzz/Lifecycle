@@ -1887,7 +1887,7 @@ describe('E2E Async Simulation Tests', () => {
 
       const callsBefore = getStore()._usageStats.totalCalls;
 
-      getStore().executeNode('cache-q1');
+      await getStore().executeNode('cache-q1');
       await vi.advanceTimersByTimeAsync(5000);
 
       const callsAfter = getStore()._usageStats.totalCalls;
@@ -1997,7 +1997,7 @@ describe('E2E Async Simulation Tests', () => {
       getStore().setEdges([]);
       await vi.advanceTimersByTimeAsync(100);
 
-      getStore().executeNode('ver-s3');
+      await getStore().executeNode('ver-s3');
       await vi.advanceTimersByTimeAsync(5000);
 
       const n = getStore().nodes.find((n) => n.id === 'ver-s3');
@@ -2159,7 +2159,7 @@ describe('E2E Async Simulation Tests', () => {
 
       // First attempt: fail
       fetchFailForNodes.add('Flaky Node');
-      getStore().executeNode('retry-1');
+      await getStore().executeNode('retry-1');
       await vi.advanceTimersByTimeAsync(5000);
 
       const afterFail = getStore().nodes.find((n) => n.id === 'retry-1');
@@ -2168,7 +2168,7 @@ describe('E2E Async Simulation Tests', () => {
 
       // Second attempt: succeed
       fetchFailForNodes.delete('Flaky Node');
-      getStore().executeNode('retry-1');
+      await getStore().executeNode('retry-1');
       await vi.advanceTimersByTimeAsync(5000);
 
       const afterRetry = getStore().nodes.find((n) => n.id === 'retry-1');
@@ -2183,7 +2183,7 @@ describe('E2E Async Simulation Tests', () => {
 
       // Fail the Process node
       fetchFailForNodes.add('Process');
-      getStore().executeNode('n-2');
+      await getStore().executeNode('n-2');
       await vi.advanceTimersByTimeAsync(5000);
 
       const s = getStore();
@@ -2210,12 +2210,12 @@ describe('E2E Async Simulation Tests', () => {
 
       // Fail
       fetchShouldFail = true;
-      getStore().executeNode('recover-1');
+      await getStore().executeNode('recover-1');
       await vi.advanceTimersByTimeAsync(5000);
 
       // Recover
       fetchShouldFail = false;
-      getStore().executeNode('recover-1');
+      await getStore().executeNode('recover-1');
       await vi.advanceTimersByTimeAsync(5000);
 
       const n = getStore().nodes.find((n) => n.id === 'recover-1');
@@ -2429,7 +2429,7 @@ describe('E2E Async Simulation Tests', () => {
       await vi.advanceTimersByTimeAsync(100);
 
       // First execution
-      getStore().executeNode('vcyc-1');
+      await getStore().executeNode('vcyc-1');
       await vi.advanceTimersByTimeAsync(5000);
 
       const afterExec1 = getStore().nodes.find((n) => n.id === 'vcyc-1');
@@ -2449,7 +2449,7 @@ describe('E2E Async Simulation Tests', () => {
       expect(afterEdit?.data.status).toBe('stale');
 
       // Second execution — node is stale, executeNode processes it
-      getStore().executeNode('vcyc-1');
+      await getStore().executeNode('vcyc-1');
       await vi.advanceTimersByTimeAsync(5000);
 
       const afterExec2 = getStore().nodes.find((n) => n.id === 'vcyc-1');
@@ -2832,12 +2832,12 @@ describe('E2E Async Simulation Tests', () => {
       ]);
       await vi.advanceTimersByTimeAsync(100);
 
-      // Step 1: Execute the chain
-      getStore().executeNode('prof-1');
+      // Step 1: Execute the chain (await each to ensure locks are fully released)
+      await getStore().executeNode('prof-1');
       await vi.advanceTimersByTimeAsync(5000);
-      getStore().executeNode('prof-2');
+      await getStore().executeNode('prof-2');
       await vi.advanceTimersByTimeAsync(5000);
-      getStore().executeNode('prof-3');
+      await getStore().executeNode('prof-3');
       await vi.advanceTimersByTimeAsync(5000);
 
       // All should be active after execution
@@ -2862,7 +2862,7 @@ describe('E2E Async Simulation Tests', () => {
       expect(getStore().nodes.find((n) => n.id === 'prof-1')?.data.status).toBe('active');
 
       // Step 4: Re-execute the stale Lesson Plan
-      getStore().executeNode('prof-2');
+      await getStore().executeNode('prof-2');
       await vi.advanceTimersByTimeAsync(5000);
 
       // After execution, the node should have been processed (version may bump)
@@ -2982,7 +2982,7 @@ describe('E2E Async Simulation Tests', () => {
       await vi.advanceTimersByTimeAsync(100);
 
       // First execution of downstream
-      getStore().executeNode('ai-2');
+      await getStore().executeNode('ai-2');
       await vi.advanceTimersByTimeAsync(5000);
 
       const statsAfterFirst = { ...getStore()._usageStats };
@@ -3002,7 +3002,7 @@ describe('E2E Async Simulation Tests', () => {
 
       // Re-execute downstream — upstream changed, so cache hash should differ
       const callsBefore = fetchCallCount;
-      getStore().executeNode('ai-2');
+      await getStore().executeNode('ai-2');
       await vi.advanceTimersByTimeAsync(10000);
 
       // Verify execution happened: either stats incremented or a new fetch was made
@@ -3032,7 +3032,7 @@ describe('E2E Async Simulation Tests', () => {
 
       // First execution — real API call
       const callsBefore = fetchCallCount;
-      getStore().executeNode('aj-1');
+      await getStore().executeNode('aj-1');
       await vi.advanceTimersByTimeAsync(10000);
 
       const afterFirst = { ...getStore()._usageStats };
@@ -3040,7 +3040,7 @@ describe('E2E Async Simulation Tests', () => {
       expect(fetchCallCount).toBeGreaterThan(callsBefore);
 
       // Second execution of same node (same content) — should be cache hit
-      getStore().executeNode('aj-1');
+      await getStore().executeNode('aj-1');
       await vi.advanceTimersByTimeAsync(5000);
 
       const afterSecond = getStore()._usageStats;
@@ -3185,7 +3185,7 @@ describe('E2E Async Simulation Tests', () => {
       const p1Id = getStore().currentProjectId;
 
       // Execute node in project 1
-      getStore().executeNode('ao-1');
+      await getStore().executeNode('ao-1');
       await vi.advanceTimersByTimeAsync(5000);
 
       const _p1StatusAfterExec = getStore().nodes.find((n) => n.id === 'ao-1')?.data.status;
