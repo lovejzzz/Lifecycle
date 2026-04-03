@@ -38,6 +38,7 @@ import {
   parseDecisionOutput,
   decisionMatchesCondition,
   normalizeDecisionToOption,
+  DECISION_LOW_CONFIDENCE_THRESHOLD,
 } from '@/lib/decision';
 import { generateProactiveSuggestions, formatSuggestionsMessage } from '@/lib/suggestions';
 import { cidLog } from '../helpers';
@@ -179,7 +180,7 @@ export const createExecutionSlice: StateCreator<LifecycleStore, [], [], Executio
 
       const decisionPrompt =
         d.aiPrompt || d.content || `Evaluate the upstream data and decide which path to take.`;
-      const systemPrompt = getDecisionSystemPrompt(options);
+      const systemPrompt = getDecisionSystemPrompt(options, d.label, d.description, store.cidMode);
 
       try {
         store.updateNodeData(nodeId, {
@@ -200,10 +201,73 @@ export const createExecutionSlice: StateCreator<LifecycleStore, [], [], Executio
         });
         if (data.usage)
           store.trackCost(data.usage.prompt_tokens, data.usage.completion_tokens, store.cidAIModel);
-        const output = data.result?.message || data.result?.content || '';
+        let output = data.result?.message || data.result?.content || '';
         const _execDuration = Date.now() - _execStart;
         // Parse structured output immediately so fields are available in executeNode context
-        const parsed = parseDecisionOutput(output);
+        let parsed = parseDecisionOutput(output);
+
+        // ── Confidence-aware retry ──────────────────────────────────────────
+        // When the LLM signals low confidence (< threshold), make a single follow-up
+        // call asking it to re-examine the evidence before committing to a branch.
+        // Only retry if the initial confidence was explicitly reported (not undefined).
+        if (
+          parsed.confidence !== undefined &&
+          parsed.confidence < DECISION_LOW_CONFIDENCE_THRESHOLD
+        ) {
+          cidLog('executeNode:decision:low-confidence-retry', {
+            nodeId,
+            label: d.label,
+            confidence: parsed.confidence,
+          });
+          try {
+            const retryData = await callCID({
+              systemPrompt,
+              messages: [
+                {
+                  role: 'user',
+                  content: `${decisionPrompt}\n\n--- UPSTREAM DATA ---\n${upstreamData}`,
+                },
+                { role: 'assistant' as const, content: output },
+                {
+                  role: 'user' as const,
+                  content:
+                    `Your confidence was ${parsed.confidence.toFixed(2)}, which is below the required threshold. ` +
+                    `Re-examine the upstream evidence more carefully. ` +
+                    `Focus on the strongest signals that distinguish between the options. ` +
+                    `Respond with the same DECISION/CONFIDENCE/REASONING format — do not add extra text.`,
+                },
+              ],
+              model: store.cidAIModel,
+              taskType: 'analyze',
+              timeout: 60000,
+            });
+            if (retryData.usage)
+              store.trackCost(
+                retryData.usage.prompt_tokens,
+                retryData.usage.completion_tokens,
+                store.cidAIModel,
+              );
+            const retryOutput = retryData.result?.message || retryData.result?.content || '';
+            if (retryOutput) {
+              const retryParsed = parseDecisionOutput(retryOutput);
+              // Only accept the retry if it yields equal or higher confidence
+              const retryConf = retryParsed.confidence ?? 0;
+              const origConf = parsed.confidence ?? 0;
+              if (retryConf >= origConf) {
+                output = retryOutput;
+                parsed = retryParsed;
+                cidLog('executeNode:decision:retry-accepted', {
+                  nodeId,
+                  originalConfidence: origConf,
+                  retryConfidence: retryConf,
+                });
+              }
+            }
+          } catch {
+            // Retry failure is non-fatal — proceed with original parse
+          }
+        }
+
         // Normalize to canonical option name so decisionResult is always a clean label
         // (e.g. "I'll escalate this" → "escalate") — critical for reliable edge routing
         const normalizedDecision =

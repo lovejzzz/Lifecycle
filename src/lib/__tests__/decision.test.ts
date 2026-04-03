@@ -6,6 +6,7 @@ import {
   findBestMatchingOption,
   scoreDecisionOptions,
   normalizeDecisionToOption,
+  DECISION_LOW_CONFIDENCE_THRESHOLD,
 } from '../decision';
 
 // ── getDecisionSystemPrompt ──────────────────────────────────────────────────
@@ -39,6 +40,69 @@ describe('getDecisionSystemPrompt', () => {
     const prompt = getDecisionSystemPrompt(['approve', 'reject']);
     expect(prompt).toContain('"approve"');
     expect(prompt).toContain('"reject"');
+  });
+
+  it('embeds node label when provided', () => {
+    const prompt = getDecisionSystemPrompt(['yes', 'no'], 'Quality Gate');
+    expect(prompt).toContain('"Quality Gate"');
+  });
+
+  it('embeds node description when provided', () => {
+    const prompt = getDecisionSystemPrompt(['yes', 'no'], 'Gate', 'Check if output meets SLA');
+    expect(prompt).toContain('Check if output meets SLA');
+  });
+
+  it('omits context line when no label is given', () => {
+    const prompt = getDecisionSystemPrompt(['yes', 'no']);
+    expect(prompt).not.toContain('Decision context:');
+  });
+
+  it('adds Rowan style hint when agentName is rowan', () => {
+    const prompt = getDecisionSystemPrompt(['approve', 'reject'], undefined, undefined, 'rowan');
+    expect(prompt).toContain('ROWAN DECISION STYLE');
+  });
+
+  it('adds Poirot style hint when agentName is poirot', () => {
+    const prompt = getDecisionSystemPrompt(['approve', 'reject'], undefined, undefined, 'poirot');
+    expect(prompt).toContain('POIROT DECISION STYLE');
+  });
+
+  it('is case-insensitive for agentName', () => {
+    const prompt = getDecisionSystemPrompt(['approve', 'reject'], undefined, undefined, 'Rowan');
+    expect(prompt).toContain('ROWAN DECISION STYLE');
+  });
+
+  it('omits agent hint when no agentName is given', () => {
+    const prompt = getDecisionSystemPrompt(['approve', 'reject']);
+    expect(prompt).not.toContain('ROWAN DECISION STYLE');
+    expect(prompt).not.toContain('POIROT DECISION STYLE');
+  });
+
+  it('combines label, description, and agent hint correctly', () => {
+    const prompt = getDecisionSystemPrompt(
+      ['approve', 'reject', 'defer'],
+      'Release Gate',
+      'Decide whether to release to production',
+      'poirot',
+    );
+    expect(prompt).toContain('"Release Gate"');
+    expect(prompt).toContain('Decide whether to release to production');
+    expect(prompt).toContain('POIROT DECISION STYLE');
+    expect(prompt).toContain('ALTERNATIVES:'); // N>2 options
+  });
+});
+
+// ── DECISION_LOW_CONFIDENCE_THRESHOLD ────────────────────────────────────────
+
+describe('DECISION_LOW_CONFIDENCE_THRESHOLD', () => {
+  it('is a number between 0 and 1', () => {
+    expect(typeof DECISION_LOW_CONFIDENCE_THRESHOLD).toBe('number');
+    expect(DECISION_LOW_CONFIDENCE_THRESHOLD).toBeGreaterThan(0);
+    expect(DECISION_LOW_CONFIDENCE_THRESHOLD).toBeLessThan(1);
+  });
+
+  it('is 0.5 (retry is triggered on genuine uncertainty)', () => {
+    expect(DECISION_LOW_CONFIDENCE_THRESHOLD).toBe(0.5);
   });
 });
 

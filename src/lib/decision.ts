@@ -11,13 +11,46 @@
 // ── Prompt generation ─────────────────────────────────────────────────────────
 
 /**
+ * Minimum confidence score below which a low-confidence retry is triggered.
+ * When the LLM reports confidence below this threshold, the execution slice
+ * makes a single follow-up call asking it to re-examine the evidence.
+ */
+export const DECISION_LOW_CONFIDENCE_THRESHOLD = 0.5;
+
+/**
+ * Agent-specific decision style hints.
+ *
+ * Rowan: decisive and direct — front-loads the verdict, minimal hedging.
+ * Poirot: investigative — examines each option's evidence before choosing.
+ */
+const DECISION_AGENT_HINTS: Record<string, string> = {
+  rowan:
+    '\n\nROWAN DECISION STYLE: Be decisive. Commit to the strongest option immediately. ' +
+    'Keep REASONING to one punchy sentence. Avoid hedging language ("might", "could", "perhaps"). ' +
+    'High confidence is a feature — only go below 0.7 when the evidence genuinely conflicts.',
+  poirot:
+    '\n\nPOIROT DECISION STYLE: Before choosing, methodically examine what each upstream input ' +
+    'tells you about each option. Note signals that support or contradict each branch. ' +
+    'Build the case in your REASONING — the decision should feel inevitable from the evidence. ' +
+    'Reserve high confidence (≥0.9) only when all signals converge unambiguously.',
+};
+
+/**
  * Build a structured system prompt for a decision node.
  * Supports N-way branching (2+ options).
  *
- * @param options  The available decision branches (labels or condition values)
- * @returns        System prompt string ready for the LLM
+ * @param options          The available decision branches (labels or condition values)
+ * @param nodeLabel        Optional node label — anchors the decision to its domain context
+ * @param nodeDescription  Optional description from node data — narrows the decision criteria
+ * @param agentName        Optional agent name ('rowan' | 'poirot') — adds personality style
+ * @returns                System prompt string ready for the LLM
  */
-export function getDecisionSystemPrompt(options: string[]): string {
+export function getDecisionSystemPrompt(
+  options: string[],
+  nodeLabel?: string,
+  nodeDescription?: string,
+  agentName?: string,
+): string {
   const optionsList = options.map((o, i) => `  ${i + 1}. ${o}`).join('\n');
   const optionNames = options.map((o) => `"${o}"`).join(', ');
   const multiWay = options.length > 2;
@@ -31,7 +64,12 @@ export function getDecisionSystemPrompt(options: string[]): string {
     .filter(Boolean)
     .join('\n');
 
-  return `You are a decision-making agent. Analyze the input carefully and choose the BEST option from the available choices.
+  const contextLine = nodeLabel
+    ? `\n\nDecision context: "${nodeLabel}"${nodeDescription ? ` — ${nodeDescription}` : ''}.`
+    : '';
+  const agentHint = agentName ? (DECISION_AGENT_HINTS[agentName.toLowerCase()] ?? '') : '';
+
+  return `You are a decision-making agent. Analyze the input carefully and choose the BEST option from the available choices.${contextLine}
 
 Available options:
 ${optionsList}
@@ -44,7 +82,7 @@ Rules:
 - <chosen option> MUST exactly match one of: ${optionNames} (case-insensitive).
 - CONFIDENCE must be a decimal between 0.0 (total uncertainty) and 1.0 (complete certainty).
 - If CONFIDENCE is below 0.5, your REASONING must explain what information would resolve the uncertainty.
-- Do NOT add any text before "DECISION:" on the first line.${multiWay ? `\n- Evaluate ALL ${options.length} options before choosing. List any that are genuinely viable in ALTERNATIVES.` : ''}`;
+- Do NOT add any text before "DECISION:" on the first line.${multiWay ? `\n- Evaluate ALL ${options.length} options before choosing. List any that are genuinely viable in ALTERNATIVES.` : ''}${agentHint}`;
 }
 
 // ── Output parsing ────────────────────────────────────────────────────────────
