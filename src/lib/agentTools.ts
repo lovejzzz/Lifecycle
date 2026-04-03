@@ -156,7 +156,7 @@ export const BUILT_IN_TOOLS: AgentTool[] = [
   {
     name: 'summarize_text',
     description:
-      'Summarize a long text to a concise version. Args: { "text": "text to summarize", "max_words": 100 }',
+      'Summarize a long text using extractive sentence selection. Returns the most important sentences up to the word limit. Args: { "text": "text to summarize", "max_words": 100 }',
   },
   {
     name: 'generate_code',
@@ -596,6 +596,168 @@ export function safeEval(raw: string): number | null {
   }
 }
 
+// ── Extractive Summarization ─────────────────────────────────────────────────
+
+/** Common English stop words filtered out when scoring sentence importance */
+const STOP_WORDS = new Set([
+  'a',
+  'an',
+  'the',
+  'and',
+  'or',
+  'but',
+  'in',
+  'on',
+  'at',
+  'to',
+  'for',
+  'of',
+  'with',
+  'by',
+  'from',
+  'is',
+  'are',
+  'was',
+  'were',
+  'be',
+  'been',
+  'being',
+  'have',
+  'has',
+  'had',
+  'do',
+  'does',
+  'did',
+  'will',
+  'would',
+  'could',
+  'should',
+  'may',
+  'might',
+  'shall',
+  'this',
+  'that',
+  'these',
+  'those',
+  'it',
+  'its',
+  'i',
+  'you',
+  'he',
+  'she',
+  'we',
+  'they',
+  'me',
+  'him',
+  'her',
+  'us',
+  'them',
+  'my',
+  'your',
+  'his',
+  'our',
+  'their',
+  'what',
+  'which',
+  'who',
+  'when',
+  'where',
+  'how',
+  'if',
+  'as',
+  'not',
+  'no',
+  'so',
+  'up',
+  'out',
+  'about',
+  'into',
+  'than',
+  'then',
+  'just',
+  'also',
+  'can',
+  'all',
+  'each',
+  'more',
+  'most',
+  'get',
+]);
+
+/**
+ * Extractive summarization — selects the most important sentences from text.
+ *
+ * Algorithm:
+ *   1. Tokenize text into sentences.
+ *   2. Build a word-frequency map over content words (non-stop-words).
+ *   3. Score each sentence by its average content-word TF score, with position
+ *      bonuses for opening sentences and a penalty for very short sentences.
+ *   4. Greedily select the top-scored sentences until maxWords is reached,
+ *      then return them in their original document order.
+ *
+ * @param text     Input text to summarize.
+ * @param maxWords Maximum number of words in the returned summary.
+ */
+export function extractiveSummarize(text: string, maxWords: number): string {
+  // Sentence tokenizer: split at sentence-ending punctuation followed by whitespace + capital.
+  // Using lookbehind/lookahead avoids splitting on abbreviations like "Node.js" or "e.g."
+  // (those have lowercase after the period, which won't match (?=[A-Z])).
+  const rawSentences = text.split(/(?<=[.!?])\s+(?=[A-Z])/).map((s) => s.trim());
+  const sentences = rawSentences.filter((s) => s.length > 0);
+
+  if (sentences.length <= 1) {
+    // Single-sentence or un-splittable text — just truncate by word count
+    return text.trim().split(/\s+/).slice(0, maxWords).join(' ');
+  }
+
+  // Build word frequency map (content words only, min length 3)
+  const wordFreq: Record<string, number> = {};
+  for (const sent of sentences) {
+    for (const word of sent.toLowerCase().split(/\W+/)) {
+      if (word.length > 2 && !STOP_WORDS.has(word)) {
+        wordFreq[word] = (wordFreq[word] ?? 0) + 1;
+      }
+    }
+  }
+
+  type ScoredSentence = { sent: string; idx: number; score: number; wc: number };
+
+  const scored: ScoredSentence[] = sentences.map((sent, idx) => {
+    const contentWords = sent
+      .toLowerCase()
+      .split(/\W+/)
+      .filter((w) => w.length > 2 && !STOP_WORDS.has(w));
+    let score = contentWords.reduce((sum, w) => sum + (wordFreq[w] ?? 0), 0);
+    // Normalize by content-word count to avoid length bias
+    if (contentWords.length > 0) score /= contentWords.length;
+    // Position bonus: opening sentences signal key topics
+    if (idx === 0) score *= 1.6;
+    else if (idx === 1) score *= 1.3;
+    else if (idx === sentences.length - 1) score *= 1.15;
+    // Penalize very short sentences (likely headings or labels, not summaries)
+    const wc = sent.split(/\s+/).filter(Boolean).length;
+    if (wc < 5) score *= 0.5;
+    return { sent, idx, score, wc };
+  });
+
+  // Greedy selection: pick highest-scoring sentences until maxWords is reached
+  const byScore = [...scored].sort((a, b) => b.score - a.score);
+  const selected = new Set<number>();
+  let totalWords = 0;
+  for (const item of byScore) {
+    if (totalWords + item.wc > maxWords && selected.size > 0) continue;
+    selected.add(item.idx);
+    totalWords += item.wc;
+    if (totalWords >= maxWords) break;
+  }
+
+  // Return selected sentences in their original document order
+  return scored
+    .filter((s) => selected.has(s.idx))
+    .map((s) => s.sent)
+    .join(' ');
+}
+
 async function _executeToolImpl(
   call: ParsedToolCall,
   sharedContext?: Record<string, unknown>,
@@ -678,14 +840,44 @@ async function _executeToolImpl(
               }
             }
           }
-          const output =
-            results.length > 0
-              ? results.join('\n')
-              : `No instant-answer results for "${query}". The DuckDuckGo instant-answer API works best for well-known entities and facts. Consider rephrasing or using http_request for a specific data source.`;
+          if (results.length > 0) {
+            return {
+              tool: call.name,
+              args: call.args,
+              result: results.join('\n'),
+              success: true,
+              durationMs: Date.now() - start,
+            };
+          }
+          // DuckDuckGo returned nothing — try Wikipedia opensearch as secondary source
+          try {
+            const wikiRes = await fetch(
+              `https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(query)}&limit=3&format=json&origin=*`,
+              { signal: AbortSignal.timeout(8000) },
+            );
+            const wikiData = (await wikiRes.json()) as [string, string[], string[], string[]];
+            const [, titles, descriptions, urls] = wikiData;
+            if (titles && titles.length > 0) {
+              const wikiResults = titles.map((title, i) => {
+                const desc = descriptions[i] ? ` — ${descriptions[i]}` : '';
+                const url = urls[i] ? `\n  ${urls[i]}` : '';
+                return `- **${title}**${desc}${url}`;
+              });
+              return {
+                tool: call.name,
+                args: call.args,
+                result: `Wikipedia results for "${query}":\n${wikiResults.join('\n')}`,
+                success: true,
+                durationMs: Date.now() - start,
+              };
+            }
+          } catch {
+            // Wikipedia fallback failed — fall through to no-results message
+          }
           return {
             tool: call.name,
             args: call.args,
-            result: output,
+            result: `No results found for "${query}". The DuckDuckGo instant-answer API works best for well-known entities and facts. Consider rephrasing or using http_request for a specific data source.`,
             success: true,
             durationMs: Date.now() - start,
           };
@@ -966,11 +1158,24 @@ async function _executeToolImpl(
             success: false,
             durationMs: Date.now() - start,
           };
-        // Instruct the LLM to perform the summarization in its next iteration
+        const inputWords = text.split(/\s+/).filter(Boolean).length;
+        if (inputWords <= maxWords) {
+          // Already within limit — return as-is with metadata
+          return {
+            tool: call.name,
+            args: call.args,
+            result: `Extractive summary (≤${maxWords} words) — text already within limit (${inputWords} words):\n\n${text}`,
+            success: true,
+            durationMs: Date.now() - start,
+          };
+        }
+        // Perform local extractive summarization — no LLM call needed
+        const summary = extractiveSummarize(text, maxWords);
+        const summaryWords = summary.split(/\s+/).filter(Boolean).length;
         return {
           tool: call.name,
           args: call.args,
-          result: `Summarization task ready. Input: ${text.length} chars. Target: ≤${maxWords} words.\n\nPlease summarize the following text in ≤${maxWords} words in your next response:\n\n${text.slice(0, 4000)}${text.length > 4000 ? '\n... (truncated)' : ''}`,
+          result: `Extractive summary (≤${maxWords} words, ${summaryWords} selected from ${inputWords} total):\n\n${summary}`,
           success: true,
           durationMs: Date.now() - start,
         };
@@ -1067,21 +1272,45 @@ async function _executeToolImpl(
         const wordDelta = wordCountB - wordCountA;
         const wordDeltaStr = wordDelta >= 0 ? `+${wordDelta}` : `${wordDelta}`;
 
+        // Jaccard word-level similarity: |A ∩ B| / |A ∪ B| over unique words
+        const wordsSetA = new Set(
+          textA
+            .toLowerCase()
+            .split(/\W+/)
+            .filter((w) => w.length > 1),
+        );
+        const wordsSetB = new Set(
+          textB
+            .toLowerCase()
+            .split(/\W+/)
+            .filter((w) => w.length > 1),
+        );
+        const intersectionSize = [...wordsSetA].filter((w) => wordsSetB.has(w)).length;
+        const unionSize = new Set([...wordsSetA, ...wordsSetB]).size;
+        const jaccardPct = unionSize > 0 ? Math.round((intersectionSize / unionSize) * 100) : 100;
+        const similarityLabel =
+          jaccardPct >= 80
+            ? 'very similar'
+            : jaccardPct >= 50
+              ? 'somewhat similar'
+              : jaccardPct >= 20
+                ? 'mostly different'
+                : 'very different';
+
         const summary = [
           `## Comparison: ${labelA} vs ${labelB}`,
+          `- **Similarity**: ${jaccardPct}% (${similarityLabel}) — Jaccard word overlap`,
           `- **${labelA}**: ${linesA.length} lines, ${wordCountA} words`,
           `- **${labelB}**: ${linesB.length} lines, ${wordCountB} words (${wordDeltaStr} words)`,
           `- **Common lines**: ${common.length}`,
           `- **Only in ${labelA}** (${onlyInA.length}): ${onlyInA
-            .slice(0, 3)
-            .map((l) => `"${l.slice(0, 60)}"`)
-            .join(', ')}${onlyInA.length > 3 ? ` … +${onlyInA.length - 3} more` : ''}`,
+            .slice(0, 5)
+            .map((l) => `"${l.slice(0, 80)}"`)
+            .join(', ')}${onlyInA.length > 5 ? ` … +${onlyInA.length - 5} more` : ''}`,
           `- **Only in ${labelB}** (${onlyInB.length}): ${onlyInB
-            .slice(0, 3)
-            .map((l) => `"${l.slice(0, 60)}"`)
-            .join(', ')}${onlyInB.length > 3 ? ` … +${onlyInB.length - 3} more` : ''}`,
-          '',
-          'Please provide a narrative summary of the key differences in your next response.',
+            .slice(0, 5)
+            .map((l) => `"${l.slice(0, 80)}"`)
+            .join(', ')}${onlyInB.length > 5 ? ` … +${onlyInB.length - 5} more` : ''}`,
         ].join('\n');
 
         return rec({

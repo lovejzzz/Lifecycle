@@ -7,6 +7,7 @@ import {
   getPreferredTools,
   safeEval,
   isBlockedUrl,
+  extractiveSummarize,
 } from '../agentTools';
 import type { AgentTool } from '../types';
 
@@ -187,7 +188,7 @@ describe('executeTool — validate_json', () => {
 // ── executeTool — summarize_text ─────────────────────────────────────────────
 
 describe('executeTool — summarize_text', () => {
-  it('queues summarization task', async () => {
+  it('returns short text as-is when already within limit', async () => {
     const result = await executeTool({
       name: 'summarize_text',
       args: { text: 'Long text here', max_words: 50 },
@@ -208,6 +209,48 @@ describe('executeTool — summarize_text', () => {
       args: { text: 'x', max_words: 9999 },
     });
     expect(result.result).toContain('≤500 words');
+  });
+
+  it('performs extractive summarization on long text', async () => {
+    const longText = [
+      'The JavaScript runtime Node.js was built on Chrome V8 engine.',
+      'It allows developers to run JavaScript on the server side.',
+      'Node.js uses an event-driven, non-blocking I/O model.',
+      'This makes it efficient and suitable for real-time applications.',
+      'The package manager npm is bundled with Node.js.',
+      'Millions of packages are available through the npm registry.',
+      'Node.js is widely used for building APIs and microservices.',
+      'It has a large and active open-source community worldwide.',
+    ].join(' ');
+    const result = await executeTool({
+      name: 'summarize_text',
+      args: { text: longText, max_words: 20 },
+    });
+    expect(result.success).toBe(true);
+    expect(result.result).toContain('Extractive summary');
+    expect(result.result).toContain('≤20 words');
+    // Extracted word count should not grossly exceed the limit
+    const summaryMatch = result.result.match(/:\n\n([\s\S]+)$/);
+    if (summaryMatch) {
+      const wordCount = summaryMatch[1].trim().split(/\s+/).filter(Boolean).length;
+      expect(wordCount).toBeLessThanOrEqual(30); // some tolerance for boundary sentences
+    }
+  });
+
+  it('labels the result as extractive summary', async () => {
+    const text =
+      'Artificial intelligence is transforming every industry. ' +
+      'Machine learning models can now process vast amounts of data quickly. ' +
+      'Deep learning networks have achieved remarkable accuracy in image recognition tasks. ' +
+      'Natural language processing enables computers to understand human text effectively. ' +
+      'Reinforcement learning allows agents to learn from environment feedback iteratively.';
+    const result = await executeTool({
+      name: 'summarize_text',
+      args: { text, max_words: 15 },
+    });
+    expect(result.success).toBe(true);
+    expect(result.result).toMatch(/Extractive summary/);
+    expect(result.result).toMatch(/selected from \d+ total/);
   });
 });
 
@@ -837,5 +880,143 @@ describe('executeTool — regex_extract', () => {
     });
     // Should still work — unsafe flags are silently removed
     expect(result.success).toBe(true);
+  });
+});
+
+// ── extractiveSummarize ───────────────────────────────────────────────────────
+
+describe('extractiveSummarize', () => {
+  it('returns the input unchanged when it fits within maxWords', () => {
+    const text = 'Hello world.';
+    const result = extractiveSummarize(text, 50);
+    expect(result).toContain('Hello world');
+  });
+
+  it('returns at most maxWords words for long input', () => {
+    const sentences = Array.from(
+      { length: 20 },
+      (_, i) =>
+        `Sentence number ${i + 1} contains important information about topic ${i + 1} in detail.`,
+    ).join(' ');
+    const result = extractiveSummarize(sentences, 30);
+    const wc = result.split(/\s+/).filter(Boolean).length;
+    expect(wc).toBeLessThanOrEqual(35); // slight tolerance for boundary sentence
+  });
+
+  it('preserves original sentence order in the output', () => {
+    // Sentences with clear distinguishing keywords — order should be preserved
+    const text =
+      'Alpha sentence introduces the alpha concept clearly. ' +
+      'Beta sentence builds on the alpha foundation significantly. ' +
+      'Gamma sentence concludes with a gamma summary of findings.';
+    const result = extractiveSummarize(text, 25);
+    // If both alpha and gamma sentences are selected, alpha must come first
+    const alphaIdx = result.indexOf('Alpha');
+    const gammaIdx = result.indexOf('Gamma');
+    if (alphaIdx !== -1 && gammaIdx !== -1) {
+      expect(alphaIdx).toBeLessThan(gammaIdx);
+    }
+  });
+
+  it('handles single-sentence text without errors', () => {
+    const text = 'This is the only sentence in the entire document.';
+    const result = extractiveSummarize(text, 10);
+    expect(result.length).toBeGreaterThan(0);
+    const wc = result.split(/\s+/).filter(Boolean).length;
+    expect(wc).toBeLessThanOrEqual(10);
+  });
+
+  it('boosts the first sentence (opening sentence bias)', () => {
+    // The first sentence should always appear in a short summary
+    const text =
+      'Node.js was created by Ryan Dahl in 2009 as a JavaScript runtime. ' +
+      'It uses the V8 engine from Google Chrome for fast execution speed. ' +
+      'The event loop makes Node.js highly scalable for concurrent operations. ' +
+      'Many large companies including Netflix and LinkedIn rely on Node.js today.';
+    const result = extractiveSummarize(text, 15);
+    // The first sentence should appear (it gets a 1.6x position bonus)
+    expect(result).toContain('Node.js was created');
+  });
+
+  it('returns non-empty output even for very short max_words', () => {
+    const text =
+      'Quantum computing leverages quantum mechanics to process information. ' +
+      'Classical computers use bits while quantum computers use qubits. ' +
+      'Qubits can exist in superposition allowing parallel computation.';
+    const result = extractiveSummarize(text, 10);
+    expect(result.trim().length).toBeGreaterThan(0);
+  });
+});
+
+// ── executeTool — compare_texts ───────────────────────────────────────────────
+
+describe('executeTool — compare_texts', () => {
+  it('includes Jaccard similarity percentage in output', async () => {
+    const result = await executeTool({
+      name: 'compare_texts',
+      args: { text_a: 'The quick brown fox', text_b: 'The quick brown fox' },
+    });
+    expect(result.success).toBe(true);
+    expect(result.result).toMatch(/Similarity.*\d+%/);
+  });
+
+  it('reports 100% similarity for identical texts', async () => {
+    const text = 'Hello world this is a test sentence.';
+    const result = await executeTool({
+      name: 'compare_texts',
+      args: { text_a: text, text_b: text },
+    });
+    expect(result.success).toBe(true);
+    expect(result.result).toContain('100%');
+  });
+
+  it('reports low similarity for completely different texts', async () => {
+    const result = await executeTool({
+      name: 'compare_texts',
+      args: {
+        text_a: 'Alpha beta gamma delta epsilon zeta theta iota kappa lambda.',
+        text_b: 'Quantum mechanics photon electron proton neutron orbital spin.',
+      },
+    });
+    expect(result.success).toBe(true);
+    // Should be very different — similarity label should not be "very similar"
+    expect(result.result).not.toContain('very similar');
+  });
+
+  it('returns error when text_a is missing', async () => {
+    const result = await executeTool({
+      name: 'compare_texts',
+      args: { text_b: 'some text' },
+    });
+    expect(result.success).toBe(false);
+    expect(result.result).toMatch(/required/i);
+  });
+
+  it('uses custom labels in the output', async () => {
+    const result = await executeTool({
+      name: 'compare_texts',
+      args: {
+        text_a: 'Version one content here',
+        text_b: 'Version two content there',
+        label_a: 'Draft',
+        label_b: 'Final',
+      },
+    });
+    expect(result.success).toBe(true);
+    expect(result.result).toContain('Draft');
+    expect(result.result).toContain('Final');
+  });
+
+  it('includes similarity label in the output', async () => {
+    const result = await executeTool({
+      name: 'compare_texts',
+      args: {
+        text_a: 'The quick brown fox jumps over the lazy dog near the river.',
+        text_b: 'The quick brown cat jumps over the sleepy dog near the pond.',
+      },
+    });
+    expect(result.success).toBe(true);
+    // Should contain one of the similarity labels
+    expect(result.result).toMatch(/very similar|somewhat similar|mostly different|very different/);
   });
 });

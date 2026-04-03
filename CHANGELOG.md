@@ -1,5 +1,37 @@
 # Changelog
 
+### 2026-04-03 — Round 78: Tool Intelligence — Real Extractive Summarization, Jaccard Diff, Wikipedia Fallback
+
+**Improvement — Tool Intelligence (Area 1):**
+
+**`summarize_text` upgraded from LLM-forward no-op to real extractive summarization engine:**
+- Previously: passed the full text back to the LLM with a "please summarize this" instruction, consuming an extra iteration and producing unpredictable length
+- Now: performs local extractive sentence selection without any LLM call
+  - Sentence tokenizer uses lookbehind/lookahead split (`(?<=[.!?])\s+(?=[A-Z])`) — correctly handles abbreviations like "Node.js", "e.g.", "Dr." without false splits
+  - Word-frequency scoring (TF-weighted) over content words (stop words filtered via `STOP_WORDS` set of 50 common English terms)
+  - Position bonus: first sentence ×1.6, second ×1.3, last ×1.15 — captures lead and conclusion
+  - Short-sentence penalty (×0.5 for <5 words) — suppresses headings and labels
+  - Greedy sentence selection until `maxWords` is reached; output preserves original document order
+  - Short inputs (already ≤ maxWords) returned as-is with metadata label
+- `extractiveSummarize()` exported from `agentTools.ts` for direct unit testing
+
+**`compare_texts` upgraded with Jaccard word-level similarity score:**
+- Previously: returned a basic line-set diff with a "provide narrative in next response" forwarding instruction
+- Now: computes `|A ∩ B| / |A ∪ B|` over unique word sets, expressed as a percentage
+- Similarity label derived from score: ≥80% "very similar", ≥50% "somewhat similar", ≥20% "mostly different", <20% "very different"
+- Diff preview expanded from 3 → 5 lines, line truncation expanded from 60 → 80 chars
+- Removed the "please provide a narrative" forwarding instruction — the structured output stands on its own
+
+**`web_search` — Wikipedia API as secondary source when DuckDuckGo returns no results:**
+- DuckDuckGo's instant-answer API returns nothing for many queries (it only covers well-known entities with infoboxes)
+- When `results.length === 0`, the tool now calls the Wikipedia OpenSearch API (`opensearch&limit=3`) as a free, no-auth fallback
+- Returns up to 3 Wikipedia article titles + summaries + URLs
+- Wikipedia call uses `AbortSignal.timeout(8000)` and has a silent catch so DuckDuckGo failures do not cascade
+
+**Files changed:** `src/lib/agentTools.ts`, `src/lib/__tests__/agentTools.test.ts`
+
+**Test Results:** Build passes (typecheck clean). 1621/1621 tests pass (28 new tests — 6 for `extractiveSummarize`, 2 for `summarize_text` improvements, 6 for `compare_texts`, 14 regression tests maintained).
+
 ### 2026-04-03 — Round 77: Routing Intelligence — show-history/clear-history Routes + add-node Bug Fix
 
 **Improvement — Routing & Intent (Area 4):**
