@@ -1,5 +1,31 @@
 # Changelog
 
+### 2026-04-03 — Round 76: Decision Node Intelligence — Context, Personality & Confidence Retry
+
+**Improvement — Decision Node Intelligence (Area 2):**
+
+**Node context in decision system prompt:**
+- `getDecisionSystemPrompt()` previously generated a completely generic "you are a decision-making agent" prompt with no awareness of which node was making the decision
+- Now accepts `nodeLabel` and `nodeDescription` parameters — when provided, a "Decision context: …" line anchors the LLM to the workflow domain before listing options
+- Example: a "Release Gate" node with description "Decide whether to release to production" now gets that framing in the system prompt, not just in the user message
+
+**Agent personality in decision prompts:**
+- `getDecisionSystemPrompt()` now accepts `agentName` ('rowan' | 'poirot')
+- Rowan gets `ROWAN DECISION STYLE`: be decisive, front-load the verdict, avoid hedging, stay ≥0.7 confident unless evidence genuinely conflicts
+- Poirot gets `POIROT DECISION STYLE`: examine each option's evidence methodically, build the case before concluding, reserve high confidence (≥0.9) only when all signals converge
+- Previously decision nodes were the one place agent personality had no effect — now they're fully personality-aware end-to-end
+- `executionSlice.ts` now passes `d.label`, `d.description`, and `store.cidMode` to `getDecisionSystemPrompt`
+
+**Confidence-aware retry:**
+- When the LLM reports `CONFIDENCE < 0.5` for a decision, the execution slice now makes a single follow-up call asking it to re-examine the upstream evidence more carefully
+- The retry prompt quotes the original confidence and asks for renewed focus on the strongest signals distinguishing the branches
+- Retry result is only accepted if it yields equal or higher confidence than the original — otherwise the original parse is used (non-fatal failure mode)
+- Exported `DECISION_LOW_CONFIDENCE_THRESHOLD = 0.5` constant for future tuning and testing
+
+**Files changed:** `src/lib/decision.ts`, `src/store/slices/executionSlice.ts`, `src/lib/__tests__/decision.test.ts`
+
+**Test Results:** 1584/1584 tests pass (11 new tests for node context, agent hints, and threshold constant).
+
 ### 2026-04-02 — Round 75: Decision Node Intelligence — Option Scoring & Normalization
 
 **Improvement — Decision Node Intelligence (Area 2):**
