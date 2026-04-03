@@ -23,7 +23,7 @@ interface BenchmarkCase {
   hasWorkflow?: boolean;
 }
 
-// ─── The Benchmark: 146 real user prompts ────────────────────────────────────
+// ─── The Benchmark: 163 real user prompts ────────────────────────────────────
 
 const BENCHMARK: BenchmarkCase[] = [
   // ── Workflow generation (professor) ──
@@ -394,6 +394,49 @@ const BENCHMARK: BenchmarkCase[] = [
     expected: 'configure-retry',
     context: 'professor configuring retry',
   },
+
+  // ── Round 77: add-node with article + "node" suffix ──
+  {
+    prompt: 'add a review node called Peer Review',
+    expected: 'add-node',
+    context: 'professor adding typed node',
+  },
+  {
+    prompt: 'create a decision node called Release Gate',
+    expected: 'add-node',
+    context: 'PM creating a decision node',
+  },
+  {
+    prompt: 'add an action node called Deploy',
+    expected: 'add-node',
+    context: 'PM adding execution node',
+  },
+  {
+    prompt: 'create a trigger node called Kickoff',
+    expected: 'add-node',
+    context: 'PM building pipeline start',
+  },
+  {
+    prompt: 'add a test node called Unit Tests',
+    expected: 'add-node',
+    context: 'developer adding test node',
+  },
+
+  // ── Round 77: show-history ──
+  { prompt: 'history', expected: 'show-history', context: 'PM checking past runs' },
+  { prompt: 'run history', expected: 'show-history', context: 'professor reviewing runs' },
+  { prompt: 'execution history', expected: 'show-history', context: 'PM reviewing runs' },
+  { prompt: 'show history', expected: 'show-history', context: 'PM surfacing memory' },
+  { prompt: 'show run history', expected: 'show-history', context: 'PM reviewing executions' },
+  { prompt: 'past runs', expected: 'show-history', context: 'professor reviewing history' },
+  { prompt: 'agent history', expected: 'show-history', context: 'PM inspecting agent memory' },
+
+  // ── Round 77: clear-history ──
+  { prompt: 'clear history', expected: 'clear-history', context: 'PM resetting memory' },
+  { prompt: 'reset agent memory', expected: 'clear-history', context: 'PM clearing agent state' },
+  { prompt: 'wipe history', expected: 'clear-history', context: 'PM starting fresh' },
+  { prompt: 'forget memory', expected: 'clear-history', context: 'professor resetting agent' },
+  { prompt: 'clear agent memory', expected: 'clear-history', context: 'PM clearing history' },
 ];
 
 // ─── Benchmark Runner ───────────────────────────────────────────────────────
@@ -469,6 +512,14 @@ describe('Routing Confidence Levels', () => {
     { prompt: 'configure retry for Quiz Bank', route: 'configure-retry' },
     { prompt: 'set condition on edge from Rubric to Review', route: 'set-condition' },
     { prompt: 'show tools', route: 'show-tools' },
+    // History / memory routes
+    { prompt: 'history', route: 'show-history' },
+    { prompt: 'run history', route: 'show-history' },
+    { prompt: 'clear history', route: 'clear-history' },
+    { prompt: 'reset agent memory', route: 'clear-history' },
+    // add-node with article + node suffix
+    { prompt: 'create a decision node called Release Gate', route: 'add-node' },
+    { prompt: 'add a review node called Peer Review', route: 'add-node' },
   ];
 
   for (const tc of highConfidenceCases) {

@@ -22,6 +22,8 @@ export type CommandRoute =
   | 'delete' // delete/remove <name>
   | 'rename' // rename X to Y
   | 'show-stale' // show stale / show me what's stale
+  | 'show-history' // show run/execution history / past runs
+  | 'clear-history' // clear/reset agent memory / history
   | 'focus' // focus/select/show/go to <name>
   | 'duplicate' // duplicate/clone/copy <name>
   | 'add-node' // add <category> called <name>
@@ -139,6 +141,17 @@ addPattern(
 addPattern(
   (s) => /^(?:add|attach|assign)\s+(?:a\s+)?(?:\w+\s+)?tool\s+(?:to|on)\s+/i.test(s),
   'add-tool',
+  'high',
+);
+
+// Add named node (MUST come before extend/generate — catches "create a decision node called X")
+// Accepts optional article (a/an/the) and optional trailing "node" before "called/named"
+addPattern(
+  (s) =>
+    /^(?:add|create|new|make)\s+(?:a\s+|an\s+|the\s+)?(?:\w+\s+)?(?:node\s+)?(?:called|named)\s+\S+/i.test(
+      s,
+    ) || /^(?:add|new)\s+(?:a\s+|an\s+)?(?:\w+\s+)?["'].+["']/i.test(s),
+  'add-node',
   'high',
 );
 // Show tools: "show tools", "list tools", "tools"
@@ -276,6 +289,29 @@ addPattern(
 addPattern((s) => /^(?:show|find|list)\s+stale/i.test(s), 'show-stale', 'medium');
 addPattern((s) => /^(?:what|which)\s+nodes?\s+(?:are|is)\s+stale/i.test(s), 'show-stale', 'medium');
 addPattern((s) => /^how\s+many\s+(?:nodes?\s+)?(?:are\s+)?stale/i.test(s), 'show-stale', 'medium');
+
+// Show execution history (MUST come before generic list/show patterns)
+// "history", "run history", "show run history", "past runs", "agent history"
+addPattern(
+  (s) =>
+    /^history\s*$/i.test(s) ||
+    /^(?:run|execution|agent)\s+history\s*$/i.test(s) ||
+    /^(?:show|view|display)\s+(?:(?:run|execution|agent)\s+)?history\s*$/i.test(s) ||
+    /^past\s+runs?\s*$/i.test(s) ||
+    /^(?:show|view)\s+(?:agent\s+)?memory\s*$/i.test(s),
+  'show-history',
+  'high',
+);
+
+// Clear execution history / agent memory
+// "clear history", "reset agent memory", "wipe history", "forget memory"
+addPattern(
+  (s) =>
+    /^(?:clear|reset|wipe|delete)\s+(?:(?:run|execution|agent)\s+)?history\s*$/i.test(s) ||
+    /^(?:clear|reset|forget|wipe)\s+(?:agent\s+)?memory\s*$/i.test(s),
+  'clear-history',
+  'high',
+);
 
 // "show me the critical path" / "show me bottlenecks" / "show me orphan nodes"
 addPattern(
