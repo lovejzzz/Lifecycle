@@ -12,6 +12,7 @@ import {
   classifyRoute,
   classifyRouteWithConfidence,
   routePromptCompat,
+  getTopCandidates,
   type CommandRoute,
   type ConfidenceLevel as _ConfidenceLevel,
 } from '@/lib/routing';
@@ -617,6 +618,36 @@ describe('Routing Confidence Levels', () => {
     { prompt: 'run Lesson Plan', route: 'run-node' },
     { prompt: 'search learning objectives', route: 'search' },
     { prompt: 'show stale nodes', route: 'show-stale' },
+    // ── Round 80: Natural language fallback expansions ──
+    { prompt: 'current status', route: 'status' },
+    { prompt: "how's it going?", route: 'status' },
+    { prompt: "how's the workflow going?", route: 'status' },
+    { prompt: 'where are we?', route: 'status' },
+    { prompt: "what's the current state?", route: 'status' },
+    { prompt: "what's wrong?", route: 'status' },
+    { prompt: "what's broken?", route: 'status' },
+    { prompt: 'what failed?', route: 'status' },
+    { prompt: 'any errors?', route: 'status' },
+    { prompt: 'any issues?', route: 'status' },
+    { prompt: 'show plan', route: 'plan' },
+    { prompt: 'show me the plan', route: 'plan' },
+    { prompt: 'show the steps', route: 'plan' },
+    { prompt: "what's the plan?", route: 'plan' },
+    { prompt: 'what is the execution order?', route: 'plan' },
+    { prompt: 'what changed last run?', route: 'diff-last-run' },
+    { prompt: 'what changed in the last run?', route: 'diff-last-run' },
+    { prompt: 'show me what changed last run', route: 'diff-last-run' },
+    { prompt: 'run it', route: 'run-workflow', hasWorkflow: true },
+    { prompt: 'just run', route: 'run-workflow', hasWorkflow: true },
+    { prompt: 'go ahead', route: 'run-workflow', hasWorkflow: true },
+    { prompt: 'execute it', route: 'run-workflow', hasWorkflow: true },
+    { prompt: 'any bottlenecks?', route: 'bottlenecks' },
+    { prompt: "what's slow?", route: 'bottlenecks' },
+    { prompt: "what's taking too long?", route: 'bottlenecks' },
+    { prompt: 'what needs attention?', route: 'suggest' },
+    { prompt: 'what needs fixing?', route: 'suggest' },
+    { prompt: 'what should I work on next?', route: 'suggest' },
+    { prompt: "what's the next step?", route: 'suggest' },
   ];
 
   for (const tc of mediumConfidenceCases) {
@@ -660,5 +691,109 @@ describe('Routing Confidence Levels', () => {
       const route = classifyRoute(tc.prompt, tc.hasWorkflow ?? false);
       expect(result.route).toBe(route);
     }
+  });
+});
+
+// ── getTopCandidates ──────────────────────────────────────────────────────────
+
+describe('getTopCandidates', () => {
+  it('returns a single match for an unambiguous high-confidence prompt', () => {
+    const candidates = getTopCandidates('status');
+    expect(candidates).toHaveLength(1);
+    expect(candidates[0].route).toBe('status');
+    expect(candidates[0].confidence).toBe('high');
+  });
+
+  it('returns empty array when no patterns match', () => {
+    const candidates = getTopCandidates('xyzzy this is complete gibberish 12345 @@@');
+    expect(candidates).toHaveLength(0);
+  });
+
+  it('does NOT include llm-fallback in candidates', () => {
+    const candidates = getTopCandidates('why is my rubric out of date');
+    expect(candidates.every((c) => c.route !== 'llm-fallback')).toBe(true);
+  });
+
+  it('respects the maxCandidates limit', () => {
+    // A broad prompt that could match multiple routes — cap at 1
+    const candidates = getTopCandidates('show stale nodes', false, 1);
+    expect(candidates).toHaveLength(1);
+  });
+
+  it('deduplicates routes — same route only appears once', () => {
+    // 'status' has multiple patterns (high + medium); getTopCandidates should only
+    // include 'status' once, with the highest confidence
+    const candidates = getTopCandidates('status');
+    const statusEntries = candidates.filter((c) => c.route === 'status');
+    expect(statusEntries).toHaveLength(1);
+    expect(statusEntries[0].confidence).toBe('high');
+  });
+
+  it('sorts candidates high → medium confidence', () => {
+    // Construct a prompt that hits a 'high' route and a 'medium' route
+    // 'undo' → high; also matches 'focus' (medium) via the broad "show/go to X" pattern
+    // Actually let's test with a prompt that we know hits two distinct patterns
+    const candidates = getTopCandidates('run it', true);
+    // First match should be high or equal-or-better than subsequent matches
+    for (let i = 0; i < candidates.length - 1; i++) {
+      const rankA =
+        candidates[i].confidence === 'high' ? 2 : candidates[i].confidence === 'medium' ? 1 : 0;
+      const rankB =
+        candidates[i + 1].confidence === 'high'
+          ? 2
+          : candidates[i + 1].confidence === 'medium'
+            ? 1
+            : 0;
+      expect(rankA).toBeGreaterThanOrEqual(rankB);
+    }
+  });
+
+  it('returns the run-workflow candidate for "run it" with workflow', () => {
+    const candidates = getTopCandidates('run it', true);
+    expect(candidates.some((c) => c.route === 'run-workflow')).toBe(true);
+  });
+
+  it('returns NO run-workflow candidate for "run it" without workflow', () => {
+    // The "run it" pattern is gated on hasWorkflow=true
+    const candidates = getTopCandidates('run it', false);
+    expect(candidates.every((c) => c.route !== 'run-workflow')).toBe(true);
+  });
+
+  it('finds plan route for "show plan"', () => {
+    const candidates = getTopCandidates('show plan');
+    expect(candidates.some((c) => c.route === 'plan')).toBe(true);
+  });
+
+  it('finds status route for "what\'s wrong?"', () => {
+    const candidates = getTopCandidates("what's wrong?");
+    expect(candidates.some((c) => c.route === 'status')).toBe(true);
+  });
+
+  it('finds bottlenecks route for "any bottlenecks?"', () => {
+    const candidates = getTopCandidates('any bottlenecks?');
+    expect(candidates.some((c) => c.route === 'bottlenecks')).toBe(true);
+  });
+
+  it('finds suggest route for "what needs attention?"', () => {
+    const candidates = getTopCandidates('what needs attention?');
+    expect(candidates.some((c) => c.route === 'suggest')).toBe(true);
+  });
+
+  it('finds diff-last-run route for "what changed last run?"', () => {
+    const candidates = getTopCandidates('what changed last run?');
+    expect(candidates.some((c) => c.route === 'diff-last-run')).toBe(true);
+  });
+
+  it('defaults to maxCandidates=3', () => {
+    // A generic prompt can return at most 3 results by default
+    const candidates = getTopCandidates('show everything');
+    expect(candidates.length).toBeLessThanOrEqual(3);
+  });
+
+  it('returns all candidates when fewer than maxCandidates match', () => {
+    // 'undo' is very specific — only one pattern should match
+    const candidates = getTopCandidates('undo', false, 10);
+    expect(candidates).toHaveLength(1);
+    expect(candidates[0].route).toBe('undo');
   });
 });

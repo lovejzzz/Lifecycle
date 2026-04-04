@@ -234,6 +234,24 @@ addPattern(
   'status',
   'high',
 );
+// Natural-language status variants: "current status", "how's it going?", "where are we?"
+addPattern(
+  (s) =>
+    /^(?:current\s+status|how(?:'s|\s+is)\s+(?:it|everything|the\s+workflow|things?)\s*(?:going)?|where\s+are\s+we|what(?:'s|\s+is)\s+the\s+(?:current\s+)?(?:state|status))\s*\??$/i.test(
+      s,
+    ),
+  'status',
+  'medium',
+);
+// "what's wrong" / "what's broken" / "what failed" / "any errors" → diagnostic check
+addPattern(
+  (s) =>
+    /^(?:what(?:'s|\s+is)\s+(?:wrong|broken|failing|bad)|what\s+(?:failed|errored)|any\s+(?:errors?|failures?|issues?|problems?))\s*\??$/i.test(
+      s,
+    ),
+  'status',
+  'medium',
+);
 
 // Propagate
 addPattern(
@@ -360,6 +378,25 @@ addPattern(
 addPattern(
   (s) => /^(?:show|find|list)\s+(?:me\s+)?(?:the\s+)?(?:orphan|unconnected|isolat)\w*/i.test(s),
   'orphans',
+  'medium',
+);
+
+// "show plan" / "show the steps" / "what's the plan?" (MUST come before generic focus/show)
+addPattern(
+  (s) =>
+    /^(?:show\s+(?:me\s+(?:the\s+)?)?(?:the\s+)?(?:plan|steps|order|sequence|execution\s+order)|what(?:'s|\s+is)\s+(?:the\s+)?(?:plan|order|execution\s+order|sequence))\s*\??$/i.test(
+      s,
+    ),
+  'plan',
+  'medium',
+);
+// "show me what changed last run" / "show what changed in this run" (before generic focus)
+addPattern(
+  (s) =>
+    /^(?:show\s+(?:me\s+)?what\s+(?:changed|was\s+different|is\s+different)|tell\s+me\s+what\s+changed)\s+(?:in\s+(?:the\s+)?)?(?:last|this)\s+(?:run|execution)\s*\??$/i.test(
+      s,
+    ),
+  'diff-last-run',
   'medium',
 );
 
@@ -555,11 +592,31 @@ addPattern(
   'diff-last-run',
   'high',
 );
+// "tell me what changed" / "what changed last run" (non-"show" variants; show-me variant is near focus)
+addPattern(
+  (s) =>
+    /^(?:tell\s+me\s+)?what\s+(?:changed|was\s+different|is\s+different)\s+(?:in\s+(?:the\s+)?)?(?:last|this)\s+(?:run|execution)\s*\??$/i.test(
+      s,
+    ),
+  'diff-last-run',
+  'medium',
+);
 
 // Refresh / update / regenerate specific node (MUST come before run-workflow/run-node)
 addPattern(
   (s) => /^(?:refresh|update|regenerate)\s+(?:the\s+)?["']?(.+?)["']?\s*$/i.test(s),
   'refresh-node',
+  'medium',
+);
+
+// "run it" / "just run" / "go" / "go ahead" — only meaningful when a workflow exists
+addPattern(
+  (s, hw) =>
+    hw &&
+    /^(?:run\s+it|just\s+run|go(?:\s+ahead)?|execute\s+it|fire\s+(?:it\s+)?(?:up|away)?|start\s+it\s+up)\s*$/i.test(
+      s,
+    ),
+  'run-workflow',
   'medium',
 );
 
@@ -629,11 +686,29 @@ addPattern(
   'bottlenecks',
   'high',
 );
+// "any bottlenecks?" / "what's slow?" / "what's taking too long?"
+addPattern(
+  (s) =>
+    /^(?:any\s+(?:bottlenecks?|chokepoints?|slow\s+nodes?)|what(?:'s|\s+is)\s+(?:slow|taking\s+(?:too\s+)?long|the\s+(?:bottleneck|slowest)))\s*\??$/i.test(
+      s,
+    ),
+  'bottlenecks',
+  'medium',
+);
 
 // Suggest
 addPattern(
   (s) =>
     /^(?:suggest|next|what\s*(?:should|can)\s*I\s*do(?:\s+next|\s+now)?|recommendations?)\s*$/i.test(
+      s,
+    ),
+  'suggest',
+  'medium',
+);
+// "what needs attention" / "what should I focus on" / "what's the next step"
+addPattern(
+  (s) =>
+    /^(?:what\s+(?:needs|requires)\s+(?:attention|work|fixing|updating)|what\s+should\s+I\s+(?:work\s+on|focus\s+on|prioritize)\s*(?:now|next)?|what(?:'s|\s+is)\s+(?:the\s+)?next\s+(?:step|thing\s+to\s+do))\s*\??$/i.test(
       s,
     ),
   'suggest',
@@ -757,4 +832,56 @@ export function classifyRoute(prompt: string, hasWorkflow: boolean = false): Com
  */
 export function routePromptCompat(prompt: string, hasWorkflow: boolean = false): CommandRoute {
   return classifyRoute(prompt, hasWorkflow);
+}
+
+/**
+ * Return the top N candidate routes for a prompt, ordered by confidence level.
+ *
+ * Unlike classifyRouteWithConfidence (first-match wins), this function scans ALL
+ * patterns and collects every matching route. Routes are deduped — when a prompt
+ * matches the same route via multiple patterns, only the highest-confidence match
+ * for that route is kept.
+ *
+ * Useful for disambiguation: when the primary classification is 'llm-fallback' or
+ * 'medium' confidence, the caller can inspect candidates and either prompt the user
+ * to clarify ("Did you mean run-workflow or run-node?") or auto-select the top match.
+ *
+ * Note: 'llm-fallback' is excluded because it is always available as the implicit
+ * final fallback and adds no disambiguation value.
+ *
+ * @param prompt         The user's chat message
+ * @param hasWorkflow    Whether the user has an existing workflow on the canvas
+ * @param maxCandidates  Maximum number of candidates to return (default: 3)
+ * @returns              Deduped routes sorted by confidence (high → medium), capped at maxCandidates
+ *
+ * @example
+ * getTopCandidates('run it', true)
+ * // → [{ route: 'run-workflow', confidence: 'medium' }]
+ *
+ * getTopCandidates('show plan')
+ * // → [{ route: 'plan', confidence: 'medium' }]
+ */
+export function getTopCandidates(
+  prompt: string,
+  hasWorkflow: boolean = false,
+  maxCandidates: number = 3,
+): RouteResult[] {
+  const CONF_RANK: Record<ConfidenceLevel, number> = { high: 2, medium: 1, low: 0 };
+
+  // Collect the highest-confidence match per route (excludes 'llm-fallback')
+  const bestByRoute = new Map<CommandRoute, ConfidenceLevel>();
+  for (const pattern of PATTERNS) {
+    if (pattern.test(prompt, hasWorkflow)) {
+      const existing = bestByRoute.get(pattern.route);
+      if (existing === undefined || CONF_RANK[pattern.confidence] > CONF_RANK[existing]) {
+        bestByRoute.set(pattern.route, pattern.confidence);
+      }
+    }
+  }
+
+  // Sort high → medium, cap at maxCandidates
+  return [...bestByRoute.entries()]
+    .sort((a, b) => CONF_RANK[b[1]] - CONF_RANK[a[1]])
+    .slice(0, maxCandidates)
+    .map(([route, confidence]) => ({ route, confidence }));
 }
