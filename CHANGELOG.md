@@ -1,5 +1,34 @@
 # Changelog
 
+### 2026-04-04 — Round 80: Decision Node Intelligence — Multi-line Reasoning, Evidence Weighing, Confidence Signals
+
+**Improvement — Decision Node Intelligence (Area 2):**
+
+**`parseDecisionOutput` — multi-line REASONING/ALTERNATIVES capture:**
+- Previously `.+` captured only the first line of REASONING; LLMs that split reasoning across lines lost all content past the first newline
+- Now scans from the `REASONING:` label to the next structural field (`UPPERCASE_WORD:`) or end of text, collapsing internal newlines to a single space
+- Same fix applied to `ALTERNATIVES` — cross-line comma lists now parse correctly
+
+**`getDecisionSystemPrompt` — evidence-weighing instruction for N>2 decisions:**
+- Binary decisions unchanged
+- N>2 now instructs the LLM to silently weigh evidence for *every* option before committing, and to explain in REASONING why the chosen option beats its closest competitor — genuine comparative reasoning instead of "pick one"
+- REASONING format instruction updated to "one to three sentences" for N>2 (single sentence preserved for binary) so richer justification is allowed without being mandated
+
+**New `formatDecisionSummary()` utility:**
+- Formats decision label + confidence + reasoning into a compact display string
+- `"approve — All checks pass. (92%)"` / `"reject (78%)"` / `"escalate"` depending on what's available
+- Consistent display helper usable wherever decision results are surfaced in the UI
+
+**`extractNodeSignal` decision case — confidence in node signal:**
+- Was: `[DECISION: approve]` (confidence stripped and discarded)
+- Now: `[DECISION: approve | 92%]` when a `CONFIDENCE:` line is present in the output
+- Handles both decimal (0.92) and percentage (87%) confidence formats
+- Falls back gracefully to `[DECISION: approve]` when no confidence line found
+
+**Files changed:** `src/lib/decision.ts`, `src/lib/prompts.ts`, `src/lib/__tests__/decision.test.ts`, `src/lib/__tests__/prompts.test.ts`
+
+**Test Results:** Build passes (pre-existing pdfjs font error unrelated). 1682/1682 tests pass (109 new tests).
+
 ### 2026-04-04 — Round 79: Agent Execution — Signal-Enforcement Self-Correction Loop
 
 **Improvement — Agent Execution (Area 3):**
