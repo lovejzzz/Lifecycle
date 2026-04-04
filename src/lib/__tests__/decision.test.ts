@@ -6,6 +6,7 @@ import {
   findBestMatchingOption,
   scoreDecisionOptions,
   normalizeDecisionToOption,
+  formatDecisionSummary,
   DECISION_LOW_CONFIDENCE_THRESHOLD,
 } from '../decision';
 
@@ -366,5 +367,134 @@ describe('normalizeDecisionToOption', () => {
   it('handles single-option list', () => {
     expect(normalizeDecisionToOption('yes', ['yes'])).toBe('yes');
     expect(normalizeDecisionToOption('no', ['yes'])).toBeNull();
+  });
+});
+
+// ── parseDecisionOutput — multi-line REASONING ───────────────────────────────
+
+describe('parseDecisionOutput — multi-line REASONING', () => {
+  it('captures multi-line reasoning collapsed to single line', () => {
+    const output = `DECISION: approve
+CONFIDENCE: 0.85
+REASONING: The code quality meets all standards.
+No critical issues were found in the review.
+ALTERNATIVES: none`;
+    const result = parseDecisionOutput(output);
+    expect(result.reasoning).toBe(
+      'The code quality meets all standards. No critical issues were found in the review.',
+    );
+  });
+
+  it('still works for single-line reasoning', () => {
+    const output = `DECISION: reject
+CONFIDENCE: 0.9
+REASONING: Too many open issues.`;
+    const result = parseDecisionOutput(output);
+    expect(result.reasoning).toBe('Too many open issues.');
+  });
+
+  it('stops REASONING capture at next structural field', () => {
+    const output = `DECISION: escalate
+CONFIDENCE: 0.6
+REASONING: Evidence is ambiguous.
+Further review needed before committing.
+ALTERNATIVES: approve, defer`;
+    const result = parseDecisionOutput(output);
+    expect(result.reasoning).toBe(
+      'Evidence is ambiguous. Further review needed before committing.',
+    );
+    // ALTERNATIVES should not bleed into reasoning
+    expect(result.reasoning).not.toContain('approve');
+    expect(result.alternatives).toEqual(['approve', 'defer']);
+  });
+
+  it('captures multi-line ALTERNATIVES correctly', () => {
+    const output = `DECISION: approve
+CONFIDENCE: 0.75
+REASONING: Most criteria met.
+ALTERNATIVES: escalate,
+defer`;
+    const result = parseDecisionOutput(output);
+    // Both alternatives should be parsed (cross-line, comma-separated)
+    expect(result.alternatives).toContain('escalate');
+    expect(result.alternatives).toContain('defer');
+  });
+});
+
+// ── getDecisionSystemPrompt — evidence-weighing for N>2 ──────────────────────
+
+describe('getDecisionSystemPrompt — N>2 evidence weighing', () => {
+  it('includes evidence-weighing instruction for N>2 options', () => {
+    const prompt = getDecisionSystemPrompt(['approve', 'reject', 'escalate']);
+    expect(prompt).toContain('silently weigh');
+  });
+
+  it('instructs REASONING to explain why chosen option beats closest competitor (N>2)', () => {
+    const prompt = getDecisionSystemPrompt(['approve', 'reject', 'defer']);
+    expect(prompt).toContain('closest competitor');
+  });
+
+  it('does NOT include evidence-weighing instruction for binary decisions', () => {
+    const prompt = getDecisionSystemPrompt(['yes', 'no']);
+    expect(prompt).not.toContain('silently weigh');
+    expect(prompt).not.toContain('closest competitor');
+  });
+
+  it('REASONING format says 1–3 sentences for N>2 (richer explanation allowed)', () => {
+    const prompt = getDecisionSystemPrompt(['approve', 'reject', 'defer']);
+    expect(prompt).toContain('one to three sentences');
+  });
+
+  it('REASONING format says one concise sentence for binary decisions', () => {
+    const prompt = getDecisionSystemPrompt(['yes', 'no']);
+    expect(prompt).toContain('one concise sentence');
+    expect(prompt).not.toContain('one to three sentences');
+  });
+});
+
+// ── formatDecisionSummary ─────────────────────────────────────────────────────
+
+describe('formatDecisionSummary', () => {
+  it('formats decision with confidence and reasoning', () => {
+    const result = formatDecisionSummary('approve', 0.92, 'All checks pass.');
+    expect(result).toBe('approve — All checks pass. (92%)');
+  });
+
+  it('formats decision with confidence only', () => {
+    expect(formatDecisionSummary('reject', 0.78)).toBe('reject (78%)');
+  });
+
+  it('formats decision with reasoning only', () => {
+    const result = formatDecisionSummary('escalate', undefined, 'Unclear outcome.');
+    expect(result).toBe('escalate — Unclear outcome.');
+  });
+
+  it('returns bare decision label when no confidence or reasoning', () => {
+    expect(formatDecisionSummary('approve')).toBe('approve');
+  });
+
+  it('rounds confidence to nearest percent', () => {
+    expect(formatDecisionSummary('yes', 0.999)).toBe('yes (100%)');
+    expect(formatDecisionSummary('no', 0.501)).toBe('no (50%)');
+  });
+
+  it('truncates long reasoning to 80 chars with ellipsis', () => {
+    const longReasoning = 'A'.repeat(90);
+    const result = formatDecisionSummary('approve', 0.8, longReasoning);
+    expect(result).toContain('…');
+    // Total reasoning portion should not exceed 83 chars (80 + "…")
+    const reasoningPart = result.replace('approve — ', '').replace(' (80%)', '');
+    expect(reasoningPart.length).toBeLessThanOrEqual(83);
+  });
+
+  it('strips trailing punctuation from reasoning before appending period', () => {
+    // Trailing "." on short reasoning should not produce double period
+    const result = formatDecisionSummary('reject', 0.7, 'Not enough tests.');
+    expect(result).toBe('reject — Not enough tests. (70%)');
+  });
+
+  it('handles 0% and 100% confidence extremes', () => {
+    expect(formatDecisionSummary('defer', 0.0)).toBe('defer (0%)');
+    expect(formatDecisionSummary('approve', 1.0)).toBe('approve (100%)');
   });
 });

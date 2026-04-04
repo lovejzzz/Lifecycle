@@ -726,6 +726,15 @@ export function extractNodeSignal(output: string, category: string): string | nu
           .replace(/\s*\(confidence[^)]*\)/i, '')
           .trim()
           .slice(0, 60);
+        // Include confidence percentage when available: "[DECISION: approve | 92%]"
+        const confM = text.match(/^CONFIDENCE:\s*([\d.]+)\s*(%?)/im);
+        if (confM) {
+          const raw = parseFloat(confM[1]);
+          const isPercent = confM[2] === '%';
+          const normalized = isPercent || (raw > 2 && !isPercent) ? raw / 100 : raw;
+          const pct = Math.round(Math.max(0, Math.min(1, normalized)) * 100);
+          return `[DECISION: ${val} | ${pct}%]`;
+        }
         return `[DECISION: ${val}]`;
       }
       return null;

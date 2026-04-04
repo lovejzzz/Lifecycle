@@ -1051,13 +1051,32 @@ describe('extractNodeSignal', () => {
   });
 
   // ── decision ──
-  it('extracts decision value from DECISION: line', () => {
-    expect(
-      extractNodeSignal('DECISION: approve\nCONFIDENCE: 0.9\nREASONING: Looks good', 'decision'),
-    ).toBe('[DECISION: approve]');
+  it('extracts decision value from DECISION: line (no CONFIDENCE: line → no percentage)', () => {
+    expect(extractNodeSignal('DECISION: approve\nREASONING: Looks good', 'decision')).toBe(
+      '[DECISION: approve]',
+    );
   });
 
-  it('strips confidence annotation from decision', () => {
+  it('includes confidence percentage when CONFIDENCE: line is present', () => {
+    expect(
+      extractNodeSignal('DECISION: approve\nCONFIDENCE: 0.9\nREASONING: Looks good', 'decision'),
+    ).toBe('[DECISION: approve | 90%]');
+  });
+
+  it('handles percentage-format CONFIDENCE in signal', () => {
+    expect(
+      extractNodeSignal('DECISION: reject\nCONFIDENCE: 87%\nREASONING: Not ready', 'decision'),
+    ).toBe('[DECISION: reject | 87%]');
+  });
+
+  it('includes confidence even at 100%', () => {
+    expect(
+      extractNodeSignal('DECISION: approve\nCONFIDENCE: 1.0\nREASONING: All clear', 'decision'),
+    ).toBe('[DECISION: approve | 100%]');
+  });
+
+  it('strips inline confidence annotation from decision value (no percentage in brackets)', () => {
+    // Inline annotation stripped; no separate CONFIDENCE: line → no percentage
     expect(
       extractNodeSignal('DECISION: reject (confidence: 0.85)\nREASONING: Not ready', 'decision'),
     ).toBe('[DECISION: reject]');

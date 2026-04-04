@@ -55,10 +55,14 @@ export function getDecisionSystemPrompt(
   const optionNames = options.map((o) => `"${o}"`).join(', ');
   const multiWay = options.length > 2;
 
+  const reasoningInstruction = multiWay
+    ? '<one to three sentences: why this option fits best AND why the top alternatives were not chosen>'
+    : '<one concise sentence explaining why>';
+
   const formatBlock = [
     'DECISION: <chosen option>',
     'CONFIDENCE: <0.0–1.0>',
-    'REASONING: <one concise sentence explaining why>',
+    `REASONING: ${reasoningInstruction}`,
     multiWay ? 'ALTERNATIVES: <comma-separated list of other viable options, or "none">' : null,
   ]
     .filter(Boolean)
@@ -82,7 +86,11 @@ Rules:
 - <chosen option> MUST exactly match one of: ${optionNames} (case-insensitive).
 - CONFIDENCE must be a decimal between 0.0 (total uncertainty) and 1.0 (complete certainty).
 - If CONFIDENCE is below 0.5, your REASONING must explain what information would resolve the uncertainty.
-- Do NOT add any text before "DECISION:" on the first line.${multiWay ? `\n- Evaluate ALL ${options.length} options before choosing. List any that are genuinely viable in ALTERNATIVES.` : ''}${agentHint}`;
+- Do NOT add any text before "DECISION:" on the first line.${
+    multiWay
+      ? `\n- Evaluate ALL ${options.length} options before choosing. For each option, silently weigh: (a) what evidence supports it, (b) what evidence contradicts it. Your REASONING must explain why the chosen option beats its closest competitor.\n- List any genuinely viable alternatives in ALTERNATIVES.`
+      : ''
+  }${agentHint}`;
 }
 
 // ── Output parsing ────────────────────────────────────────────────────────────
@@ -132,18 +140,30 @@ export function parseDecisionOutput(output: string): DecisionParseResult {
     confidence = Math.max(0, Math.min(1, normalized));
   }
 
-  // ── REASONING ──
+  // ── REASONING (multi-line) ──
+  // Capture from the REASONING: label to the next structural field (UPPERCASE_WORD:)
+  // or end of text. Handles LLMs that split reasoning across multiple lines.
   let reasoning: string | undefined;
-  const reasoningMatch = text.match(/^REASONING:\s*(.+)/im);
-  if (reasoningMatch) {
-    reasoning = reasoningMatch[1].trim();
+  const reasoningStart = text.search(/^REASONING:/im);
+  if (reasoningStart !== -1) {
+    const afterReasoningLabel = text.slice(reasoningStart).replace(/^REASONING:\s*/i, '');
+    const reasoningStop = afterReasoningLabel.match(/\n[A-Z_]{2,}:/);
+    const reasoningContent = reasoningStop
+      ? afterReasoningLabel.slice(0, reasoningStop.index)
+      : afterReasoningLabel;
+    // Collapse internal whitespace/newlines to a single space and trim
+    reasoning = reasoningContent.replace(/\s+/g, ' ').trim() || undefined;
   }
 
-  // ── ALTERNATIVES ──
+  // ── ALTERNATIVES (multi-line-safe) ──
+  // Same capture strategy: read until next structural field or end of text.
   let alternatives: string[] | undefined;
-  const altMatch = text.match(/^ALTERNATIVES:\s*(.+)/im);
-  if (altMatch) {
-    const raw = altMatch[1].trim();
+  const altStart = text.search(/^ALTERNATIVES:/im);
+  if (altStart !== -1) {
+    const afterAltLabel = text.slice(altStart).replace(/^ALTERNATIVES:\s*/i, '');
+    const altStop = afterAltLabel.match(/\n[A-Z_]{2,}:/);
+    const altContent = altStop ? afterAltLabel.slice(0, altStop.index) : afterAltLabel;
+    const raw = altContent.replace(/\s+/g, ' ').trim();
     if (raw.toLowerCase() !== 'none' && raw.length > 0) {
       alternatives = raw
         .split(/,\s*/)
@@ -248,4 +268,50 @@ export function normalizeDecisionToOption(decision: string, options: string[]): 
  */
 export function findBestMatchingOption(decision: string, options: string[]): string | null {
   return normalizeDecisionToOption(decision, options);
+}
+
+// ── Display formatting ────────────────────────────────────────────────────────
+
+/**
+ * Format a decision result into a compact human-readable summary for UI display.
+ *
+ * Combines the decision label, confidence percentage, and optional one-sentence
+ * reasoning into a consistent display string. Omits fields that are absent.
+ *
+ * @param decision    The chosen option label (e.g. "approve")
+ * @param confidence  Optional 0.0–1.0 confidence score
+ * @param reasoning   Optional explanation (truncated to 80 chars to stay compact)
+ * @returns           E.g. "approve (92%)" | "reject — insufficient tests (78%)" | "escalate"
+ *
+ * @example
+ * formatDecisionSummary('approve', 0.92, 'All checks pass.')
+ * // → "approve — All checks pass. (92%)"
+ *
+ * formatDecisionSummary('reject', 0.78)
+ * // → "reject (78%)"
+ *
+ * formatDecisionSummary('escalate')
+ * // → "escalate"
+ */
+export function formatDecisionSummary(
+  decision: string,
+  confidence?: number,
+  reasoning?: string,
+): string {
+  const confStr = confidence !== undefined ? `${Math.round(confidence * 100)}%` : null;
+  // Truncate reasoning to keep the summary compact (≤80 chars, strip trailing punctuation)
+  const reasonStr = reasoning
+    ? reasoning.slice(0, 80).replace(/[.!?]\s*$/, '') + (reasoning.length > 80 ? '…' : '.')
+    : null;
+
+  if (confStr && reasonStr) {
+    return `${decision} — ${reasonStr} (${confStr})`;
+  }
+  if (confStr) {
+    return `${decision} (${confStr})`;
+  }
+  if (reasonStr) {
+    return `${decision} — ${reasonStr}`;
+  }
+  return decision;
 }
