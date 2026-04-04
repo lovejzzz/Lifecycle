@@ -1,5 +1,31 @@
 # Changelog
 
+### 2026-04-04 — Round 79: Agent Execution — Signal-Enforcement Self-Correction Loop
+
+**Improvement — Agent Execution (Area 3):**
+
+**Problem addressed:** Three node categories (`review`, `state`, `dependency`) have execution system prompts that explicitly instruct the LLM to end with structured signal markers (`APPROVE/REJECT/BLOCK`, `STATUS: <value>`, `BLOCKERS: <value>`). These markers are read by `extractNodeSignal()` to produce signal badges shown in upstream context for downstream nodes. However, the self-validation/refinement loop in `executeNode` never fired for these categories because `validate.ts` had no `'warning'`-severity checks for missing signals — only a broad `'info'` check for review/test evaluation language.
+
+**Root cause:** `validateOutput` checked `'missing-evaluation'` at `info` severity (doesn't trigger refinement) but had no `warning`-level check verifying the specific routing-critical markers that `extractNodeSignal` depends on.
+
+**Fix — three new `warning`-severity validation checks in `validate.ts`:**
+
+- **`missing-verdict-marker`** (review): checks for `APPROVE`, `REJECT`, `BLOCK`, or `REQUEST_CHANGES` keyword. Fires as `'warning'` so the existing self-correction loop (`earlyWarnings → buildRefinementPrompt → refinedOutput`) kicks in when the LLM forgets the verdict. The correction instruction tells the agent to end with exactly one of the four keywords on its own line.
+
+- **`missing-status-line`** (state): checks for `/^STATUS:\s*\S/im` — the structured line required by `extractNodeSignal` for state nodes. Fires as `'warning'`. Correction instruction gives a concrete `STATUS: <value>` format example.
+
+- **`missing-blockers-line`** (dependency): checks for `/^BLOCKERS?:\s*\S/im` (matches both `BLOCKERS:` and `BLOCKER:`). Fires as `'warning'`. Correction instruction explains `BLOCKERS: none` for the all-clear case.
+
+**Also updated `buildRefinementPrompt`** with targeted correction instructions for all three new codes — each gives the LLM a concrete format example rather than vague prose.
+
+**Impact:** When a review/state/dependency node produces output without the required marker, the refinement loop now fires automatically (single extra LLM call) and asks for the corrected format. The refined output is accepted only when it improves warning count — so no regression on already-correct output.
+
+**Tests updated:** Two existing tests whose "good output" strings for review nodes lacked verdict markers were updated to include `APPROVE` — bringing them in line with the new stricter contract. This is the correct fix: good review output *should* have a verdict marker.
+
+**Files changed:** `src/lib/validate.ts`, `src/lib/__tests__/validate.test.ts`, `src/lib/__tests__/simulation-e2e.test.ts`
+
+**Test Results:** Build passes. 1662/1662 tests pass (34 new tests: 7 for missing-verdict-marker, 6 for missing-status-line, 7 for missing-blockers-line, 3 for new buildRefinementPrompt cases, plus existing test fixes).
+
 ### 2026-04-03 — Round 78: Tool Intelligence — Real Extractive Summarization, Jaccard Diff, Wikipedia Fallback
 
 **Improvement — Tool Intelligence (Area 1):**

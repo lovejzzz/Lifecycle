@@ -1941,7 +1941,7 @@ describe('E2E Async Simulation Tests', () => {
     it('validateOutput accepts good output with no warnings', async () => {
       const { validateOutput } = await import('@/lib/validate');
       const goodOutput =
-        'This comprehensive analysis evaluates the key criteria including completeness, accuracy, and relevance. The score is 85/100 based on rubric alignment.';
+        'This comprehensive analysis evaluates the key criteria including completeness, accuracy, and relevance. The score is 85/100 based on rubric alignment.\n\nAPPROVE';
       const warnings = validateOutput(goodOutput, 'review', 'Review Gate', ['evaluate', 'rubric']);
       const highSeverity = warnings.filter((w) => w.severity === 'warning');
       expect(highSeverity.length).toBe(0);

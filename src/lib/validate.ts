@@ -282,6 +282,51 @@ export function validateOutput(
     }
   }
 
+  // 7a. Review nodes: require an explicit routing-compatible verdict marker.
+  //     The execution system prompt instructs: "End with a verdict on its own line:
+  //     APPROVE, REQUEST_CHANGES, or BLOCK."  When absent, extractNodeSignal returns
+  //     null and downstream signal badges/context hints are empty.
+  //     Raise as 'warning' so the refinement loop fires and self-corrects.
+  if (category === 'review') {
+    const hasVerdictMarker = /\b(APPROVE|REJECT|BLOCK|REQUEST_CHANGES)\b/.test(trimmed);
+    if (!hasVerdictMarker) {
+      warnings.push({
+        code: 'missing-verdict-marker',
+        message:
+          'Review output lacks an explicit APPROVE / REJECT / BLOCK / REQUEST_CHANGES verdict marker',
+        severity: 'warning',
+      });
+    }
+  }
+
+  // 7b. State nodes: require a "STATUS: <value>" line.
+  //     The execution system prompt instructs: "End with a STATUS: line."
+  //     Without it, extractNodeSignal returns null for state nodes and downstream
+  //     context headers lose the signal badge.
+  if (category === 'state') {
+    if (!/^STATUS:\s*\S/im.test(trimmed)) {
+      warnings.push({
+        code: 'missing-status-line',
+        message:
+          'State output should include a "STATUS: <value>" line for downstream signal routing',
+        severity: 'warning',
+      });
+    }
+  }
+
+  // 7c. Dependency nodes: require a "BLOCKERS: <value>" line.
+  //     The execution system prompt instructs: "End with a BLOCKERS: section."
+  if (category === 'dependency') {
+    if (!/^BLOCKERS?:\s*\S/im.test(trimmed)) {
+      warnings.push({
+        code: 'missing-blockers-line',
+        message:
+          'Dependency output should include a "BLOCKERS: <value>" line (use "BLOCKERS: none" when clear)',
+        severity: 'warning',
+      });
+    }
+  }
+
   if (category === 'policy') {
     // Policy nodes should define conditions
     const policyPatterns = /\b(if|when|must|shall|require|condition|rule|prohibit|allow|deny)\b/i;
@@ -412,6 +457,27 @@ export function buildRefinementPrompt(warnings: ValidationWarning[]): string {
           'End your test output with an explicit verdict line: `VERDICT: PASS`, `VERDICT: FAIL`, or `VERDICT: BLOCK`. ' +
           'The verdict must appear on its own line and summarize whether the tested item meets requirements overall. ' +
           'Brief justification after the verdict keyword is encouraged.'
+        );
+      case 'missing-verdict-marker':
+        return (
+          'Your review is missing a required verdict marker that downstream routing depends on. ' +
+          'End your response with exactly one of these words on its own line: APPROVE, REJECT, BLOCK, or REQUEST_CHANGES. ' +
+          'Example final lines: "APPROVE", "REJECT — see critical issues above", or "REQUEST_CHANGES: address the three concerns listed".'
+        );
+      case 'missing-status-line':
+        return (
+          'Your state node output must include a STATUS line so downstream nodes can read the current state. ' +
+          'Add a line in the format: `STATUS: <current state value>`. ' +
+          'Examples: "STATUS: healthy", "STATUS: degraded", "STATUS: pending_approval". ' +
+          'The STATUS line should appear near the end of your response.'
+        );
+      case 'missing-blockers-line':
+        return (
+          'Your dependency analysis must end with a BLOCKERS line that downstream nodes use for routing. ' +
+          'Add a line in the format: `BLOCKERS: <description>` or `BLOCKERS: none`. ' +
+          'Examples: "BLOCKERS: none", "BLOCKERS: missing API credentials for auth-service", ' +
+          '"BLOCKERS: conflicting versions — lodash 4.x vs 5.x". ' +
+          'Use "BLOCKERS: none" explicitly when all dependencies are resolved.'
         );
       default:
         return w.message;
