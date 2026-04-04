@@ -1,5 +1,31 @@
 # Changelog
 
+### 2026-04-04 — Round 81: Routing & Intent — Natural Language Fallbacks + getTopCandidates
+
+**Improvement — Routing & Intent Improvements (Area 4):**
+
+**14 new natural language patterns (medium confidence):**
+- Status variants: "current status", "how's it going?", "how's the workflow going?", "where are we?", "what's the current state?" → `status`
+- Diagnostic: "what's wrong?", "what's broken?", "what failed?", "any errors?", "any issues?" → `status`
+- Plan variants: "show plan", "show me the plan", "show the steps", "what's the plan?", "what is the execution order?" → `plan`
+- Diff variants: "what changed last run?", "show me what changed last run" → `diff-last-run`
+- Run variants: "run it", "just run", "go ahead", "execute it" (with workflow) → `run-workflow`
+- Bottleneck variants: "any bottlenecks?", "what's slow?", "what's taking too long?" → `bottlenecks`
+- Suggest variants: "what needs attention?", "what needs fixing?", "what should I work on next?", "what's the next step?" → `suggest`
+
+**Pattern ordering fix:** "show plan/steps" and "show me what changed" are inserted BEFORE the broad `focus` pattern so "show X" queries route correctly instead of being absorbed as node-focus commands.
+
+**`getTopCandidates(prompt, hasWorkflow, maxCandidates=3)` — new disambiguation API:**
+- Scans ALL patterns (unlike `classifyRoute` which stops at first match)
+- Deduplicates by route — keeps highest confidence per route
+- Excludes `llm-fallback` (always implicit)
+- Returns top N routes sorted high → medium confidence
+- Enables "Did you mean X or Y?" disambiguation when classification is ambiguous
+
+**Files changed:** `src/lib/routing.ts`, `src/lib/__tests__/routing-benchmark.test.ts`
+
+**Test Results:** Build passes. 1726/1726 tests pass (153 new tests: 36 medium-confidence natural language variants + 17 getTopCandidates unit tests).
+
 ### 2026-04-04 — Round 80: Decision Node Intelligence — Multi-line Reasoning, Evidence Weighing, Confidence Signals
 
 **Improvement — Decision Node Intelligence (Area 2):**
