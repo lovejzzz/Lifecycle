@@ -162,7 +162,16 @@ export const createExecutionSlice: StateCreator<LifecycleStore, [], [], Executio
           if (!src) return '';
           const content = (src.data.executionResult || src.data.content || '').slice(0, 1000);
           const signal = extractNodeSignal(content, src.data.category || '');
-          const prefix = signal ? `[${src.data.label}] ${signal}` : `[${src.data.label}]`;
+          // Include execution status so decision node can factor in upstream errors/skips
+          const statusTag =
+            src.data.executionStatus === 'error'
+              ? ' [ERROR]'
+              : src.data.executionStatus === 'skipped'
+                ? ' [SKIPPED]'
+                : '';
+          const prefix = signal
+            ? `[${src.data.label}${statusTag}] ${signal}`
+            : `[${src.data.label}${statusTag}]`;
           return `${prefix}:\n${content}`;
         })
         .filter(Boolean)
@@ -180,7 +189,13 @@ export const createExecutionSlice: StateCreator<LifecycleStore, [], [], Executio
 
       const decisionPrompt =
         d.aiPrompt || d.content || `Evaluate the upstream data and decide which path to take.`;
-      const systemPrompt = getDecisionSystemPrompt(options, d.label, d.description, store.cidMode);
+      const systemPrompt = getDecisionSystemPrompt(
+        options,
+        d.label,
+        d.description,
+        store.cidMode,
+        store._sharedNodeContext,
+      );
 
       try {
         store.updateNodeData(nodeId, {

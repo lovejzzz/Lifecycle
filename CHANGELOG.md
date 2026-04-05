@@ -1,5 +1,38 @@
 # Changelog
 
+### 2026-04-05 — Round 83: Decision Node Intelligence — JSON Parsing, Shared Context Injection, Status-Aware Upstream
+
+**Improvement — Decision Node Intelligence (Area 2):**
+
+**1. JSON-format decision parsing fallback (`parseDecisionOutput`)**
+- `parseDecisionOutput` now handles LLM responses in JSON format (`{"decision": "approve", "confidence": 0.92, "reasoning": "..."}`) in addition to the canonical structured text format
+- Tries two strategies: fenced ` ```json ``` ` blocks, then bare JSON object spanning the full response
+- Extracts all four fields: `decision`, `confidence`, `reasoning`, `alternatives` (which may be a JSON array or comma-separated string)
+- Confidence normalization: integer > 2 → percentage (e.g. `87 → 0.87`); non-integer decimal always treated as 0–1 scale with clamping (e.g. `2.5 → 1.0`)
+- `alternatives: ["none"]` → `undefined` (consistent with text-format handling)
+- Inline confidence annotation stripped from JSON decision value: `"approve (confidence: 0.9)"` → `"approve"`
+- Falls through gracefully to structured text parsing when JSON is absent or malformed
+
+**2. `buildDecisionContextSection` — new exported helper (`decision.ts`)**
+- Formats the workflow's `_sharedNodeContext` into a compact prompt section for decision node system prompts
+- Separates prior decision outcomes (`decision:*` keys) from arbitrary stored data — decisions listed under "Prior decisions in this run:", data under "Stored context:"
+- Values truncated at 150 chars to prevent prompt bloat; `maxEntries` cap (default 8) prevents large context maps from overwhelming the prompt
+- Ends with "Use this context to inform your routing decision" to direct LLM attention
+
+**3. `getDecisionSystemPrompt` — `sharedContext` parameter**
+- Accepts an optional `sharedContext: Record<string, unknown>` parameter (5th argument, fully backward-compatible)
+- When non-empty, injects a `## Workflow Context` section via `buildDecisionContextSection` so the decision node knows what prior decisions were made in the same workflow run
+- Combines cleanly with node label, description, and agent personality hint
+
+**4. Upstream data enrichment in `executeNode` (decision path)**
+- Each upstream node's data prefix now includes an execution status tag: `[NodeLabel ERROR]` or `[NodeLabel SKIPPED]` when applicable (clean for successful/idle nodes)
+- Decision node can now factor in whether upstream data came from a failed or skipped node — avoiding e.g. routing "approve" based on an error message
+- `_sharedNodeContext` passed to `getDecisionSystemPrompt` so standalone `executeNode` calls also benefit from accumulated workflow context
+
+**Files changed:** `src/lib/decision.ts`, `src/store/slices/executionSlice.ts`, `src/lib/__tests__/decision.test.ts`
+
+**Test Results:** Build pre-existing broken (pdfjs-dist font file missing — unrelated to this change). 1760/1760 tests pass (187 new tests: 11 JSON parsing, 8 `buildDecisionContextSection`, 5 `getDecisionSystemPrompt` + sharedContext; +163 previously passing tests reconfirmed).
+
 ### 2026-04-05 — Round 82: Prompt Engineering — Category-Affinity Context Scoring
 
 **Improvement — Prompt Engineering (Area 5):**

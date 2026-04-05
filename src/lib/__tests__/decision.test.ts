@@ -7,6 +7,7 @@ import {
   scoreDecisionOptions,
   normalizeDecisionToOption,
   formatDecisionSummary,
+  buildDecisionContextSection,
   DECISION_LOW_CONFIDENCE_THRESHOLD,
 } from '../decision';
 
@@ -496,5 +497,219 @@ describe('formatDecisionSummary', () => {
   it('handles 0% and 100% confidence extremes', () => {
     expect(formatDecisionSummary('defer', 0.0)).toBe('defer (0%)');
     expect(formatDecisionSummary('approve', 1.0)).toBe('approve (100%)');
+  });
+});
+
+// ── parseDecisionOutput — JSON format fallback ────────────────────────────────
+
+describe('parseDecisionOutput — JSON format', () => {
+  it('parses a bare JSON object with decision + confidence + reasoning', () => {
+    const output = JSON.stringify({
+      decision: 'approve',
+      confidence: 0.92,
+      reasoning: 'All criteria satisfied.',
+    });
+    const result = parseDecisionOutput(output);
+    expect(result.decision).toBe('approve');
+    expect(result.confidence).toBeCloseTo(0.92);
+    expect(result.reasoning).toBe('All criteria satisfied.');
+  });
+
+  it('parses JSON with alternatives as array', () => {
+    const output = JSON.stringify({
+      decision: 'reject',
+      confidence: 0.8,
+      reasoning: 'Too many issues.',
+      alternatives: ['escalate', 'defer'],
+    });
+    const result = parseDecisionOutput(output);
+    expect(result.decision).toBe('reject');
+    expect(result.alternatives).toEqual(['escalate', 'defer']);
+  });
+
+  it('parses JSON with alternatives as comma-separated string', () => {
+    const output = JSON.stringify({
+      decision: 'escalate',
+      confidence: 0.65,
+      alternatives: 'approve, defer',
+    });
+    const result = parseDecisionOutput(output);
+    expect(result.alternatives).toContain('approve');
+    expect(result.alternatives).toContain('defer');
+  });
+
+  it('parses JSON inside a ```json fenced block', () => {
+    const output =
+      '```json\n' +
+      JSON.stringify({ decision: 'approve', confidence: 0.88, reasoning: 'Looks good.' }) +
+      '\n```';
+    const result = parseDecisionOutput(output);
+    expect(result.decision).toBe('approve');
+    expect(result.confidence).toBeCloseTo(0.88);
+  });
+
+  it('treats JSON confidence > 2 as percentage (e.g. 87 → 0.87)', () => {
+    const output = JSON.stringify({ decision: 'approve', confidence: 87 });
+    const result = parseDecisionOutput(output);
+    expect(result.confidence).toBeCloseTo(0.87);
+  });
+
+  it('clamps JSON confidence to 0–1 range', () => {
+    const output = JSON.stringify({ decision: 'ok', confidence: 2.5 });
+    const result = parseDecisionOutput(output);
+    expect(result.confidence).toBe(1);
+  });
+
+  it('returns undefined alternatives when JSON alternatives is "none"', () => {
+    const output = JSON.stringify({
+      decision: 'reject',
+      confidence: 0.95,
+      alternatives: ['none'],
+    });
+    const result = parseDecisionOutput(output);
+    expect(result.alternatives).toBeUndefined();
+  });
+
+  it('strips inline confidence annotation from JSON decision value', () => {
+    const output = JSON.stringify({ decision: 'approve (confidence: 0.9)', confidence: 0.9 });
+    const result = parseDecisionOutput(output);
+    expect(result.decision).toBe('approve');
+    expect(result.decision).not.toContain('confidence');
+  });
+
+  it('falls through to structured text parsing when JSON has no decision key', () => {
+    const output = JSON.stringify({ choice: 'approve', score: 0.9 });
+    // No "decision" key — should fall through to text parsing (no DECISION: line = first-line fallback)
+    const result = parseDecisionOutput(output);
+    // First line of stringified JSON is the whole object — it won't cleanly parse as "approve"
+    // but the function must not throw
+    expect(result).toHaveProperty('decision');
+  });
+
+  it('falls through gracefully when text is not JSON', () => {
+    const output = 'DECISION: approve\nCONFIDENCE: 0.9\nREASONING: Looks good.';
+    const result = parseDecisionOutput(output);
+    expect(result.decision).toBe('approve');
+    expect(result.confidence).toBeCloseTo(0.9);
+  });
+});
+
+// ── buildDecisionContextSection ───────────────────────────────────────────────
+
+describe('buildDecisionContextSection', () => {
+  it('returns empty string for empty context', () => {
+    expect(buildDecisionContextSection({})).toBe('');
+  });
+
+  it('formats prior decisions under "Prior decisions" heading', () => {
+    const ctx = { 'decision:Quality Gate': 'approve (confidence: 0.92)' };
+    const result = buildDecisionContextSection(ctx);
+    expect(result).toContain('Prior decisions');
+    expect(result).toContain('Quality Gate');
+    expect(result).toContain('approve (confidence: 0.92)');
+  });
+
+  it('formats non-decision entries under "Stored context" heading', () => {
+    const ctx = { 'api-result': 'success', score: '95' };
+    const result = buildDecisionContextSection(ctx);
+    expect(result).toContain('Stored context');
+    expect(result).toContain('api-result');
+    expect(result).toContain('success');
+  });
+
+  it('separates decision keys from data keys', () => {
+    const ctx = {
+      'decision:Gate A': 'approve',
+      'user-score': '88',
+    };
+    const result = buildDecisionContextSection(ctx);
+    expect(result).toContain('Prior decisions');
+    expect(result).toContain('Stored context');
+  });
+
+  it('truncates long data values at 150 chars', () => {
+    const longValue = 'x'.repeat(200);
+    const ctx = { 'big-data': longValue };
+    const result = buildDecisionContextSection(ctx);
+    expect(result).toContain('…');
+    // The truncated value plus the key/label should not include the full 200 chars
+    expect(result).not.toContain('x'.repeat(200));
+  });
+
+  it('respects maxEntries cap', () => {
+    const ctx: Record<string, string> = {};
+    for (let i = 0; i < 20; i++) ctx[`key-${i}`] = `value-${i}`;
+    const result = buildDecisionContextSection(ctx, 3);
+    // With cap=3, only 3 entries should be included → key-0, key-1, key-2
+    expect(result).toContain('key-0');
+    expect(result).not.toContain('key-4');
+  });
+
+  it('includes a routing instruction at the end', () => {
+    const ctx = { 'decision:Gate': 'approve' };
+    const result = buildDecisionContextSection(ctx);
+    expect(result).toContain('routing decision');
+  });
+});
+
+// ── getDecisionSystemPrompt — sharedContext injection ────────────────────────
+
+describe('getDecisionSystemPrompt — sharedContext', () => {
+  it('injects prior decisions when sharedContext has decision keys', () => {
+    const ctx = { 'decision:Risk Assessment': 'low-risk (confidence: 0.91)' };
+    const prompt = getDecisionSystemPrompt(
+      ['approve', 'reject'],
+      undefined,
+      undefined,
+      undefined,
+      ctx,
+    );
+    expect(prompt).toContain('Workflow Context');
+    expect(prompt).toContain('Risk Assessment');
+    expect(prompt).toContain('low-risk');
+  });
+
+  it('injects stored data when sharedContext has non-decision keys', () => {
+    const ctx = { 'quality-score': '95', 'test-pass-rate': '0.98' };
+    const prompt = getDecisionSystemPrompt(
+      ['approve', 'reject'],
+      undefined,
+      undefined,
+      undefined,
+      ctx,
+    );
+    expect(prompt).toContain('quality-score');
+    expect(prompt).toContain('95');
+  });
+
+  it('omits context section when sharedContext is empty', () => {
+    const prompt = getDecisionSystemPrompt(
+      ['approve', 'reject'],
+      undefined,
+      undefined,
+      undefined,
+      {},
+    );
+    expect(prompt).not.toContain('Workflow Context');
+  });
+
+  it('omits context section when sharedContext is undefined', () => {
+    const prompt = getDecisionSystemPrompt(['approve', 'reject']);
+    expect(prompt).not.toContain('Workflow Context');
+  });
+
+  it('combines context with agent hint and node label correctly', () => {
+    const ctx = { 'decision:Prior Gate': 'passed' };
+    const prompt = getDecisionSystemPrompt(
+      ['approve', 'reject'],
+      'Release Gate',
+      undefined,
+      'rowan',
+      ctx,
+    );
+    expect(prompt).toContain('"Release Gate"');
+    expect(prompt).toContain('ROWAN DECISION STYLE');
+    expect(prompt).toContain('Prior Gate');
+    expect(prompt).toContain('passed');
   });
 });

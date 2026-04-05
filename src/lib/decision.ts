@@ -17,6 +17,53 @@
  */
 export const DECISION_LOW_CONFIDENCE_THRESHOLD = 0.5;
 
+// ── Shared context formatting ─────────────────────────────────────────────────
+
+/**
+ * Format the workflow's shared context into a compact section for injection into
+ * decision node system prompts.
+ *
+ * Separates prior decision outcomes (prefixed "decision:") from arbitrary stored
+ * data so the LLM can quickly orient itself — decisions are the highest-signal
+ * context for routing choices.
+ *
+ * @param sharedContext  The store's _sharedNodeContext map
+ * @param maxEntries     Cap to prevent prompt bloat (default: 8)
+ * @returns              Formatted string, or empty string when context is empty
+ */
+export function buildDecisionContextSection(
+  sharedContext: Record<string, unknown>,
+  maxEntries = 8,
+): string {
+  const entries = Object.entries(sharedContext);
+  if (entries.length === 0) return '';
+
+  const decisionLines: string[] = [];
+  const dataLines: string[] = [];
+
+  for (const [key, value] of entries.slice(0, maxEntries)) {
+    const valStr = typeof value === 'string' ? value : JSON.stringify(value);
+    if (key.startsWith('decision:')) {
+      const nodeName = key.slice('decision:'.length);
+      decisionLines.push(`  - ${nodeName}: ${valStr}`);
+    } else {
+      const truncated = valStr.length > 150 ? valStr.slice(0, 150) + '…' : valStr;
+      dataLines.push(`  - ${key}: ${truncated}`);
+    }
+  }
+
+  const parts: string[] = [];
+  if (decisionLines.length > 0) {
+    parts.push(`Prior decisions in this run:\n${decisionLines.join('\n')}`);
+  }
+  if (dataLines.length > 0) {
+    parts.push(`Stored context:\n${dataLines.join('\n')}`);
+  }
+
+  if (parts.length === 0) return '';
+  return `\n\n## Workflow Context\n${parts.join('\n\n')}\nUse this context to inform your routing decision.`;
+}
+
 /**
  * Agent-specific decision style hints.
  *
@@ -43,6 +90,7 @@ const DECISION_AGENT_HINTS: Record<string, string> = {
  * @param nodeLabel        Optional node label — anchors the decision to its domain context
  * @param nodeDescription  Optional description from node data — narrows the decision criteria
  * @param agentName        Optional agent name ('rowan' | 'poirot') — adds personality style
+ * @param sharedContext    Optional workflow context (prior decisions + stored data)
  * @returns                System prompt string ready for the LLM
  */
 export function getDecisionSystemPrompt(
@@ -50,6 +98,7 @@ export function getDecisionSystemPrompt(
   nodeLabel?: string,
   nodeDescription?: string,
   agentName?: string,
+  sharedContext?: Record<string, unknown>,
 ): string {
   const optionsList = options.map((o, i) => `  ${i + 1}. ${o}`).join('\n');
   const optionNames = options.map((o) => `"${o}"`).join(', ');
@@ -72,8 +121,12 @@ export function getDecisionSystemPrompt(
     ? `\n\nDecision context: "${nodeLabel}"${nodeDescription ? ` — ${nodeDescription}` : ''}.`
     : '';
   const agentHint = agentName ? (DECISION_AGENT_HINTS[agentName.toLowerCase()] ?? '') : '';
+  const sharedContextSection =
+    sharedContext && Object.keys(sharedContext).length > 0
+      ? buildDecisionContextSection(sharedContext)
+      : '';
 
-  return `You are a decision-making agent. Analyze the input carefully and choose the BEST option from the available choices.${contextLine}
+  return `You are a decision-making agent. Analyze the input carefully and choose the BEST option from the available choices.${contextLine}${sharedContextSection}
 
 Available options:
 ${optionsList}
@@ -113,10 +166,69 @@ export interface DecisionParseResult {
  * - DECISION / CONFIDENCE / REASONING / ALTERNATIVES lines
  * - Inline confidence annotations: "approve (confidence: 0.9)"
  * - Percentage confidence: "CONFIDENCE: 87%"
+ * - JSON-format responses: {"decision": "approve", "confidence": 0.9, "reasoning": "..."}
  * - Fallback: first non-empty line when no DECISION: prefix found
  */
 export function parseDecisionOutput(output: string): DecisionParseResult {
   const text = output.trim();
+
+  // ── JSON format fallback ──
+  // Some LLMs respond with a JSON object instead of the structured text format.
+  // Detect by looking for a top-level JSON object that contains a "decision" key.
+  // Try both the full text and any ```json fenced block within it.
+  const jsonCandidates: string[] = [];
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fenced) jsonCandidates.push(fenced[1].trim());
+  const bare = text.match(/^\s*(\{[\s\S]*\})\s*$/);
+  if (bare) jsonCandidates.push(bare[1]);
+
+  for (const candidate of jsonCandidates) {
+    try {
+      const parsed = JSON.parse(candidate) as Record<string, unknown>;
+      if (parsed && typeof parsed.decision === 'string' && parsed.decision.trim()) {
+        const rawConf = parsed.confidence;
+        let confidence: number | undefined;
+        if (typeof rawConf === 'number') {
+          // In JSON, confidence is conventionally a 0–1 decimal.
+          // Treat as percentage ONLY for bare integers > 2 (e.g. 87 → 0.87).
+          // Non-integer values > 1 (e.g. 2.5) are over-scaled decimals — clamp them.
+          const isIntegerPercent = Number.isInteger(rawConf) && rawConf > 2;
+          const normalized = isIntegerPercent ? rawConf / 100 : rawConf;
+          confidence = Math.max(0, Math.min(1, normalized));
+        } else if (typeof rawConf === 'string') {
+          const n = parseFloat(rawConf);
+          if (!isNaN(n)) {
+            const isPercent = rawConf.includes('%') || n > 2;
+            confidence = Math.max(0, Math.min(1, isPercent ? n / 100 : n));
+          }
+        }
+        const reasoning =
+          typeof parsed.reasoning === 'string' ? parsed.reasoning.trim() || undefined : undefined;
+        const rawAlts = parsed.alternatives ?? parsed.alternates;
+        let alternatives: string[] | undefined;
+        if (Array.isArray(rawAlts)) {
+          alternatives = (rawAlts as unknown[])
+            .map((a) => String(a).trim())
+            .filter((a) => a.length > 0 && a.toLowerCase() !== 'none');
+          if (alternatives.length === 0) alternatives = undefined;
+        } else if (typeof rawAlts === 'string' && rawAlts.toLowerCase() !== 'none') {
+          alternatives = rawAlts
+            .split(/,\s*/)
+            .map((s) => s.trim())
+            .filter((s) => s.length > 0 && s.toLowerCase() !== 'none');
+          if (alternatives.length === 0) alternatives = undefined;
+        }
+        return {
+          decision: parsed.decision.replace(/\s*\(confidence[^)]*\)/i, '').trim(),
+          confidence,
+          reasoning,
+          alternatives,
+        };
+      }
+    } catch {
+      // Not valid JSON — fall through to structured text parsing
+    }
+  }
 
   // ── DECISION ──
   const decisionMatch = text.match(/^DECISION:\s*(.+)/im);
