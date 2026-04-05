@@ -186,6 +186,63 @@ ALTERNATIVES: none`;
     expect(result.decision).toBe('approve');
     expect(result.confidence).toBeCloseTo(0.8);
   });
+
+  // ── verbal confidence ──
+  it('maps verbal "high" confidence to ~0.85', () => {
+    const output = 'DECISION: approve\nCONFIDENCE: high\nREASONING: All checks pass.';
+    const result = parseDecisionOutput(output);
+    expect(result.confidence).toBeCloseTo(0.85);
+  });
+
+  it('maps verbal "low" confidence to ~0.3', () => {
+    const output = 'DECISION: reject\nCONFIDENCE: low\nREASONING: Insufficient evidence.';
+    const result = parseDecisionOutput(output);
+    expect(result.confidence).toBeCloseTo(0.3);
+  });
+
+  it('maps verbal "medium" confidence to ~0.65', () => {
+    const output = 'DECISION: escalate\nCONFIDENCE: medium\nREASONING: Mixed signals.';
+    const result = parseDecisionOutput(output);
+    expect(result.confidence).toBeCloseTo(0.65);
+  });
+
+  it('maps verbal "certain" confidence to ~0.95', () => {
+    const output = 'DECISION: approve\nCONFIDENCE: certain\nREASONING: No doubts.';
+    const result = parseDecisionOutput(output);
+    expect(result.confidence).toBeCloseTo(0.95);
+  });
+
+  it('maps verbal "very high" confidence to ~0.95', () => {
+    const output = 'DECISION: approve\nCONFIDENCE: very high\nREASONING: All signals agree.';
+    const result = parseDecisionOutput(output);
+    expect(result.confidence).toBeCloseTo(0.95);
+  });
+
+  it('maps verbal "uncertain" confidence to ~0.3', () => {
+    const output = 'DECISION: defer\nCONFIDENCE: uncertain\nREASONING: Conflicting signals.';
+    const result = parseDecisionOutput(output);
+    expect(result.confidence).toBeCloseTo(0.3);
+  });
+
+  it('maps verbal "confident" to ~0.85', () => {
+    const output = 'DECISION: approve\nCONFIDENCE: confident\nREASONING: Strong evidence.';
+    const result = parseDecisionOutput(output);
+    expect(result.confidence).toBeCloseTo(0.85);
+  });
+
+  it('returns undefined confidence for an unrecognized verbal term', () => {
+    const output = 'DECISION: approve\nCONFIDENCE: maybe\nREASONING: Not sure.';
+    const result = parseDecisionOutput(output);
+    expect(result.confidence).toBeUndefined();
+  });
+
+  it('still parses decision and reasoning when verbal confidence is present', () => {
+    const output = 'DECISION: reject\nCONFIDENCE: low\nREASONING: Tests failed.';
+    const result = parseDecisionOutput(output);
+    expect(result.decision).toBe('reject');
+    expect(result.reasoning).toBe('Tests failed.');
+    expect(result.confidence).toBeCloseTo(0.3);
+  });
 });
 
 // ── decisionMatchesCondition ─────────────────────────────────────────────────
@@ -649,6 +706,84 @@ describe('buildDecisionContextSection', () => {
     const ctx = { 'decision:Gate': 'approve' };
     const result = buildDecisionContextSection(ctx);
     expect(result).toContain('routing decision');
+  });
+
+  it('prioritizes decision entries over data entries when capping', () => {
+    // 6 data entries + 2 decision entries, cap = 4
+    // Expected: both decision entries + 2 data entries (not 4 data entries)
+    const ctx: Record<string, unknown> = {
+      'data-0': 'val-0',
+      'data-1': 'val-1',
+      'data-2': 'val-2',
+      'data-3': 'val-3',
+      'data-4': 'val-4',
+      'data-5': 'val-5',
+      'decision:Gate A': 'approve',
+      'decision:Gate B': 'reject',
+    };
+    const result = buildDecisionContextSection(ctx, 4);
+    // Both decision entries must be present
+    expect(result).toContain('Gate A');
+    expect(result).toContain('Gate B');
+    // Only 2 data entries fit (cap=4, 2 decision slots used)
+    expect(result).toContain('data-0');
+    expect(result).toContain('data-1');
+    expect(result).not.toContain('data-4');
+    expect(result).not.toContain('data-5');
+  });
+
+  it('includes all decision entries even when they exceed maxEntries alone', () => {
+    const ctx: Record<string, unknown> = {
+      'decision:Gate 1': 'approve',
+      'decision:Gate 2': 'reject',
+      'decision:Gate 3': 'escalate',
+      'data-key': 'some value',
+    };
+    // maxEntries=2 — decision entries (3) exceed the cap, but we still take up to maxEntries of them
+    const result = buildDecisionContextSection(ctx, 2);
+    // Gate 1 and Gate 2 should be present (first 2 of 3 decision entries)
+    expect(result).toContain('Gate 1');
+    expect(result).toContain('Gate 2');
+    // data-key should be dropped (no room)
+    expect(result).not.toContain('data-key');
+  });
+
+  it('fills all slots with data when there are no decision entries', () => {
+    const ctx: Record<string, unknown> = {
+      alpha: 'a',
+      beta: 'b',
+      gamma: 'c',
+    };
+    const result = buildDecisionContextSection(ctx, 2);
+    expect(result).toContain('alpha');
+    expect(result).toContain('beta');
+    expect(result).not.toContain('gamma');
+  });
+});
+
+// ── getDecisionSystemPrompt — upstream error/skip guidance ───────────────────
+
+describe('getDecisionSystemPrompt — upstream error/skip guidance', () => {
+  it('includes [ERROR] handling instruction in all prompts', () => {
+    const prompt = getDecisionSystemPrompt(['approve', 'reject']);
+    expect(prompt).toContain('[ERROR]');
+  });
+
+  it('includes [SKIPPED] handling instruction in all prompts', () => {
+    const prompt = getDecisionSystemPrompt(['approve', 'reject']);
+    expect(prompt).toContain('[SKIPPED]');
+  });
+
+  it('instructs to prefer error-handling branches when upstream failures present', () => {
+    const prompt = getDecisionSystemPrompt(['approve', 'reject', 'fallback']);
+    expect(prompt).toMatch(/error.handling|fallback/i);
+  });
+
+  it('error/skip guidance is present regardless of agent name', () => {
+    const rowenPrompt = getDecisionSystemPrompt(['yes', 'no'], undefined, undefined, 'rowan');
+    const poirotPrompt = getDecisionSystemPrompt(['yes', 'no'], undefined, undefined, 'poirot');
+    expect(rowenPrompt).toContain('[ERROR]');
+    expect(poirotPrompt).toContain('[SKIPPED]');
   });
 });
 

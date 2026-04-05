@@ -1,5 +1,31 @@
 # Changelog
 
+### 2026-04-05 — Round 84: Decision Node Intelligence — Decision-First Context, Verbal Confidence, Error/Skip Guidance
+
+**Improvement — Decision Node Intelligence (Area 2):**
+
+**1. `buildDecisionContextSection` — decision-first priority ordering**
+- Previously: `Object.entries(sharedContext).slice(0, maxEntries)` applied the cap in insertion order, meaning high-signal decision entries (`decision:*` keys) could be silently dropped when many plain data entries appeared first
+- Now: decision entries and data entries are separated before the cap is applied — all decision entries are always included first (up to `maxEntries`), and remaining slots are filled with data entries
+- Practical impact: in workflows with many `store_context` calls, prior routing decisions are no longer crowded out by lower-priority data — the decision node always sees what gates have already been resolved
+
+**2. `getDecisionSystemPrompt` — upstream error/skip handling instruction**
+- Added a new rule to the decision node system prompt: instructs the LLM how to interpret `[ERROR]` and `[SKIPPED]` status tags on upstream nodes
+- Before: the execution slice added `[NodeLabel ERROR]` / `[NodeLabel SKIPPED]` annotations to upstream data, but the prompt gave no guidance — the LLM had to guess what these meant for routing
+- Now: the prompt explicitly tells the decision node to treat upstream failures as routing signals (e.g. prefer error-handling or fallback branches when upstream errors are present)
+- Rule applies to all decision prompts regardless of agent, option count, or node label
+
+**3. `parseDecisionOutput` — verbal confidence mapping**
+- Some LLMs (especially smaller/faster models) respond with `CONFIDENCE: high` or `CONFIDENCE: uncertain` instead of a numeric value, yielding `confidence: undefined` and bypassing the low-confidence retry logic
+- Now: when no numeric match is found, a verbal confidence pattern is tried (`^CONFIDENCE:\s*([a-z][a-z\s]*)`)
+- Mapping table: `very high / certain` → 0.95, `high / confident / strong` → 0.85, `fairly high` → 0.75, `moderate / medium / likely / probable` → 0.65, `fairly low` → 0.4, `low / uncertain / unclear / weak` → 0.3, `very low / very uncertain` → 0.15
+- Prefix matching as fallback (e.g. `highly confident` → `high`→ 0.85 via prefix)
+- Unrecognized verbal terms still return `undefined` (no false confidence injection)
+
+**Files changed:** `src/lib/decision.ts`, `src/lib/__tests__/decision.test.ts`
+
+**Test Results:** Build pre-existing broken (pdfjs-dist font file missing — unrelated). 1787/1787 tests pass (new tests: 9 verbal confidence, 4 decision-first ordering, 4 error/skip guidance).
+
 ### 2026-04-05 — Round 83: Decision Node Intelligence — JSON Parsing, Shared Context Injection, Status-Aware Upstream
 
 **Improvement — Decision Node Intelligence (Area 2):**

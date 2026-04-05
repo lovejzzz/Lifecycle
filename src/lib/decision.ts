@@ -38,18 +38,28 @@ export function buildDecisionContextSection(
   const entries = Object.entries(sharedContext);
   if (entries.length === 0) return '';
 
+  // Decision entries carry the highest routing signal — always prioritize them
+  // when the maxEntries cap is applied. Fill remaining slots with data entries.
+  const decisionEntries = entries.filter(([k]) => k.startsWith('decision:'));
+  const dataEntries = entries.filter(([k]) => !k.startsWith('decision:'));
+
+  const selectedDecision = decisionEntries.slice(0, maxEntries);
+  const remaining = Math.max(0, maxEntries - selectedDecision.length);
+  const selectedData = dataEntries.slice(0, remaining);
+
   const decisionLines: string[] = [];
   const dataLines: string[] = [];
 
-  for (const [key, value] of entries.slice(0, maxEntries)) {
+  for (const [key, value] of selectedDecision) {
     const valStr = typeof value === 'string' ? value : JSON.stringify(value);
-    if (key.startsWith('decision:')) {
-      const nodeName = key.slice('decision:'.length);
-      decisionLines.push(`  - ${nodeName}: ${valStr}`);
-    } else {
-      const truncated = valStr.length > 150 ? valStr.slice(0, 150) + '…' : valStr;
-      dataLines.push(`  - ${key}: ${truncated}`);
-    }
+    const nodeName = key.slice('decision:'.length);
+    decisionLines.push(`  - ${nodeName}: ${valStr}`);
+  }
+
+  for (const [key, value] of selectedData) {
+    const valStr = typeof value === 'string' ? value : JSON.stringify(value);
+    const truncated = valStr.length > 150 ? valStr.slice(0, 150) + '…' : valStr;
+    dataLines.push(`  - ${key}: ${truncated}`);
   }
 
   const parts: string[] = [];
@@ -139,7 +149,8 @@ Rules:
 - <chosen option> MUST exactly match one of: ${optionNames} (case-insensitive).
 - CONFIDENCE must be a decimal between 0.0 (total uncertainty) and 1.0 (complete certainty).
 - If CONFIDENCE is below 0.5, your REASONING must explain what information would resolve the uncertainty.
-- Do NOT add any text before "DECISION:" on the first line.${
+- Do NOT add any text before "DECISION:" on the first line.
+- Upstream nodes tagged [ERROR] indicate execution failures. Upstream nodes tagged [SKIPPED] were not executed. Factor these status signals into your routing choice — if error-handling or fallback branches are available, prefer them when upstream failures are present.${
     multiWay
       ? `\n- Evaluate ALL ${options.length} options before choosing. For each option, silently weigh: (a) what evidence supports it, (b) what evidence contradicts it. Your REASONING must explain why the chosen option beats its closest competitor.\n- List any genuinely viable alternatives in ALTERNATIVES.`
       : ''
@@ -250,6 +261,44 @@ export function parseDecisionOutput(output: string): DecisionParseResult {
     // Treat as decimal if: value is 0–2 without % (handles 1.5 → clamp to 1.0)
     const normalized = isPercent || (raw > 2 && !isPercent) ? raw / 100 : raw;
     confidence = Math.max(0, Math.min(1, normalized));
+  } else {
+    // Verbal confidence: some LLMs respond with words instead of numbers.
+    // Map common qualitative terms to approximate 0–1 scores.
+    const verbalMatch = text.match(/^CONFIDENCE:\s*([a-z][a-z\s]*)/im);
+    if (verbalMatch) {
+      const verbal = verbalMatch[1].toLowerCase().trim();
+      const VERBAL_MAP: Record<string, number> = {
+        'very high': 0.95,
+        certain: 0.95,
+        'highly confident': 0.9,
+        high: 0.85,
+        confident: 0.85,
+        strong: 0.85,
+        'fairly high': 0.75,
+        moderate: 0.65,
+        medium: 0.65,
+        likely: 0.65,
+        probable: 0.65,
+        'fairly low': 0.4,
+        low: 0.3,
+        uncertain: 0.3,
+        unclear: 0.3,
+        weak: 0.3,
+        'very low': 0.15,
+        'very uncertain': 0.15,
+      };
+      // Try exact match first, then prefix match for multi-word terms
+      if (VERBAL_MAP[verbal] !== undefined) {
+        confidence = VERBAL_MAP[verbal];
+      } else {
+        for (const [key, val] of Object.entries(VERBAL_MAP)) {
+          if (verbal.startsWith(key) || key.startsWith(verbal)) {
+            confidence = val;
+            break;
+          }
+        }
+      }
+    }
   }
 
   // ── REASONING (multi-line) ──
