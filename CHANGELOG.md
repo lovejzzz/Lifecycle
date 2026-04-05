@@ -1,5 +1,30 @@
 # Changelog
 
+### 2026-04-05 — Round 82: Prompt Engineering — Category-Affinity Context Scoring
+
+**Improvement — Prompt Engineering (Area 5):**
+
+**Problem:** `buildRelevanceWeightedContext` allocated character budget to upstream sources based solely on keyword overlap with the current node's task prompt. Keyword matching is a word-level signal that misses structurally important sources — e.g. a `test` node that outputs `FAIL: 3 assertions failed` shares few literal keywords with a downstream `patch` node's prompt "apply a fix", so it was unfairly budget-starved despite being the most critical input.
+
+**Solution: `CATEGORY_AFFINITY_BOOST` + blended scoring**
+
+- Added `CATEGORY_AFFINITY_BOOST` constant (exported) mapping 8 source categories to their structurally significant target categories with boost values (0.0–1.0):
+  - `test → patch: 1.0`, `review → patch: 1.0` (test/review output exists to guide patches)
+  - `policy → review: 0.9`, `artifact → review: 0.9` (policy is evaluation criteria; artifact is what's being reviewed)
+  - `decision → action: 1.0`, `dependency → action: 0.9` (routing decision and dependency status are always relevant to downstream actions)
+  - `state → action: 0.8`, `action → state: 0.8` (actions change state; state informs actions)
+  - And 10+ more pairs across `review`, `deliverable`, `cid`, `trigger`, etc.
+
+- Updated `buildRelevanceWeightedContext` with an optional `targetCategory` parameter:
+  - Blended score formula: `max(keywordScore, affinityBoost × 0.7)` — guarantees a high-affinity source always gets at least 70% of its structural boost as effective score, even with zero keyword overlap
+  - Adds `⬆ high-affinity` badge to context headers for sources with ≥0.8 boost, making structural relevance visible in LLM context
+
+- Updated `executeNode` in `executionSlice.ts` to pass `d.category` as `targetCategory` so every node execution automatically benefits from category-aware context allocation
+
+**Files changed:** `src/lib/prompts.ts`, `src/store/slices/executionSlice.ts`, `src/lib/__tests__/prompts.test.ts`
+
+**Test Results:** Build passes. 1738/1738 tests pass (10 new tests covering CATEGORY_AFFINITY_BOOST structure, affinity boost behavior across key pairs, badge rendering, and backward compatibility).
+
 ### 2026-04-04 — Round 81: Routing & Intent — Natural Language Fallbacks + getTopCandidates
 
 **Improvement — Routing & Intent Improvements (Area 4):**
