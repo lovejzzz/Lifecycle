@@ -578,7 +578,12 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
           x !== null,
       );
 
-    const directContext = buildRelevanceWeightedContext(directContextInputs, autoPrompt || d.label);
+    const directContext = buildRelevanceWeightedContext(
+      directContextInputs,
+      autoPrompt || d.label,
+      8000,
+      d.category,
+    );
 
     const ancestors = collectAncestors(directParentIds, 2);
     const ancestorSummary = buildAncestorContextHint(ancestors);

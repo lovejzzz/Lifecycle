@@ -20,6 +20,7 @@ import {
   getExecutionHistory,
   getExecutionHistoryRaw,
   clearExecutionHistory,
+  CATEGORY_AFFINITY_BOOST,
 } from '../prompts';
 import type { ContextInput, ExecutionRunSummary } from '../prompts';
 import { getAgent } from '../agents';
@@ -1016,6 +1017,191 @@ describe('buildRelevanceWeightedContext', () => {
     const result = buildRelevanceWeightedContext(inputs, 'write article', 2000);
     expect(result).not.toContain('[VERDICT');
     expect(result).not.toContain('[DECISION');
+  });
+});
+
+// ─── CATEGORY_AFFINITY_BOOST & category-affinity scoring ──────────────────────
+
+describe('CATEGORY_AFFINITY_BOOST structure', () => {
+  it('is exported and non-empty', () => {
+    expect(typeof CATEGORY_AFFINITY_BOOST).toBe('object');
+    expect(Object.keys(CATEGORY_AFFINITY_BOOST).length).toBeGreaterThan(0);
+  });
+
+  it('all boost values are in range 0.0–1.0', () => {
+    for (const [src, targets] of Object.entries(CATEGORY_AFFINITY_BOOST)) {
+      for (const [tgt, boost] of Object.entries(targets)) {
+        expect(boost).toBeGreaterThanOrEqual(0);
+        expect(boost).toBeLessThanOrEqual(1.0);
+        void src;
+        void tgt;
+      }
+    }
+  });
+
+  it('contains key high-value structural pairs', () => {
+    expect(CATEGORY_AFFINITY_BOOST['test']?.['patch']).toBe(1.0);
+    expect(CATEGORY_AFFINITY_BOOST['review']?.['patch']).toBe(1.0);
+    expect(CATEGORY_AFFINITY_BOOST['policy']?.['review']).toBeGreaterThanOrEqual(0.8);
+    expect(CATEGORY_AFFINITY_BOOST['artifact']?.['review']).toBeGreaterThanOrEqual(0.8);
+    expect(CATEGORY_AFFINITY_BOOST['decision']?.['action']).toBe(1.0);
+  });
+});
+
+describe('buildRelevanceWeightedContext — category-affinity scoring', () => {
+  it('boosts a test node upstream of patch: gets more budget than unrelated node', () => {
+    const inputs: ContextInput[] = [
+      {
+        label: 'Test Results',
+        relationship: 'validates',
+        content: 'FAIL: unit test assertion error on line 42 — expected 200 got 500',
+        category: 'test',
+      },
+      {
+        label: 'Project Notes',
+        relationship: 'feeds',
+        content: 'meeting notes from last week agenda items action items follow ups discussed',
+      },
+    ];
+    // targetCategory = 'patch' → test node should get affinity boost (1.0)
+    const result = buildRelevanceWeightedContext(inputs, 'apply fix', 2000, 'patch');
+    const parts = result.split('---');
+    // Test Results section should be longer (more budget due to affinity)
+    expect(parts[0].length).toBeGreaterThan(parts[1]?.length ?? 0);
+  });
+
+  it('boosts review node upstream of patch: review findings guide what to fix', () => {
+    const inputs: ContextInput[] = [
+      {
+        label: 'Code Review',
+        relationship: 'validates',
+        content: 'BLOCK — missing null check on user input leads to crash on empty submit',
+        category: 'review',
+      },
+      {
+        label: 'Random Notes',
+        relationship: 'feeds',
+        content: 'quarterly planning estimates timeline budget forecast annual roadmap',
+      },
+    ];
+    const result = buildRelevanceWeightedContext(inputs, 'patch the code', 2000, 'patch');
+    const parts = result.split('---');
+    expect(parts[0].length).toBeGreaterThan(parts[1]?.length ?? 0);
+  });
+
+  it('boosts policy node upstream of review: policy rules are evaluation criteria', () => {
+    const inputs: ContextInput[] = [
+      {
+        label: 'Security Policy',
+        relationship: 'monitors',
+        content: 'Rule 1: All inputs must be sanitized. Rule 2: HTTPS required. Rule 3: JWT auth.',
+        category: 'policy',
+      },
+      {
+        label: 'Marketing Copy',
+        relationship: 'feeds',
+        content: 'brand voice tone guidelines color palette typography spacing visual identity',
+      },
+    ];
+    const result = buildRelevanceWeightedContext(
+      inputs,
+      'review the implementation',
+      2000,
+      'review',
+    );
+    const parts = result.split('---');
+    expect(parts[0].length).toBeGreaterThan(parts[1]?.length ?? 0);
+  });
+
+  it('boosts decision node upstream of action: routing choice determines what to execute', () => {
+    const inputs: ContextInput[] = [
+      {
+        label: 'Quality Gate',
+        relationship: 'routes',
+        content: 'DECISION: approve\nCONFIDENCE: 0.92\nREASONING: All checks pass.',
+        category: 'decision',
+      },
+      {
+        label: 'Metadata',
+        relationship: 'feeds',
+        content: 'version 1.2.3 created monday author alice repository github branch main',
+      },
+    ];
+    const result = buildRelevanceWeightedContext(inputs, 'execute deployment', 2000, 'action');
+    const parts = result.split('---');
+    expect(parts[0].length).toBeGreaterThan(parts[1]?.length ?? 0);
+  });
+
+  it('adds high-affinity badge to header for ≥0.8 boost pairs', () => {
+    const inputs: ContextInput[] = [
+      {
+        label: 'Test Suite',
+        relationship: 'validates',
+        content: 'FAIL: 3 tests failed out of 10',
+        category: 'test',
+      },
+      {
+        label: 'Other',
+        relationship: 'feeds',
+        content: 'other content here',
+        category: 'state',
+      },
+    ];
+    // test→patch is 1.0, should show ⬆ high-affinity
+    const result = buildRelevanceWeightedContext(inputs, 'apply patch', 2000, 'patch');
+    expect(result).toContain('⬆ high-affinity');
+  });
+
+  it('no affinity badge when targetCategory is absent', () => {
+    const inputs: ContextInput[] = [
+      {
+        label: 'Test Suite',
+        relationship: 'validates',
+        content: 'FAIL: 3 tests failed',
+        category: 'test',
+      },
+      { label: 'Other', relationship: 'feeds', content: 'other content' },
+    ];
+    // No targetCategory → no badge
+    const result = buildRelevanceWeightedContext(inputs, 'apply patch', 2000);
+    expect(result).not.toContain('⬆ high-affinity');
+  });
+
+  it('no affinity badge for low-boost pairs (< 0.8)', () => {
+    const inputs: ContextInput[] = [
+      {
+        label: 'Action Node',
+        relationship: 'triggers',
+        content: 'deploy completed successfully to staging environment',
+        category: 'action',
+      },
+      { label: 'Other', relationship: 'feeds', content: 'other stuff' },
+    ];
+    // action→cid is not in the map, should not show badge
+    const result = buildRelevanceWeightedContext(inputs, 'analyze the results', 2000, 'cid');
+    expect(result).not.toContain('⬆ high-affinity');
+  });
+
+  it('backward-compatible: single input still returns full budget without scoring', () => {
+    const inputs: ContextInput[] = [
+      { label: 'Test', relationship: 'feeds', content: 'test content here', category: 'test' },
+    ];
+    // Single input → no scoring, targetCategory irrelevant
+    const result = buildRelevanceWeightedContext(inputs, 'patch this', 2000, 'patch');
+    expect(result).toContain('## From "Test" (feeds)');
+    expect(result).toContain('test content here');
+    // No divider for single input
+    expect(result).not.toContain('---');
+  });
+
+  it('backward-compatible: empty targetCategory works same as no targetCategory', () => {
+    const inputs: ContextInput[] = [
+      { label: 'A', relationship: 'feeds', content: 'content alpha' },
+      { label: 'B', relationship: 'drives', content: 'content beta' },
+    ];
+    const withTarget = buildRelevanceWeightedContext(inputs, 'task', 2000, undefined);
+    const withoutTarget = buildRelevanceWeightedContext(inputs, 'task', 2000);
+    expect(withTarget).toBe(withoutTarget);
   });
 });
 

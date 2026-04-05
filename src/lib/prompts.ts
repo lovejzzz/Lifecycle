@@ -800,28 +800,72 @@ export interface ContextInput {
 }
 
 /**
+ * Structural affinity boosts between source and target node categories.
+ *
+ * Keyword overlap alone misses structurally important upstream sources —
+ * e.g. a `test` node's FAIL result is always critical for a downstream
+ * `patch` node, even when the two nodes share few literal keywords.
+ *
+ * Format: `CATEGORY_AFFINITY_BOOST[sourceCategory][targetCategory] = boost (0.0–1.0)`
+ *
+ * A boost of 1.0 means the source is maximally structurally relevant to
+ * the target (e.g. test → patch: test results exist to guide patches).
+ * The blended score formula is: `max(keywordScore, boost * AFFINITY_WEIGHT)`,
+ * so a high-affinity pair always gets at least `boost * AFFINITY_WEIGHT` of
+ * the proportional budget even if the keyword overlap is zero.
+ */
+export const CATEGORY_AFFINITY_BOOST: Record<string, Record<string, number>> = {
+  // Test outputs guide patches (failures = what to fix) and reviews (pass/fail verdict)
+  test: { patch: 1.0, review: 0.8, action: 0.6, cid: 0.5 },
+  // Review verdicts guide patches (what to change), actions (what to execute), outputs
+  review: { patch: 1.0, action: 0.8, output: 0.7, cid: 0.5 },
+  // Policy rules are evaluation criteria for reviews and guards for actions
+  policy: { review: 0.9, test: 0.7, action: 0.6 },
+  // Dependency status blocks or unblocks actions and triggers
+  dependency: { action: 0.9, trigger: 0.7, cid: 0.5 },
+  // State snapshots inform actions that must act on current state, and reviews
+  state: { action: 0.8, review: 0.7, cid: 0.6, patch: 0.5 },
+  // Artifacts are what gets reviewed, tested, and delivered
+  artifact: { review: 0.9, test: 0.7, output: 0.8 },
+  // Action outcomes update state and feed test assertions
+  action: { state: 0.8, test: 0.7, review: 0.5 },
+  // Decision outcomes always determine which downstream branch should execute
+  decision: { action: 1.0, artifact: 0.8, review: 0.8, cid: 0.6 },
+  // Deliverable outputs feed review and final output synthesis
+  deliverable: { review: 0.9, output: 0.8 },
+};
+
+/** Weight applied to affinity boosts when blending with keyword score (0.0–1.0). */
+const AFFINITY_WEIGHT = 0.7;
+
+/**
  * Build a context block from multiple upstream inputs, allocating a total
  * character budget proportionally to each input's keyword relevance to the
- * current node's task prompt.
+ * current node's task prompt, optionally boosted by structural category affinity.
  *
  * **Why this matters**: In deep or fan-in workflows, a node can receive large
  * outputs from many upstream parents. Naively concatenating all of them creates
  * bloated prompts full of low-signal content. This function:
  *   1. Scores each input by keyword overlap with the task prompt (0–1 scale).
- *   2. Allocates `totalBudget` chars proportionally — high-relevance sources
+ *   2. Blends the keyword score with a structural category-affinity boost when
+ *      `targetCategory` is supplied — ensuring semantically critical upstream
+ *      sources (e.g. test results for a patch node) always get meaningful budget.
+ *   3. Allocates `totalBudget` chars proportionally — high-relevance sources
  *      get more room; low-relevance ones are trimmed more aggressively.
- *   3. Guarantees a minimum per-source allocation so no upstream is silenced.
+ *   4. Guarantees a minimum per-source allocation so no upstream is silenced.
  *
  * Single-input case: no scoring needed — full budget goes to the one source.
  *
- * @param inputs       Upstream context pieces (label, relationship, content)
- * @param taskPrompt   The current node's task description (used for scoring)
- * @param totalBudget  Max total chars across all inputs (default: 8000)
+ * @param inputs          Upstream context pieces (label, relationship, content, category)
+ * @param taskPrompt      The current node's task description (used for keyword scoring)
+ * @param totalBudget     Max total chars across all inputs (default: 8000)
+ * @param targetCategory  The executing node's own category — enables affinity boosting
  */
 export function buildRelevanceWeightedContext(
   inputs: ContextInput[],
   taskPrompt: string,
   totalBudget = 8000,
+  targetCategory?: string,
 ): string {
   if (inputs.length === 0) return '';
 
@@ -835,20 +879,38 @@ export function buildRelevanceWeightedContext(
     return `${header}\n${smartTruncate(content, totalBudget)}`;
   }
 
-  // Score each input by keyword overlap with the task prompt
+  // Score each input: blend keyword overlap with structural category affinity
   const taskKws = new Set(extractKeywords(taskPrompt));
 
   const scores = inputs.map((inp) => {
-    if (!inp.content || taskKws.size === 0) return 0.5; // neutral when no task signal
-    const inputKws = extractKeywords(inp.content);
-    const overlap = inputKws.filter((w) => taskKws.has(w)).length;
-    // Normalize: what fraction of task keywords appear in this input?
-    return overlap / taskKws.size;
+    // Keyword score: fraction of task keywords that appear in this input
+    const keywordScore =
+      !inp.content || taskKws.size === 0
+        ? 0.5 // neutral when no task signal
+        : (() => {
+            const inputKws = extractKeywords(inp.content);
+            const overlap = inputKws.filter((w) => taskKws.has(w)).length;
+            return overlap / taskKws.size;
+          })();
+
+    // Affinity score: structural importance of source category for this target
+    const affinityBoost =
+      inp.category && targetCategory
+        ? (CATEGORY_AFFINITY_BOOST[inp.category]?.[targetCategory] ?? 0)
+        : 0;
+
+    // Blend: take the max of pure keyword score and affinity-weighted boost.
+    // This ensures a high-affinity source always gets at least AFFINITY_WEIGHT
+    // of the boost value as its effective score, even with low keyword overlap.
+    return affinityBoost > 0
+      ? Math.max(keywordScore, affinityBoost * AFFINITY_WEIGHT)
+      : keywordScore;
   });
 
   // Guarantee a minimum score so no source is completely starved
   const MIN_SCORE = 0.1;
   const adjusted = scores.map((s) => Math.max(s, MIN_SCORE));
+
   const totalScore = adjusted.reduce((a, b) => a + b, 0);
 
   // Reserve a minimum allocation per input, distribute remainder by relevance
@@ -862,9 +924,13 @@ export function buildRelevanceWeightedContext(
     .map(({ label, relationship, content, category }, i) => {
       const truncated = smartTruncate(content, allocations[i]);
       const signal = category ? extractNodeSignal(content, category) : null;
+      // Surface affinity badge when a source has ≥0.8 structural relevance to target
+      const affinityBoost =
+        category && targetCategory ? (CATEGORY_AFFINITY_BOOST[category]?.[targetCategory] ?? 0) : 0;
+      const affinityBadge = affinityBoost >= 0.8 ? ` ⬆ high-affinity` : '';
       const header = signal
-        ? `## From "${label}" (${relationship}) ${signal}`
-        : `## From "${label}" (${relationship})`;
+        ? `## From "${label}" (${relationship}) ${signal}${affinityBadge}`
+        : `## From "${label}" (${relationship})${affinityBadge}`;
       return `${header}\n${truncated}`;
     })
     .join('\n\n---\n\n');
