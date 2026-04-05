@@ -9,6 +9,7 @@ import {
   validateGraphInvariants,
   getParallelGroups,
   getUpstreamSubgraph,
+  buildExecutionPlan,
   NODE_W,
   NODE_H,
 } from '../graph';
@@ -347,5 +348,124 @@ describe('getUpstreamSubgraph', () => {
     const sub = getUpstreamSubgraph('A', nodes, edges);
     expect(sub.nodes.map((n) => n.id)).toEqual(['A']);
     expect(sub.edges).toHaveLength(0);
+  });
+});
+
+// ─── buildExecutionPlan ────────────────────────────────────────────────────
+
+describe('buildExecutionPlan', () => {
+  // Helper: lightweight node/edge shapes (no React Flow overhead needed)
+  const n = (id: string) => ({ id });
+  const e = (source: string, target: string) => ({ source, target });
+
+  it('returns empty plan for empty graph', () => {
+    const plan = buildExecutionPlan([], []);
+    expect(plan.stages).toHaveLength(0);
+    expect(plan.stageCount).toBe(0);
+    expect(plan.criticalPath).toHaveLength(0);
+    expect(plan.parallelismScore).toBe(1);
+    expect(plan.bottleneckIds).toHaveLength(0);
+    expect(plan.independentBranches).toHaveLength(0);
+  });
+
+  it('single-node graph has score 1 and trivial critical path', () => {
+    const plan = buildExecutionPlan([n('A')], []);
+    expect(plan.stages).toEqual([['A']]);
+    expect(plan.stageCount).toBe(1);
+    expect(plan.criticalPath).toEqual(['A']);
+    expect(plan.parallelismScore).toBe(1);
+    expect(plan.bottleneckIds).toHaveLength(0);
+  });
+
+  it('fully sequential chain: score 0, critical path = all nodes', () => {
+    // A→B→C→D (4 stages, 4 nodes)
+    const plan = buildExecutionPlan(
+      [n('A'), n('B'), n('C'), n('D')],
+      [e('A', 'B'), e('B', 'C'), e('C', 'D')],
+    );
+    expect(plan.stageCount).toBe(4);
+    expect(plan.parallelismScore).toBe(0);
+    expect(plan.criticalPath).toEqual(['A', 'B', 'C', 'D']);
+    expect(plan.bottleneckIds).toEqual(['B', 'C']); // interior nodes
+  });
+
+  it('fully parallel graph: score 1, critical path = 1 node', () => {
+    // A, B, C, D — no edges
+    const plan = buildExecutionPlan([n('A'), n('B'), n('C'), n('D')], []);
+    expect(plan.stageCount).toBe(1);
+    expect(plan.parallelismScore).toBe(1);
+    expect(plan.criticalPath).toHaveLength(1);
+    expect(plan.bottleneckIds).toHaveLength(0);
+  });
+
+  it('diamond graph: A→B, A→C, B→D, C→D', () => {
+    // Stages: [A], [B,C], [D] — 3 stages, 4 nodes → score = (4-3)/(4-1) ≈ 0.33
+    const plan = buildExecutionPlan(
+      [n('A'), n('B'), n('C'), n('D')],
+      [e('A', 'B'), e('A', 'C'), e('B', 'D'), e('C', 'D')],
+    );
+    expect(plan.stageCount).toBe(3);
+    expect(plan.parallelismScore).toBeCloseTo(1 / 3, 5);
+    // Critical path is 3 nodes: A→B→D or A→C→D (either is valid)
+    expect(plan.criticalPath).toHaveLength(3);
+    expect(plan.criticalPath[0]).toBe('A');
+    expect(plan.criticalPath[2]).toBe('D');
+    // B or C is the interior bottleneck
+    expect(plan.bottleneckIds).toHaveLength(1);
+  });
+
+  it('detects independent branches for disconnected components', () => {
+    // A→B (branch 1) and C→D (branch 2) — no shared edges
+    const plan = buildExecutionPlan([n('A'), n('B'), n('C'), n('D')], [e('A', 'B'), e('C', 'D')]);
+    expect(plan.independentBranches).toHaveLength(2);
+    const branchSizes = plan.independentBranches.map((b) => b.length).sort();
+    expect(branchSizes).toEqual([2, 2]);
+  });
+
+  it('does not report independentBranches for a fully connected graph', () => {
+    // A→B→C — single component
+    const plan = buildExecutionPlan([n('A'), n('B'), n('C')], [e('A', 'B'), e('B', 'C')]);
+    expect(plan.independentBranches).toHaveLength(0);
+  });
+
+  it('computes correct downstream counts', () => {
+    // A→B→D, A→C→D
+    // A has 3 downstream (B, C, D); B and C each have 1 (D); D has 0
+    const plan = buildExecutionPlan(
+      [n('A'), n('B'), n('C'), n('D')],
+      [e('A', 'B'), e('A', 'C'), e('B', 'D'), e('C', 'D')],
+    );
+    expect(plan.downstreamCount.get('A')).toBe(3);
+    expect(plan.downstreamCount.get('B')).toBe(1);
+    expect(plan.downstreamCount.get('C')).toBe(1);
+    expect(plan.downstreamCount.get('D')).toBe(0);
+  });
+
+  it('handles dangling edges gracefully (ignores them)', () => {
+    // Edge references node 'X' which doesn't exist
+    const plan = buildExecutionPlan([n('A'), n('B')], [e('A', 'B'), e('A', 'X')]);
+    expect(plan.stages).toHaveLength(2);
+    expect(plan.criticalPath).toEqual(['A', 'B']);
+  });
+
+  it('three-branch fan-out: A→B, A→C, A→D', () => {
+    // 2 stages, 4 nodes → score = (4-2)/3 ≈ 0.67
+    const plan = buildExecutionPlan(
+      [n('A'), n('B'), n('C'), n('D')],
+      [e('A', 'B'), e('A', 'C'), e('A', 'D')],
+    );
+    expect(plan.stageCount).toBe(2);
+    expect(plan.parallelismScore).toBeCloseTo(2 / 3, 5);
+    expect(plan.criticalPath).toHaveLength(2);
+    expect(plan.criticalPath[0]).toBe('A');
+    expect(plan.bottleneckIds).toHaveLength(0); // no interior nodes (path length = 2)
+  });
+
+  it('parallelismScore is clamped between 0 and 1', () => {
+    const plan1 = buildExecutionPlan([n('A'), n('B'), n('C')], [e('A', 'B'), e('B', 'C')]);
+    const plan2 = buildExecutionPlan([n('A'), n('B'), n('C')], []);
+    expect(plan1.parallelismScore).toBeGreaterThanOrEqual(0);
+    expect(plan1.parallelismScore).toBeLessThanOrEqual(1);
+    expect(plan2.parallelismScore).toBe(1);
   });
 });

@@ -472,7 +472,7 @@ export interface NodeData extends Record<string, unknown> {
   aiPrompt?: string; // instruction/prompt for the AI to execute
   aiModel?: string; // model to use (default: claude-sonnet-4-20250514)
   executionResult?: string; // output from last execution
-  executionStatus?: 'idle' | 'running' | 'success' | 'error'; // current run state
+  executionStatus?: 'idle' | 'running' | 'success' | 'error' | 'skipped'; // current run state
   executionError?: string; // error message if execution failed
   _executionStartedAt?: number; // Date.now() when execution began (ephemeral)
   _executionDurationMs?: number; // total ms elapsed for this node's execution (ephemeral)

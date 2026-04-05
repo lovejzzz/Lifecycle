@@ -24,7 +24,7 @@ import {
   recordExecutionRun,
 } from '@/lib/prompts';
 import type { ExecutionRunSummary } from '@/lib/prompts';
-import { topoSort, getUpstreamSubgraph, markdownToHTML } from '@/lib/graph';
+import { topoSort, getUpstreamSubgraph, markdownToHTML, buildExecutionPlan } from '@/lib/graph';
 import {
   buildCacheKey,
   sha256,
@@ -1625,15 +1625,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     const { nodes, edges, cidMode } = get();
     if (nodes.length === 0) return 'No workflow to execute.';
 
-    const { order, levels } = topoSort(nodes, edges);
-    const levelGroups = new Map<number, string[]>();
-    for (const nodeId of order) {
-      const level = levels.get(nodeId) ?? 0;
-      if (!levelGroups.has(level)) levelGroups.set(level, []);
-      levelGroups.get(level)!.push(nodeId);
-    }
-    const stages = [...levelGroups.keys()].sort((a, b) => a - b);
-    const parallelNodes = stages.filter((l) => (levelGroups.get(l)?.length ?? 0) > 1).length;
+    const plan = buildExecutionPlan(nodes, edges);
 
     const inputNodes = nodes.filter((n) => n.data.category === 'input');
     const outputNodes = nodes.filter((n) => n.data.category === 'output');
@@ -1641,10 +1633,14 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
       (n) => n.data.aiPrompt || ['cid', 'artifact'].includes(n.data.category),
     );
     const withContent = nodes.filter((n) => (n.data.content?.length ?? 0) > 50 && !n.data.aiPrompt);
+    const parallelStageCount = plan.stages.filter((s) => s.length > 1).length;
 
     const parts = ['### Pre-Flight Summary', ''];
+
+    // ── Pipeline overview ──────────────────────────────────────────────────
     parts.push(
-      `**Pipeline:** ${nodes.length} nodes \u2192 ${stages.length} stages${parallelNodes > 0 ? ` (${parallelNodes} parallel)` : ' (sequential)'}`,
+      `**Pipeline:** ${nodes.length} nodes \u2192 ${plan.stageCount} stage${plan.stageCount !== 1 ? 's' : ''}` +
+        (parallelStageCount > 0 ? ` (${parallelStageCount} parallel)` : ' (sequential)'),
     );
     parts.push(
       `**Inputs:** ${inputNodes.length} \u00B7 **Outputs:** ${outputNodes.length} \u00B7 **AI-processed:** ${aiNodes.length}`,
@@ -1652,38 +1648,78 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
     if (withContent.length > 0)
       parts.push(`**Pre-loaded content:** ${withContent.length} nodes (will bypass AI)`);
 
-    // Time estimation: ~5-8s per AI call, parallel stages share the max
+    // ── Execution plan metrics ─────────────────────────────────────────────
+    const pctParallel = Math.round(plan.parallelismScore * 100);
+    parts.push(
+      `**Parallelism:** ${pctParallel}% efficiency` +
+        (plan.parallelismScore >= 0.75
+          ? ' \u2014 highly parallel'
+          : plan.parallelismScore >= 0.4
+            ? ' \u2014 moderate'
+            : ' \u2014 mostly sequential'),
+    );
+
+    // ── Critical path ──────────────────────────────────────────────────────
+    if (plan.criticalPath.length > 1) {
+      const pathLabels = plan.criticalPath.map(
+        (id) => nodes.find((nd) => nd.id === id)?.data.label ?? id,
+      );
+      parts.push(
+        `**Critical path (${plan.criticalPath.length} nodes):** ${pathLabels.join(' \u2192 ')}`,
+      );
+    }
+
+    // ── Bottlenecks ────────────────────────────────────────────────────────
+    if (plan.bottleneckIds.length > 0) {
+      // Rank bottlenecks by downstream count, show top 3
+      const ranked = [...plan.bottleneckIds]
+        .sort((a, b) => (plan.downstreamCount.get(b) || 0) - (plan.downstreamCount.get(a) || 0))
+        .slice(0, 3);
+      const bottleneckLabels = ranked.map((id) => {
+        const label = nodes.find((nd) => nd.id === id)?.data.label ?? id;
+        const dc = plan.downstreamCount.get(id) || 0;
+        return dc > 0 ? `${label} (${dc} downstream)` : label;
+      });
+      const prefix = cidMode === 'poirot' ? '\u26A0\uFE0F **Bottlenecks**' : '**Bottlenecks**';
+      parts.push(`${prefix}: ${bottleneckLabels.join(', ')}`);
+    }
+
+    // ── Independent branches ───────────────────────────────────────────────
+    if (plan.independentBranches.length > 1) {
+      parts.push(
+        `**Independent branches:** ${plan.independentBranches.length} disconnected sub-graphs ` +
+          `(${plan.independentBranches.map((b) => b.length + ' node' + (b.length !== 1 ? 's' : '')).join(', ')})`,
+      );
+    }
+
+    // ── Time estimate ──────────────────────────────────────────────────────
     const stageEstimates: number[] = [];
-    for (const level of stages) {
-      const ids = levelGroups.get(level) || [];
-      const aiCount = ids.filter((id) => {
-        const n = nodes.find((nd) => nd.id === id);
-        if (!n) return false;
-        const hasRichContent = (n.data.content?.length ?? 0) > 50 && !n.data.aiPrompt;
-        return !hasRichContent && n.data.category !== 'input';
+    for (const stageNodes of plan.stages) {
+      const aiCount = stageNodes.filter((id) => {
+        const nd = nodes.find((n) => n.id === id);
+        if (!nd) return false;
+        const hasRichContent = (nd.data.content?.length ?? 0) > 50 && !nd.data.aiPrompt;
+        return !hasRichContent && nd.data.category !== 'input';
       }).length;
-      stageEstimates.push(aiCount > 0 ? 7 : 0); // ~7s per AI stage (parallel within stage)
+      stageEstimates.push(aiCount > 0 ? 7 : 0);
     }
     const totalSec = stageEstimates.reduce((a, b) => a + b, 0);
     if (totalSec > 0)
       parts.push(
-        `**Est. time:** ~${totalSec}s (${stages.length} stage${stages.length > 1 ? 's' : ''}, AI calls run in parallel within each stage)`,
+        `**Est. time:** ~${totalSec}s (${plan.stageCount} stage${plan.stageCount > 1 ? 's' : ''}, AI calls run in parallel within each stage)`,
       );
     parts.push('');
 
+    // ── Execution order ────────────────────────────────────────────────────
     parts.push('**Execution order:**');
-    for (const level of stages) {
-      const levelNodeIds = levelGroups.get(level) || [];
-      const labels = levelNodeIds.map((id) => {
-        const n = nodes.find((nd) => nd.id === id);
-        return n?.data.label ?? id;
-      });
+    plan.stages.forEach((stageNodes, idx) => {
+      const labels = stageNodes.map((id) => nodes.find((nd) => nd.id === id)?.data.label ?? id);
       if (labels.length === 1) {
-        parts.push(`${level + 1}. ${labels[0]}`);
+        parts.push(`${idx + 1}. ${labels[0]}`);
       } else {
-        parts.push(`${level + 1}. ${labels.join(' \u2016 ')} *(parallel)*`);
+        parts.push(`${idx + 1}. ${labels.join(' \u2016 ')} *(parallel)*`);
       }
-    }
+    });
 
     const tail =
       cidMode === 'poirot'

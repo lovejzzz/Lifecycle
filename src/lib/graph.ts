@@ -332,6 +332,215 @@ export function validateGraphInvariants(
   return { valid: issues.filter((i) => i.severity === 'error').length === 0, issues };
 }
 
+// ─── Execution Plan ─────────────────────────────────────────────────────────
+
+export interface ExecutionPlan {
+  /** Nodes grouped by parallel execution stage (level 0 runs first). */
+  stages: string[][];
+  /** Total number of parallel stages. */
+  stageCount: number;
+  /** Ordered list of node IDs on the longest dependency chain (the critical path). */
+  criticalPath: string[];
+  /**
+   * Parallelism efficiency: 0 = fully sequential, 1 = fully parallel.
+   * Computed as (nodeCount - stageCount) / max(nodeCount - 1, 1).
+   */
+  parallelismScore: number;
+  /**
+   * Bottleneck node IDs — nodes whose removal would shorten the critical path.
+   * These are the interior nodes of the critical path (not sources/sinks).
+   */
+  bottleneckIds: string[];
+  /**
+   * Independent branches: lists of node IDs that are topologically disconnected
+   * from each other (weakly connected components with >1 component).
+   */
+  independentBranches: string[][];
+  /**
+   * For each node: how many nodes transitively depend on it (downstream count).
+   * High values = high-impact nodes; used to rank bottlenecks.
+   */
+  downstreamCount: Map<string, number>;
+}
+
+/**
+ * Build a comprehensive execution plan from a workflow graph.
+ * Pure function — no side effects, fully testable.
+ */
+export function buildExecutionPlan(
+  nodes: Array<{ id: string }>,
+  edges: Array<{ source: string; target: string }>,
+): ExecutionPlan {
+  const nodeIds = nodes.map((n) => n.id);
+  const n = nodeIds.length;
+
+  if (n === 0) {
+    return {
+      stages: [],
+      stageCount: 0,
+      criticalPath: [],
+      parallelismScore: 1,
+      bottleneckIds: [],
+      independentBranches: [],
+      downstreamCount: new Map(),
+    };
+  }
+
+  // ── Adjacency lists ──────────────────────────────────────────────────────
+  const adj = new Map<string, string[]>(); // forward edges
+  const radj = new Map<string, string[]>(); // reverse edges
+  for (const id of nodeIds) {
+    adj.set(id, []);
+    radj.set(id, []);
+  }
+  for (const e of edges) {
+    if (adj.has(e.source) && adj.has(e.target)) {
+      adj.get(e.source)!.push(e.target);
+      radj.get(e.target)!.push(e.source);
+    }
+  }
+
+  // ── Topological order + levels (reuse existing topoSort logic) ──────────
+  const inDeg = new Map<string, number>();
+  for (const id of nodeIds) inDeg.set(id, 0);
+  for (const e of edges) {
+    if (inDeg.has(e.target)) inDeg.set(e.target, (inDeg.get(e.target) || 0) + 1);
+  }
+
+  const queue: string[] = [];
+  const levels = new Map<string, number>();
+  for (const id of nodeIds) {
+    if ((inDeg.get(id) || 0) === 0) {
+      queue.push(id);
+      levels.set(id, 0);
+    }
+  }
+  const order: string[] = [];
+  while (queue.length > 0) {
+    const id = queue.shift()!;
+    order.push(id);
+    for (const next of adj.get(id) || []) {
+      const newDeg = (inDeg.get(next) || 1) - 1;
+      inDeg.set(next, newDeg);
+      levels.set(next, Math.max(levels.get(next) || 0, (levels.get(id) || 0) + 1));
+      if (newDeg === 0) queue.push(next);
+    }
+  }
+  // Nodes not reached by topo sort (cycle) get level 0
+  for (const id of nodeIds) {
+    if (!levels.has(id)) levels.set(id, 0);
+  }
+
+  // ── Stages ───────────────────────────────────────────────────────────────
+  const stageBuckets = new Map<number, string[]>();
+  for (const id of order.length === n ? order : nodeIds) {
+    const lv = levels.get(id) ?? 0;
+    if (!stageBuckets.has(lv)) stageBuckets.set(lv, []);
+    stageBuckets.get(lv)!.push(id);
+  }
+  const sortedLevelKeys = [...stageBuckets.keys()].sort((a, b) => a - b);
+  const stages = sortedLevelKeys.map((lv) => stageBuckets.get(lv)!);
+  const stageCount = stages.length;
+
+  // ── Parallelism score ─────────────────────────────────────────────────────
+  const parallelismScore = n <= 1 ? 1 : (n - stageCount) / (n - 1);
+
+  // ── Critical path (longest path through DAG) ─────────────────────────────
+  // dp[id] = length of longest path ending at id (number of nodes including itself)
+  const dp = new Map<string, number>();
+  const prev = new Map<string, string | null>(); // predecessor on longest path
+  for (const id of nodeIds) {
+    dp.set(id, 1);
+    prev.set(id, null);
+  }
+  // Process in topological order
+  for (const id of order) {
+    for (const next of adj.get(id) || []) {
+      const candidate = (dp.get(id) || 1) + 1;
+      if (candidate > (dp.get(next) || 1)) {
+        dp.set(next, candidate);
+        prev.set(next, id);
+      }
+    }
+  }
+
+  // Find the sink with the maximum dp value (the end of the critical path)
+  let maxLen = 0;
+  let criticalSink = nodeIds[0];
+  for (const id of nodeIds) {
+    const len = dp.get(id) || 1;
+    if (len > maxLen) {
+      maxLen = len;
+      criticalSink = id;
+    }
+  }
+
+  // Trace back from the critical sink
+  const criticalPath: string[] = [];
+  let cur: string | null | undefined = criticalSink;
+  while (cur) {
+    criticalPath.unshift(cur);
+    cur = prev.get(cur);
+  }
+
+  // ── Bottleneck nodes (interior of critical path) ──────────────────────────
+  // A bottleneck is a node on the critical path that is neither the first source
+  // nor the final sink — removing it would shorten the path.
+  const bottleneckIds =
+    criticalPath.length > 2 ? criticalPath.slice(1, criticalPath.length - 1) : [];
+
+  // ── Downstream count (distinct reachable nodes) ───────────────────────────
+  // BFS/DFS from each node to count how many *distinct* nodes are reachable.
+  // Memoized via a reachability set cache so shared sub-graphs are only traversed once.
+  const reachableCache = new Map<string, Set<string>>();
+  const getReachable = (id: string): Set<string> => {
+    if (reachableCache.has(id)) return reachableCache.get(id)!;
+    // Guard against cycles by inserting an empty set first (cycle-safe)
+    const reached = new Set<string>();
+    reachableCache.set(id, reached);
+    for (const child of adj.get(id) || []) {
+      reached.add(child);
+      for (const grandchild of getReachable(child)) reached.add(grandchild);
+    }
+    return reached;
+  };
+  const downstreamCount = new Map<string, number>();
+  for (const id of nodeIds) {
+    downstreamCount.set(id, getReachable(id).size);
+  }
+
+  // ── Independent branches (weakly connected components) ───────────────────
+  const uf = new Map<string, string>();
+  for (const id of nodeIds) uf.set(id, id);
+  const find = (x: string): string => {
+    if (uf.get(x) !== x) uf.set(x, find(uf.get(x)!));
+    return uf.get(x)!;
+  };
+  const union = (a: string, b: string) => uf.set(find(a), find(b));
+  for (const e of edges) {
+    if (uf.has(e.source) && uf.has(e.target)) union(e.source, e.target);
+  }
+  const componentBuckets = new Map<string, string[]>();
+  for (const id of nodeIds) {
+    const root = find(id);
+    if (!componentBuckets.has(root)) componentBuckets.set(root, []);
+    componentBuckets.get(root)!.push(id);
+  }
+  const independentBranches = [...componentBuckets.values()].filter((b) => b.length > 0);
+  // Only report as "independent" when there is more than one component
+  const reportedBranches = independentBranches.length > 1 ? independentBranches : [];
+
+  return {
+    stages,
+    stageCount,
+    criticalPath,
+    parallelismScore,
+    bottleneckIds,
+    independentBranches: reportedBranches,
+    downstreamCount,
+  };
+}
+
 // ─── Node Utilities ─────────────────────────────────────────────────────────
 
 export const CATEGORY_LABELS: Record<NodeCategory, string> = {
