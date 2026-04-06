@@ -8,7 +8,10 @@ import {
   normalizeDecisionToOption,
   formatDecisionSummary,
   buildDecisionContextSection,
+  assessDecisionInputSufficiency,
+  buildDecisionContextValue,
   DECISION_LOW_CONFIDENCE_THRESHOLD,
+  DECISION_MIN_INPUT_LENGTH,
   DECISION_FIELD_SYNONYMS,
   DECISION_FIELD_RE,
 } from '../decision';
@@ -1103,5 +1106,190 @@ describe('formatDecisionSummary — alternatives display', () => {
   it('formats complete N-way decision summary correctly', () => {
     const result = formatDecisionSummary('escalate', 0.65, 'Mixed signals.', ['defer', 'approve']);
     expect(result).toBe('escalate — Mixed signals. (65%) [alt: defer]');
+  });
+});
+
+// ── assessDecisionInputSufficiency ───────────────────────────────────────────
+
+describe('assessDecisionInputSufficiency', () => {
+  it('returns null for healthy upstream data', () => {
+    const data =
+      '[Feature Review]:\nAll tests pass. Coverage is 87%. The code is clean and well-structured with no critical issues found during review.';
+    expect(assessDecisionInputSufficiency(data)).toBeNull();
+  });
+
+  it('returns empty-input warning when upstreamData is blank', () => {
+    const result = assessDecisionInputSufficiency('');
+    expect(result).not.toBeNull();
+    expect(result).toContain('No upstream data');
+    expect(result).toContain('CONFIDENCE ≤ 0.4');
+  });
+
+  it('returns empty-input warning when upstreamData is only whitespace', () => {
+    const result = assessDecisionInputSufficiency('   \n\t  ');
+    expect(result).not.toBeNull();
+    expect(result).toContain('No upstream data');
+  });
+
+  it('returns all-error warning when every block is tagged [ERROR]', () => {
+    const data =
+      '[Build Step [ERROR]]:\nCompilation failed.\n\n[Test Suite [ERROR]]:\nRunner crashed.';
+    const result = assessDecisionInputSufficiency(data);
+    expect(result).not.toBeNull();
+    expect(result).toContain('All upstream nodes failed');
+    expect(result).toContain('CONFIDENCE ≤ 0.5');
+  });
+
+  it('does NOT return all-error warning when only some blocks have errors', () => {
+    const data = '[Build Step [ERROR]]:\nFailed.\n\n[Test Suite]:\nAll tests pass.';
+    const result = assessDecisionInputSufficiency(data);
+    // Mixed state: one error and one success — data is usable, so no all-error warning
+    // (may return sparse warning if total text is short)
+    expect(result).not.toContain('All upstream nodes failed');
+  });
+
+  it('returns sparse warning for very short upstream data', () => {
+    const short = 'ok';
+    const result = assessDecisionInputSufficiency(short);
+    expect(result).not.toBeNull();
+    expect(result).toContain('sparse');
+    expect(result).toContain('CONFIDENCE ≤ 0.6');
+  });
+
+  it(`returns sparse warning when data is below DECISION_MIN_INPUT_LENGTH (${DECISION_MIN_INPUT_LENGTH} chars)`, () => {
+    const belowThreshold = 'a'.repeat(DECISION_MIN_INPUT_LENGTH - 1);
+    const result = assessDecisionInputSufficiency(belowThreshold);
+    expect(result).not.toBeNull();
+    expect(result).toContain('sparse');
+  });
+
+  it('returns null when data is exactly at the minimum length', () => {
+    const atThreshold = 'a'.repeat(DECISION_MIN_INPUT_LENGTH);
+    expect(assessDecisionInputSufficiency(atThreshold)).toBeNull();
+  });
+
+  it('returns null for data well above the minimum length', () => {
+    const healthy = 'The upstream node produced extensive results. '.repeat(10);
+    expect(assessDecisionInputSufficiency(healthy)).toBeNull();
+  });
+
+  it('all-error check requires bracket tags — plain "ERROR" text does not trigger it', () => {
+    // "ERROR" in plain text without bracket notation should not trigger all-error path.
+    // The data is well above DECISION_MIN_INPUT_LENGTH so sparse warning is also not triggered.
+    const data =
+      'The process encountered an ERROR during step 3, but partial results are available ' +
+      'for review. The team has investigated and found a workaround that allows the workflow to continue.';
+    const result = assessDecisionInputSufficiency(data);
+    // long enough (>80 chars), no bracketed [ERROR] blocks → null
+    expect(result).toBeNull();
+  });
+});
+
+// ── buildDecisionContextValue ─────────────────────────────────────────────────
+
+describe('buildDecisionContextValue', () => {
+  it('returns just the decision when no confidence or reasoning', () => {
+    expect(buildDecisionContextValue('approve')).toBe('approve');
+  });
+
+  it('includes confidence in parentheses', () => {
+    const result = buildDecisionContextValue('reject', 0.78);
+    expect(result).toBe('reject (confidence: 0.78)');
+  });
+
+  it('includes two decimal places for confidence', () => {
+    const result = buildDecisionContextValue('escalate', 0.9);
+    expect(result).toBe('escalate (confidence: 0.90)');
+  });
+
+  it('appends reasoning after em-dash separator', () => {
+    const result = buildDecisionContextValue('approve', 0.92, 'All quality gates passed.');
+    expect(result).toContain('approve (confidence: 0.92) — ');
+    expect(result).toContain('All quality gates passed');
+  });
+
+  it('includes reasoning without confidence', () => {
+    const result = buildDecisionContextValue('reject', undefined, 'Coverage is too low.');
+    expect(result).toContain('reject — ');
+    expect(result).toContain('Coverage is too low');
+  });
+
+  it('truncates long reasoning at word boundary', () => {
+    const longReasoning = 'word '.repeat(40).trim(); // 200 chars
+    const result = buildDecisionContextValue('approve', 0.8, longReasoning, 120);
+    // Should be truncated with ellipsis
+    expect(result).toContain('…');
+    // The reasoning portion should not exceed the limit significantly
+    const reasoningPart = result.split(' — ')[1];
+    expect(reasoningPart.length).toBeLessThanOrEqual(130);
+  });
+
+  it('does not truncate reasoning under the limit', () => {
+    const shortReasoning = 'Short reasoning.';
+    const result = buildDecisionContextValue('approve', 0.85, shortReasoning);
+    expect(result).not.toContain('…');
+    expect(result).toContain('Short reasoning.');
+  });
+
+  it('handles empty reasoning string as if no reasoning', () => {
+    const result = buildDecisionContextValue('approve', 0.9, '');
+    expect(result).toBe('approve (confidence: 0.90)');
+  });
+
+  it('handles whitespace-only reasoning as if no reasoning', () => {
+    const result = buildDecisionContextValue('approve', 0.9, '   ');
+    expect(result).toBe('approve (confidence: 0.90)');
+  });
+
+  it('respects custom maxReasoningChars', () => {
+    const reasoning = 'The evidence strongly supports approval given high test coverage.';
+    const result = buildDecisionContextValue('approve', 0.9, reasoning, 30);
+    expect(result).toContain('…');
+    const reasoningPart = result.split(' — ')[1];
+    expect(reasoningPart.length).toBeLessThanOrEqual(40);
+  });
+});
+
+// ── getDecisionSystemPrompt: empty options ───────────────────────────────────
+
+describe('getDecisionSystemPrompt: empty options', () => {
+  it('produces a valid prompt when options is empty', () => {
+    const prompt = getDecisionSystemPrompt([]);
+    expect(prompt).toBeTruthy();
+    expect(prompt).toContain('DECISION:');
+    expect(prompt).toContain('CONFIDENCE:');
+    expect(prompt).toContain('REASONING:');
+  });
+
+  it('includes no-options warning when options is empty', () => {
+    const prompt = getDecisionSystemPrompt([]);
+    expect(prompt).toContain('No specific decision options have been configured');
+  });
+
+  it('does not include a numbered options list when options is empty', () => {
+    const prompt = getDecisionSystemPrompt([]);
+    expect(prompt).not.toMatch(/^\s*1\./m);
+  });
+
+  it('still embeds node label in empty-options prompt', () => {
+    const prompt = getDecisionSystemPrompt([], 'Quality Gate');
+    expect(prompt).toContain('"Quality Gate"');
+  });
+
+  it('still includes agent hint in empty-options prompt for rowan', () => {
+    const prompt = getDecisionSystemPrompt([], undefined, undefined, 'rowan');
+    expect(prompt).toContain('ROWAN DECISION STYLE');
+  });
+
+  it('still includes agent hint in empty-options prompt for poirot', () => {
+    const prompt = getDecisionSystemPrompt([], undefined, undefined, 'poirot');
+    expect(prompt).toContain('POIROT DECISION STYLE');
+  });
+
+  it('handles normal options correctly when options has items (regression)', () => {
+    const prompt = getDecisionSystemPrompt(['approve', 'reject']);
+    expect(prompt).toContain('1. approve');
+    expect(prompt).toContain('2. reject');
+    expect(prompt).not.toContain('No specific decision options');
   });
 });

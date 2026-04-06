@@ -110,6 +110,30 @@ export function getDecisionSystemPrompt(
   agentName?: string,
   sharedContext?: Record<string, unknown>,
 ): string {
+  // ── Empty options safety ──
+  // When no options are configured (no outgoing decision-is edges and no
+  // decisionOptions on the node), produce a graceful open-ended prompt rather
+  // than a numbered list with nothing in it.
+  if (options.length === 0) {
+    const contextLine = nodeLabel
+      ? `\n\nDecision context: "${nodeLabel}"${nodeDescription ? ` — ${nodeDescription}` : ''}.`
+      : '';
+    const agentHint = agentName ? (DECISION_AGENT_HINTS[agentName.toLowerCase()] ?? '') : '';
+    const sharedContextSection =
+      sharedContext && Object.keys(sharedContext).length > 0
+        ? buildDecisionContextSection(sharedContext)
+        : '';
+    return (
+      `You are a decision-making agent. Analyze the input and determine the best routing path.${contextLine}${sharedContextSection}` +
+      `\n\n⚠️  No specific decision options have been configured for this node. ` +
+      `Infer the most appropriate path name from the upstream evidence and the node context. ` +
+      `Use a short, descriptive label (e.g. "approve", "reject", "escalate", "retry").` +
+      `\n\nYou MUST respond using this exact format:\n\nDECISION: <chosen path>\nCONFIDENCE: <0.0–1.0>\nREASONING: <one sentence>\n\n` +
+      `Rules:\n- Do NOT add any text before "DECISION:" on the first line.\n- CONFIDENCE must be a decimal between 0.0 and 1.0.\n- If CONFIDENCE is below 0.5, explain in REASONING what information would help.` +
+      agentHint
+    );
+  }
+
   const optionsList = options.map((o, i) => `  ${i + 1}. ${o}`).join('\n');
   const optionNames = options.map((o) => `"${o}"`).join(', ');
   const multiWay = options.length > 2;
@@ -470,6 +494,124 @@ export function normalizeDecisionToOption(decision: string, options: string[]): 
  */
 export function findBestMatchingOption(decision: string, options: string[]): string | null {
   return normalizeDecisionToOption(decision, options);
+}
+
+// ── Input sufficiency ─────────────────────────────────────────────────────────
+
+/**
+ * Minimum character count for upstream data to be considered non-trivially
+ * informative. Shorter payloads trigger a sufficiency warning in the prompt.
+ */
+export const DECISION_MIN_INPUT_LENGTH = 80;
+
+/**
+ * Assess whether the upstream data passed to a decision node is sufficient for
+ * a reliable routing choice. Returns a warning string to append to the decision
+ * prompt when inputs are thin, empty, or all-error — and `null` when inputs
+ * look healthy.
+ *
+ * Three degraded states are detected:
+ *   - **Empty**: upstreamData is blank (no upstream nodes connected or all
+ *     upstream results were empty strings).
+ *   - **All-error**: every upstream block is tagged `[ERROR]` — the node has
+ *     nothing to route on except failure signals.
+ *   - **Sparse**: total upstream content is below `DECISION_MIN_INPUT_LENGTH`
+ *     characters (e.g. all upstream nodes ran but produced minimal output).
+ *
+ * The returned hint instructs the LLM to:
+ *   1. Do its best with what it has.
+ *   2. Reflect the uncertainty in a lower CONFIDENCE score.
+ *   3. Use its REASONING to say what additional information would help.
+ *
+ * @param upstreamData  The assembled upstream context string (may be empty)
+ * @returns             Warning hint string, or `null` when inputs are healthy
+ */
+export function assessDecisionInputSufficiency(upstreamData: string): string | null {
+  const trimmed = upstreamData.trim();
+
+  if (trimmed.length === 0) {
+    return (
+      '\n\n⚠️  INPUT QUALITY: No upstream data is available. ' +
+      'You must make a decision based on the node description and options alone. ' +
+      'Set CONFIDENCE ≤ 0.4 and use REASONING to explain what information would produce a more reliable decision.'
+    );
+  }
+
+  // Detect all-error state: every [NodeLabel] block carries an [ERROR] tag
+  const blockPattern = /\[([^\]]+)\]/g;
+  const blocks = [...trimmed.matchAll(blockPattern)].map((m) => m[1]);
+  const hasAnyBlock = blocks.length > 0;
+  const allError = hasAnyBlock && blocks.every((b) => b.toUpperCase().includes('ERROR'));
+  if (allError) {
+    return (
+      '\n\n⚠️  INPUT QUALITY: All upstream nodes failed with errors. ' +
+      'Route to an error-handling or fallback branch when available. ' +
+      'Set CONFIDENCE ≤ 0.5 and document the error context in REASONING.'
+    );
+  }
+
+  if (trimmed.length < DECISION_MIN_INPUT_LENGTH) {
+    return (
+      '\n\n⚠️  INPUT QUALITY: Upstream data is sparse (limited content from upstream nodes). ' +
+      'Make the best decision possible but set CONFIDENCE ≤ 0.6 and note ' +
+      'in REASONING what additional context would improve reliability.'
+    );
+  }
+
+  return null;
+}
+
+// ── Shared context value builder ──────────────────────────────────────────────
+
+/**
+ * Build the string value stored under `decision:<NodeLabel>` in the workflow's
+ * shared node context (`_sharedNodeContext`).
+ *
+ * Previously, only the decision label (and optionally confidence) was stored:
+ *   `"approve (confidence: 0.85)"`
+ *
+ * This function enriches the value by appending a truncated excerpt of the
+ * LLM's reasoning so downstream nodes — including other decision nodes — can
+ * understand *why* a routing choice was made, not just *what* was chosen.
+ *
+ *   `"approve (confidence: 0.85) — All quality gates passed."`
+ *
+ * The reasoning excerpt is capped at `maxReasoningChars` to keep shared
+ * context compact. The separator `" — "` visually distinguishes the label
+ * from the reasoning, matching the format already used by `formatDecisionSummary`.
+ *
+ * @param decision         Canonical chosen option label (e.g. "approve")
+ * @param confidence       Optional 0.0–1.0 confidence score
+ * @param reasoning        Optional explanation from the LLM
+ * @param maxReasoningChars  Max chars to keep from reasoning (default: 120)
+ * @returns                Formatted shared-context string
+ */
+export function buildDecisionContextValue(
+  decision: string,
+  confidence?: number,
+  reasoning?: string,
+  maxReasoningChars = 120,
+): string {
+  const confPart = confidence !== undefined ? ` (confidence: ${confidence.toFixed(2)})` : '';
+
+  const reasoningTrimmed = reasoning ? reasoning.trim() : '';
+  if (!reasoningTrimmed) return `${decision}${confPart}`;
+
+  // Truncate reasoning and ensure it ends cleanly (no mid-word cut)
+  let excerpt = reasoningTrimmed;
+  if (excerpt.length > maxReasoningChars) {
+    const cut = excerpt.lastIndexOf(' ', maxReasoningChars);
+    excerpt =
+      (cut > maxReasoningChars * 0.6
+        ? excerpt.slice(0, cut)
+        : excerpt.slice(0, maxReasoningChars)) + '…';
+  }
+  // Strip trailing punctuation before adding ellipsis if we truncated
+  if (!excerpt.endsWith('…')) {
+    excerpt = excerpt.replace(/[.!?]+$/, '') + '.';
+  }
+
+  return `${decision}${confPart} — ${excerpt}`;
 }
 
 // ── Display formatting ────────────────────────────────────────────────────────

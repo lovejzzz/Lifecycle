@@ -38,6 +38,8 @@ import {
   parseDecisionOutput,
   decisionMatchesCondition,
   normalizeDecisionToOption,
+  assessDecisionInputSufficiency,
+  buildDecisionContextValue,
   DECISION_LOW_CONFIDENCE_THRESHOLD,
 } from '@/lib/decision';
 import { generateProactiveSuggestions, formatSuggestionsMessage } from '@/lib/suggestions';
@@ -197,6 +199,14 @@ export const createExecutionSlice: StateCreator<LifecycleStore, [], [], Executio
         store._sharedNodeContext,
       );
 
+      // Assess upstream input quality and append a calibration hint when inputs
+      // are empty, all-error, or sparse. This keeps confidence scores honest
+      // and nudges the LLM toward fallback branches when nothing is usable.
+      const inputSufficiencyHint = assessDecisionInputSufficiency(upstreamData);
+      const userContent = inputSufficiencyHint
+        ? `${decisionPrompt}\n\n--- UPSTREAM DATA ---\n${upstreamData}${inputSufficiencyHint}`
+        : `${decisionPrompt}\n\n--- UPSTREAM DATA ---\n${upstreamData}`;
+
       try {
         store.updateNodeData(nodeId, {
           executionStatus: 'running',
@@ -207,7 +217,7 @@ export const createExecutionSlice: StateCreator<LifecycleStore, [], [], Executio
           messages: [
             {
               role: 'user',
-              content: `${decisionPrompt}\n\n--- UPSTREAM DATA ---\n${upstreamData}`,
+              content: userContent,
             },
           ],
           model: store.cidAIModel,
@@ -240,7 +250,7 @@ export const createExecutionSlice: StateCreator<LifecycleStore, [], [], Executio
               messages: [
                 {
                   role: 'user',
-                  content: `${decisionPrompt}\n\n--- UPSTREAM DATA ---\n${upstreamData}`,
+                  content: userContent,
                 },
                 { role: 'assistant' as const, content: output },
                 {
@@ -296,6 +306,21 @@ export const createExecutionSlice: StateCreator<LifecycleStore, [], [], Executio
           ...(parsed.reasoning ? { decisionExplanation: parsed.reasoning } : {}),
           ...(parsed.alternatives?.length ? { decisionAlternatives: parsed.alternatives } : {}),
         });
+        // Also persist the decision into the shared node context for single-node
+        // executions (outside of executeWorkflow). This ensures downstream prompts
+        // can reference the routing decision even when run individually.
+        const decisionContextKey = `decision:${d.label}`;
+        const decisionContextValue = buildDecisionContextValue(
+          normalizedDecision,
+          parsed.confidence,
+          parsed.reasoning,
+        );
+        set((s) => ({
+          _sharedNodeContext: {
+            ...s._sharedNodeContext,
+            [decisionContextKey]: decisionContextValue,
+          },
+        }));
         cidLog('executeNode:decision', {
           nodeId,
           label: d.label,
@@ -1279,11 +1304,10 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
             workflowContext.decisions[nodeId] = decision;
             // Persist decision to shared context so downstream node execution prompts
             // can reference it without an extra read_context tool call.
+            // buildDecisionContextValue enriches the stored value with a reasoning
+            // excerpt so downstream nodes understand *why* the routing was chosen.
             const decisionContextKey = `decision:${nodeLabel}`;
-            const decisionContextValue =
-              confidence !== undefined
-                ? `${decision} (confidence: ${confidence.toFixed(2)})`
-                : decision;
+            const decisionContextValue = buildDecisionContextValue(decision, confidence, reasoning);
             set((s) => ({
               _sharedNodeContext: {
                 ...s._sharedNodeContext,
