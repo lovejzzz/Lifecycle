@@ -1,5 +1,39 @@
 # Changelog
 
+### 2026-04-06 — Round 86: Decision Node Intelligence — Input Sufficiency, Richer Shared Context, Empty Options Safety
+
+**Improvement — Decision Node Intelligence (Area 2):**
+
+**Three focused improvements to decision node prompt engineering and context propagation:**
+
+**`assessDecisionInputSufficiency()` — upstream input quality check:**
+- New function in `decision.ts` that detects three degraded input states before any LLM call is made:
+  1. **Empty**: no upstream data at all (no upstream nodes connected or all results are empty strings)
+  2. **All-error**: every upstream block is tagged `[ERROR]` — nothing to route on except failure signals
+  3. **Sparse**: total upstream content is below `DECISION_MIN_INPUT_LENGTH` (80 chars) — upstream ran but produced minimal output
+- Each state injects a calibrated ⚠️ warning appended to the user message, with:
+  - An explicit `CONFIDENCE` cap (≤0.4 / ≤0.5 / ≤0.6 respectively) so confidence scores honestly reflect data quality
+  - A directive to use `REASONING` to specify what additional context would improve reliability
+  - Error-state guidance to prefer fallback/error-handling branches when available
+- Wired into `executeNode` (decision path) for both standalone and workflow execution, including low-confidence retries
+
+**`buildDecisionContextValue()` — reasoning-enriched shared context:**
+- Previously, only the label (and optionally confidence) was stored under `decision:<NodeLabel>`: `"approve (confidence: 0.85)"`
+- Now appends a ≤120-char reasoning excerpt with em-dash separator: `"approve (confidence: 0.85) — All quality gates passed."`
+- Downstream nodes — including chained decision nodes — now see the *why* of a routing choice, not just the *what*
+- Reasoning is word-boundary-truncated to stay compact; trailing punctuation is normalized before adding ellipsis
+- Used in both `executeWorkflow` and `executeNode` paths for consistency
+- `executeNode` (standalone) now also writes to `_sharedNodeContext` so single-node runs propagate context too (previously only `executeWorkflow` did this)
+
+**Empty options safety in `getDecisionSystemPrompt()`:**
+- When `options.length === 0` (no `decision-is` edges and no `decisionOptions` on the node), the previous prompt had an empty numbered list — useless to the LLM
+- Now emits a graceful open-ended prompt asking the LLM to infer the best path name from context and use a short descriptive label (e.g. "approve", "reject", "escalate", "retry")
+- Agent personality hints and shared workflow context are still injected in the zero-options case
+
+**Files changed:** `src/lib/decision.ts`, `src/store/slices/executionSlice.ts`, `src/lib/__tests__/decision.test.ts`
+
+**Test Results:** Build passes. 1851/1851 tests pass (32 new tests — 12 for `assessDecisionInputSufficiency`, 11 for `buildDecisionContextValue`, 7 for empty-options `getDecisionSystemPrompt`, 2 regression guard).
+
 ### 2026-04-06 — Round 85: Decision Node Intelligence — Synonym Parsing, Trailing Prose Fix, Alternatives Display
 
 **Improvement — Decision Node Intelligence (Area 2):**
