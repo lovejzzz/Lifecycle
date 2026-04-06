@@ -1,5 +1,29 @@
 # Changelog
 
+### 2026-04-06 — Round 87: Signal Extraction and Validation for Input/Trigger/Output Nodes
+
+**Improvement — Prompt Engineering + Structured Output Signals (Areas 2 & 5):**
+
+**`extractNodeSignal` extended to 3 new categories (`prompts.ts`):**
+- `input` → extracts `DATA_QUALITY: <value>` line as `[DATA_QUALITY: <value>]` badge
+- `trigger` → detects `TRIGGER_SCHEMA:` section presence as `[TRIGGER_SCHEMA: defined]`
+- `output` → emits `[OUTPUT: ready]` when content is substantive (≥200 chars)
+- Previously these categories returned `null` despite their system prompts instructing the LLM to produce structured markers — those signals were silently dropped, meaning downstream context headers never showed signal badges for input/trigger/output nodes.
+
+**`validateOutput` gains 2 new structural checks (`validate.ts`):**
+- `missing-data-quality-line` for `input` nodes (raised at `'warning'` severity → fires the self-validation refinement loop)
+- `missing-trigger-schema` for `trigger` nodes (same severity → fires refinement)
+- Both checks are case-insensitive, so `data_quality:` and `trigger_schema:` are also accepted
+- Added `input`, `trigger`, `output` to `MIN_LENGTHS` so unusually brief output from these categories is flagged
+
+**`buildRefinementPrompt` maps both new codes to concrete fix instructions (`validate.ts`):**
+- `missing-data-quality-line` → instructs LLM to add `DATA_QUALITY: valid` (or issue description) with format examples
+- `missing-trigger-schema` → instructs LLM to add a structured `TRIGGER_SCHEMA:` block with `event`, `payload`, `conditions` fields
+
+**Tests:** 30 new tests — 18 in `validate.test.ts`, 12 in `prompts.test.ts`.
+
+**Test Results:** Build passes. 1877/1877 tests pass.
+
 ### 2026-04-06 — Round 86: Decision Node Intelligence — Input Sufficiency, Richer Shared Context, Empty Options Safety
 
 **Improvement — Decision Node Intelligence (Area 2):**
