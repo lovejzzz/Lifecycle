@@ -9,6 +9,8 @@ import {
   formatDecisionSummary,
   buildDecisionContextSection,
   DECISION_LOW_CONFIDENCE_THRESHOLD,
+  DECISION_FIELD_SYNONYMS,
+  DECISION_FIELD_RE,
 } from '../decision';
 
 // ── getDecisionSystemPrompt ──────────────────────────────────────────────────
@@ -846,5 +848,260 @@ describe('getDecisionSystemPrompt — sharedContext', () => {
     expect(prompt).toContain('ROWAN DECISION STYLE');
     expect(prompt).toContain('Prior Gate');
     expect(prompt).toContain('passed');
+  });
+});
+
+// ── DECISION_FIELD_RE / DECISION_FIELD_SYNONYMS ──────────────────────────────
+
+describe('DECISION_FIELD_RE', () => {
+  it('matches DECISION: on any line', () => {
+    expect(DECISION_FIELD_RE.test('DECISION: approve')).toBe(true);
+  });
+
+  it('matches VERDICT: on any line', () => {
+    const m = 'Some preamble\nVERDICT: approve'.match(DECISION_FIELD_RE);
+    expect(m?.[1]).toBe('approve');
+  });
+
+  it('matches OUTCOME: on any line', () => {
+    const m = 'OUTCOME: reject\nCONFIDENCE: 0.9'.match(DECISION_FIELD_RE);
+    expect(m?.[1]).toBe('reject');
+  });
+
+  it('matches CHOICE: on any line', () => {
+    const m = 'CHOICE: escalate'.match(DECISION_FIELD_RE);
+    expect(m?.[1]).toBe('escalate');
+  });
+
+  it('matches ROUTE: on any line', () => {
+    const m = 'ROUTE: fast-track'.match(DECISION_FIELD_RE);
+    expect(m?.[1]).toBe('fast-track');
+  });
+
+  it('matches PATH: on any line', () => {
+    const m = 'PATH: defer'.match(DECISION_FIELD_RE);
+    expect(m?.[1]).toBe('defer');
+  });
+
+  it('is case-insensitive', () => {
+    expect(DECISION_FIELD_RE.test('verdict: approve')).toBe(true);
+    expect(DECISION_FIELD_RE.test('Verdict: approve')).toBe(true);
+  });
+
+  it('captures value after the colon', () => {
+    const m = 'VERDICT: approve (confidence: 0.9)'.match(DECISION_FIELD_RE);
+    expect(m?.[1]).toBe('approve (confidence: 0.9)');
+  });
+
+  it('exports all expected synonyms', () => {
+    expect(DECISION_FIELD_SYNONYMS).toContain('DECISION');
+    expect(DECISION_FIELD_SYNONYMS).toContain('VERDICT');
+    expect(DECISION_FIELD_SYNONYMS).toContain('OUTCOME');
+    expect(DECISION_FIELD_SYNONYMS).toContain('CHOICE');
+    expect(DECISION_FIELD_SYNONYMS).toContain('ROUTE');
+    expect(DECISION_FIELD_SYNONYMS).toContain('PATH');
+  });
+});
+
+// ── parseDecisionOutput — synonym field labels ────────────────────────────────
+
+describe('parseDecisionOutput — synonym field labels', () => {
+  it('parses VERDICT: as the decision field', () => {
+    const output = `VERDICT: approve
+CONFIDENCE: 0.88
+REASONING: Code meets all quality gates.`;
+    const result = parseDecisionOutput(output);
+    expect(result.decision).toBe('approve');
+    expect(result.confidence).toBeCloseTo(0.88);
+    expect(result.reasoning).toBe('Code meets all quality gates.');
+  });
+
+  it('parses OUTCOME: as the decision field', () => {
+    const output = `OUTCOME: reject
+CONFIDENCE: 0.91
+REASONING: Tests are failing.`;
+    const result = parseDecisionOutput(output);
+    expect(result.decision).toBe('reject');
+    expect(result.confidence).toBeCloseTo(0.91);
+  });
+
+  it('parses CHOICE: as the decision field (mid-response, not just first line)', () => {
+    const output = `Based on the evidence:
+CHOICE: escalate
+CONFIDENCE: 0.7
+REASONING: Ambiguous signals — escalation is safest.`;
+    const result = parseDecisionOutput(output);
+    expect(result.decision).toBe('escalate');
+    expect(result.confidence).toBeCloseTo(0.7);
+  });
+
+  it('parses ROUTE: as the decision field', () => {
+    const output = `ROUTE: fast-track
+CONFIDENCE: 0.95
+REASONING: All checks passed without issues.`;
+    const result = parseDecisionOutput(output);
+    expect(result.decision).toBe('fast-track');
+    expect(result.confidence).toBeCloseTo(0.95);
+  });
+
+  it('parses PATH: as the decision field', () => {
+    const output = `PATH: defer
+CONFIDENCE: 0.6
+REASONING: Missing data makes decision premature.`;
+    const result = parseDecisionOutput(output);
+    expect(result.decision).toBe('defer');
+  });
+
+  it('strips inline confidence annotation from synonym field', () => {
+    const output = `VERDICT: approve (confidence: 0.9)
+CONFIDENCE: 0.9
+REASONING: Strong evidence.`;
+    const result = parseDecisionOutput(output);
+    expect(result.decision).toBe('approve');
+    expect(result.decision).not.toContain('confidence');
+  });
+
+  it('parses ALTERNATIVES when using synonym field', () => {
+    const output = `VERDICT: approve
+CONFIDENCE: 0.75
+REASONING: Mostly good.
+ALTERNATIVES: defer, escalate`;
+    const result = parseDecisionOutput(output);
+    expect(result.decision).toBe('approve');
+    expect(result.alternatives).toContain('defer');
+    expect(result.alternatives).toContain('escalate');
+  });
+
+  it('is case-insensitive for synonym fields', () => {
+    const output = `verdict: approve
+confidence: 0.8
+reasoning: Looks fine.`;
+    const result = parseDecisionOutput(output);
+    expect(result.decision).toBe('approve');
+    expect(result.confidence).toBeCloseTo(0.8);
+  });
+});
+
+// ── parseDecisionOutput — trailing prose truncation ──────────────────────────
+
+describe('parseDecisionOutput — trailing prose truncation in REASONING', () => {
+  it('stops REASONING capture at a blank line', () => {
+    const output = `DECISION: approve
+CONFIDENCE: 0.85
+REASONING: All quality gates passed.
+
+I hope this analysis was helpful! Let me know if you need further clarification.`;
+    const result = parseDecisionOutput(output);
+    expect(result.reasoning).toBe('All quality gates passed.');
+    expect(result.reasoning).not.toContain('I hope');
+    expect(result.reasoning).not.toContain('helpful');
+  });
+
+  it('stops REASONING capture at a blank line with whitespace', () => {
+    const output = `DECISION: reject
+CONFIDENCE: 0.9
+REASONING: Tests are failing with 12 errors.
+
+Please fix the issues above before retrying.`;
+    const result = parseDecisionOutput(output);
+    expect(result.reasoning).toBe('Tests are failing with 12 errors.');
+    expect(result.reasoning).not.toContain('Please fix');
+  });
+
+  it('still captures multi-line reasoning that has no blank line separator', () => {
+    const output = `DECISION: escalate
+CONFIDENCE: 0.65
+REASONING: Evidence is ambiguous.
+Multiple signals are conflicting.`;
+    const result = parseDecisionOutput(output);
+    // Both lines should be captured (no blank line separating them)
+    expect(result.reasoning).toContain('ambiguous');
+    expect(result.reasoning).toContain('conflicting');
+  });
+
+  it('still stops REASONING at next structural field even without blank line', () => {
+    const output = `DECISION: approve
+CONFIDENCE: 0.8
+REASONING: Criteria met.
+ALTERNATIVES: defer, escalate`;
+    const result = parseDecisionOutput(output);
+    expect(result.reasoning).toBe('Criteria met.');
+    expect(result.alternatives).toContain('defer');
+  });
+
+  it('handles blank line before ALTERNATIVES correctly (uses struct stop)', () => {
+    // The blank line appears between REASONING and ALTERNATIVES.
+    // struct stop (ALTERNATIVES:) comes first, so reasoning captures correctly.
+    const output = `DECISION: approve
+CONFIDENCE: 0.9
+REASONING: All good.
+
+ALTERNATIVES: defer`;
+    const result = parseDecisionOutput(output);
+    // Blank line stop happens first (before ALTERNATIVES:), so reasoning is clean
+    expect(result.reasoning).toBe('All good.');
+  });
+});
+
+// ── formatDecisionSummary — with alternatives ─────────────────────────────────
+
+describe('formatDecisionSummary — alternatives display', () => {
+  it('appends top alternative when alternatives are provided', () => {
+    const result = formatDecisionSummary('escalate', 0.65, 'Mixed signals.', ['defer', 'approve']);
+    expect(result).toContain('[alt: defer]');
+    expect(result).not.toContain('approve'); // only top alt shown
+  });
+
+  it('appends top alternative with confidence but no reasoning', () => {
+    const result = formatDecisionSummary('approve', 0.75, undefined, ['defer']);
+    expect(result).toBe('approve (75%) [alt: defer]');
+  });
+
+  it('appends top alternative with reasoning but no confidence', () => {
+    const result = formatDecisionSummary('reject', undefined, 'Tests failed.', ['escalate']);
+    expect(result).toBe('reject — Tests failed. [alt: escalate]');
+  });
+
+  it('appends top alternative with no confidence and no reasoning', () => {
+    const result = formatDecisionSummary('defer', undefined, undefined, ['approve']);
+    expect(result).toBe('defer [alt: approve]');
+  });
+
+  it('returns bare decision label with no suffix when alternatives list is empty', () => {
+    const result = formatDecisionSummary('approve', undefined, undefined, []);
+    expect(result).toBe('approve');
+  });
+
+  it('ignores alternatives when first entry is "none"', () => {
+    const result = formatDecisionSummary('approve', 0.9, undefined, ['none']);
+    expect(result).toBe('approve (90%)');
+  });
+
+  it('ignores alternatives when first entry is "NONE" (case-insensitive)', () => {
+    const result = formatDecisionSummary('approve', 0.9, undefined, ['NONE']);
+    expect(result).toBe('approve (90%)');
+  });
+
+  it('omits alt suffix when alternatives parameter is undefined', () => {
+    const result = formatDecisionSummary('approve', 0.9, 'Looks good.');
+    // Existing behaviour unchanged — no [alt: ...] appended
+    expect(result).toBe('approve — Looks good. (90%)');
+    expect(result).not.toContain('alt');
+  });
+
+  it('shows only the first alternative even when multiple are provided', () => {
+    const result = formatDecisionSummary('escalate', 0.7, undefined, [
+      'defer',
+      'approve',
+      'reject',
+    ]);
+    expect(result).toContain('[alt: defer]');
+    expect(result).not.toContain('approve');
+    expect(result).not.toContain('reject');
+  });
+
+  it('formats complete N-way decision summary correctly', () => {
+    const result = formatDecisionSummary('escalate', 0.65, 'Mixed signals.', ['defer', 'approve']);
+    expect(result).toBe('escalate — Mixed signals. (65%) [alt: defer]');
   });
 });

@@ -159,6 +159,37 @@ Rules:
 
 // ── Output parsing ────────────────────────────────────────────────────────────
 
+/**
+ * Field name synonyms that LLMs may emit instead of "DECISION:".
+ *
+ * Some models prefer VERDICT (judicial framing), OUTCOME (neutral), CHOICE
+ * (selection framing), ROUTE/PATH (routing framing). All are accepted as
+ * primary structured fields — not just as first-line fallbacks.
+ *
+ * The names are ordered most-to-least common for regex alternation performance.
+ */
+export const DECISION_FIELD_SYNONYMS = [
+  'DECISION',
+  'VERDICT',
+  'OUTCOME',
+  'CHOICE',
+  'ROUTE',
+  'PATH',
+] as const;
+
+/**
+ * Regex that matches any recognised decision field label at the start of a line.
+ * Captures the value after the colon.
+ *
+ * @example
+ * "VERDICT: approve\n..." → match[1] = "approve"
+ * "ROUTE: escalate\n..." → match[1] = "escalate"
+ */
+export const DECISION_FIELD_RE = new RegExp(
+  `^(?:${DECISION_FIELD_SYNONYMS.join('|')}):\\s*(.+)`,
+  'im',
+);
+
 export interface DecisionParseResult {
   /** The chosen option (normalized, confidence annotation stripped) */
   decision: string;
@@ -242,12 +273,15 @@ export function parseDecisionOutput(output: string): DecisionParseResult {
   }
 
   // ── DECISION ──
-  const decisionMatch = text.match(/^DECISION:\s*(.+)/im);
+  // Use the shared synonym regex so VERDICT:/OUTCOME:/CHOICE:/ROUTE:/PATH: are
+  // all treated as valid DECISION: equivalents regardless of line position.
+  const decisionMatch = text.match(DECISION_FIELD_RE);
+  const synonymAlt = DECISION_FIELD_SYNONYMS.join('|');
   const rawDecision = decisionMatch
     ? decisionMatch[1].replace(/\s*\(confidence[^)]*\)/i, '').trim()
     : text
         .split('\n')[0]
-        .replace(/^(?:DECISION|CHOICE|ROUTE|PATH):\s*/i, '')
+        .replace(new RegExp(`^(?:${synonymAlt}):\\s*`, 'i'), '')
         .trim();
   const decision = rawDecision;
 
@@ -302,16 +336,23 @@ export function parseDecisionOutput(output: string): DecisionParseResult {
   }
 
   // ── REASONING (multi-line) ──
-  // Capture from the REASONING: label to the next structural field (UPPERCASE_WORD:)
-  // or end of text. Handles LLMs that split reasoning across multiple lines.
+  // Capture from the REASONING: label to whichever comes first:
+  //   a) the next structural field (UPPERCASE_WORD:)
+  //   b) a blank line — which indicates LLM "trailing prose" (e.g. "I hope
+  //      this helps!", "Please note:", etc.) that should not pollute reasoning.
+  // Handles LLMs that split the actual reasoning across multiple lines while
+  // still stopping before any post-structured free-form commentary.
   let reasoning: string | undefined;
   const reasoningStart = text.search(/^REASONING:/im);
   if (reasoningStart !== -1) {
     const afterReasoningLabel = text.slice(reasoningStart).replace(/^REASONING:\s*/i, '');
-    const reasoningStop = afterReasoningLabel.match(/\n[A-Z_]{2,}:/);
-    const reasoningContent = reasoningStop
-      ? afterReasoningLabel.slice(0, reasoningStop.index)
-      : afterReasoningLabel;
+    // Find the earliest stopping point: next structural field OR blank line
+    const structStop = afterReasoningLabel.match(/\n[A-Z_]{2,}:/);
+    const blankStop = afterReasoningLabel.match(/\n\s*\n/);
+    const stops = [structStop?.index, blankStop?.index].filter((i): i is number => i !== undefined);
+    const stopIdx = stops.length > 0 ? Math.min(...stops) : undefined;
+    const reasoningContent =
+      stopIdx !== undefined ? afterReasoningLabel.slice(0, stopIdx) : afterReasoningLabel;
     // Collapse internal whitespace/newlines to a single space and trim
     reasoning = reasoningContent.replace(/\s+/g, ' ').trim() || undefined;
   }
@@ -436,13 +477,15 @@ export function findBestMatchingOption(decision: string, options: string[]): str
 /**
  * Format a decision result into a compact human-readable summary for UI display.
  *
- * Combines the decision label, confidence percentage, and optional one-sentence
- * reasoning into a consistent display string. Omits fields that are absent.
+ * Combines the decision label, confidence percentage, optional one-sentence
+ * reasoning, and (for N-way decisions) the top alternative into a consistent
+ * display string. Omits fields that are absent.
  *
- * @param decision    The chosen option label (e.g. "approve")
- * @param confidence  Optional 0.0–1.0 confidence score
- * @param reasoning   Optional explanation (truncated to 80 chars to stay compact)
- * @returns           E.g. "approve (92%)" | "reject — insufficient tests (78%)" | "escalate"
+ * @param decision      The chosen option label (e.g. "approve")
+ * @param confidence    Optional 0.0–1.0 confidence score
+ * @param reasoning     Optional explanation (truncated to 80 chars to stay compact)
+ * @param alternatives  Optional list of runner-up options (first entry shown as hint)
+ * @returns             E.g. "approve (92%)" | "reject — insufficient tests (78%)" | "escalate"
  *
  * @example
  * formatDecisionSummary('approve', 0.92, 'All checks pass.')
@@ -451,6 +494,9 @@ export function findBestMatchingOption(decision: string, options: string[]): str
  * formatDecisionSummary('reject', 0.78)
  * // → "reject (78%)"
  *
+ * formatDecisionSummary('escalate', 0.65, 'Mixed signals.', ['defer', 'approve'])
+ * // → "escalate — Mixed signals. (65%) [alt: defer]"
+ *
  * formatDecisionSummary('escalate')
  * // → "escalate"
  */
@@ -458,21 +504,27 @@ export function formatDecisionSummary(
   decision: string,
   confidence?: number,
   reasoning?: string,
+  alternatives?: string[],
 ): string {
   const confStr = confidence !== undefined ? `${Math.round(confidence * 100)}%` : null;
   // Truncate reasoning to keep the summary compact (≤80 chars, strip trailing punctuation)
   const reasonStr = reasoning
     ? reasoning.slice(0, 80).replace(/[.!?]\s*$/, '') + (reasoning.length > 80 ? '…' : '.')
     : null;
+  // Show the top alternative when provided (N-way decisions only)
+  const topAlt =
+    alternatives && alternatives.length > 0 && alternatives[0].toLowerCase() !== 'none'
+      ? ` [alt: ${alternatives[0]}]`
+      : '';
 
   if (confStr && reasonStr) {
-    return `${decision} — ${reasonStr} (${confStr})`;
+    return `${decision} — ${reasonStr} (${confStr})${topAlt}`;
   }
   if (confStr) {
-    return `${decision} (${confStr})`;
+    return `${decision} (${confStr})${topAlt}`;
   }
   if (reasonStr) {
-    return `${decision} — ${reasonStr}`;
+    return `${decision} — ${reasonStr}${topAlt}`;
   }
-  return decision;
+  return `${decision}${topAlt}`;
 }

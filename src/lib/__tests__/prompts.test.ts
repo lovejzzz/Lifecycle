@@ -1272,6 +1272,32 @@ describe('extractNodeSignal', () => {
     expect(extractNodeSignal('The chosen path is to approve the request.', 'decision')).toBeNull();
   });
 
+  it('extracts decision value from VERDICT: synonym', () => {
+    expect(extractNodeSignal('VERDICT: approve\nCONFIDENCE: 0.92', 'decision')).toBe(
+      '[DECISION: approve | 92%]',
+    );
+  });
+
+  it('extracts decision value from OUTCOME: synonym', () => {
+    expect(extractNodeSignal('OUTCOME: reject\nREASONING: Tests failed.', 'decision')).toBe(
+      '[DECISION: reject]',
+    );
+  });
+
+  it('extracts decision value from CHOICE: synonym', () => {
+    expect(extractNodeSignal('CHOICE: escalate', 'decision')).toBe('[DECISION: escalate]');
+  });
+
+  it('extracts decision value from ROUTE: synonym', () => {
+    expect(extractNodeSignal('ROUTE: fast-track\nCONFIDENCE: 0.85', 'decision')).toBe(
+      '[DECISION: fast-track | 85%]',
+    );
+  });
+
+  it('extracts decision value from PATH: synonym', () => {
+    expect(extractNodeSignal('PATH: defer', 'decision')).toBe('[DECISION: defer]');
+  });
+
   // ── test ──
   it('returns FAIL for test node with FAILED keyword', () => {
     expect(extractNodeSignal('3 tests FAILED: auth.test.ts line 45', 'test')).toBe('[TEST: FAIL]');

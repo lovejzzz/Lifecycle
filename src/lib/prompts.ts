@@ -719,7 +719,9 @@ export function extractNodeSignal(output: string, category: string): string | nu
     }
 
     case 'decision': {
-      const m = text.match(/^DECISION:\s*(.+)/im);
+      // Accept DECISION: and all recognised synonyms so the signal survives
+      // even when the LLM uses VERDICT:, OUTCOME:, CHOICE:, ROUTE:, or PATH:.
+      const m = text.match(/^(?:DECISION|VERDICT|OUTCOME|CHOICE|ROUTE|PATH):\s*(.+)/im);
       if (m) {
         // Strip confidence annotation if present: "approve (confidence: 0.9)"
         const val = m[1]
