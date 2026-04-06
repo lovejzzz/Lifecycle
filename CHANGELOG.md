@@ -1,5 +1,31 @@
 # Changelog
 
+### 2026-04-06 — Round 85: Decision Node Intelligence — Synonym Parsing, Trailing Prose Fix, Alternatives Display
+
+**Improvement — Decision Node Intelligence (Area 2):**
+
+**`parseDecisionOutput` — synonym field support:**
+- Previously only `DECISION:` was matched as a structured decision label in the main regex. `CHOICE:`, `ROUTE:`, `PATH:` were handled only as first-line fallbacks. `VERDICT:` and `OUTCOME:` were not handled at all.
+- Now all six synonyms (`DECISION`, `VERDICT`, `OUTCOME`, `CHOICE`, `ROUTE`, `PATH`) are exported as `DECISION_FIELD_SYNONYMS` and compiled into `DECISION_FIELD_RE` — a shared constant used by both `parseDecisionOutput` and `extractNodeSignal`.
+- Synonym matching is mid-response, not just first-line: if the LLM emits a preamble before `VERDICT: approve`, it now parses correctly.
+
+**`parseDecisionOutput` — trailing prose bug fix:**
+- Previously: when `REASONING:` was the last structured field, any trailing LLM "helper" prose (e.g. "I hope this analysis was helpful! Let me know if you need more.") bled into the `reasoning` field because the stop heuristic only looked for the next structural field, not blank lines.
+- Now: REASONING capture stops at whichever comes first — next structural field (`^[A-Z_]{2,}:`) or a blank line (`\n\n`). This isolates the actual reasoning from any trailing commentary.
+
+**`formatDecisionSummary` — alternatives display:**
+- Added optional `alternatives?: string[]` parameter.
+- When provided and non-empty, appends `[alt: <top-option>]` to the summary string — giving the UI a visible runner-up hint for N-way decisions.
+- Example: `"escalate — Mixed signals. (65%) [alt: defer]"`
+- Fully backward-compatible: existing callers without `alternatives` see identical output.
+
+**`extractNodeSignal` (prompts.ts) — synonym consistency:**
+- The `decision` case now uses the same synonym regex so `VERDICT:`, `OUTCOME:`, `CHOICE:`, `ROUTE:`, `PATH:` all produce a `[DECISION: …]` signal. Previously only `DECISION:` was matched.
+
+**Files changed:** `src/lib/decision.ts`, `src/lib/prompts.ts`, `src/lib/__tests__/decision.test.ts`, `src/lib/__tests__/prompts.test.ts`
+
+**Test Results:** Build passes. 1824/1824 tests pass (38 new tests — 33 in decision.test.ts, 5 in prompts.test.ts).
+
 ### 2026-04-05 — Round 84: Decision Node Intelligence — Decision-First Context, Verbal Confidence, Error/Skip Guidance
 
 **Improvement — Decision Node Intelligence (Area 2):**
