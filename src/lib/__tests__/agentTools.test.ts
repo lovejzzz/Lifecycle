@@ -8,7 +8,10 @@ import {
   safeEval,
   isBlockedUrl,
   extractiveSummarize,
+  formatToolResults,
+  buildArgsSummary,
 } from '../agentTools';
+import type { ToolCallResult } from '../agentTools';
 import type { AgentTool } from '../types';
 
 // ── repairJson ───────────────────────────────────────────────────────────────
@@ -1018,5 +1021,234 @@ describe('executeTool — compare_texts', () => {
     expect(result.success).toBe(true);
     // Should contain one of the similarity labels
     expect(result.result).toMatch(/very similar|somewhat similar|mostly different|very different/);
+  });
+});
+
+// ── buildArgsSummary ─────────────────────────────────────────────────────────
+
+describe('buildArgsSummary', () => {
+  it('formats web_search query', () => {
+    expect(buildArgsSummary('web_search', { query: 'kubernetes HPA limits' })).toBe(
+      'Query: "kubernetes HPA limits"',
+    );
+  });
+
+  it('clips long web_search query at 80 chars', () => {
+    const longQuery = 'a'.repeat(100);
+    const result = buildArgsSummary('web_search', { query: longQuery });
+    expect(result).toContain('…');
+    expect(result.length).toBeLessThan(100);
+  });
+
+  it('formats http_request URL', () => {
+    expect(buildArgsSummary('http_request', { url: 'https://api.example.com/v1/data' })).toContain(
+      'URL: https://api.example.com',
+    );
+  });
+
+  it('formats extract_json with schema', () => {
+    expect(
+      buildArgsSummary('extract_json', { text: '...', schema: 'status, error, message' }),
+    ).toBe('Schema: "status, error, message"');
+  });
+
+  it('formats extract_json without schema', () => {
+    expect(buildArgsSummary('extract_json', { text: '...' })).toBe('(extract all fields)');
+  });
+
+  it('formats store_context with key', () => {
+    expect(buildArgsSummary('store_context', { key: 'hpa_limits', value: 'max 100' })).toBe(
+      'Key: "hpa_limits"',
+    );
+  });
+
+  it('formats read_context with key', () => {
+    expect(buildArgsSummary('read_context', { key: 'analysis_result' })).toBe(
+      'Key: "analysis_result"',
+    );
+  });
+
+  it('formats validate_json with truncated text', () => {
+    const result = buildArgsSummary('validate_json', { text: '{"foo": "bar", "baz": 1}' });
+    expect(result).toContain('Text:');
+  });
+
+  it('formats summarize_text with max_words', () => {
+    expect(buildArgsSummary('summarize_text', { text: '...', max_words: 150 })).toBe(
+      'max_words: 150',
+    );
+  });
+
+  it('formats summarize_text without max_words', () => {
+    expect(buildArgsSummary('summarize_text', { text: '...' })).toBe('(summarize)');
+  });
+
+  it('formats generate_code with task and language', () => {
+    const result = buildArgsSummary('generate_code', {
+      task: 'parse CSV file',
+      language: 'python',
+    });
+    expect(result).toContain('python');
+    expect(result).toContain('parse CSV');
+  });
+
+  it('formats compare_texts with labels', () => {
+    expect(
+      buildArgsSummary('compare_texts', {
+        text_a: '...',
+        text_b: '...',
+        label_a: 'Draft',
+        label_b: 'Final',
+      }),
+    ).toBe('Draft vs Final');
+  });
+
+  it('formats compare_texts without labels', () => {
+    expect(buildArgsSummary('compare_texts', { text_a: '...', text_b: '...' })).toBe(
+      '(compare texts)',
+    );
+  });
+
+  it('formats list_context_keys', () => {
+    expect(buildArgsSummary('list_context_keys', {})).toBe('(no args — lists all stored keys)');
+  });
+
+  it('formats calculate expression', () => {
+    expect(buildArgsSummary('calculate', { expression: '2500 / 8' })).toBe('2500 / 8');
+  });
+
+  it('formats regex_extract with pattern and flags', () => {
+    const result = buildArgsSummary('regex_extract', { pattern: '\\d+', text: '...', flags: 'g' });
+    expect(result).toContain('\\d+');
+    expect(result).toContain('g');
+  });
+
+  it('formats unknown tool with JSON args preview', () => {
+    const result = buildArgsSummary('my_custom_tool', { param: 'value', count: 3 });
+    expect(result).toContain('param');
+  });
+
+  it('formats unknown tool with no args', () => {
+    expect(buildArgsSummary('no_arg_tool', {})).toBe('(no args)');
+  });
+});
+
+// ── formatToolResults ────────────────────────────────────────────────────────
+
+function makeResult(
+  tool: string,
+  args: Record<string, unknown>,
+  result: string,
+  success = true,
+  durationMs = 100,
+): ToolCallResult {
+  return { tool, args, result, success, durationMs };
+}
+
+describe('formatToolResults', () => {
+  it('returns empty string for no results', () => {
+    expect(formatToolResults([])).toBe('');
+  });
+
+  it('includes a summary header with success count', () => {
+    const results = [
+      makeResult('web_search', { query: 'test' }, 'some results'),
+      makeResult('calculate', { expression: '2+2' }, '4'),
+    ];
+    const output = formatToolResults(results);
+    expect(output).toContain('2 calls');
+    expect(output).toContain('2 ✓ succeeded');
+  });
+
+  it('includes failure count in summary when any tools fail', () => {
+    const results = [
+      makeResult('web_search', { query: 'test' }, 'ok'),
+      makeResult('http_request', { url: 'http://bad' }, 'Connection refused', false, 50),
+    ];
+    const output = formatToolResults(results);
+    expect(output).toContain('1 ✓ succeeded');
+    expect(output).toContain('1 ✗ failed');
+  });
+
+  it('omits failure count suffix when all tools succeed', () => {
+    const results = [makeResult('calculate', { expression: '1+1' }, '2')];
+    const output = formatToolResults(results);
+    expect(output).not.toContain('✗ failed');
+  });
+
+  it('uses singular "call" for a single result', () => {
+    const results = [makeResult('web_search', { query: 'foo' }, 'bar')];
+    const output = formatToolResults(results);
+    expect(output).toMatch(/1 call[^s]/);
+  });
+
+  it('uses plural "calls" for multiple results', () => {
+    const results = [
+      makeResult('web_search', { query: 'a' }, 'res a'),
+      makeResult('calculate', { expression: '1' }, '1'),
+    ];
+    const output = formatToolResults(results);
+    expect(output).toContain('2 calls');
+  });
+
+  it('numbers each section starting from 1', () => {
+    const results = [
+      makeResult('web_search', { query: 'a' }, 'result a'),
+      makeResult('calculate', { expression: '1+1' }, '2'),
+    ];
+    const output = formatToolResults(results);
+    expect(output).toContain('### 1. web_search');
+    expect(output).toContain('### 2. calculate');
+  });
+
+  it('includes ✓ for successful tools', () => {
+    const output = formatToolResults([makeResult('calculate', { expression: '1' }, '1', true)]);
+    expect(output).toContain('✓');
+  });
+
+  it('includes ✗ for failed tools', () => {
+    const output = formatToolResults([makeResult('web_search', { query: 'q' }, 'err', false)]);
+    expect(output).toContain('✗');
+  });
+
+  it('includes duration in the section header', () => {
+    const output = formatToolResults([makeResult('calculate', { expression: '1' }, '1', true, 42)]);
+    expect(output).toContain('42ms');
+  });
+
+  it('includes the args summary (Query: for web_search)', () => {
+    const output = formatToolResults([
+      makeResult('web_search', { query: 'kubernetes limits' }, 'HPA info'),
+    ]);
+    expect(output).toContain('Query: "kubernetes limits"');
+  });
+
+  it('includes the raw result content', () => {
+    const output = formatToolResults([makeResult('calculate', { expression: '3*7' }, '21')]);
+    expect(output).toContain('21');
+  });
+
+  it('separates sections with a divider line', () => {
+    const results = [
+      makeResult('web_search', { query: 'a' }, 'result a'),
+      makeResult('calculate', { expression: '1' }, '1'),
+    ];
+    const output = formatToolResults(results);
+    // Each section should have a --- divider between header and result
+    expect(output).toContain('---');
+  });
+
+  it('handles mixed success and failure in correct section order', () => {
+    const results = [
+      makeResult('web_search', { query: 'q1' }, 'ok', true),
+      makeResult('http_request', { url: 'bad' }, 'err', false),
+      makeResult('calculate', { expression: '5' }, '5', true),
+    ];
+    const output = formatToolResults(results);
+    const pos1 = output.indexOf('### 1. web_search');
+    const pos2 = output.indexOf('### 2. http_request');
+    const pos3 = output.indexOf('### 3. calculate');
+    expect(pos1).toBeLessThan(pos2);
+    expect(pos2).toBeLessThan(pos3);
   });
 });

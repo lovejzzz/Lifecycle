@@ -477,6 +477,8 @@ export interface NodeData extends Record<string, unknown> {
   _executionStartedAt?: number; // Date.now() when execution began (ephemeral)
   _executionDurationMs?: number; // total ms elapsed for this node's execution (ephemeral)
   _effortLevel?: 'low' | 'medium' | 'high' | 'max'; // adaptive thinking effort for AI execution
+  /** Live tool-call progress during multi-turn execution (ephemeral — cleared on completion) */
+  _toolProgress?: string;
   inputValue?: string; // user-provided input value (text, URL, etc.)
 
   // Version history — snapshots of content at meaningful change points

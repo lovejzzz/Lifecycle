@@ -840,16 +840,42 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
           // Execute tool calls and feed results back
           // Pass _sharedNodeContext so store_context/read_context work across nodes
           const sharedCtx = get()._sharedNodeContext;
+          const toolNames = toolCalls.map((t) => t.name);
           cidLog('executeNode:tools', {
             nodeId,
             label: d.label,
             iteration,
             toolCount: toolCalls.length,
-            tools: toolCalls.map((t) => t.name),
+            tools: toolNames,
           });
+
+          // ── Live progress streaming ──
+          // Update the node's _toolProgress field so the UI can display which tools
+          // are active in the current iteration. Also surface this in the workflow
+          // progress bar so users can see sub-node activity during long tool chains.
+          const iterLabel = `Iteration ${iteration + 1}/${maxIterations}`;
+          const callingLabel = `${iterLabel}: calling ${toolNames.join(', ')}…`;
+          store.updateNodeData(nodeId, { _toolProgress: callingLabel });
+          const currentProgress = get().executionProgress;
+          if (currentProgress?.running) {
+            set({
+              executionProgress: {
+                ...currentProgress,
+                currentLabel: `${d.label} [${toolNames.join(', ')}]`,
+              },
+            });
+          }
+
           const toolResults = await Promise.all(toolCalls.map((tc) => executeTool(tc, sharedCtx)));
           // Persist any mutations from store_context back to store (context is mutated in-place)
           set({ _sharedNodeContext: { ...sharedCtx } });
+
+          // Update progress with outcome summary
+          const succeededCount = toolResults.filter((r) => r.success).length;
+          store.updateNodeData(nodeId, {
+            _toolProgress: `${iterLabel}: ${succeededCount}/${toolResults.length} tools succeeded`,
+          });
+
           const toolResultsText = formatToolResults(toolResults);
 
           // Add assistant response + tool results to conversation for next iteration
@@ -961,6 +987,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         apiKey: undefined,
         _executionDurationMs: _execDuration,
         _validationWarnings: validationWarnings.length > 0 ? validationWarnings : undefined,
+        _toolProgress: undefined, // clear ephemeral tool iteration status
       });
       store.updateNodeStatus(nodeId, 'active');
       store.addEvent({
@@ -997,6 +1024,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8p
         executionStatus: 'error',
         executionError: errMsg,
         _executionDurationMs: Date.now() - _execStart,
+        _toolProgress: undefined, // clear ephemeral tool iteration status
       });
       store.updateNodeStatus(nodeId, 'active');
       store.addToast(

@@ -1466,9 +1466,79 @@ async function _executeToolImpl(
   }
 }
 
-/** Format tool results for injection into the next LLM message */
+/**
+ * Build a compact input-summary string for a tool call.
+ *
+ * Surfaces the key argument alongside the result so the LLM can immediately
+ * trace which result answers which request — without having to re-parse the
+ * original message. Each tool type has a purpose-specific extractor; unknown
+ * tools fall back to a JSON preview of their args object.
+ */
+export function buildArgsSummary(tool: string, args: Record<string, unknown>): string {
+  const clip = (v: unknown, max = 80): string => {
+    const s = typeof v === 'string' ? v : JSON.stringify(v);
+    return s.length > max ? s.slice(0, max) + '…' : s;
+  };
+  switch (tool) {
+    case 'web_search':
+      return `Query: "${clip(args.query)}"`;
+    case 'http_request':
+      return `URL: ${clip(args.url, 60)}`;
+    case 'extract_json':
+      return args.schema ? `Schema: "${clip(args.schema)}"` : '(extract all fields)';
+    case 'store_context':
+      return `Key: "${args.key}"`;
+    case 'read_context':
+      return `Key: "${args.key}"`;
+    case 'validate_json':
+      return `Text: ${clip(args.text, 40)}`;
+    case 'summarize_text':
+      return args.max_words !== undefined ? `max_words: ${args.max_words}` : '(summarize)';
+    case 'generate_code':
+      return args.language
+        ? `${clip(args.task, 40)} [${args.language}]`
+        : clip(args.task as string, 80);
+    case 'compare_texts':
+      return args.label_a ? `${args.label_a} vs ${args.label_b}` : '(compare texts)';
+    case 'list_context_keys':
+      return '(no args — lists all stored keys)';
+    case 'calculate':
+      return `${clip(args.expression, 60)}`;
+    case 'regex_extract':
+      return `/${clip(args.pattern, 30)}/${args.flags ?? ''}`;
+    default:
+      return Object.keys(args).length > 0 ? clip(JSON.stringify(args), 80) : '(no args)';
+  }
+}
+
+/**
+ * Format tool results for injection into the next LLM message.
+ *
+ * Each result is rendered as a numbered section with:
+ *   - Tool name + success/failure status + duration
+ *   - A compact args summary so the LLM sees what was requested alongside the answer
+ *   - The raw result (already truncated by individual tool implementations)
+ *
+ * A summary header ("3 calls — 2 ✓ succeeded, 1 ✗ failed") lets the LLM
+ * immediately assess overall tool-chain health before reading individual results.
+ */
 export function formatToolResults(results: ToolCallResult[]): string {
-  return results
-    .map((r) => `[Tool: ${r.tool}] ${r.success ? '✓' : '✗'} (${r.durationMs}ms)\n${r.result}`)
+  if (results.length === 0) return '';
+
+  const successCount = results.filter((r) => r.success).length;
+  const failCount = results.length - successCount;
+  const pluralCalls = results.length !== 1 ? 's' : '';
+  const failSuffix = failCount > 0 ? `, ${failCount} ✗ failed` : '';
+  const header = `## Tool Results (${results.length} call${pluralCalls} — ${successCount} ✓ succeeded${failSuffix})`;
+
+  const sections = results
+    .map((r, i) => {
+      const argsSummary = buildArgsSummary(r.tool, r.args);
+      const status = r.success ? '✓' : '✗';
+      const sectionHeader = `### ${i + 1}. ${r.tool} ${status} (${r.durationMs}ms)\n${argsSummary}`;
+      return `${sectionHeader}\n---\n${r.result}`;
+    })
     .join('\n\n');
+
+  return `${header}\n\n${sections}`;
 }

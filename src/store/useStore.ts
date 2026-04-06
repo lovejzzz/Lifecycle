@@ -1557,6 +1557,7 @@ export const useLifecycleStore = create<LifecycleStore>((set, get, api) => ({
         '_versionHistory',
         'version',
         '_validationWarnings',
+        '_toolProgress',
       ]);
       const isExecutionUpdate = Object.keys(partial).every((k) => executionKeys.has(k));
       if (!isExecutionUpdate) {
