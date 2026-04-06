@@ -1,5 +1,27 @@
 # Changelog
 
+### 2026-04-06 — Round 88: Agent Execution — Tool Loop Progress Streaming
+
+**Improvement: Area 3 — Agent Execution Improvements:**
+
+**`formatToolResults` upgraded from flat dump to structured LLM-readable report:**
+- Previously: `[Tool: web_search] ✓ (1234ms)\n{raw result}` — no context about what was requested, no session summary
+- Now: numbered sections with a summary header ("3 calls — 2 ✓ succeeded, 1 ✗ failed"), per-call args summary, and `---` divider between header and result
+- New `buildArgsSummary(tool, args)` helper extracts the key input per tool type: Query for web_search, URL for http_request, Schema for extract_json, Key for store_context/read_context, Expression for calculate, Pattern for regex_extract, Label pair for compare_texts, Task+Language for generate_code, max_words for summarize_text
+- This lets the LLM immediately trace which result answers which request without re-parsing — especially important in chains of 3+ tool calls
+
+**Live `_toolProgress` field on NodeData for in-execution visibility:**
+- New ephemeral field `_toolProgress?: string` surfaces the current tool iteration status: `"Iteration 2/3: calling web_search, calculate…"` → `"Iteration 2/3: 2/2 tools succeeded"`
+- Cleared on both success and error paths — only non-null during active tool execution
+- Added `_toolProgress` to the `updateNodeData` execution-keys whitelist in useStore.ts so progress updates aren't blocked by the node mutex guard
+
+**Workflow progress bar updated during tool calls:**
+- When inside `executeWorkflow`, `executionProgress.currentLabel` updates to `"NodeName [web_search, calculate]"` so the workflow bar surfaces tool activity at the sub-node level
+
+**Files changed:** `src/lib/agentTools.ts`, `src/lib/types.ts`, `src/store/slices/executionSlice.ts`, `src/store/useStore.ts`, `src/lib/__tests__/agentTools.test.ts`
+
+**Test Results:** Build passes. 1909/1909 tests pass (34 new tests — 18 for buildArgsSummary, 16 for formatToolResults).
+
 ### 2026-04-06 — Round 87: Signal Extraction and Validation for Input/Trigger/Output Nodes
 
 **Improvement — Prompt Engineering + Structured Output Signals (Areas 2 & 5):**
