@@ -1361,6 +1361,72 @@ describe('extractNodeSignal', () => {
     );
   });
 
+  // ── input category ──
+  it('extracts DATA_QUALITY signal from input node', () => {
+    expect(
+      extractNodeSignal(
+        'Received payload with 5 fields.\n\nDATA_QUALITY: valid — all required fields present',
+        'input',
+      ),
+    ).toBe('[DATA_QUALITY: valid — all required fields present]');
+  });
+
+  it('extracts DATA_QUALITY with issue description', () => {
+    expect(
+      extractNodeSignal(
+        'Intake analysis.\n\nDATA_QUALITY: 2 issues found — email malformed',
+        'input',
+      ),
+    ).toBe('[DATA_QUALITY: 2 issues found — email malformed]');
+  });
+
+  it('truncates long DATA_QUALITY values to 60 chars', () => {
+    const longVal = 'a'.repeat(80);
+    const result = extractNodeSignal(`DATA_QUALITY: ${longVal}`, 'input');
+    expect(result).not.toBeNull();
+    expect(result!.length).toBeLessThan(80);
+  });
+
+  it('returns null for input node with no DATA_QUALITY line', () => {
+    expect(extractNodeSignal('Received 3 fields: name, email, phone.', 'input')).toBeNull();
+  });
+
+  it('is case-insensitive for DATA_QUALITY: keyword', () => {
+    expect(extractNodeSignal('data_quality: valid', 'input')).toBe('[DATA_QUALITY: valid]');
+  });
+
+  // ── trigger category ──
+  it('returns trigger schema defined signal when TRIGGER_SCHEMA: present', () => {
+    const output = [
+      'Fires on new events.',
+      '',
+      'TRIGGER_SCHEMA:',
+      '- event: webhook.received',
+      '- payload: { body: object }',
+    ].join('\n');
+    expect(extractNodeSignal(output, 'trigger')).toBe('[TRIGGER_SCHEMA: defined]');
+  });
+
+  it('returns null for trigger node with no TRIGGER_SCHEMA: section', () => {
+    expect(extractNodeSignal('This trigger fires every 5 minutes.', 'trigger')).toBeNull();
+  });
+
+  it('is case-insensitive for TRIGGER_SCHEMA: keyword', () => {
+    expect(extractNodeSignal('trigger_schema:\n- event: cron', 'trigger')).toBe(
+      '[TRIGGER_SCHEMA: defined]',
+    );
+  });
+
+  // ── output category ──
+  it('returns OUTPUT: ready for output node with sufficient content', () => {
+    const output = 'Executive Summary: The workflow completed successfully.\n\n' + 'x'.repeat(200);
+    expect(extractNodeSignal(output, 'output')).toBe('[OUTPUT: ready]');
+  });
+
+  it('returns null for output node with very short content', () => {
+    expect(extractNodeSignal('Done.', 'output')).toBeNull();
+  });
+
   // ── unknown / edge cases ──
   it('returns null for unknown category', () => {
     expect(extractNodeSignal('Some output text', 'artifact')).toBeNull();

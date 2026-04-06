@@ -443,3 +443,136 @@ describe('validateOutput — dependency: missing-blockers-line', () => {
     expect(warnings.map((w) => w.code)).not.toContain('missing-blockers-line');
   });
 });
+
+// ─── validateOutput: input category ─────────────────────────────────────────
+
+describe('validateOutput — input category', () => {
+  it('raises missing-data-quality-line when DATA_QUALITY: absent', () => {
+    const output =
+      'Received 3 fields: name, email, phone. The email field contains a valid address.';
+    const warnings = validateOutput(output, 'input', 'Customer Form');
+    expect(warnings.map((w) => w.code)).toContain('missing-data-quality-line');
+  });
+
+  it('does NOT raise missing-data-quality-line when DATA_QUALITY: present', () => {
+    const output =
+      'Received 3 fields: name, email, phone.\n\nDATA_QUALITY: valid — all required fields present';
+    const warnings = validateOutput(output, 'input', 'Customer Form');
+    expect(warnings.map((w) => w.code)).not.toContain('missing-data-quality-line');
+  });
+
+  it('accepts DATA_QUALITY: at start of line anywhere in output', () => {
+    const output =
+      'Field summary:\n- name: John\n- email: john@example.com\n\nDATA_QUALITY: 1 issue — phone missing';
+    const warnings = validateOutput(output, 'input', 'Customer Form');
+    expect(warnings.map((w) => w.code)).not.toContain('missing-data-quality-line');
+  });
+
+  it('is case-insensitive for DATA_QUALITY: keyword', () => {
+    const output = 'Summary of intake.\n\ndata_quality: valid';
+    const warnings = validateOutput(output, 'input', 'Intake');
+    expect(warnings.map((w) => w.code)).not.toContain('missing-data-quality-line');
+  });
+
+  it('raises warning severity so refinement loop fires', () => {
+    const output = 'The payload contained some data.';
+    const warnings = validateOutput(output, 'input', 'Intake');
+    const marker = warnings.find((w) => w.code === 'missing-data-quality-line');
+    expect(marker?.severity).toBe('warning');
+  });
+
+  it('does NOT raise missing-data-quality-line for non-input categories', () => {
+    const output = 'Analysis complete. No DATA_QUALITY line here.';
+    const warnings = validateOutput(output, 'action', 'Deploy');
+    expect(warnings.map((w) => w.code)).not.toContain('missing-data-quality-line');
+  });
+
+  it('raises too-short when input output is very brief', () => {
+    const output = 'DATA_QUALITY: valid';
+    const warnings = validateOutput(output, 'input', 'Intake');
+    expect(warnings.map((w) => w.code)).toContain('too-short');
+  });
+});
+
+// ─── validateOutput: trigger category ───────────────────────────────────────
+
+describe('validateOutput — trigger category', () => {
+  it('raises missing-trigger-schema when TRIGGER_SCHEMA: absent', () => {
+    const output = 'This trigger fires every 5 minutes and checks the queue for pending jobs.';
+    const warnings = validateOutput(output, 'trigger', 'Job Queue Trigger');
+    expect(warnings.map((w) => w.code)).toContain('missing-trigger-schema');
+  });
+
+  it('does NOT raise missing-trigger-schema when TRIGGER_SCHEMA: present', () => {
+    const output = [
+      'Fires on new webhook events.',
+      '',
+      'TRIGGER_SCHEMA:',
+      '- event: webhook.received',
+      '- payload: { body: object, headers: object }',
+      '- conditions: method === "POST"',
+    ].join('\n');
+    const warnings = validateOutput(output, 'trigger', 'Webhook Trigger');
+    expect(warnings.map((w) => w.code)).not.toContain('missing-trigger-schema');
+  });
+
+  it('is case-insensitive for TRIGGER_SCHEMA: keyword', () => {
+    const output =
+      'Schedule-based trigger.\n\ntrigger_schema:\n- event: cron\n- schedule: "0 * * * *"';
+    const warnings = validateOutput(output, 'trigger', 'Cron Trigger');
+    expect(warnings.map((w) => w.code)).not.toContain('missing-trigger-schema');
+  });
+
+  it('raises warning severity so refinement loop fires', () => {
+    const output = 'This trigger fires when a user submits a form.';
+    const warnings = validateOutput(output, 'trigger', 'Form Submit');
+    const marker = warnings.find((w) => w.code === 'missing-trigger-schema');
+    expect(marker?.severity).toBe('warning');
+  });
+
+  it('does NOT raise missing-trigger-schema for non-trigger categories', () => {
+    const output = 'No TRIGGER_SCHEMA here.';
+    const warnings = validateOutput(output, 'action', 'Deploy');
+    expect(warnings.map((w) => w.code)).not.toContain('missing-trigger-schema');
+  });
+});
+
+// ─── buildRefinementPrompt: new warning codes ────────────────────────────────
+
+describe('buildRefinementPrompt — input/trigger codes', () => {
+  it('provides concrete DATA_QUALITY instruction for missing-data-quality-line', () => {
+    const warnings: ValidationWarning[] = [
+      { code: 'missing-data-quality-line', message: 'test', severity: 'warning' },
+    ];
+    const prompt = buildRefinementPrompt(warnings);
+    expect(prompt).toContain('DATA_QUALITY:');
+    expect(prompt).toContain('DATA_QUALITY: valid');
+  });
+
+  it('provides TRIGGER_SCHEMA example for missing-trigger-schema', () => {
+    const warnings: ValidationWarning[] = [
+      { code: 'missing-trigger-schema', message: 'test', severity: 'warning' },
+    ];
+    const prompt = buildRefinementPrompt(warnings);
+    expect(prompt).toContain('TRIGGER_SCHEMA:');
+    expect(prompt).toContain('payload');
+  });
+
+  it('includes both instructions when both warnings are present', () => {
+    const warnings: ValidationWarning[] = [
+      { code: 'missing-data-quality-line', message: 'test', severity: 'warning' },
+      { code: 'missing-trigger-schema', message: 'test', severity: 'warning' },
+    ];
+    const prompt = buildRefinementPrompt(warnings);
+    expect(prompt).toContain('DATA_QUALITY:');
+    expect(prompt).toContain('TRIGGER_SCHEMA:');
+  });
+
+  it('starts with the standard preamble', () => {
+    const warnings: ValidationWarning[] = [
+      { code: 'missing-data-quality-line', message: 'test', severity: 'warning' },
+    ];
+    const prompt = buildRefinementPrompt(warnings);
+    expect(prompt).toMatch(/^Your previous response has quality issues/);
+  });
+});

@@ -159,6 +159,9 @@ const MIN_LENGTHS: Record<string, number> = {
   test: 100,
   policy: 80,
   patch: 40,
+  input: 60,
+  trigger: 80,
+  output: 100,
 };
 
 /** Maximum expected output lengths per category (chars) */
@@ -402,6 +405,35 @@ export function validateOutput(
     }
   }
 
+  // 12. Input nodes: require a DATA_QUALITY: line.
+  //     The execution system prompt instructs: "End with a DATA_QUALITY: line."
+  //     Without it, extractNodeSignal returns null for input nodes and downstream
+  //     context headers lose the signal badge indicating data health.
+  if (category === 'input') {
+    if (!/^DATA_QUALITY:\s*\S/im.test(trimmed)) {
+      warnings.push({
+        code: 'missing-data-quality-line',
+        message:
+          'Input node output should include a "DATA_QUALITY: <value>" line for downstream signal routing',
+        severity: 'warning',
+      });
+    }
+  }
+
+  // 13. Trigger nodes: require a TRIGGER_SCHEMA: section.
+  //     The execution system prompt instructs: "Include a TRIGGER_SCHEMA: section."
+  //     Downstream condition-based routing depends on this structured schema being present.
+  if (category === 'trigger') {
+    if (!/^TRIGGER_SCHEMA:/im.test(trimmed)) {
+      warnings.push({
+        code: 'missing-trigger-schema',
+        message:
+          'Trigger node output should include a "TRIGGER_SCHEMA:" section defining the trigger payload structure',
+        severity: 'warning',
+      });
+    }
+  }
+
   return warnings;
 }
 
@@ -478,6 +510,24 @@ export function buildRefinementPrompt(warnings: ValidationWarning[]): string {
           'Examples: "BLOCKERS: none", "BLOCKERS: missing API credentials for auth-service", ' +
           '"BLOCKERS: conflicting versions — lodash 4.x vs 5.x". ' +
           'Use "BLOCKERS: none" explicitly when all dependencies are resolved.'
+        );
+      case 'missing-data-quality-line':
+        return (
+          'Your input node output must end with a DATA_QUALITY line that signals data health to downstream nodes. ' +
+          'Add a line in the format: `DATA_QUALITY: <assessment>`. ' +
+          'Examples: "DATA_QUALITY: valid", "DATA_QUALITY: 2 issues found — missing required fields", ' +
+          '"DATA_QUALITY: malformed — JSON parse error at line 14". ' +
+          'Use "DATA_QUALITY: valid" when data passes all checks without issues.'
+        );
+      case 'missing-trigger-schema':
+        return (
+          'Your trigger node output must include a TRIGGER_SCHEMA section that documents the expected payload structure. ' +
+          'Add a section in the format:\n\n' +
+          'TRIGGER_SCHEMA:\n' +
+          '- event: <event type>\n' +
+          '- payload: { <field>: <type>, ... }\n' +
+          '- conditions: <filter conditions>\n\n' +
+          'This schema is used by downstream nodes to understand what data the trigger provides and configure their inputs accordingly.'
         );
       default:
         return w.message;

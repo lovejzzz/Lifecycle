@@ -785,6 +785,31 @@ export function extractNodeSignal(output: string, category: string): string | nu
       return null;
     }
 
+    case 'input': {
+      // Extract DATA_QUALITY: line — instructed by CATEGORY_SYSTEM_PROMPTS for input nodes.
+      // Format: "DATA_QUALITY: valid" | "DATA_QUALITY: 3 issues found"
+      const m = text.match(/^DATA_QUALITY:\s*(.+)/im);
+      if (m) {
+        const val = m[1].trim().slice(0, 60);
+        return `[DATA_QUALITY: ${val}]`;
+      }
+      return null;
+    }
+
+    case 'trigger': {
+      // Detect presence of TRIGGER_SCHEMA: section — instructed by CATEGORY_SYSTEM_PROMPTS.
+      // Returns a compact badge confirming the schema was defined.
+      if (/^TRIGGER_SCHEMA:/im.test(text)) return '[TRIGGER_SCHEMA: defined]';
+      return null;
+    }
+
+    case 'output': {
+      // Output nodes synthesize upstream content into a deliverable.
+      // Signal whether a polished summary/report was produced.
+      if (text.length >= 200) return '[OUTPUT: ready]';
+      return null;
+    }
+
     default:
       return null;
   }
